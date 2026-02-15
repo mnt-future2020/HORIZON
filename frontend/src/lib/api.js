@@ -73,6 +73,16 @@ export const analyticsAPI = {
   player: () => api.get("/analytics/player"),
 };
 
+export const notificationAPI = {
+  subscribe: (data) => api.post("/notifications/subscribe", data),
+  unsubscribe: (data) => api.delete("/notifications/subscribe", { data }),
+  list: () => api.get("/notifications"),
+  unreadCount: () => api.get("/notifications/unread-count"),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put("/notifications/read-all"),
+  mySubscriptions: (params) => api.get("/notifications/subscriptions", { params }),
+};
+
 export const seedAPI = {
   seed: () => api.post("/seed"),
 };
