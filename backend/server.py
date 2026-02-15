@@ -165,15 +165,19 @@ class AcademyCreate(BaseModel):
 # ── Auth Routes ──
 @api_router.post("/auth/register")
 async def register(input: RegisterInput):
+    if input.role == "super_admin":
+        raise HTTPException(403, "Cannot register as super admin")
     existing = await db.users.find_one({"email": input.email})
     if existing:
         raise HTTPException(400, "Email already registered")
+    account_status = "pending" if input.role == "venue_owner" else "active"
     user = {
         "id": str(uuid.uuid4()),
         "name": input.name,
         "email": input.email,
         "password_hash": hash_pw(input.password),
         "role": input.role,
+        "account_status": account_status,
         "phone": input.phone or "",
         "avatar": "",
         "sports": input.sports or [],
@@ -186,6 +190,8 @@ async def register(input: RegisterInput):
         "losses": 0,
         "draws": 0,
         "no_shows": 0,
+        "business_name": input.business_name or "",
+        "gst_number": input.gst_number or "",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)
