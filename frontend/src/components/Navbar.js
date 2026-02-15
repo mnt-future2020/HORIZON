@@ -94,6 +94,50 @@ export default function Navbar() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* Notification Bell */}
+          <Popover open={notifOpen} onOpenChange={handleNotifOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative h-9 w-9" data-testid="notification-bell">
+                <Bell className="h-4 w-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center"
+                    data-testid="notification-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-0" data-testid="notification-panel">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                <span className="text-sm font-bold">Notifications</span>
+                {unreadCount > 0 && (
+                  <button onClick={handleMarkAllRead} className="text-[10px] text-primary hover:underline flex items-center gap-1"
+                    data-testid="mark-all-read-btn"><CheckCheck className="h-3 w-3" /> Mark all read</button>
+                )}
+              </div>
+              <div className="max-h-72 overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="p-6 text-center text-muted-foreground text-xs">No notifications yet</div>
+                ) : (
+                  notifications.map(n => (
+                    <button key={n.id} onClick={() => handleNotifClick(n)}
+                      data-testid={`notification-item-${n.id}`}
+                      className={`w-full text-left px-4 py-3 border-b border-border/50 hover:bg-secondary/50 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}>
+                      <div className="flex items-start gap-2">
+                        {!n.is_read && <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />}
+                        <div className={!n.is_read ? "" : "ml-4"}>
+                          <div className="text-xs font-semibold text-foreground">{n.title}</div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{n.message}</div>
+                          <div className="text-[10px] text-muted-foreground/60 mt-1">
+                            {new Date(n.created_at).toLocaleString()}
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-9 px-3" data-testid="user-menu-trigger">
