@@ -160,6 +160,33 @@ export default function VenueDetail() {
     }
   };
 
+  const handleNotifyMe = async (slot, e) => {
+    e.stopPropagation();
+    const slotKey = `${slot.start_time}-${slot.turf_number}`;
+    const data = {
+      venue_id: id,
+      date: format(selectedDate, "yyyy-MM-dd"),
+      start_time: slot.start_time,
+      turf_number: slot.turf_number,
+    };
+    setSubscribing(slotKey);
+    try {
+      if (subscribedSlots.has(slotKey)) {
+        await notificationAPI.unsubscribe(data);
+        setSubscribedSlots(prev => { const n = new Set(prev); n.delete(slotKey); return n; });
+        toast.success("Notification removed");
+      } else {
+        await notificationAPI.subscribe(data);
+        setSubscribedSlots(prev => new Set(prev).add(slotKey));
+        toast.success("You'll be notified when this slot opens up!");
+      }
+    } catch {
+      toast.error("Failed to update notification");
+    } finally {
+      setSubscribing(null);
+    }
+  };
+
   const groupedSlots = {};
   slots.forEach(s => {
     const key = `Turf ${s.turf_number}`;
