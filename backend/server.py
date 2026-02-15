@@ -1209,29 +1209,44 @@ async def seed_demo_data():
     await db.academies.delete_many({})
     await db.notifications.delete_many({})
     await db.notification_subscriptions.delete_many({})
+    await db.platform_settings.delete_many({})
 
+    admin_id = str(uuid.uuid4())
     owner_id = str(uuid.uuid4())
     player_id = str(uuid.uuid4())
     coach_id = str(uuid.uuid4())
 
     users = [
+        {"id": admin_id, "name": "Horizon Admin", "email": "admin@horizon.com",
+         "password_hash": hash_pw("admin123"), "role": "super_admin", "account_status": "active",
+         "phone": "9000000000", "avatar": "", "sports": [], "preferred_position": "",
+         "skill_rating": 0, "skill_deviation": 0, "reliability_score": 100,
+         "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
+         "business_name": "", "gst_number": "",
+         "created_at": datetime.now(timezone.utc).isoformat()},
         {"id": player_id, "name": "Arjun Kumar", "email": "demo@player.com",
-         "password_hash": hash_pw("demo123"), "role": "player", "phone": "9876543210",
+         "password_hash": hash_pw("demo123"), "role": "player", "account_status": "active",
+         "phone": "9876543210",
          "avatar": "", "sports": ["football", "cricket"], "preferred_position": "midfielder",
          "skill_rating": 1650, "skill_deviation": 200, "reliability_score": 92,
          "total_games": 47, "wins": 22, "losses": 18, "draws": 7, "no_shows": 1,
+         "business_name": "", "gst_number": "",
          "created_at": datetime.now(timezone.utc).isoformat()},
         {"id": owner_id, "name": "Mr. Reddy", "email": "demo@owner.com",
-         "password_hash": hash_pw("demo123"), "role": "venue_owner", "phone": "9876543211",
+         "password_hash": hash_pw("demo123"), "role": "venue_owner", "account_status": "active",
+         "phone": "9876543211",
          "avatar": "", "sports": [], "preferred_position": "",
          "skill_rating": 1500, "skill_deviation": 350, "reliability_score": 100,
          "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
+         "business_name": "Reddy Sports Pvt Ltd", "gst_number": "29AABCR1234F1Z5",
          "created_at": datetime.now(timezone.utc).isoformat()},
         {"id": coach_id, "name": "Coach Sarah", "email": "demo@coach.com",
-         "password_hash": hash_pw("demo123"), "role": "coach", "phone": "9876543212",
+         "password_hash": hash_pw("demo123"), "role": "coach", "account_status": "active",
+         "phone": "9876543212",
          "avatar": "", "sports": ["badminton"], "preferred_position": "",
          "skill_rating": 2100, "skill_deviation": 150, "reliability_score": 98,
          "total_games": 120, "wins": 85, "losses": 30, "draws": 5, "no_shows": 0,
+         "business_name": "", "gst_number": "",
          "created_at": datetime.now(timezone.utc).isoformat()},
     ]
     await db.users.insert_many(users)
