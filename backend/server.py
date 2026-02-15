@@ -7,10 +7,12 @@ from typing import List, Optional
 from datetime import datetime, timezone, timedelta
 from passlib.context import CryptContext
 from jose import jwt, JWTError
+import redis.asyncio as aioredis
 import os
 import uuid
 import logging
 import random
+import json
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).parent
@@ -20,6 +22,10 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Redis
+redis_url = os.environ.get('REDIS_URL')
+redis_client: aioredis.Redis = None
+
 JWT_SECRET = os.environ.get('JWT_SECRET')
 JWT_ALGORITHM = "HS256"
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -27,6 +33,13 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 app = FastAPI(title="Horizon Sports API")
 api_router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
+
+# Lock config
+SOFT_LOCK_TTL = 600      # 10 minutes
+HARD_LOCK_TTL = 1800     # 30 minutes
+
+def lock_key(venue_id: str, date: str, start_time: str, turf: int) -> str:
+    return f"lock:{venue_id}:{date}:{start_time}:{turf}"
 
 
 # ── Auth Helpers ──
