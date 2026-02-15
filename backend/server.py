@@ -87,6 +87,8 @@ class RegisterInput(BaseModel):
     role: str = "player"
     phone: Optional[str] = ""
     sports: Optional[List[str]] = []
+    business_name: Optional[str] = ""
+    gst_number: Optional[str] = ""
 
 class LoginInput(BaseModel):
     email: str
