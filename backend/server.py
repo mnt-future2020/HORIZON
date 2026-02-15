@@ -135,6 +135,12 @@ class MatchRequestCreate(BaseModel):
     max_skill: Optional[int] = 3000
     description: Optional[str] = ""
 
+class NotifySubscribeInput(BaseModel):
+    venue_id: str
+    date: str
+    start_time: str
+    turf_number: int = 1
+
 class MercenaryCreate(BaseModel):
     sport: str
     venue_name: str
