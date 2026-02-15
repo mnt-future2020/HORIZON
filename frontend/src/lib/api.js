@@ -35,6 +35,14 @@ export const bookingAPI = {
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
 };
 
+export const slotLockAPI = {
+  lock: (data) => api.post("/slots/lock", data),
+  unlock: (data) => api.post("/slots/unlock", data),
+  extendLock: (data) => api.post("/slots/extend-lock", data),
+  myLocks: () => api.get("/slots/my-locks"),
+  status: (params) => api.get("/slots/lock-status", { params }),
+};
+
 export const splitAPI = {
   getInfo: (token) => api.get(`/split/${token}`),
   pay: (token, data) => api.post(`/split/${token}/pay`, data),
