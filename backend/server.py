@@ -475,11 +475,12 @@ async def get_my_locks(user=Depends(get_current_user)):
             if val_str == user["id"]:
                 ttl = await redis_client.ttl(key)
                 parts = key_str.split(":")
-                if len(parts) == 5:
+                # Key format: lock:venue_id:date:HH:MM:turf (6 parts due to time colon)
+                if len(parts) >= 6:
                     locks.append({
                         "lock_key": key_str,
                         "venue_id": parts[1], "date": parts[2],
-                        "start_time": parts[3], "turf_number": int(parts[4]),
+                        "start_time": f"{parts[3]}:{parts[4]}", "turf_number": int(parts[5]),
                         "ttl": ttl, "lock_type": "hard" if ttl > SOFT_LOCK_TTL else "soft"
                     })
         return {"locks": locks, "debug_keys_found": len(all_keys)}
