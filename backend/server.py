@@ -1358,6 +1358,18 @@ async def seed_demo_data():
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.academies.insert_one(academy)
+
+    # Seed platform settings
+    await db.platform_settings.insert_one({
+        "key": "platform",
+        "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "is_live": False},
+        "booking_commission_pct": 10,
+        "subscription_plans": [
+            {"id": "free", "name": "Free", "price": 0, "features": ["1 venue", "Basic analytics"], "max_venues": 1},
+            {"id": "basic", "name": "Basic", "price": 2999, "features": ["3 venues", "Advanced analytics", "Priority support"], "max_venues": 3},
+            {"id": "pro", "name": "Pro", "price": 7999, "features": ["Unlimited venues", "Full analytics", "Dedicated support", "Custom branding"], "max_venues": 100},
+        ]
+    })
     logger.info("Demo data seeded successfully!")
 
 @api_router.post("/seed")
