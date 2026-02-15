@@ -623,6 +623,10 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
         await db.split_payments.update_many(
             {"booking_id": booking_id}, {"$set": {"status": "refunded"}}
         )
+    # Release any Redis lock for this slot
+    if redis_client:
+        key = lock_key(booking["venue_id"], booking["date"], booking["start_time"], booking.get("turf_number", 1))
+        await redis_client.delete(key)
     return {"message": "Booking cancelled"}
 
 
