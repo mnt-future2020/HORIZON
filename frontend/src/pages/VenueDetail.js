@@ -96,6 +96,10 @@ export default function VenueDetail() {
     if (!selectedSlot) return;
     setBookingLoading(true);
     try {
+      // Extend lock to hard lock for payment processing
+      if (lockRef.current) {
+        await slotLockAPI.extendLock(lockRef.current).catch(() => {});
+      }
       const data = {
         venue_id: id, date: format(selectedDate, "yyyy-MM-dd"),
         start_time: selectedSlot.start_time, end_time: selectedSlot.end_time,
@@ -104,13 +108,30 @@ export default function VenueDetail() {
       };
       if (payMode === "split") data.split_count = splitCount;
       const res = await bookingAPI.create(data);
+      lockRef.current = null; // Lock released by server on successful booking
+      setLockInfo(null);
       setConfirmResult(res.data);
       toast.success("Booking confirmed! (MOCKED payment)");
+      loadSlots(); // Refresh to show slot as booked
     } catch (err) {
       toast.error(err.response?.data?.detail || "Booking failed");
     } finally {
       setBookingLoading(false);
     }
+  };
+
+  const handleDialogClose = (open) => {
+    if (!open && !confirmResult) {
+      // Releasing lock when closing dialog without booking
+      if (lockRef.current) {
+        slotLockAPI.unlock(lockRef.current).catch(() => {});
+        lockRef.current = null;
+        setLockInfo(null);
+        loadSlots();
+      }
+      setSelectedSlot(null);
+    }
+    setBookingDialog(open);
   };
 
   const copyLink = () => {
