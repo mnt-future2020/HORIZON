@@ -12,6 +12,7 @@ import VenueOwnerDashboard from "@/pages/VenueOwnerDashboard";
 import CoachDashboard from "@/pages/CoachDashboard";
 import SplitPaymentPage from "@/pages/SplitPaymentPage";
 import ProfilePage from "@/pages/ProfilePage";
+import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 import Navbar from "@/components/Navbar";
 
 function ProtectedRoute({ children, roles }) {
