@@ -483,10 +483,10 @@ async def get_my_locks(user=Depends(get_current_user)):
                         "start_time": f"{parts[3]}:{parts[4]}", "turf_number": int(parts[5]),
                         "ttl": ttl, "lock_type": "hard" if ttl > SOFT_LOCK_TTL else "soft"
                     })
-        return {"locks": locks, "debug_keys_found": len(all_keys)}
+        return {"locks": locks}
     except Exception as e:
         logger.warning(f"Failed to get locks: {e}")
-        return {"locks": [], "error": str(e)}
+        return {"locks": []}
 
 @api_router.get("/slots/lock-status")
 async def get_lock_status(venue_id: str, date: str, start_time: str, turf_number: int = 1):
