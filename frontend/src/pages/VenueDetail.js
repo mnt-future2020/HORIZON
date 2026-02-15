@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { venueAPI, bookingAPI, slotLockAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, slotLockAPI, notificationAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2 } from "lucide-react";
+import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff } from "lucide-react";
 import { format } from "date-fns";
 
 export default function VenueDetail() {
