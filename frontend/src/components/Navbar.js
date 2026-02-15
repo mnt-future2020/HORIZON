@@ -23,6 +23,44 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+
+  const loadUnreadCount = useCallback(() => {
+    notificationAPI.unreadCount().then(res => setUnreadCount(res.data?.count || 0)).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, 10000);
+    return () => clearInterval(interval);
+  }, [loadUnreadCount]);
+
+  const handleNotifOpen = (open) => {
+    setNotifOpen(open);
+    if (open) {
+      notificationAPI.list().then(res => setNotifications(res.data || [])).catch(() => {});
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    await notificationAPI.markAllRead().catch(() => {});
+    setUnreadCount(0);
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+  };
+
+  const handleNotifClick = async (notif) => {
+    if (!notif.is_read) {
+      await notificationAPI.markRead(notif.id).catch(() => {});
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, is_read: true } : n));
+    }
+    if (notif.venue_id) {
+      setNotifOpen(false);
+      navigate(`/venues/${notif.venue_id}`);
+    }
+  };
 
   const links = {
     player: [
