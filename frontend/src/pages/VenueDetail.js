@@ -276,30 +276,54 @@ export default function VenueDetail() {
                     const isLockedByMe = s.status === "locked_by_you";
                     const isBooked = s.status === "booked";
                     const canSelect = isAvailable || isLockedByMe;
+                    const slotKey = `${s.start_time}-${s.turf_number}`;
+                    const isSubscribed = subscribedSlots.has(slotKey);
+                    const showNotify = isBooked || isOnHold;
                     return (
-                      <button key={i} disabled={!canSelect || locking}
-                        onClick={() => canSelect && handleSlotSelect(s)}
-                        data-testid={`slot-${s.start_time}-turf-${s.turf_number}`}
-                        className={`p-2.5 rounded-lg text-center transition-all border relative ${
-                          isBooked ? "bg-destructive/10 border-destructive/20 text-muted-foreground cursor-not-allowed opacity-50" :
-                          isOnHold ? "bg-amber-500/10 border-amber-500/30 text-amber-400 cursor-not-allowed" :
-                          isLockedByMe ? "bg-primary/20 border-primary text-primary ring-1 ring-primary/50" :
-                          isSelected ? "bg-primary/20 border-primary text-primary" :
-                          "glass-card hover:border-primary/30 cursor-pointer"
-                        }`}>
-                        {isOnHold && <Lock className="h-3 w-3 absolute top-1 right-1 text-amber-400" />}
-                        {isLockedByMe && <Lock className="h-3 w-3 absolute top-1 right-1 text-primary" />}
-                        <div className="text-xs font-bold">{s.start_time}</div>
-                        <div className="text-[10px] text-muted-foreground">{s.end_time}</div>
-                        <div className={`text-xs font-display font-bold mt-1 ${
-                          isBooked ? "text-muted-foreground" :
-                          isOnHold ? "text-amber-400" :
-                          isLockedByMe ? "text-primary" :
-                          isAvailable ? "text-primary" : "text-muted-foreground"
-                        }`}>
-                          {isBooked ? "Booked" : isOnHold ? "On Hold" : `\u20B9${s.price}`}
-                        </div>
-                      </button>
+                      <div key={i} className="relative">
+                        <button disabled={!canSelect || locking}
+                          onClick={() => canSelect && handleSlotSelect(s)}
+                          data-testid={`slot-${s.start_time}-turf-${s.turf_number}`}
+                          className={`w-full p-2.5 rounded-lg text-center transition-all border relative ${
+                            isBooked ? "bg-destructive/10 border-destructive/20 text-muted-foreground cursor-not-allowed" :
+                            isOnHold ? "bg-amber-500/10 border-amber-500/30 text-amber-400 cursor-not-allowed" :
+                            isLockedByMe ? "bg-primary/20 border-primary text-primary ring-1 ring-primary/50" :
+                            isSelected ? "bg-primary/20 border-primary text-primary" :
+                            "glass-card hover:border-primary/30 cursor-pointer"
+                          }`}>
+                          {isOnHold && <Lock className="h-3 w-3 absolute top-1 right-1 text-amber-400" />}
+                          {isLockedByMe && <Lock className="h-3 w-3 absolute top-1 right-1 text-primary" />}
+                          <div className="text-xs font-bold">{s.start_time}</div>
+                          <div className="text-[10px] text-muted-foreground">{s.end_time}</div>
+                          <div className={`text-xs font-display font-bold mt-1 ${
+                            isBooked ? "text-muted-foreground" :
+                            isOnHold ? "text-amber-400" :
+                            isLockedByMe ? "text-primary" :
+                            isAvailable ? "text-primary" : "text-muted-foreground"
+                          }`}>
+                            {isBooked ? "Booked" : isOnHold ? "On Hold" : `\u20B9${s.price}`}
+                          </div>
+                        </button>
+                        {showNotify && (
+                          <button
+                            onClick={(e) => handleNotifyMe(s, e)}
+                            disabled={subscribing === slotKey}
+                            data-testid={`notify-btn-${s.start_time}-turf-${s.turf_number}`}
+                            className={`w-full mt-1 flex items-center justify-center gap-1 py-1 rounded-md text-[10px] font-semibold transition-all ${
+                              isSubscribed
+                                ? "bg-primary/20 text-primary border border-primary/30 hover:bg-primary/10"
+                                : "bg-secondary/50 text-muted-foreground border border-border hover:text-foreground hover:border-primary/30"
+                            }`}>
+                            {subscribing === slotKey ? (
+                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                            ) : isSubscribed ? (
+                              <><BellOff className="h-2.5 w-2.5" /> Watching</>
+                            ) : (
+                              <><Bell className="h-2.5 w-2.5" /> Notify Me</>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
