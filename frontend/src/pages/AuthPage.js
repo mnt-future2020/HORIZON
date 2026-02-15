@@ -15,14 +15,22 @@ export default function AuthPage() {
   const { login, register } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [regData, setRegData] = useState({ name: "", email: "", password: "", role: "player", phone: "" });
+  const [regData, setRegData] = useState({ name: "", email: "", password: "", role: "player", phone: "", business_name: "", gst_number: "" });
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(loginData.email, loginData.password);
-      toast.success("Welcome back!");
+      const res = await login(loginData.email, loginData.password);
+      if (res.user?.account_status === "pending") {
+        toast.info("Your account is pending admin approval. You'll be notified once approved.");
+      } else if (res.user?.account_status === "rejected") {
+        toast.error("Your account registration was not approved. Please contact support.");
+      } else if (res.user?.account_status === "suspended") {
+        toast.error("Your account has been suspended. Please contact support.");
+      } else {
+        toast.success("Welcome back!");
+      }
       navigate("/dashboard");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Login failed");
@@ -35,8 +43,12 @@ export default function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      await register(regData);
-      toast.success("Account created!");
+      const res = await register(regData);
+      if (res.user?.role === "venue_owner") {
+        toast.success("Registration submitted! Your account needs admin approval before you can manage venues.");
+      } else {
+        toast.success("Account created!");
+      }
       navigate("/dashboard");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Registration failed");
