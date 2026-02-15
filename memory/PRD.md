@@ -44,6 +44,17 @@ Build "Horizon" - a comprehensive Sports Facility Operating System that serves a
 - [x] Auto-seeding demo data on first startup
 - [x] Dark "Midnight Stadium" theme
 
+### Phase 1.1 - Redis Slot Locking (Feb 2026)
+- [x] Redis-based distributed slot locking (SETNX atomic lock acquisition)
+- [x] Soft lock (10 min TTL) on slot selection, hard lock (30 min) on payment initiation
+- [x] Concurrency protection: second user gets 409 "on hold" when trying to lock same slot
+- [x] Slots API returns lock-aware statuses: available, booked, on_hold, locked_by_you
+- [x] Lock released automatically on: booking confirmation, dialog close, TTL expiry, cancel
+- [x] Frontend shows color-coded slot states (green=your lock, amber=on hold, red=booked)
+- [x] Lock status banner in booking dialog
+- [x] Auto-refresh slots every 15s for real-time lock visibility
+- [x] Lock management endpoints (lock, unlock, extend, my-locks, status)
+
 ### MOCKED
 - [x] Razorpay payments (full UX simulated, ready for real integration)
 
