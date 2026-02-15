@@ -44,6 +44,20 @@ export default function VenueDetail() {
 
   useEffect(() => { loadSlots(); }, [loadSlots]);
 
+  // Load user's notification subscriptions for this venue/date
+  const loadSubscriptions = useCallback(() => {
+    if (!id || !selectedDate) return;
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    notificationAPI.mySubscriptions({ venue_id: id, date: dateStr })
+      .then(res => {
+        const keys = new Set((res.data || []).map(s => `${s.start_time}-${s.turf_number}`));
+        setSubscribedSlots(keys);
+      })
+      .catch(() => setSubscribedSlots(new Set()));
+  }, [id, selectedDate]);
+
+  useEffect(() => { loadSubscriptions(); }, [loadSubscriptions]);
+
   // Auto-refresh slots every 15s to see lock changes from other users
   useEffect(() => {
     const interval = setInterval(loadSlots, 15000);
