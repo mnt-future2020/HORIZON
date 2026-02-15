@@ -177,6 +177,48 @@ export default function Navbar() {
             <span className="text-[10px] font-semibold">{l.label}</span>
           </Link>
         ))}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button className="relative flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg text-muted-foreground active:text-foreground active:bg-secondary transition-colors"
+              data-testid="mobile-notification-bell">
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-2 h-3.5 min-w-[14px] px-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+              <span className="text-[10px] font-semibold">Alerts</span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="center" side="top" className="w-80 p-0 mb-2">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <span className="text-sm font-bold">Notifications</span>
+              {unreadCount > 0 && (
+                <button onClick={handleMarkAllRead} className="text-[10px] text-primary hover:underline flex items-center gap-1">
+                  <CheckCheck className="h-3 w-3" /> Mark all read
+                </button>
+              )}
+            </div>
+            <div className="max-h-56 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="p-6 text-center text-muted-foreground text-xs">No notifications yet</div>
+              ) : (
+                notifications.map(n => (
+                  <button key={n.id} onClick={() => handleNotifClick(n)}
+                    className={`w-full text-left px-4 py-3 border-b border-border/50 hover:bg-secondary/50 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}>
+                    <div className="flex items-start gap-2">
+                      {!n.is_read && <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />}
+                      <div className={!n.is_read ? "" : "ml-4"}>
+                        <div className="text-xs font-semibold">{n.title}</div>
+                        <div className="text-[11px] text-muted-foreground mt-0.5">{n.message}</div>
+                      </div>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
         <Link to="/profile" data-testid="mobile-nav-profile"
           className={`flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg transition-colors ${
             path === "/profile"
