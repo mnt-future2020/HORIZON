@@ -68,6 +68,16 @@ async def get_current_user(request: Request):
     except JWTError:
         raise HTTPException(401, "Invalid token")
 
+async def get_optional_user(request: Request):
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    try:
+        payload = jwt.decode(auth[7:], JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        return await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
+    except Exception:
+        return None
+
 
 # ── Pydantic Models ──
 class RegisterInput(BaseModel):
