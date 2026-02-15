@@ -1,368 +1,503 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Horizon Sports Facility OS
-Tests all endpoints with demo credentials
+Horizon Sports Redis Slot Locking Tests
+Tests the Redis-based slot locking system for high-concurrency booking protection.
 """
 
 import requests
 import sys
+import time
 import json
 from datetime import datetime, timedelta
 
-class HorizonAPITester:
-    def __init__(self, base_url="https://iot-venue-hub.preview.emergentagent.com/api"):
-        self.base_url = base_url
-        self.token = None
-        self.user = None
+# Use the public endpoint from the environment file
+BASE_URL = "https://iot-venue-hub.preview.emergentagent.com/api"
+
+class RedisSlotLockingTester:
+    def __init__(self):
+        self.base_url = BASE_URL
+        self.player_token = None
+        self.owner_token = None
+        self.session1 = requests.Session()
+        self.session2 = requests.Session()
         self.tests_run = 0
         self.tests_passed = 0
-        self.test_results = []
-        
-        # Demo credentials
-        self.demo_credentials = {
-            "player": {"email": "demo@player.com", "password": "demo123"},
-            "owner": {"email": "demo@owner.com", "password": "demo123"},
-            "coach": {"email": "demo@coach.com", "password": "demo123"}
-        }
+        self.results = []
+        self.venue_id = None
+        self.test_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
 
-    def log_test(self, name, success, details="", response_data=None):
+    def log_result(self, test_name, passed, details=""):
         """Log test result"""
         self.tests_run += 1
-        if success:
+        if passed:
             self.tests_passed += 1
-            print(f"✅ {name}")
+            print(f"✅ {test_name}")
         else:
-            print(f"❌ {name} - {details}")
+            print(f"❌ {test_name} - {details}")
         
-        self.test_results.append({
-            "name": name,
-            "success": success,
-            "details": details,
-            "response": str(response_data)[:200] if response_data else ""
+        self.results.append({
+            "test": test_name,
+            "passed": passed,
+            "details": details
         })
 
-    def make_request(self, method, endpoint, data=None, auth_required=True):
-        """Make HTTP request with proper headers"""
-        url = f"{self.base_url}/{endpoint}"
-        headers = {'Content-Type': 'application/json'}
+    def login_users(self):
+        """Login demo users to get tokens"""
+        print("🔑 Logging in demo users...")
         
-        if auth_required and self.token:
-            headers['Authorization'] = f'Bearer {self.token}'
-        
+        # Login player
         try:
-            if method == 'GET':
-                response = requests.get(url, headers=headers)
-            elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers)
-            elif method == 'PUT':
-                response = requests.put(url, json=data, headers=headers)
-            elif method == 'DELETE':
-                response = requests.delete(url, headers=headers)
-            
-            return response
+            response = self.session1.post(f"{self.base_url}/auth/login", json={
+                "email": "demo@player.com",
+                "password": "demo123"
+            })
+            if response.status_code == 200:
+                self.player_token = response.json()["token"]
+                self.session1.headers.update({"Authorization": f"Bearer {self.player_token}"})
+                print("✅ Player login successful")
+            else:
+                print(f"❌ Player login failed: {response.status_code}")
+                return False
         except Exception as e:
-            return None
+            print(f"❌ Player login error: {e}")
+            return False
 
-    def test_auth(self):
-        """Test authentication endpoints"""
-        print("\n🔐 Testing Authentication...")
-        
-        # Test login for all three roles
-        for role, creds in self.demo_credentials.items():
-            response = self.make_request('POST', 'auth/login', creds, auth_required=False)
-            if response and response.status_code == 200:
+        # Login owner (different user for concurrent testing)
+        try:
+            response = self.session2.post(f"{self.base_url}/auth/login", json={
+                "email": "demo@owner.com",
+                "password": "demo123"
+            })
+            if response.status_code == 200:
+                self.owner_token = response.json()["token"]
+                self.session2.headers.update({"Authorization": f"Bearer {self.owner_token}"})
+                print("✅ Owner login successful")
+            else:
+                print(f"❌ Owner login failed: {response.status_code}")
+                return False
+        except Exception as e:
+            print(f"❌ Owner login error: {e}")
+            return False
+
+        return True
+
+    def get_venue_id(self):
+        """Get a venue ID for testing"""
+        try:
+            response = self.session1.get(f"{self.base_url}/venues")
+            if response.status_code == 200:
+                venues = response.json()
+                if venues:
+                    self.venue_id = venues[0]["id"]
+                    print(f"✅ Using venue: {venues[0]['name']} (ID: {self.venue_id})")
+                    return True
+            print("❌ No venues found")
+            return False
+        except Exception as e:
+            print(f"❌ Error getting venues: {e}")
+            return False
+
+    def test_slot_lock_acquire_soft(self):
+        """Test POST /api/slots/lock - Acquire soft lock (10 min TTL, SETNX atomicity)"""
+        lock_data = {
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "10:00",
+            "turf_number": 1
+        }
+
+        try:
+            response = self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
+            if response.status_code == 200:
                 data = response.json()
-                if role == "player":  # Use player for subsequent tests
-                    self.token = data.get('token')
-                    self.user = data.get('user')
-                self.log_test(f"Login as {role}", True, f"Token received, user: {data.get('user', {}).get('name', 'Unknown')}")
-            else:
-                error = response.json().get('detail') if response else "Network error"
-                self.log_test(f"Login as {role}", False, f"Status: {response.status_code if response else 'ERROR'}, Error: {error}")
-
-        # Test get me endpoint
-        if self.token:
-            response = self.make_request('GET', 'auth/me')
-            if response and response.status_code == 200:
-                self.log_test("Get current user", True, f"User: {response.json().get('name')}")
-            else:
-                self.log_test("Get current user", False, f"Status: {response.status_code if response else 'ERROR'}")
-
-    def test_venues(self):
-        """Test venue endpoints"""
-        print("\n🏟️ Testing Venues...")
-        
-        # List venues
-        response = self.make_request('GET', 'venues')
-        if response and response.status_code == 200:
-            venues = response.json()
-            self.venues = venues
-            self.log_test("List venues", True, f"Found {len(venues)} venues")
-            
-            if venues:
-                # Test individual venue details
-                venue_id = venues[0]['id']
-                response = self.make_request('GET', f'venues/{venue_id}')
-                if response and response.status_code == 200:
-                    venue_data = response.json()
-                    self.log_test("Get venue details", True, f"Venue: {venue_data.get('name')}")
-                    
-                    # Test venue slots
-                    tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-                    response = self.make_request('GET', f'venues/{venue_id}/slots?date={tomorrow}')
-                    if response and response.status_code == 200:
-                        slots_data = response.json()
-                        slots = slots_data.get('slots', [])
-                        self.log_test("Get venue slots", True, f"Found {len(slots)} slots for {tomorrow}")
-                        self.test_venue_id = venue_id
-                        self.test_slots = slots
-                    else:
-                        self.log_test("Get venue slots", False, f"Status: {response.status_code}")
+                if (data.get("locked") and 
+                    data.get("lock_type") == "soft" and 
+                    data.get("ttl", 0) > 0):
+                    self.log_result("Acquire soft lock", True, f"TTL: {data.get('ttl')}s")
+                    return lock_data
                 else:
-                    self.log_test("Get venue details", False, f"Status: {response.status_code}")
-        else:
-            self.log_test("List venues", False, f"Status: {response.status_code if response else 'ERROR'}")
+                    self.log_result("Acquire soft lock", False, f"Invalid response: {data}")
+            else:
+                self.log_result("Acquire soft lock", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Acquire soft lock", False, str(e))
+        return None
 
-    def test_bookings(self):
-        """Test booking endpoints"""
-        print("\n📅 Testing Bookings...")
+    def test_slot_lock_refresh_same_user(self, lock_data):
+        """Test POST /api/slots/lock with same user - Should refresh existing lock"""
+        try:
+            response = self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
+            if response.status_code == 200:
+                data = response.json()
+                if (data.get("locked") and 
+                    "refreshed" in data.get("message", "").lower()):
+                    self.log_result("Refresh lock (same user)", True)
+                    return True
+                else:
+                    self.log_result("Refresh lock (same user)", False, f"Response: {data}")
+            else:
+                self.log_result("Refresh lock (same user)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Refresh lock (same user)", False, str(e))
+        return False
+
+    def test_slot_lock_conflict_different_user(self, lock_data):
+        """Test POST /api/slots/lock with different user - Should return 409 'on hold'"""
+        try:
+            response = self.session2.post(f"{self.base_url}/slots/lock", json=lock_data)
+            if response.status_code == 409:
+                data = response.json()
+                message = data.get("detail", "").lower()
+                if "hold" in message or "another user" in message:
+                    self.log_result("Lock conflict (different user)", True, "409 - On hold")
+                    return True
+                else:
+                    self.log_result("Lock conflict (different user)", False, f"Wrong message: {data}")
+            else:
+                self.log_result("Lock conflict (different user)", False, f"Expected 409, got {response.status_code}")
+        except Exception as e:
+            self.log_result("Lock conflict (different user)", False, str(e))
+        return False
+
+    def test_slot_unlock_owner_only(self, lock_data):
+        """Test POST /api/slots/unlock - Release lock (only owner can release)"""
+        # Test unauthorized unlock first
+        try:
+            response = self.session2.post(f"{self.base_url}/slots/unlock", json=lock_data)
+            if response.status_code == 403:
+                self.log_result("Unlock (unauthorized)", True, "403 - Permission denied")
+            else:
+                self.log_result("Unlock (unauthorized)", False, f"Expected 403, got {response.status_code}")
+        except Exception as e:
+            self.log_result("Unlock (unauthorized)", False, str(e))
+
+        # Test authorized unlock
+        try:
+            response = self.session1.post(f"{self.base_url}/slots/unlock", json=lock_data)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("released"):
+                    self.log_result("Unlock (authorized)", True)
+                    return True
+                else:
+                    self.log_result("Unlock (authorized)", False, f"Response: {data}")
+            else:
+                self.log_result("Unlock (authorized)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Unlock (authorized)", False, str(e))
+        return False
+
+    def test_slot_extend_lock(self):
+        """Test POST /api/slots/extend-lock - Extend to 30 min hard lock"""
+        # First acquire a soft lock
+        lock_data = {
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "11:00",
+            "turf_number": 1
+        }
+
+        # Acquire lock
+        response = self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
+        if response.status_code != 200:
+            self.log_result("Extend lock setup", False, "Could not acquire initial lock")
+            return
+
+        # Now extend it
+        try:
+            response = self.session1.post(f"{self.base_url}/slots/extend-lock", json=lock_data)
+            if response.status_code == 200:
+                data = response.json()
+                if (data.get("locked") and 
+                    data.get("lock_type") == "hard" and 
+                    data.get("ttl", 0) > 600):  # Should be around 1800s
+                    self.log_result("Extend lock to hard", True, f"TTL: {data.get('ttl')}s")
+                else:
+                    self.log_result("Extend lock to hard", False, f"Response: {data}")
+            else:
+                self.log_result("Extend lock to hard", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Extend lock to hard", False, str(e))
+
+        # Cleanup
+        self.session1.post(f"{self.base_url}/slots/unlock", json=lock_data)
+
+    def test_my_locks(self):
+        """Test GET /api/slots/my-locks - List user's active locks"""
+        # First acquire a lock
+        lock_data = {
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "12:00",
+            "turf_number": 1
+        }
+
+        self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
+
+        try:
+            response = self.session1.get(f"{self.base_url}/slots/my-locks")
+            if response.status_code == 200:
+                data = response.json()
+                locks = data.get("locks", [])
+                found_lock = False
+                for lock in locks:
+                    if (lock.get("venue_id") == self.venue_id and 
+                        lock.get("start_time") == "12:00"):
+                        found_lock = True
+                        break
+                
+                if found_lock:
+                    self.log_result("My locks endpoint", True, f"Found {len(locks)} locks")
+                else:
+                    self.log_result("My locks endpoint", False, f"Lock not found in response: {locks}")
+            else:
+                self.log_result("My locks endpoint", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("My locks endpoint", False, str(e))
+
+        # Cleanup
+        self.session1.post(f"{self.base_url}/slots/unlock", json=lock_data)
+
+    def test_lock_status(self):
+        """Test GET /api/slots/lock-status - Check specific slot lock status"""
+        lock_data = {
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "13:00",
+            "turf_number": 1
+        }
+
+        # Test unlocked status
+        try:
+            response = self.session1.get(f"{self.base_url}/slots/lock-status", params=lock_data)
+            if response.status_code == 200:
+                data = response.json()
+                if not data.get("locked"):
+                    self.log_result("Lock status (unlocked)", True)
+                else:
+                    self.log_result("Lock status (unlocked)", False, f"Expected unlocked: {data}")
+            else:
+                self.log_result("Lock status (unlocked)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Lock status (unlocked)", False, str(e))
+
+        # Acquire lock and test locked status
+        self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
+
+        try:
+            response = self.session1.get(f"{self.base_url}/slots/lock-status", params=lock_data)
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("locked") and data.get("locked_by"):
+                    self.log_result("Lock status (locked)", True, f"Locked by: {data.get('locked_by')}")
+                else:
+                    self.log_result("Lock status (locked)", False, f"Expected locked: {data}")
+            else:
+                self.log_result("Lock status (locked)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Lock status (locked)", False, str(e))
+
+        # Cleanup
+        self.session1.post(f"{self.base_url}/slots/unlock", json=lock_data)
+
+    def test_slots_endpoint_with_locks(self):
+        """Test GET /api/venues/{id}/slots - Returns lock status for slots"""
+        # First acquire a lock
+        lock_data = {
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "14:00",
+            "turf_number": 1
+        }
+
+        self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
+
+        # Test as lock owner (should see 'locked_by_you')
+        try:
+            response = self.session1.get(f"{self.base_url}/venues/{self.venue_id}/slots", 
+                                       params={"date": self.test_date})
+            if response.status_code == 200:
+                data = response.json()
+                slots = data.get("slots", [])
+                found_locked_slot = False
+                for slot in slots:
+                    if (slot.get("start_time") == "14:00" and 
+                        slot.get("turf_number") == 1):
+                        if slot.get("status") == "locked_by_you":
+                            found_locked_slot = True
+                            break
+                
+                if found_locked_slot:
+                    self.log_result("Slots endpoint (own lock)", True)
+                else:
+                    self.log_result("Slots endpoint (own lock)", False, "Own lock not detected")
+            else:
+                self.log_result("Slots endpoint (own lock)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Slots endpoint (own lock)", False, str(e))
+
+        # Test as different user (should see 'on_hold')
+        try:
+            response = self.session2.get(f"{self.base_url}/venues/{self.venue_id}/slots", 
+                                       params={"date": self.test_date})
+            if response.status_code == 200:
+                data = response.json()
+                slots = data.get("slots", [])
+                found_hold_slot = False
+                for slot in slots:
+                    if (slot.get("start_time") == "14:00" and 
+                        slot.get("turf_number") == 1):
+                        if slot.get("status") == "on_hold":
+                            found_hold_slot = True
+                            break
+                
+                if found_hold_slot:
+                    self.log_result("Slots endpoint (other's lock)", True)
+                else:
+                    self.log_result("Slots endpoint (other's lock)", False, "Other's lock not detected as 'on_hold'")
+            else:
+                self.log_result("Slots endpoint (other's lock)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Slots endpoint (other's lock)", False, str(e))
+
+        # Cleanup
+        self.session1.post(f"{self.base_url}/slots/unlock", json=lock_data)
+
+    def test_booking_with_locks(self):
+        """Test booking behavior with Redis locks"""
+        lock_data = {
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "15:00",
+            "turf_number": 1
+        }
         
-        if not hasattr(self, 'test_venue_id') or not hasattr(self, 'test_slots'):
-            self.log_test("Create booking", False, "No venue/slots data available")
-            return
-
-        # Find an available slot
-        available_slot = None
-        for slot in self.test_slots:
-            if slot.get('status') == 'available':
-                available_slot = slot
-                break
-
-        if not available_slot:
-            self.log_test("Create booking", False, "No available slots found")
-            return
-
-        # Test full payment booking
         booking_data = {
-            "venue_id": self.test_venue_id,
-            "date": (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d"),
-            "start_time": available_slot['start_time'],
-            "end_time": available_slot['end_time'],
-            "turf_number": available_slot['turf_number'],
+            "venue_id": self.venue_id,
+            "date": self.test_date,
+            "start_time": "15:00",
+            "end_time": "16:00",
+            "turf_number": 1,
             "sport": "football",
             "payment_mode": "full"
         }
 
-        response = self.make_request('POST', 'bookings', booking_data)
-        if response and response.status_code == 200:
-            booking = response.json()
-            self.test_booking_id = booking['id']
-            self.log_test("Create booking (full payment)", True, f"Booking ID: {booking['id']}, Status: {booking['status']}")
-            
-            # Test split payment booking (different slot)
-            if len(self.test_slots) > 1:
-                available_slot2 = None
-                for slot in self.test_slots:
-                    if slot.get('status') == 'available' and slot != available_slot:
-                        available_slot2 = slot
-                        break
-                
-                if available_slot2:
-                    split_booking_data = {
-                        **booking_data,
-                        "start_time": available_slot2['start_time'],
-                        "end_time": available_slot2['end_time'],
-                        "turf_number": available_slot2['turf_number'],
-                        "payment_mode": "split",
-                        "split_count": 10
-                    }
-                    
-                    response = self.make_request('POST', 'bookings', split_booking_data)
-                    if response and response.status_code == 200:
-                        split_booking = response.json()
-                        self.test_split_booking_id = split_booking['id']
-                        self.split_token = split_booking.get('split_config', {}).get('split_token')
-                        self.log_test("Create booking (split payment)", True, f"Split token: {self.split_token}")
-                    else:
-                        self.log_test("Create booking (split payment)", False, f"Status: {response.status_code}")
-
-        else:
-            error = response.json().get('detail') if response else "Network error"
-            self.log_test("Create booking (full payment)", False, f"Status: {response.status_code if response else 'ERROR'}, Error: {error}")
-
-        # Test list bookings
-        response = self.make_request('GET', 'bookings')
-        if response and response.status_code == 200:
-            bookings = response.json()
-            self.log_test("List bookings", True, f"Found {len(bookings)} bookings")
-        else:
-            self.log_test("List bookings", False, f"Status: {response.status_code}")
-
-    def test_split_payment(self):
-        """Test split payment endpoints"""
-        print("\n💰 Testing Split Payments...")
+        # Test 1: Try booking slot locked by another user (should fail with 409)
+        self.session1.post(f"{self.base_url}/slots/lock", json=lock_data)
         
-        if not hasattr(self, 'split_token') or not self.split_token:
-            self.log_test("Split payment", False, "No split token available")
+        try:
+            response = self.session2.post(f"{self.base_url}/bookings", json=booking_data)
+            if response.status_code == 409:
+                self.log_result("Booking (locked by another)", True, "409 - Slot locked by another")
+            else:
+                self.log_result("Booking (locked by another)", False, f"Expected 409, got {response.status_code}")
+        except Exception as e:
+            self.log_result("Booking (locked by another)", False, str(e))
+
+        # Test 2: Book slot locked by same user (should succeed and release lock)
+        try:
+            response = self.session1.post(f"{self.base_url}/bookings", json=booking_data)
+            if response.status_code == 200:
+                booking = response.json()
+                if booking.get("status") in ["confirmed", "pending"]:
+                    self.log_result("Booking (own lock)", True, f"Status: {booking.get('status')}")
+                    
+                    # Verify lock is released after booking
+                    lock_status = self.session1.get(f"{self.base_url}/slots/lock-status", params=lock_data)
+                    if lock_status.status_code == 200 and not lock_status.json().get("locked"):
+                        self.log_result("Lock released after booking", True)
+                    else:
+                        self.log_result("Lock released after booking", False, "Lock still present")
+                        
+                    return booking.get("id")
+                else:
+                    self.log_result("Booking (own lock)", False, f"Invalid status: {booking}")
+            else:
+                self.log_result("Booking (own lock)", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Booking (own lock)", False, str(e))
+
+        return None
+
+    def test_booking_cancellation_lock_release(self, booking_id):
+        """Test POST /api/bookings/{id}/cancel - Releases Redis lock on cancellation"""
+        if not booking_id:
+            self.log_result("Booking cancellation setup", False, "No booking ID provided")
             return
 
-        # Test get split info
-        response = self.make_request('GET', f'split/{self.split_token}', auth_required=False)
-        if response and response.status_code == 200:
-            split_info = response.json()
-            self.log_test("Get split payment info", True, f"Remaining: {split_info.get('remaining')} payments")
-            
-            # Test making a split payment
-            pay_data = {"payer_name": "Test User"}
-            response = self.make_request('POST', f'split/{self.split_token}/pay', pay_data, auth_required=False)
-            if response and response.status_code == 200:
-                payment_result = response.json()
-                self.log_test("Make split payment", True, "Payment successful (MOCKED)")
+        try:
+            response = self.session1.post(f"{self.base_url}/bookings/{booking_id}/cancel")
+            if response.status_code == 200:
+                self.log_result("Booking cancellation", True)
             else:
-                self.log_test("Make split payment", False, f"Status: {response.status_code}")
-        else:
-            self.log_test("Get split payment info", False, f"Status: {response.status_code}")
+                self.log_result("Booking cancellation", False, f"Status: {response.status_code}")
+        except Exception as e:
+            self.log_result("Booking cancellation", False, str(e))
 
-    def test_matchmaking(self):
-        """Test matchmaking endpoints"""
-        print("\n⚔️ Testing Matchmaking...")
-        
-        # List matches
-        response = self.make_request('GET', 'matchmaking')
-        if response and response.status_code == 200:
-            matches = response.json()
-            self.log_test("List matches", True, f"Found {len(matches)} matches")
-            
-            # Try to join a match
-            if matches:
-                match_id = matches[0]['id']
-                response = self.make_request('POST', f'matchmaking/{match_id}/join')
-                if response and response.status_code == 200:
-                    self.log_test("Join match", True, "Successfully joined match")
-                else:
-                    error = response.json().get('detail') if response else "Unknown error"
-                    self.log_test("Join match", False, f"Error: {error}")
-            
-        else:
-            self.log_test("List matches", False, f"Status: {response.status_code}")
+    def run_backend_tests(self):
+        """Run all backend Redis slot locking tests"""
+        print("🚀 Starting Redis Slot Locking Backend Tests")
+        print("=" * 60)
 
-        # Create a match
-        tomorrow = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
-        match_data = {
-            "sport": "football",
-            "date": tomorrow,
-            "time": "19:00",
-            "venue_name": "Test Venue",
-            "players_needed": 10,
-            "min_skill": 1000,
-            "max_skill": 2000,
-            "description": "Test match from API test"
-        }
-        
-        response = self.make_request('POST', 'matchmaking', match_data)
-        if response and response.status_code == 200:
-            match = response.json()
-            self.log_test("Create match", True, f"Match ID: {match['id']}")
-        else:
-            error = response.json().get('detail') if response else "Unknown error"
-            self.log_test("Create match", False, f"Error: {error}")
+        if not self.login_users():
+            return False
 
-    def test_mercenary(self):
-        """Test mercenary endpoints"""
-        print("\n🎯 Testing Mercenary...")
-        
-        # List mercenary posts
-        response = self.make_request('GET', 'mercenary')
-        if response and response.status_code == 200:
-            posts = response.json()
-            self.log_test("List mercenary posts", True, f"Found {len(posts)} posts")
-            
-            # Try to apply to a post
-            if posts:
-                post_id = posts[0]['id']
-                response = self.make_request('POST', f'mercenary/{post_id}/apply')
-                if response and response.status_code == 200:
-                    self.log_test("Apply to mercenary", True, "Successfully applied")
-                else:
-                    error = response.json().get('detail') if response else "Unknown error"
-                    self.log_test("Apply to mercenary", False, f"Error: {error}")
-        else:
-            self.log_test("List mercenary posts", False, f"Status: {response.status_code}")
+        if not self.get_venue_id():
+            return False
 
-        # Create mercenary post
-        tomorrow = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
-        merc_data = {
-            "sport": "football",
-            "venue_name": "Test Venue",
-            "date": tomorrow,
-            "time": "20:00",
-            "position_needed": "Goalkeeper",
-            "amount_per_player": 200,
-            "spots_available": 1
-        }
-        
-        response = self.make_request('POST', 'mercenary', merc_data)
-        if response and response.status_code == 200:
-            post = response.json()
-            self.log_test("Create mercenary post", True, f"Post ID: {post['id']}")
-        else:
-            error = response.json().get('detail') if response else "Unknown error"
-            self.log_test("Create mercenary post", False, f"Error: {error}")
+        print(f"\n📅 Testing with date: {self.test_date}")
+        print(f"🏟️  Testing with venue: {self.venue_id}")
+        print("-" * 40)
 
-    def test_analytics(self):
-        """Test analytics endpoints"""
-        print("\n📊 Testing Analytics...")
-        
-        # Player analytics
-        response = self.make_request('GET', 'analytics/player')
-        if response and response.status_code == 200:
-            stats = response.json()
-            self.log_test("Player analytics", True, f"Games: {stats.get('total_games', 0)}, Rating: {stats.get('skill_rating', 0)}")
-        else:
-            self.log_test("Player analytics", False, f"Status: {response.status_code}")
+        # Core locking tests
+        lock_data = self.test_slot_lock_acquire_soft()
+        if lock_data:
+            self.test_slot_lock_refresh_same_user(lock_data)
+            self.test_slot_lock_conflict_different_user(lock_data)
+            self.test_slot_unlock_owner_only(lock_data)
 
-    def run_all_tests(self):
-        """Run all test suites"""
-        print("🚀 Starting Horizon Sports API Tests...")
-        print(f"Base URL: {self.base_url}")
-        
-        self.test_auth()
-        if self.token:
-            self.test_venues()
-            self.test_bookings()
-            self.test_split_payment()
-            self.test_matchmaking()
-            self.test_mercenary()
-            self.test_analytics()
-        else:
-            print("❌ Authentication failed - skipping other tests")
+        # Extended locking tests
+        self.test_slot_extend_lock()
+        self.test_my_locks()
+        self.test_lock_status()
+        self.test_slots_endpoint_with_locks()
 
-        # Print summary
-        print(f"\n📈 Test Summary:")
-        print(f"Tests run: {self.tests_run}")
-        print(f"Tests passed: {self.tests_passed}")
-        print(f"Success rate: {(self.tests_passed / self.tests_run * 100):.1f}%")
+        # Integration with booking system
+        booking_id = self.test_booking_with_locks()
+        if booking_id:
+            self.test_booking_cancellation_lock_release(booking_id)
+
+        return True
+
+    def print_summary(self):
+        """Print test summary"""
+        print("\n" + "=" * 60)
+        print(f"📊 Backend Test Summary: {self.tests_passed}/{self.tests_run} passed")
+        print(f"✅ Success Rate: {(self.tests_passed/self.tests_run*100):.1f}%")
         
-        # Return success if >80% tests pass
-        return self.tests_passed / self.tests_run > 0.8
+        if self.tests_passed < self.tests_run:
+            print("\n❌ Failed Tests:")
+            for result in self.results:
+                if not result["passed"]:
+                    print(f"   • {result['test']}: {result['details']}")
 
 def main():
-    tester = HorizonAPITester()
-    success = tester.run_all_tests()
+    tester = RedisSlotLockingTester()
     
-    # Save detailed results
-    with open('/tmp/backend_test_results.json', 'w') as f:
+    success = tester.run_backend_tests()
+    tester.print_summary()
+    
+    # Save results for integration with test report
+    with open("/tmp/redis_lock_test_results.json", "w") as f:
         json.dump({
-            'timestamp': datetime.now().isoformat(),
-            'summary': {
-                'tests_run': tester.tests_run,
-                'tests_passed': tester.tests_passed,
-                'success_rate': tester.tests_passed / tester.tests_run if tester.tests_run > 0 else 0
-            },
-            'results': tester.test_results
+            "tests_run": tester.tests_run,
+            "tests_passed": tester.tests_passed,
+            "success_rate": f"{(tester.tests_passed/tester.tests_run*100):.1f}%",
+            "results": tester.results
         }, f, indent=2)
     
-    return 0 if success else 1
+    return 0 if success and tester.tests_passed == tester.tests_run else 1
 
 if __name__ == "__main__":
-    sys.exit(main())
+    exit_code = main()
+    sys.exit(exit_code)
