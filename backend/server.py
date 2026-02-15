@@ -272,12 +272,16 @@ async def get_owner_venues(user=Depends(get_current_user)):
     return venues
 
 
-# ── Slot Routes ──
+# ── Slot Routes (with Redis Locking) ──
 @api_router.get("/venues/{venue_id}/slots")
-async def get_slots(venue_id: str, date: str):
+async def get_slots(venue_id: str, date: str, request: Request):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
     if not venue:
         raise HTTPException(404, "Venue not found")
+
+    # Get optional user for lock ownership check
+    current_user = await get_optional_user(request)
+    current_uid = current_user["id"] if current_user else None
 
     rules = await db.pricing_rules.find(
         {"venue_id": venue_id, "is_active": True}, {"_id": 0}
@@ -297,43 +301,222 @@ async def get_slots(venue_id: str, date: str):
 
     slots = []
     duration = venue.get("slot_duration_minutes", 60)
+
+    # Build all slot keys for batch Redis check
+    slot_defs = []
     for turf in range(1, venue.get("turfs", 1) + 1):
         for hour in range(venue.get("opening_hour", 6), venue.get("closing_hour", 23)):
             start = f"{hour:02d}:00"
             end_h = hour + (duration // 60)
             end = f"{end_h:02d}:00"
-            is_booked = f"{start}-{turf}" in booked_set
+            slot_defs.append((start, end, turf))
 
-            price = venue.get("base_price", 2000)
-            for rule in rules:
-                cond = rule.get("conditions", {})
-                act = rule.get("action", {})
-                match = True
-                if "days" in cond and dow not in cond["days"]:
+    # Batch check Redis locks via pipeline
+    lock_map = {}
+    if redis_client:
+        try:
+            pipe = redis_client.pipeline()
+            for start, end, turf in slot_defs:
+                pipe.get(lock_key(venue_id, date, start, turf))
+            results = await pipe.execute()
+            for i, (start, end, turf) in enumerate(slot_defs):
+                if results[i]:
+                    lock_map[f"{start}-{turf}"] = results[i].decode() if isinstance(results[i], bytes) else results[i]
+        except Exception as e:
+            logger.warning(f"Redis lock check failed: {e}")
+
+    for start, end, turf in slot_defs:
+        is_booked = f"{start}-{turf}" in booked_set
+        slot_lock_key = f"{start}-{turf}"
+        locked_by = lock_map.get(slot_lock_key)
+
+        # Determine slot status
+        if is_booked:
+            status = "booked"
+        elif locked_by and locked_by == current_uid:
+            status = "locked_by_you"
+        elif locked_by:
+            status = "on_hold"
+        else:
+            status = "available"
+
+        # Calculate price
+        price = venue.get("base_price", 2000)
+        for rule in rules:
+            cond = rule.get("conditions", {})
+            act = rule.get("action", {})
+            match = True
+            if "days" in cond and dow not in cond["days"]:
+                match = False
+            if "time_range" in cond:
+                tr = cond["time_range"]
+                if start < tr.get("start", "00:00") or start >= tr.get("end", "23:59"):
                     match = False
-                if "time_range" in cond:
-                    tr = cond["time_range"]
-                    if start < tr.get("start", "00:00") or start >= tr.get("end", "23:59"):
-                        match = False
-                if match:
-                    if act.get("type") == "multiplier":
-                        price = int(price * act.get("value", 1))
-                    elif act.get("type") == "discount":
-                        price = int(price * (1 - act.get("value", 0)))
+            if match:
+                if act.get("type") == "multiplier":
+                    price = int(price * act.get("value", 1))
+                elif act.get("type") == "discount":
+                    price = int(price * (1 - act.get("value", 0)))
 
-            slots.append({
-                "start_time": start, "end_time": end, "turf_number": turf,
-                "price": price, "status": "booked" if is_booked else "available"
-            })
+        slots.append({
+            "start_time": start, "end_time": end, "turf_number": turf,
+            "price": price, "status": status,
+            "locked_by": locked_by if locked_by and locked_by != current_uid else None,
+        })
     return {"venue_id": venue_id, "date": date, "slots": slots}
 
 
-# ── Booking Routes ──
+# ── Slot Lock Routes ──
+class SlotLockInput(BaseModel):
+    venue_id: str
+    date: str
+    start_time: str
+    turf_number: int = 1
+
+@api_router.post("/slots/lock")
+async def acquire_slot_lock(input: SlotLockInput, user=Depends(get_current_user)):
+    """Acquire a soft lock (10 min) on a slot. Uses Redis SETNX for atomicity."""
+    if not redis_client:
+        raise HTTPException(503, "Locking service unavailable")
+
+    key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
+
+    # Check if slot is already booked in DB
+    existing = await db.bookings.find_one({
+        "venue_id": input.venue_id, "date": input.date,
+        "start_time": input.start_time, "turf_number": input.turf_number,
+        "status": {"$in": ["confirmed", "pending"]}
+    })
+    if existing:
+        raise HTTPException(409, "Slot already booked")
+
+    # Atomic lock: SET key value NX EX ttl
+    acquired = await redis_client.set(key, user["id"], nx=True, ex=SOFT_LOCK_TTL)
+    if not acquired:
+        # Check if we already own the lock
+        current = await redis_client.get(key)
+        current_val = current.decode() if isinstance(current, bytes) else current
+        if current_val == user["id"]:
+            # Refresh our own lock
+            await redis_client.expire(key, SOFT_LOCK_TTL)
+            ttl = await redis_client.ttl(key)
+            return {
+                "locked": True, "lock_key": key, "ttl": ttl,
+                "lock_type": "soft", "message": "Lock refreshed"
+            }
+        raise HTTPException(409, "Slot is currently on hold by another user")
+
+    ttl = await redis_client.ttl(key)
+    logger.info(f"Lock acquired: {key} by {user['id']} (TTL: {ttl}s)")
+    return {
+        "locked": True, "lock_key": key, "ttl": ttl,
+        "lock_type": "soft", "message": "Slot locked for 10 minutes"
+    }
+
+@api_router.post("/slots/unlock")
+async def release_slot_lock(input: SlotLockInput, user=Depends(get_current_user)):
+    """Release a lock. Only the lock owner can release it."""
+    if not redis_client:
+        raise HTTPException(503, "Locking service unavailable")
+
+    key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
+    current = await redis_client.get(key)
+    if not current:
+        return {"released": True, "message": "No lock found"}
+
+    current_val = current.decode() if isinstance(current, bytes) else current
+    if current_val != user["id"]:
+        raise HTTPException(403, "You don't own this lock")
+
+    await redis_client.delete(key)
+    logger.info(f"Lock released: {key} by {user['id']}")
+    return {"released": True, "message": "Lock released"}
+
+@api_router.post("/slots/extend-lock")
+async def extend_slot_lock(input: SlotLockInput, user=Depends(get_current_user)):
+    """Extend a soft lock to a hard lock (30 min) for payment processing."""
+    if not redis_client:
+        raise HTTPException(503, "Locking service unavailable")
+
+    key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
+    current = await redis_client.get(key)
+    if not current:
+        raise HTTPException(404, "No active lock found")
+
+    current_val = current.decode() if isinstance(current, bytes) else current
+    if current_val != user["id"]:
+        raise HTTPException(403, "You don't own this lock")
+
+    await redis_client.expire(key, HARD_LOCK_TTL)
+    ttl = await redis_client.ttl(key)
+    logger.info(f"Lock extended to hard: {key} by {user['id']} (TTL: {ttl}s)")
+    return {
+        "locked": True, "lock_key": key, "ttl": ttl,
+        "lock_type": "hard", "message": "Lock extended for payment processing (30 min)"
+    }
+
+@api_router.get("/slots/my-locks")
+async def get_my_locks(user=Depends(get_current_user)):
+    """Get all active locks held by the current user."""
+    if not redis_client:
+        return {"locks": []}
+
+    try:
+        keys = []
+        async for key in redis_client.scan_iter(match="lock:*"):
+            key_str = key.decode() if isinstance(key, bytes) else key
+            val = await redis_client.get(key)
+            val_str = val.decode() if isinstance(val, bytes) else val
+            if val_str == user["id"]:
+                ttl = await redis_client.ttl(key)
+                parts = key_str.split(":")
+                if len(parts) == 5:
+                    keys.append({
+                        "lock_key": key_str,
+                        "venue_id": parts[1], "date": parts[2],
+                        "start_time": parts[3], "turf_number": int(parts[4]),
+                        "ttl": ttl, "lock_type": "hard" if ttl > SOFT_LOCK_TTL else "soft"
+                    })
+        return {"locks": keys}
+    except Exception as e:
+        logger.warning(f"Failed to get locks: {e}")
+        return {"locks": []}
+
+@api_router.get("/slots/lock-status")
+async def get_lock_status(venue_id: str, date: str, start_time: str, turf_number: int = 1):
+    """Check lock status of a specific slot."""
+    if not redis_client:
+        return {"locked": False}
+
+    key = lock_key(venue_id, date, start_time, turf_number)
+    val = await redis_client.get(key)
+    if not val:
+        return {"locked": False, "lock_key": key}
+
+    ttl = await redis_client.ttl(key)
+    val_str = val.decode() if isinstance(val, bytes) else val
+    return {
+        "locked": True, "lock_key": key,
+        "locked_by": val_str, "ttl": ttl,
+        "lock_type": "hard" if ttl > SOFT_LOCK_TTL else "soft"
+    }
+
+
+# ── Booking Routes (with Lock Integration) ──
 @api_router.post("/bookings")
 async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     venue = await db.venues.find_one({"id": input.venue_id}, {"_id": 0})
     if not venue:
         raise HTTPException(404, "Venue not found")
+
+    # Redis lock check: if someone else holds the lock, reject
+    if redis_client:
+        key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
+        lock_owner = await redis_client.get(key)
+        if lock_owner:
+            owner_str = lock_owner.decode() if isinstance(lock_owner, bytes) else lock_owner
+            if owner_str != user["id"]:
+                raise HTTPException(409, "Slot is locked by another user. Please wait or choose a different slot.")
 
     existing = await db.bookings.find_one({
         "venue_id": input.venue_id, "date": input.date,
@@ -400,6 +583,13 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     booking.pop("_id", None)
     await db.venues.update_one({"id": input.venue_id}, {"$inc": {"total_bookings": 1}})
     await db.users.update_one({"id": user["id"]}, {"$inc": {"total_games": 1}})
+
+    # Release Redis lock after successful booking
+    if redis_client:
+        key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
+        await redis_client.delete(key)
+        logger.info(f"Lock released after booking: {key}")
+
     return booking
 
 @api_router.get("/bookings")
