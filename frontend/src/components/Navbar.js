@@ -74,6 +74,9 @@ export default function Navbar() {
     coach: [
       { to: "/coach", icon: GraduationCap, label: "Dashboard" },
     ],
+    super_admin: [
+      { to: "/admin", icon: Shield, label: "Admin Console" },
+    ],
   };
 
   const navLinks = links[user?.role] || links.player;
