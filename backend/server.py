@@ -1059,10 +1059,21 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(level
 
 @app.on_event("startup")
 async def startup():
+    global redis_client
+    try:
+        redis_client = aioredis.from_url(redis_url, decode_responses=False)
+        await redis_client.ping()
+        logger.info("Redis connected for slot locking")
+    except Exception as e:
+        logger.warning(f"Redis unavailable, slot locking disabled: {e}")
+        redis_client = None
+
     count = await db.users.count_documents({})
     if count == 0:
         await seed_demo_data()
 
 @app.on_event("shutdown")
 async def shutdown():
+    if redis_client:
+        await redis_client.close()
     client.close()
