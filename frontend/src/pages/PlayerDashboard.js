@@ -96,8 +96,8 @@ export default function PlayerDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <StatCard icon={Trophy} label="Skill Rating" value={<span className={tier.color}>{user?.skill_rating || 1500}</span>} color="bg-primary/10 text-primary" />
-        <StatCard icon={TrendingUp} label="Games Played" value={stats?.total_games || 0} color="bg-violet-500/10 text-violet-400" />
-        <StatCard icon={Star} label="Win Rate" value={stats?.total_games ? `${Math.round((stats.wins / stats.total_games) * 100)}%` : "0%"} color="bg-amber-500/10 text-amber-400" />
+        <StatCard icon={TrendingUp} label="Games Played" value={user?.total_games || 0} color="bg-violet-500/10 text-violet-400" />
+        <StatCard icon={Star} label="Win Rate" value={user?.total_games ? `${Math.round((user.wins / user.total_games) * 100)}%` : "0%"} color="bg-amber-500/10 text-amber-400" />
         <StatCard icon={Calendar} label="Upcoming" value={upcoming.length} color="bg-sky-500/10 text-sky-400" />
       </div>
 
