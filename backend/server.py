@@ -462,22 +462,25 @@ async def get_my_locks(user=Depends(get_current_user)):
         return {"locks": []}
 
     try:
-        keys = []
-        async for key in redis_client.scan_iter(match="lock:*"):
+        all_keys = await redis_client.keys("lock:*")
+        locks = []
+        for key in all_keys:
             key_str = key.decode() if isinstance(key, bytes) else key
             val = await redis_client.get(key)
+            if not val:
+                continue
             val_str = val.decode() if isinstance(val, bytes) else val
             if val_str == user["id"]:
                 ttl = await redis_client.ttl(key)
                 parts = key_str.split(":")
                 if len(parts) == 5:
-                    keys.append({
+                    locks.append({
                         "lock_key": key_str,
                         "venue_id": parts[1], "date": parts[2],
                         "start_time": parts[3], "turf_number": int(parts[4]),
                         "ttl": ttl, "lock_type": "hard" if ttl > SOFT_LOCK_TTL else "soft"
                     })
-        return {"locks": keys}
+        return {"locks": locks}
     except Exception as e:
         logger.warning(f"Failed to get locks: {e}")
         return {"locks": []}
