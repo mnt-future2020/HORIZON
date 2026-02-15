@@ -1039,6 +1039,8 @@ async def seed_demo_data():
     await db.match_requests.delete_many({})
     await db.mercenary_posts.delete_many({})
     await db.academies.delete_many({})
+    await db.notifications.delete_many({})
+    await db.notification_subscriptions.delete_many({})
 
     owner_id = str(uuid.uuid4())
     player_id = str(uuid.uuid4())
