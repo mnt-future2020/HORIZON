@@ -28,6 +28,45 @@ function StatCard({ icon: Icon, label, value, color }) {
 
 export default function VenueOwnerDashboard() {
   const { user } = useAuth();
+
+  // Pending/rejected/suspended account gate
+  if (user?.account_status === "pending") {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="pending-approval-screen">
+        <div className="glass-card rounded-lg p-8 space-y-4">
+          <ShieldAlert className="h-12 w-12 text-amber-400 mx-auto" />
+          <h1 className="font-display text-xl font-black">Account Pending Approval</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Your venue owner registration is being reviewed by the Horizon team. You'll receive a notification once approved.
+          </p>
+          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
+            Check back soon — most approvals happen within 24 hours.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  if (user?.account_status === "rejected" || user?.account_status === "suspended") {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="account-blocked-screen">
+        <div className="glass-card rounded-lg p-8 space-y-4">
+          <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
+          <h1 className="font-display text-xl font-black">Account {user.account_status === "rejected" ? "Not Approved" : "Suspended"}</h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {user.account_status === "rejected"
+              ? "Your venue owner registration was not approved. Please contact support for more information."
+              : "Your account has been suspended. Please contact support to resolve this."}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return <VenueOwnerDashboardContent />;
+}
+
+function VenueOwnerDashboardContent() {
+  const { user } = useAuth();
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [analytics, setAnalytics] = useState(null);
