@@ -459,17 +459,19 @@ async def extend_slot_lock(input: SlotLockInput, user=Depends(get_current_user))
 async def get_my_locks(user=Depends(get_current_user)):
     """Get all active locks held by the current user."""
     if not redis_client:
-        return {"locks": []}
+        return {"locks": [], "debug": "no redis client"}
 
     try:
         all_keys = await redis_client.keys("lock:*")
+        logger.info(f"my-locks: found {len(all_keys)} lock keys, user={user['id']}")
         locks = []
         for key in all_keys:
-            key_str = key.decode() if isinstance(key, bytes) else key
+            key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
             val = await redis_client.get(key)
             if not val:
                 continue
-            val_str = val.decode() if isinstance(val, bytes) else val
+            val_str = val.decode("utf-8") if isinstance(val, bytes) else str(val)
+            logger.info(f"my-locks: key={key_str} val={val_str} match={val_str == user['id']}")
             if val_str == user["id"]:
                 ttl = await redis_client.ttl(key)
                 parts = key_str.split(":")
@@ -480,10 +482,10 @@ async def get_my_locks(user=Depends(get_current_user)):
                         "start_time": parts[3], "turf_number": int(parts[4]),
                         "ttl": ttl, "lock_type": "hard" if ttl > SOFT_LOCK_TTL else "soft"
                     })
-        return {"locks": locks}
+        return {"locks": locks, "debug_keys_found": len(all_keys)}
     except Exception as e:
         logger.warning(f"Failed to get locks: {e}")
-        return {"locks": []}
+        return {"locks": [], "error": str(e)}
 
 @api_router.get("/slots/lock-status")
 async def get_lock_status(venue_id: str, date: str, start_time: str, turf_number: int = 1):
