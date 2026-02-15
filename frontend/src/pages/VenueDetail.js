@@ -326,6 +326,15 @@ export default function VenueDetail() {
             </div>
           ) : selectedSlot && (
             <div className="space-y-4">
+              {lockInfo && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20" data-testid="lock-status-banner">
+                  <Lock className="h-4 w-4 text-primary shrink-0" />
+                  <div className="text-xs">
+                    <span className="font-bold text-primary">Slot Locked</span>
+                    <span className="text-muted-foreground"> - Reserved for you ({lockInfo.lock_type === "soft" ? "10 min" : "30 min"}). Other users see this as "On Hold".</span>
+                  </div>
+                </div>
+              )}
               <div className="glass-card rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Venue</span><span className="font-bold">{venue.name}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date</span><span className="font-bold">{format(selectedDate, "EEE, MMM d yyyy")}</span></div>
