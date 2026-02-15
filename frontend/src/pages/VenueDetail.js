@@ -266,8 +266,26 @@ export default function VenueDetail() {
         </div>
       </div>
 
+      {/* Slot Legend */}
+      <div className="flex flex-wrap gap-4 mt-6 mb-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded glass-card border border-border" /> Available</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20 border border-primary" /> Your Lock</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/10 border border-amber-500/30" /> On Hold</div>
+        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/10 border border-destructive/20" /> Booked</div>
+      </div>
+
+      {/* Loading overlay for locking */}
+      {locking && (
+        <div className="fixed inset-0 z-50 bg-background/50 flex items-center justify-center">
+          <div className="glass-card rounded-lg p-6 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="text-sm font-medium">Locking slot...</span>
+          </div>
+        </div>
+      )}
+
       {/* Booking Dialog */}
-      <Dialog open={bookingDialog} onOpenChange={setBookingDialog}>
+      <Dialog open={bookingDialog} onOpenChange={handleDialogClose}>
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-bold">
