@@ -26,16 +26,71 @@ export default function VenueDetail() {
   const [loading, setLoading] = useState(true);
   const [confirmResult, setConfirmResult] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [locking, setLocking] = useState(false);
+  const [lockInfo, setLockInfo] = useState(null);
+  const lockRef = useRef(null);
 
   useEffect(() => {
     venueAPI.get(id).then(res => setVenue(res.data)).catch(() => toast.error("Venue not found")).finally(() => setLoading(false));
   }, [id]);
 
-  useEffect(() => {
+  const loadSlots = useCallback(() => {
     if (!id || !selectedDate) return;
     const dateStr = format(selectedDate, "yyyy-MM-dd");
     venueAPI.getSlots(id, dateStr).then(res => setSlots(res.data?.slots || [])).catch(() => setSlots([]));
   }, [id, selectedDate]);
+
+  useEffect(() => { loadSlots(); }, [loadSlots]);
+
+  // Auto-refresh slots every 15s to see lock changes from other users
+  useEffect(() => {
+    const interval = setInterval(loadSlots, 15000);
+    return () => clearInterval(interval);
+  }, [loadSlots]);
+
+  // Release lock on unmount
+  useEffect(() => {
+    return () => {
+      if (lockRef.current) {
+        slotLockAPI.unlock(lockRef.current).catch(() => {});
+      }
+    };
+  }, []);
+
+  const handleSlotSelect = async (slot) => {
+    if (slot.status === "booked" || slot.status === "on_hold") return;
+
+    // If we already have a lock on a different slot, release it
+    if (lockRef.current &&
+        (lockRef.current.start_time !== slot.start_time || lockRef.current.turf_number !== slot.turf_number)) {
+      try { await slotLockAPI.unlock(lockRef.current); } catch {}
+      lockRef.current = null;
+      setLockInfo(null);
+    }
+
+    const lockData = {
+      venue_id: id,
+      date: format(selectedDate, "yyyy-MM-dd"),
+      start_time: slot.start_time,
+      turf_number: slot.turf_number,
+    };
+
+    setLocking(true);
+    try {
+      const res = await slotLockAPI.lock(lockData);
+      lockRef.current = lockData;
+      setLockInfo(res.data);
+      setSelectedSlot(slot);
+      setBookingDialog(true);
+      toast.success(`Slot locked for ${res.data.lock_type === "soft" ? "10 min" : "30 min"}`);
+      loadSlots(); // Refresh to show lock status
+    } catch (err) {
+      const msg = err.response?.data?.detail || "Failed to lock slot";
+      toast.error(msg);
+    } finally {
+      setLocking(false);
+    }
+  };
 
   const handleBook = async () => {
     if (!selectedSlot) return;
