@@ -321,7 +321,7 @@ export default function VenueDetail() {
                 </div>
               )}
               <Button className="w-full bg-primary text-primary-foreground font-bold"
-                onClick={() => { setBookingDialog(false); setConfirmResult(null); setSelectedSlot(null); }}
+                onClick={() => { setBookingDialog(false); setConfirmResult(null); setSelectedSlot(null); loadSlots(); }}
                 data-testid="booking-done-btn">Done</Button>
             </div>
           ) : selectedSlot && (
