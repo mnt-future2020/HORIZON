@@ -1,0 +1,167 @@
+{
+  "identity": {
+    "name": "Horizon",
+    "meta_description": "Next-Gen Sports Facility Operating System for the Amateur Ecosystem",
+    "tone": "Athletic, Precision, Kinetic, Premium",
+    "theme_strategy": "Dark Mode First (Midnight Stadium)",
+    "aesthetic": "Tactical Sports Tech - High Contrast, Deep Backgrounds, Neon Accents"
+  },
+  "typography": {
+    "primary_font": "Chivo",
+    "secondary_font": "Manrope",
+    "font_loading_strategy": "Google Fonts (via @import or next/font)",
+    "scale": {
+      "display": "text-6xl md:text-8xl font-black tracking-tighter uppercase",
+      "h1": "text-4xl md:text-5xl font-extrabold tracking-tight",
+      "h2": "text-3xl md:text-4xl font-bold tracking-tight",
+      "h3": "text-2xl font-bold",
+      "body_lg": "text-lg font-medium leading-relaxed",
+      "body": "text-base font-normal leading-relaxed text-slate-400",
+      "caption": "text-sm font-medium uppercase tracking-widest text-slate-500",
+      "mono": "font-mono text-xs text-slate-500"
+    }
+  },
+  "colors": {
+    "palette": {
+      "background": "#020617",
+      "foreground": "#F8FAFC",
+      "card": "#0F172A",
+      "card_foreground": "#F8FAFC",
+      "popover": "#0F172A",
+      "popover_foreground": "#F8FAFC",
+      "primary": "#10B981",
+      "primary_foreground": "#020617",
+      "secondary": "#1E293B",
+      "secondary_foreground": "#F8FAFC",
+      "muted": "#1E293B",
+      "muted_foreground": "#94A3B8",
+      "accent": "#7C3AED",
+      "accent_foreground": "#F8FAFC",
+      "destructive": "#EF4444",
+      "destructive_foreground": "#F8FAFC",
+      "border": "#1E293B",
+      "input": "#1E293B",
+      "ring": "#10B981"
+    },
+    "gradients": {
+      "hero_glow": "radial-gradient(circle at center, rgba(16, 185, 129, 0.15) 0%, rgba(2, 6, 23, 0) 70%)",
+      "card_surface": "linear-gradient(180deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.5) 100%)",
+      "action_button": "linear-gradient(to right, #10B981, #059669)"
+    }
+  },
+  "visual_enhancers": {
+    "borders": "1px solid rgba(255, 255, 255, 0.08)",
+    "glassmorphism": "backdrop-blur-xl bg-slate-950/70 border border-white/10",
+    "shadows": {
+      "glow": "0 0 20px -5px rgba(16, 185, 129, 0.3)",
+      "card": "0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3)"
+    },
+    "radius": "rounded-lg"
+  },
+  "layout_strategies": {
+    "marketing": {
+      "grid": "grid-cols-1 md:grid-cols-12 gap-8",
+      "container": "max-w-7xl mx-auto px-6",
+      "spacing": "py-24 md:py-32"
+    },
+    "dashboard": {
+      "sidebar_width": "w-64",
+      "grid": "grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6",
+      "card_style": "bg-slate-900 border border-slate-800 p-6 rounded-lg"
+    },
+    "mobile_app": {
+      "nav": "fixed bottom-0 w-full h-16 bg-slate-950/90 backdrop-blur border-t border-slate-800",
+      "container": "pb-20 px-4 pt-4"
+    }
+  },
+  "component_rules": {
+    "buttons": {
+      "primary": "bg-primary text-primary-foreground hover:bg-primary/90 font-bold uppercase tracking-wide rounded-md h-10 px-6",
+      "secondary": "bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-md h-10 px-6",
+      "ghost": "hover:bg-accent hover:text-accent-foreground rounded-md h-10 px-4"
+    },
+    "cards": {
+      "base": "bg-card text-card-foreground border border-border shadow-sm rounded-lg overflow-hidden",
+      "hover_effect": "hover:border-primary/50 transition-colors duration-300"
+    },
+    "inputs": {
+      "style": "bg-slate-950 border-slate-800 focus:border-primary focus:ring-1 focus:ring-primary rounded-md h-10 px-3 text-sm"
+    }
+  },
+  "image_assets": {
+    "hero_backgrounds": [
+      {
+        "url": "https://images.unsplash.com/photo-1763494392824-bbb80840ead4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHw0fHxzcG9ydHMlMjBhY3Rpb24lMjBmb290YmFsbCUyMG5pZ2h0JTIwc3RhZGl1bXxlbnwwfHx8fDE3NzExNzg3MzR8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Football players in rainstorm",
+        "category": "hero_dramatic"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1762013315117-1c8005ad2b41?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzNzl8MHwxfHNlYXJjaHwzfHxzcG9ydHMlMjBhY3Rpb24lMjBmb290YmFsbCUyMG5pZ2h0JTIwc3RhZGl1bXxlbnwwfHx8fDE3NzExNzg3MzR8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Soccer match packed stadium",
+        "category": "hero_crowd"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1750716413341-fd5d93296a76?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHw0fHxjcmlja2V0JTIwc3RhZGl1bSUyMG5pZ2h0JTIwbWF0Y2h8ZW58MHx8fHwxNzcxMTc4NzQ4fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Cricket stadium night match",
+        "category": "hero_cricket"
+      }
+    ],
+    "venue_placeholders": [
+      {
+        "url": "https://images.unsplash.com/photo-1770085057829-97e7a45e1916?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwxfHxiYWRtaW50b24lMjBjb3VydCUyMGluZG9vciUyMG1vZGVybnxlbnwwfHx8fDE3NzExNzg3MzZ8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Modern indoor badminton court",
+        "category": "venue_indoor"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1750716413756-b66624b64ce4?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxOTB8MHwxfHNlYXJjaHwzfHxjcmlja2V0JTIwc3RhZGl1bSUyMG5pZ2h0JTIwbWF0Y2h8ZW58MHx8fHwxNzcxMTc4NzQ4fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Cricket turf",
+        "category": "venue_outdoor"
+      }
+    ],
+    "avatars": [
+      {
+        "url": "https://images.unsplash.com/photo-1689009117682-2ebb831164ff?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHwyfHxhdGhsZXRlJTIwcG9ydHJhaXQlMjBjb25maWRlbnR8ZW58MHx8fHwxNzcxMTc4NzM3fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Female athlete portrait",
+        "category": "user_avatar"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1754476174786-f005dff7b52b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHw0fHxhdGhsZXRlJTIwcG9ydHJhaXQlMjBjb25maWRlbnR8ZW58MHx8fHwxNzcxMTc4NzM3fDA&ixlib=rb-4.1.0&q=85",
+        "alt": "Male athlete portrait",
+        "category": "user_avatar"
+      }
+    ]
+  },
+  "libraries": {
+    "recommended": [
+      "framer-motion",
+      "lucide-react",
+      "clsx",
+      "tailwind-merge",
+      "recharts",
+      "date-fns",
+      "@radix-ui/react-slot"
+    ],
+    "installation_commands": [
+      "npm install framer-motion lucide-react clsx tailwind-merge recharts date-fns",
+      "npm install class-variance-authority @radix-ui/react-slot"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "1. THEME SETUP: Update `tailwind.config.js` with the provided color palette. Ensure 'darkMode' is set to 'class'.",
+    "2. FONT SETUP: Add 'Chivo' and 'Manrope' via Google Fonts in `index.html` or `index.css`.",
+    "3. COMPONENT STYLE: When using Shadcn, override default rounded-xl with rounded-lg. Use border-slate-800 for dark mode borders.",
+    "4. LAYOUT: For the landing page, use the 'Bento' grid strategy. For dashboards, use dense grids.",
+    "5. CRITICAL: Do not use generic gradients. Use the specific 'hero_glow' provided in colors.gradients.",
+    "6. IMAGES: Use the provided Unsplash URLs for placeholders. Do not leave empty boxes.",
+    "7. DATA-TESTID: Add data-testid to all interactive elements (buttons, inputs, links)."
+  ],
+  "universal_guidelines": [
+    "Avoid generic 'AI slop' designs.",
+    "Do not center align the app container.",
+    "Use glass-morphism with backdrop filters (12-24px blur).",
+    "Every interaction needs micro-animations (hover, press).",
+    "Use 2-3x more spacing than typical designs.",
+    "Use 'sonner' for toasts.",
+    "Components MUST use named exports."
+  ]
+}
