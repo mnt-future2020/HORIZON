@@ -78,19 +78,28 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 w-full z-50 h-16 flex items-center justify-around bg-background/90 backdrop-blur-xl border-t border-border"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[72px] flex items-center justify-around bg-background border-t border-border safe-area-bottom"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}
         data-testid="mobile-navbar">
         {navLinks.map(l => (
           <Link key={l.to} to={l.to} data-testid={`mobile-nav-${l.label.toLowerCase()}`}
-            className={`flex flex-col items-center gap-1 px-3 py-2 ${path === l.to || path.startsWith(l.to + "/") ? "text-primary" : "text-muted-foreground"}`}>
+            className={`flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg transition-colors ${
+              path === l.to || path.startsWith(l.to + "/")
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground active:text-foreground active:bg-secondary"
+            }`}>
             <l.icon className="h-5 w-5" />
-            <span className="text-[10px] font-medium">{l.label}</span>
+            <span className="text-[10px] font-semibold">{l.label}</span>
           </Link>
         ))}
         <Link to="/profile" data-testid="mobile-nav-profile"
-          className={`flex flex-col items-center gap-1 px-3 py-2 ${path === "/profile" ? "text-primary" : "text-muted-foreground"}`}>
+          className={`flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg transition-colors ${
+            path === "/profile"
+              ? "text-primary bg-primary/10"
+              : "text-muted-foreground active:text-foreground active:bg-secondary"
+          }`}>
           <User className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Profile</span>
+          <span className="text-[10px] font-semibold">Profile</span>
         </Link>
       </nav>
 
