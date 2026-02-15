@@ -83,6 +83,22 @@ export const notificationAPI = {
   mySubscriptions: (params) => api.get("/notifications/subscriptions", { params }),
 };
 
+export const adminAPI = {
+  dashboard: () => api.get("/admin/dashboard"),
+  users: (params) => api.get("/admin/users", { params }),
+  approveUser: (id) => api.put(`/admin/users/${id}/approve`),
+  rejectUser: (id) => api.put(`/admin/users/${id}/reject`),
+  suspendUser: (id) => api.put(`/admin/users/${id}/suspend`),
+  activateUser: (id) => api.put(`/admin/users/${id}/activate`),
+  venues: () => api.get("/admin/venues"),
+  suspendVenue: (id) => api.put(`/admin/venues/${id}/suspend`),
+  activateVenue: (id) => api.put(`/admin/venues/${id}/activate`),
+  bookings: () => api.get("/admin/bookings"),
+  getSettings: () => api.get("/admin/settings"),
+  updateSettings: (data) => api.put("/admin/settings", data),
+  changePassword: (data) => api.put("/admin/change-password", data),
+};
+
 export const seedAPI = {
   seed: () => api.post("/seed"),
 };
