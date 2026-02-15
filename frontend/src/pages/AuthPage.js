@@ -146,6 +146,27 @@ export default function AuthPage() {
                     className="mt-2 bg-background border-border h-11"
                     placeholder="+91 98765 43210" data-testid="register-phone-input" />
                 </div>
+                {regData.role === "venue_owner" && (
+                  <>
+                    <div>
+                      <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Business Name</Label>
+                      <Input value={regData.business_name}
+                        onChange={e => setRegData(p => ({ ...p, business_name: e.target.value }))}
+                        className="mt-2 bg-background border-border h-11"
+                        placeholder="Your sports facility name" data-testid="register-business-name" />
+                    </div>
+                    <div>
+                      <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">GST Number (optional)</Label>
+                      <Input value={regData.gst_number}
+                        onChange={e => setRegData(p => ({ ...p, gst_number: e.target.value }))}
+                        className="mt-2 bg-background border-border h-11"
+                        placeholder="29AABCR1234F1Z5" data-testid="register-gst-number" />
+                    </div>
+                    <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300" data-testid="pending-notice">
+                      Venue owner accounts require admin approval. You'll be notified once approved.
+                    </div>
+                  </>
+                )}
                 <Button type="submit" disabled={loading} data-testid="register-submit-btn"
                   className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11">
                   {loading ? "Creating account..." : "Create Account"}
