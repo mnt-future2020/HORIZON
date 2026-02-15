@@ -61,8 +61,7 @@ Build "Horizon" - a comprehensive Sports Facility Operating System that serves a
 ## Prioritized Backlog
 ### P0 (Critical)
 - Real Razorpay integration when API keys are available
-- WebSocket-based real-time slot locking
-- Redis caching for slot availability
+- WebSocket-based real-time lock status push (replace 15s polling)
 
 ### P1 (High)
 - IoT lighting automation (ESP32 MQTT integration)
