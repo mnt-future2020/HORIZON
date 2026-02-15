@@ -10,8 +10,9 @@ Build "Horizon", a comprehensive Sports Facility Operating System / "Super App" 
 
 ## User Personas
 - **Player**: Books venues, joins matches, pays
-- **Venue Owner**: Manages venues, views analytics, sets pricing
+- **Venue Owner**: Manages venues, views analytics, sets pricing (requires admin approval)
 - **Coach**: Manages academies, tracks students
+- **Super Admin**: Platform management, user approvals, settings, revenue tracking
 
 ## Tech Stack
 - **Backend**: FastAPI, MongoDB (Motor), Redis, JWT Auth
@@ -21,7 +22,7 @@ Build "Horizon", a comprehensive Sports Facility Operating System / "Super App" 
 ## What's Been Implemented
 
 ### Phase 1 - Foundation (COMPLETE)
-- JWT Authentication (3 roles: player, venue_owner, coach)
+- JWT Authentication (4 roles: player, venue_owner, coach, super_admin)
 - Venue CRUD, discovery, search/filter
 - Calendar-based slot booking with dynamic pricing
 - Redis-based slot locking (soft 10min, hard 30min) for concurrency
@@ -33,40 +34,55 @@ Build "Horizon", a comprehensive Sports Facility Operating System / "Super App" 
 - Seeded demo data
 
 ### Notify Me When Available (COMPLETE - Feb 15, 2026)
-- "Notify Me" button on booked/on-hold slots in VenueDetail
-- In-app notification system (bell icon in Navbar with unread count)
-- Notification panel with mark-all-read functionality
-- Auto-notification when booking is cancelled (subscribers get notified)
-- Subscribe/unsubscribe toggle on slot level
-- Backend: `notification_subscriptions` + `notifications` MongoDB collections
-- Polling every 10s for unread count
+- "Notify Me" button on booked/on-hold slots
+- In-app notification system (bell icon with unread count)
+- Auto-notification when booking cancelled
+
+### Super Admin System (COMPLETE - Feb 15, 2026)
+- **Super Admin Dashboard** with 4 tabs: Overview, Users, Venues, Settings
+- **Overview**: Platform stats (users, venues, bookings, revenue, commission, earnings, pending approvals)
+- **Users**: Role/status filters, Approve/Reject/Suspend/Activate venue owners
+- **Venues**: List all venues with suspend/activate toggle
+- **Settings**:
+  - Payment Gateway (Razorpay key_id, key_secret, test/live mode) - dynamic
+  - Booking Commission (editable percentage)
+  - SaaS Subscription Plans (Free/Basic/Pro with editable price, max_venues, features)
+  - Change Admin Password
+- **Venue Owner Approval Flow**: Venue owners register → pending → admin approves → active
+- Pending owners see "Account Pending Approval" screen
+- Approval/rejection triggers in-app notification to venue owner
 
 ## DB Collections
-- `users`, `venues`, `bookings`, `split_payments`, `pricing_rules`
+- `users` (with `account_status`, `business_name`, `gst_number`)
+- `venues`, `bookings`, `split_payments`, `pricing_rules`
 - `match_requests`, `mercenary_posts`, `academies`
-- `notifications`, `notification_subscriptions` (NEW)
+- `notifications`, `notification_subscriptions`
+- `platform_settings` (key="platform": payment gateway, commission, plans)
 
 ## Key API Endpoints
 - `/api/auth/{register,login,me,profile}`
 - `/api/venues`, `/api/venues/{id}`, `/api/venues/{id}/slots`
 - `/api/bookings`, `/api/bookings/{id}/cancel`
 - `/api/slots/{lock,unlock,extend-lock,my-locks,lock-status}`
-- `/api/notifications/{subscribe,list,unread-count,read,read-all,subscriptions}` (NEW)
+- `/api/notifications/*`
+- `/api/admin/{dashboard,users,venues,settings,change-password}` (NEW)
 - `/api/matchmaking`, `/api/mercenary`, `/api/academies`
 - `/api/analytics/{venue,player}`
 
 ## Test Credentials
-- Player: `demo@player.com` / `demo123`
-- Owner: `demo@owner.com` / `demo123`
-- Coach: `demo@coach.com` / `demo123`
+- **Admin**: `admin@horizon.com` / `admin123`
+- **Player**: `demo@player.com` / `demo123`
+- **Owner**: `demo@owner.com` / `demo123`
+- **Coach**: `demo@coach.com` / `demo123`
 
 ## Mocked Integrations
-- **Razorpay**: Payment processing is simulated (no real transactions)
+- **Razorpay**: Payment processing is simulated. Credentials can be saved in admin settings but not used for live transactions yet.
 
 ## Prioritized Backlog
 
 ### P0 - Next Up
-- Real Razorpay payment integration (replace mocked payments)
+- Real Razorpay payment integration using admin-saved credentials
+- Connect SaaS subscription plans to venue owner accounts
 
 ### P1
 - Split & Pay financial engine (Phase 2)
@@ -75,9 +91,7 @@ Build "Horizon", a comprehensive Sports Facility Operating System / "Super App" 
 ### P2
 - "Mercenary" Marketplace (find fill-in players)
 - AI-driven matchmaking (Glicko-2 skill rating)
-- Automated video highlights (IP camera integration)
-- IoT smart lighting integration
-- Offline-first POS system
+- Automated video highlights, IoT integration, Offline POS
 
 ## Refactoring Needs
-- `backend/server.py` is 1100+ lines - should be modularized into route files
+- `backend/server.py` is 1300+ lines - should be modularized into route files
