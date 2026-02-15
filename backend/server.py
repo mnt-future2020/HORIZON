@@ -250,6 +250,8 @@ async def get_venue(venue_id: str):
 async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
     if user["role"] != "venue_owner":
         raise HTTPException(403, "Only venue owners can create venues")
+    if user.get("account_status") != "active":
+        raise HTTPException(403, "Your account is pending approval. Please wait for admin to approve.")
     venue = {
         "id": str(uuid.uuid4()),
         "owner_id": user["id"],
