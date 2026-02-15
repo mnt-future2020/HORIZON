@@ -98,7 +98,8 @@ export default function AuthPage() {
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
                 <p className="text-xs text-center text-muted-foreground mt-4">
-                  Demo: demo@player.com / demo@owner.com / demo@coach.com (pw: demo123)
+                  Demo: demo@player.com / demo@owner.com / demo@coach.com (pw: demo123)<br/>
+                  Admin: admin@horizon.com (pw: admin123)
                 </p>
               </form>
             </TabsContent>
