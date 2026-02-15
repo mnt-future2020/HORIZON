@@ -1,90 +1,83 @@
-# Horizon - Sports Facility Operating System PRD
+# Horizon - Sports Facility Operating System
 
 ## Original Problem Statement
-Build "Horizon" - a comprehensive Sports Facility Operating System that serves as the digital backbone for the amateur sports ecosystem in India. Features include booking, split payments, AI matchmaking, dynamic pricing, IoT automation, and multi-role management.
+Build "Horizon", a comprehensive Sports Facility Operating System / "Super App" for the amateur sports ecosystem in India.
 
-## Architecture
-- **Frontend**: React 18 + Tailwind CSS + Shadcn/UI + Framer Motion
-- **Backend**: FastAPI (Python) + JWT Auth
-- **Database**: MongoDB (users, venues, bookings, split_payments, pricing_rules, match_requests, mercenary_posts, academies)
-- **Theme**: "Midnight Stadium" dark theme with Chivo + Manrope fonts
+## Core Requirements
+- **Phase 1**: Venue POS, Basic Booking App with Static Pricing, IoT Lighting (Alpha)
+- **Phase 2**: Split Payments, Rule-Based Dynamic Pricing, Mercenary Marketplace
+- **Phase 3**: AI-Driven Matchmaking, Automated Video Highlights
 
 ## User Personas
-1. **Players (B2C)**: Book venues, split costs, find opponents via matchmaking, track skill ratings
-2. **Venue Owners (B2B)**: Manage venues, set dynamic pricing rules, view analytics/revenue
-3. **Coaches (SaaS)**: Run academies, manage students, track subscriptions
+- **Player**: Books venues, joins matches, pays
+- **Venue Owner**: Manages venues, views analytics, sets pricing
+- **Coach**: Manages academies, tracks students
 
-## Core Requirements (Static)
-- JWT-based auth with 3 roles (player, venue_owner, coach)
-- Venue discovery with search/filter by sport and location
-- Booking engine with calendar-based slot selection
-- Split payment system with shareable links
-- Dynamic pricing rules (multiplier/discount based on day/time)
-- Skill-based matchmaking (Glicko-2 inspired ratings)
-- Mercenary marketplace (find replacement players)
-- Coach academy management with student roster
-- DPDP Act 2023 compliance framework
+## Tech Stack
+- **Backend**: FastAPI, MongoDB (Motor), Redis, JWT Auth
+- **Frontend**: React, Tailwind CSS, shadcn/ui, Framer Motion
+- **Architecture**: Full-stack monolith (React SPA + FastAPI backend)
 
-## What's Been Implemented (Feb 2026)
-### Phase 1 - Full Implementation
-- [x] JWT Authentication (register, login, profile management) for 3 roles
-- [x] Venue CRUD with search/filter (4 seeded demo venues)
-- [x] Dynamic slot generation with pricing rule application
-- [x] Booking engine with full/split payment modes
-- [x] Split payment system with shareable token links
-- [x] Dynamic pricing rules (CRUD, rule-based: multiplier, discount)
-- [x] Matchmaking system (create/join matches)
-- [x] Mercenary marketplace (post/apply for player spots)
-- [x] Coach academy management (create academy, add/remove students)
-- [x] Venue owner dashboard (bookings table, pricing rules, analytics with charts)
-- [x] Player dashboard (stats, upcoming bookings, quick actions)
-- [x] Profile page (stats, edit profile, booking history)
-- [x] Landing page with features showcase
-- [x] Responsive design (desktop top nav + mobile bottom nav)
-- [x] Auto-seeding demo data on first startup
-- [x] Dark "Midnight Stadium" theme
+## What's Been Implemented
 
-### Phase 1.1 - Redis Slot Locking (Feb 2026)
-- [x] Redis-based distributed slot locking (SETNX atomic lock acquisition)
-- [x] Soft lock (10 min TTL) on slot selection, hard lock (30 min) on payment initiation
-- [x] Concurrency protection: second user gets 409 "on hold" when trying to lock same slot
-- [x] Slots API returns lock-aware statuses: available, booked, on_hold, locked_by_you
-- [x] Lock released automatically on: booking confirmation, dialog close, TTL expiry, cancel
-- [x] Frontend shows color-coded slot states (green=your lock, amber=on hold, red=booked)
-- [x] Lock status banner in booking dialog
-- [x] Auto-refresh slots every 15s for real-time lock visibility
-- [x] Lock management endpoints (lock, unlock, extend, my-locks, status)
+### Phase 1 - Foundation (COMPLETE)
+- JWT Authentication (3 roles: player, venue_owner, coach)
+- Venue CRUD, discovery, search/filter
+- Calendar-based slot booking with dynamic pricing
+- Redis-based slot locking (soft 10min, hard 30min) for concurrency
+- Split payment flow (MOCKED Razorpay)
+- Matchmaking & Mercenary marketplace
+- Coach Academy management
+- Venue & Player analytics dashboards
+- Dark "Midnight Stadium" themed UI
+- Seeded demo data
 
-### MOCKED
-- [x] Razorpay payments (full UX simulated, ready for real integration)
+### Notify Me When Available (COMPLETE - Feb 15, 2026)
+- "Notify Me" button on booked/on-hold slots in VenueDetail
+- In-app notification system (bell icon in Navbar with unread count)
+- Notification panel with mark-all-read functionality
+- Auto-notification when booking is cancelled (subscribers get notified)
+- Subscribe/unsubscribe toggle on slot level
+- Backend: `notification_subscriptions` + `notifications` MongoDB collections
+- Polling every 10s for unread count
+
+## DB Collections
+- `users`, `venues`, `bookings`, `split_payments`, `pricing_rules`
+- `match_requests`, `mercenary_posts`, `academies`
+- `notifications`, `notification_subscriptions` (NEW)
+
+## Key API Endpoints
+- `/api/auth/{register,login,me,profile}`
+- `/api/venues`, `/api/venues/{id}`, `/api/venues/{id}/slots`
+- `/api/bookings`, `/api/bookings/{id}/cancel`
+- `/api/slots/{lock,unlock,extend-lock,my-locks,lock-status}`
+- `/api/notifications/{subscribe,list,unread-count,read,read-all,subscriptions}` (NEW)
+- `/api/matchmaking`, `/api/mercenary`, `/api/academies`
+- `/api/analytics/{venue,player}`
+
+## Test Credentials
+- Player: `demo@player.com` / `demo123`
+- Owner: `demo@owner.com` / `demo123`
+- Coach: `demo@coach.com` / `demo123`
+
+## Mocked Integrations
+- **Razorpay**: Payment processing is simulated (no real transactions)
 
 ## Prioritized Backlog
-### P0 (Critical)
-- Real Razorpay integration when API keys are available
-- WebSocket-based real-time lock status push (replace 15s polling)
 
-### P1 (High)
-- IoT lighting automation (ESP32 MQTT integration)
-- Offline-first POS for venue operators
-- Push notifications for match invites
-- Advanced Glicko-2 skill calculation with match results
+### P0 - Next Up
+- Real Razorpay payment integration (replace mocked payments)
 
-### P2 (Medium)
-- Video highlights integration (CCTV + FFmpeg)
-- Geospatial venue search (drive-time based)
-- Subscription management with dunning for coaches
-- Review and rating system for venues
-- Algorithmic (ML) dynamic pricing
+### P1
+- Split & Pay financial engine (Phase 2)
+- Rule-based dynamic pricing engine for venue owners
 
-### P3 (Low)
-- Social login (Google OAuth)
-- WhatsApp/SMS notifications
-- Data export and compliance audit tools
-- Multi-language support (Hindi, Tamil, etc.)
+### P2
+- "Mercenary" Marketplace (find fill-in players)
+- AI-driven matchmaking (Glicko-2 skill rating)
+- Automated video highlights (IP camera integration)
+- IoT smart lighting integration
+- Offline-first POS system
 
-## Next Tasks
-1. Integrate real Razorpay payment gateway
-2. Add Redis-based slot locking for concurrency
-3. Implement match result recording and ELO updates
-4. Build IoT lighting control prototype
-5. Add venue image upload functionality
+## Refactoring Needs
+- `backend/server.py` is 1100+ lines - should be modularized into route files
