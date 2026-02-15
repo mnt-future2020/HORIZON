@@ -30,6 +30,7 @@ function ProtectedRoute({ children, roles }) {
 function DashboardRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/auth" />;
+  if (user.role === "super_admin") return <Navigate to="/admin" />;
   if (user.role === "venue_owner") return <Navigate to="/owner" />;
   if (user.role === "coach") return <Navigate to="/coach" />;
   return <Navigate to="/player" />;
