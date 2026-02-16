@@ -81,6 +81,22 @@ async def get_optional_user(request: Request):
     except Exception:
         return None
 
+async def get_razorpay_client():
+    """Get Razorpay client using admin-saved credentials from DB."""
+    settings = await db.platform_settings.find_one({"key": "platform"}, {"_id": 0})
+    if not settings:
+        return None
+    gw = settings.get("payment_gateway", {})
+    key_id = gw.get("key_id", "")
+    key_secret = gw.get("key_secret", "")
+    if not key_id or not key_secret:
+        return None
+    return razorpay.Client(auth=(key_id, key_secret))
+
+async def get_platform_settings():
+    settings = await db.platform_settings.find_one({"key": "platform"}, {"_id": 0})
+    return settings or {}
+
 
 # ── Pydantic Models ──
 class RegisterInput(BaseModel):
