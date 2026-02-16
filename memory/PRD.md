@@ -93,5 +93,18 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 - **Backend**: Full CRUD + AI endpoints at /api/highlights/*
 - **Frontend**: HighlightsPage.js + SharedHighlightPage.js + nav link
 
+### IoT Smart Lighting (COMPLETE - Feb 16)
+- **Device Management**: Full CRUD for IoT devices (floodlight, LED, ambient, emergency)
+- **MQTT Protocol Layer**: Simulated broker (production-ready for real MQTT swap)
+- **Zone Management**: Group devices by turf, zone-level control (All On/Off)
+- **Auto-Scheduling**: Lights auto on/off linked to booking times (5-min buffer)
+- **Energy Analytics**: kWh usage, cost estimation, daily trend charts (7d/30d)
+- **Device Control**: On/off toggle, brightness slider per device
+- **Multi-role**: Venue owners + Super admin access (players blocked)
+- **Live Dashboard**: Online/active count, power draw, avg daily cost
+- **Backend**: /api/iot/* (devices, zones, energy, schedules, sync-bookings)
+- **Frontend**: IoTDashboard.js with 4 tabs (Devices, Zones, Energy, Schedule)
+- **Seed Data**: 7 devices + 3 zones for PowerPlay Arena
+
 ## Remaining Backlog
-- **P3**: IoT lighting, Offline POS
+- **P3**: Offline-First POS system for venue amenities
