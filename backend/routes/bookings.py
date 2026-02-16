@@ -65,6 +65,8 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     commission_pct = platform.get("booking_commission_pct", 0)
     commission_amount = int(price * commission_pct / 100)
 
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=PENDING_BOOKING_EXPIRY_HOURS)).isoformat()
+
     booking = {
         "id": str(uuid.uuid4()), "venue_id": input.venue_id,
         "venue_name": venue["name"], "host_id": user["id"],
@@ -74,7 +76,8 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
         "total_amount": price, "commission_amount": commission_amount,
         "payment_mode": input.payment_mode,
         "players": [user["id"]],
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": expires_at
     }
 
     rzp_client = await get_razorpay_client()
@@ -115,12 +118,12 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             booking["payment_gateway"] = "razorpay"
         except Exception as e:
             logger.warning(f"Razorpay order creation failed: {e}, falling back to mock")
-            booking["status"] = "confirmed"
+            booking["status"] = "payment_pending"
             booking["payment_gateway"] = "mock"
         await db.bookings.insert_one(booking)
         booking.pop("_id", None)
     else:
-        booking["status"] = "confirmed"
+        booking["status"] = "payment_pending"
         booking["payment_gateway"] = "mock"
         await db.bookings.insert_one(booking)
         booking.pop("_id", None)
