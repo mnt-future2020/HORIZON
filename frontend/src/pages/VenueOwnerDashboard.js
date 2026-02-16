@@ -80,6 +80,11 @@ function VenueOwnerDashboardContent() {
   const [editingRule, setEditingRule] = useState(null);
   const [planData, setPlanData] = useState(null);
   const [upgrading, setUpgrading] = useState(false);
+  const [selectedBooking, setSelectedBooking] = useState(null);
+  const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("desc");
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: ["football"], address: "", city: "Bengaluru",
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
