@@ -8,19 +8,21 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle } from "lucide-react";
+import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Power } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
-    <div className="glass-card rounded-lg p-5 flex items-start gap-4">
-      <div className={`p-2.5 rounded-lg ${color}`}><Icon className="h-5 w-5" /></div>
-      <div>
-        <div className="text-2xl font-display font-black text-foreground">{value}</div>
-        <div className="text-xs text-muted-foreground font-mono uppercase tracking-widest mt-0.5">{label}</div>
+    <div className="glass-card rounded-lg p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
+      <div className={`p-2 sm:p-2.5 rounded-lg ${color}`}><Icon className="h-4 w-4 sm:h-5 sm:w-5" /></div>
+      <div className="min-w-0">
+        <div className="text-xl sm:text-2xl font-display font-black text-foreground truncate">{value}</div>
+        <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase tracking-widest mt-0.5">{label}</div>
       </div>
     </div>
   );
