@@ -99,17 +99,16 @@ export default function VenueDetail() {
       toast.success(`Slot locked for ${res.data.lock_type === "soft" ? "10 min" : "30 min"}`);
       loadSlots();
     } catch (err) {
-      // If locking service is unavailable (503), proceed without lock
       const status = err.response?.status;
-      if (status === 503) {
-        lockRef.current = null;
-        setLockInfo(null);
-      } else {
-        const msg = err.response?.data?.detail || "Failed to lock slot";
-        toast.error(msg);
+      // 409 = real conflict (slot booked or held by another user) — block booking
+      if (status === 409) {
+        toast.error(err.response?.data?.detail || "Slot unavailable");
         setLocking(false);
         return;
       }
+      // Any other error (503, 520, network) — proceed without lock
+      lockRef.current = null;
+      setLockInfo(null);
     }
     setSelectedSlot(slot);
     setBookingDialog(true);
