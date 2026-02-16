@@ -146,11 +146,42 @@ export default function IoTDashboard() {
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [zoneDialogOpen, setZoneDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
+  const [mqttStatus, setMqttStatus] = useState(null);
+  const wsRef = useRef(null);
   const [deviceForm, setDeviceForm] = useState({
     name: "", device_type: "floodlight", protocol: "mqtt", ip_address: "",
     power_watts: 500, turf_number: 1, zone_id: "",
   });
   const [zoneForm, setZoneForm] = useState({ name: "", turf_number: 1, description: "" });
+
+  // Fetch MQTT status
+  useEffect(() => {
+    iotAPI.mqttStatus().then(r => setMqttStatus(r.data)).catch(() => {});
+  }, []);
+
+  // WebSocket for real-time updates
+  useEffect(() => {
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
+    const wsUrl = backendUrl.replace(/^http/, "ws") + "/api/iot/ws";
+    let ws;
+    try {
+      ws = new WebSocket(wsUrl);
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "device_control" || msg.type === "device_status") {
+            setDevices(prev => prev.map(d =>
+              d.id === msg.device_id || d.id === msg.data?.device_id
+                ? { ...d, ...msg.data, status: msg.status || msg.data?.status || d.status, brightness: msg.brightness ?? msg.data?.brightness ?? d.brightness }
+                : d
+            ));
+          }
+        } catch { /* ignore */ }
+      };
+      wsRef.current = ws;
+    } catch { /* ignore */ }
+    return () => { if (ws) ws.close(); };
+  }, []);
 
   const loadVenues = useCallback(async () => {
     try {
