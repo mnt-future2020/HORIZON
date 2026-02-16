@@ -459,6 +459,148 @@ export default function VenueDetail() {
         <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/10 border border-destructive/20" /> Booked</div>
       </div>
 
+      {/* Reviews Section */}
+      <div className="mt-10 border-t border-border pt-8" data-testid="reviews-section">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <h2 className="font-display text-lg font-bold">Reviews & Ratings</h2>
+          </div>
+          {canReview && !showReviewForm && (
+            <Button size="sm" onClick={() => setShowReviewForm(true)}
+              className="bg-primary text-primary-foreground text-xs font-bold" data-testid="write-review-btn">
+              Write a Review
+            </Button>
+          )}
+        </div>
+
+        {/* Review Summary */}
+        {reviewSummary && reviewSummary.total > 0 && (
+          <div className="glass-card rounded-xl p-5 mb-6" data-testid="review-summary">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+              <div className="text-center">
+                <div className="font-display text-4xl font-black text-primary">{reviewSummary.avg_rating}</div>
+                <div className="flex gap-0.5 justify-center mt-1">
+                  {[1, 2, 3, 4, 5].map(s => (
+                    <Star key={s} className={`h-4 w-4 ${s <= Math.round(reviewSummary.avg_rating) ? "text-primary fill-primary" : "text-muted-foreground/30"}`} />
+                  ))}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{reviewSummary.total} review{reviewSummary.total !== 1 ? "s" : ""}</div>
+              </div>
+              <div className="flex-1 space-y-1.5 w-full">
+                {[5, 4, 3, 2, 1].map(star => {
+                  const count = reviewSummary.distribution?.[star] || 0;
+                  const pct = reviewSummary.total > 0 ? (count / reviewSummary.total) * 100 : 0;
+                  return (
+                    <div key={star} className="flex items-center gap-2 text-xs">
+                      <span className="w-4 text-muted-foreground font-mono">{star}</span>
+                      <Star className="h-3 w-3 text-primary/50" />
+                      <div className="flex-1 h-2 bg-secondary/50 rounded-full overflow-hidden">
+                        <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="w-6 text-right text-muted-foreground font-mono">{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Write Review Form */}
+        {showReviewForm && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="glass-card rounded-xl p-5 mb-6" data-testid="review-form">
+            <h3 className="font-bold text-sm mb-4">Your Review</h3>
+            {/* Star Picker */}
+            <div className="mb-4">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2 block">Rating</label>
+              <div className="flex gap-1" data-testid="star-picker">
+                {[1, 2, 3, 4, 5].map(s => (
+                  <button key={s} type="button" onClick={() => setReviewRating(s)}
+                    onMouseEnter={() => setReviewHover(s)} onMouseLeave={() => setReviewHover(0)}
+                    data-testid={`star-${s}`}
+                    className="p-0.5 transition-transform hover:scale-110">
+                    <Star className={`h-7 w-7 transition-colors ${s <= (reviewHover || reviewRating) ? "text-primary fill-primary" : "text-muted-foreground/30"}`} />
+                  </button>
+                ))}
+                {reviewRating > 0 && <span className="text-xs text-muted-foreground ml-2 self-center">{["", "Poor", "Fair", "Good", "Great", "Excellent"][reviewRating]}</span>}
+              </div>
+            </div>
+            {/* Booking Selector */}
+            {eligibleBookings.length > 1 && (
+              <div className="mb-4">
+                <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2 block">For Booking</label>
+                <Select value={reviewBookingId} onValueChange={setReviewBookingId}>
+                  <SelectTrigger className="h-9 text-xs bg-secondary/50" data-testid="review-booking-select">
+                    <SelectValue placeholder="Select booking" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {eligibleBookings.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.date} {b.start_time}-{b.end_time}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {/* Comment */}
+            <div className="mb-4">
+              <label className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-2 block">Comment (optional)</label>
+              <textarea value={reviewComment} onChange={e => setReviewComment(e.target.value)}
+                placeholder="Share your experience..."
+                className="w-full h-20 px-3 py-2 text-sm bg-secondary/50 border border-border rounded-lg resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                data-testid="review-comment" />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleSubmitReview} disabled={submittingReview || !reviewRating}
+                className="bg-primary text-primary-foreground text-xs font-bold" data-testid="submit-review-btn">
+                {submittingReview ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <Send className="h-3.5 w-3.5 mr-1" />}
+                Submit Review
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setShowReviewForm(false)} className="text-xs">Cancel</Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Review List */}
+        {reviews.length === 0 && !showReviewForm ? (
+          <div className="text-center py-8 text-muted-foreground" data-testid="no-reviews">
+            <Star className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
+            <p className="text-sm">No reviews yet. Be the first to review this venue!</p>
+          </div>
+        ) : (
+          <div className="space-y-3" data-testid="reviews-list">
+            {reviews.map((r, idx) => (
+              <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.03 }}
+                className="glass-card rounded-lg p-4" data-testid={`review-card-${r.id}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                        {r.user_name?.[0]?.toUpperCase()}
+                      </div>
+                      <div>
+                        <span className="font-bold text-sm text-foreground">{r.user_name}</span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          {[1, 2, 3, 4, 5].map(s => (
+                            <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/20"}`} />
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    {new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+                {r.comment && <p className="text-xs text-muted-foreground mt-3 leading-relaxed">{r.comment}</p>}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Loading overlay for locking */}
       {locking && (
         <div className="fixed inset-0 z-50 bg-background/50 flex items-center justify-center">
