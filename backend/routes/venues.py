@@ -304,6 +304,32 @@ async def create_pricing_rule(venue_id: str, input: PricingRuleCreate, user=Depe
     return rule
 
 
+@router.put("/pricing-rules/{rule_id}")
+async def update_pricing_rule(rule_id: str, input: PricingRuleCreate, user=Depends(get_current_user)):
+    if user["role"] != "venue_owner":
+        raise HTTPException(403, "Only venue owners can manage pricing")
+    result = await db.pricing_rules.update_one(
+        {"id": rule_id},
+        {"$set": {**input.model_dump(), "updated_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(404, "Rule not found")
+    rule = await db.pricing_rules.find_one({"id": rule_id}, {"_id": 0})
+    return rule
+
+
+@router.put("/pricing-rules/{rule_id}/toggle")
+async def toggle_pricing_rule(rule_id: str, user=Depends(get_current_user)):
+    if user["role"] != "venue_owner":
+        raise HTTPException(403, "Only venue owners can manage pricing")
+    rule = await db.pricing_rules.find_one({"id": rule_id})
+    if not rule:
+        raise HTTPException(404, "Rule not found")
+    new_status = not rule.get("is_active", True)
+    await db.pricing_rules.update_one({"id": rule_id}, {"$set": {"is_active": new_status}})
+    return {"id": rule_id, "is_active": new_status}
+
+
 @router.delete("/pricing-rules/{rule_id}")
 async def delete_pricing_rule(rule_id: str, user=Depends(get_current_user)):
     result = await db.pricing_rules.delete_one({"id": rule_id})
