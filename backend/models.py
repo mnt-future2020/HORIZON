@@ -23,6 +23,7 @@ class VenueCreate(BaseModel):
     description: str
     sports: List[str]
     address: str
+    area: Optional[str] = ""
     city: str
     lat: Optional[float] = 12.9716
     lng: Optional[float] = 77.5946
