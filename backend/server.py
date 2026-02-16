@@ -18,12 +18,14 @@ from routes.notifications import router as notifications_router
 from routes.admin import router as admin_router
 from routes.academies import router as academies_router
 from routes.analytics import router as analytics_router
+from routes.ratings import router as ratings_router
 
 app = FastAPI(title="Horizon Sports API")
 
 # Include all routers with /api prefix
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
-          notifications_router, admin_router, academies_router, analytics_router]:
+          notifications_router, admin_router, academies_router, analytics_router,
+          ratings_router]:
     app.include_router(r, prefix="/api")
 
 
