@@ -224,13 +224,13 @@ export default function Navbar() {
           </PopoverContent>
         </Popover>
         <Link to="/profile" data-testid="mobile-nav-profile"
-          className={`flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg transition-colors ${
+          className={`flex flex-col items-center justify-center gap-0.5 min-w-0 w-14 min-h-[48px] rounded-lg transition-colors ${
             path === "/profile"
               ? "text-primary bg-primary/10"
               : "text-muted-foreground active:text-foreground active:bg-secondary"
           }`}>
-          <User className="h-5 w-5" />
-          <span className="text-[10px] font-semibold">Profile</span>
+          <User className="h-5 w-5 shrink-0" />
+          <span className="text-[9px] font-semibold leading-tight">Profile</span>
         </Link>
       </nav>
 
