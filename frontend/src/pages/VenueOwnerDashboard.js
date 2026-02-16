@@ -747,6 +747,82 @@ function VenueOwnerDashboardContent() {
           </div>
         </TabsContent>
 
+
+        {/* Reviews Tab */}
+        <TabsContent value="reviews">
+          <div className="space-y-4" data-testid="owner-reviews-tab">
+            <div>
+              <h3 className="font-display font-bold text-base sm:text-lg">
+                Customer Reviews {selectedVenue && <span className="text-muted-foreground font-normal text-sm">- {selectedVenue.name}</span>}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">See what players say about your venue</p>
+            </div>
+
+            {venueReviews.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <MessageSquare className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
+                <p className="text-sm">No reviews yet for {selectedVenue?.name || "this venue"}</p>
+              </div>
+            ) : (
+              <>
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {(() => {
+                    const avg = venueReviews.reduce((s, r) => s + r.rating, 0) / venueReviews.length;
+                    const r5 = venueReviews.filter(r => r.rating === 5).length;
+                    return (
+                      <>
+                        <div className="glass-card rounded-lg p-3 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Star className="h-4 w-4 text-primary fill-primary" />
+                            <span className="font-display font-black text-xl text-primary">{avg.toFixed(1)}</span>
+                          </div>
+                          <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
+                        </div>
+                        <div className="glass-card rounded-lg p-3 text-center">
+                          <div className="font-display font-black text-xl text-foreground">{venueReviews.length}</div>
+                          <div className="text-[10px] text-muted-foreground font-mono uppercase">Total</div>
+                        </div>
+                        <div className="glass-card rounded-lg p-3 text-center">
+                          <div className="font-display font-black text-xl text-emerald-400">{r5}</div>
+                          <div className="text-[10px] text-muted-foreground font-mono uppercase">5-Star</div>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Review Cards */}
+                <div className="space-y-2">
+                  {venueReviews.map(r => (
+                    <div key={r.id} className="glass-card rounded-lg p-4" data-testid={`owner-review-${r.id}`}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                            {r.user_name?.[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <span className="font-bold text-sm">{r.user_name}</span>
+                            <div className="flex gap-0.5 mt-0.5">
+                              {[1, 2, 3, 4, 5].map(s => (
+                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/20"}`} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground shrink-0">
+                          {new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
+                      {r.comment && <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{r.comment}</p>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </TabsContent>
+
         {/* Pricing Rules - Enhanced P2 */}
         <TabsContent value="pricing">
           <div className="flex items-center justify-between mb-4 gap-3">
