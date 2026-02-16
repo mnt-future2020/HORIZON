@@ -562,7 +562,7 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     existing = await db.bookings.find_one({
         "venue_id": input.venue_id, "date": input.date,
         "start_time": input.start_time, "turf_number": input.turf_number,
-        "status": {"$in": ["confirmed", "pending"]}
+        "status": {"$in": ["confirmed", "pending", "payment_pending"]}
     })
     if existing:
         raise HTTPException(409, "Slot already booked")
@@ -591,17 +591,25 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             elif act.get("type") == "discount":
                 price = int(price * (1 - act.get("value", 0)))
 
+    # Calculate commission
+    platform = await get_platform_settings()
+    commission_pct = platform.get("booking_commission_pct", 0)
+    commission_amount = int(price * commission_pct / 100)
+
     booking = {
         "id": str(uuid.uuid4()), "venue_id": input.venue_id,
         "venue_name": venue["name"], "host_id": user["id"],
         "host_name": user["name"], "date": input.date,
         "start_time": input.start_time, "end_time": input.end_time,
         "turf_number": input.turf_number, "sport": input.sport,
-        "total_amount": price, "payment_mode": input.payment_mode,
+        "total_amount": price, "commission_amount": commission_amount,
+        "payment_mode": input.payment_mode,
         "players": [user["id"]],
-        "status": "confirmed" if input.payment_mode == "full" else "pending",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
+
+    # Try creating Razorpay order
+    rzp_client = await get_razorpay_client()
 
     if input.payment_mode == "split" and input.split_count:
         split_token = str(uuid.uuid4())[:8]
@@ -609,19 +617,55 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
         booking["split_config"] = {
             "total_shares": input.split_count,
             "per_share": per_share,
-            "shares_paid": 1,
+            "shares_paid": 0,
             "split_token": split_token
         }
-        sp = {
-            "id": str(uuid.uuid4()), "booking_id": booking["id"],
-            "split_token": split_token, "payer_id": user["id"],
-            "payer_name": user["name"], "amount": per_share,
-            "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()
-        }
-        await db.split_payments.insert_one(sp)
+        booking["status"] = "pending"
+        # For split, host hasn't paid yet either — payment is per share
+        await db.bookings.insert_one(booking)
+        booking.pop("_id", None)
 
-    await db.bookings.insert_one(booking)
-    booking.pop("_id", None)
+        # Create razorpay order for host's share if gateway available
+        if rzp_client:
+            try:
+                rzp_order = rzp_client.order.create({
+                    "amount": per_share * 100,
+                    "currency": "INR",
+                    "payment_capture": 1,
+                    "notes": {"booking_id": booking["id"], "type": "split_share", "payer_id": user["id"]}
+                })
+                booking["razorpay_order_id"] = rzp_order["id"]
+                booking["payment_gateway"] = "razorpay"
+            except Exception as e:
+                logger.warning(f"Razorpay order creation failed: {e}, falling back to mock")
+                booking["payment_gateway"] = "mock"
+        else:
+            booking["payment_gateway"] = "mock"
+    elif rzp_client:
+        # Full payment with Razorpay
+        booking["status"] = "payment_pending"
+        try:
+            rzp_order = rzp_client.order.create({
+                "amount": price * 100,
+                "currency": "INR",
+                "payment_capture": 1,
+                "notes": {"booking_id": booking["id"], "type": "full_payment"}
+            })
+            booking["razorpay_order_id"] = rzp_order["id"]
+            booking["payment_gateway"] = "razorpay"
+        except Exception as e:
+            logger.warning(f"Razorpay order creation failed: {e}, falling back to mock")
+            booking["status"] = "confirmed"
+            booking["payment_gateway"] = "mock"
+        await db.bookings.insert_one(booking)
+        booking.pop("_id", None)
+    else:
+        # No gateway configured — mock payment, auto-confirm
+        booking["status"] = "confirmed"
+        booking["payment_gateway"] = "mock"
+        await db.bookings.insert_one(booking)
+        booking.pop("_id", None)
+
     await db.venues.update_one({"id": input.venue_id}, {"$inc": {"total_bookings": 1}})
     await db.users.update_one({"id": user["id"]}, {"$inc": {"total_games": 1}})
 
@@ -631,7 +675,80 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
         await redis_client.delete(key)
         logger.info(f"Lock released after booking: {key}")
 
+    # Get gateway key_id for frontend
+    gw = (await get_platform_settings()).get("payment_gateway", {})
+    booking["razorpay_key_id"] = gw.get("key_id", "")
+
     return booking
+
+
+@api_router.post("/bookings/{booking_id}/verify-payment")
+async def verify_payment(booking_id: str, request: Request, user=Depends(get_current_user)):
+    """Verify Razorpay payment and confirm booking."""
+    data = await request.json()
+    razorpay_payment_id = data.get("razorpay_payment_id", "")
+    razorpay_order_id = data.get("razorpay_order_id", "")
+    razorpay_signature = data.get("razorpay_signature", "")
+
+    booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    if not booking:
+        raise HTTPException(404, "Booking not found")
+
+    # Verify signature
+    settings = await get_platform_settings()
+    gw = settings.get("payment_gateway", {})
+    key_secret = gw.get("key_secret", "")
+
+    if key_secret:
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if expected != razorpay_signature:
+            raise HTTPException(400, "Payment verification failed")
+
+    # If this is a split payment share
+    if booking.get("split_config"):
+        sp = {
+            "id": str(uuid.uuid4()), "booking_id": booking_id,
+            "split_token": booking["split_config"]["split_token"],
+            "payer_id": user["id"], "payer_name": user["name"],
+            "amount": booking["split_config"]["per_share"],
+            "razorpay_payment_id": razorpay_payment_id,
+            "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.split_payments.insert_one(sp)
+        new_shares_paid = booking["split_config"]["shares_paid"] + 1
+        new_status = "confirmed" if new_shares_paid >= booking["split_config"]["total_shares"] else "pending"
+        await db.bookings.update_one({"id": booking_id}, {
+            "$set": {
+                "split_config.shares_paid": new_shares_paid,
+                "status": new_status,
+                "payment_details.last_payment_id": razorpay_payment_id
+            },
+            "$push": {"players": user["id"]}
+        })
+        return {"message": "Share paid", "shares_paid": new_shares_paid, "status": new_status}
+    else:
+        # Full payment verification
+        await db.bookings.update_one({"id": booking_id}, {"$set": {
+            "status": "confirmed",
+            "payment_details": {
+                "razorpay_payment_id": razorpay_payment_id,
+                "razorpay_order_id": razorpay_order_id,
+                "razorpay_signature": razorpay_signature,
+                "paid_at": datetime.now(timezone.utc).isoformat()
+            }
+        }})
+        return {"message": "Payment verified, booking confirmed", "status": "confirmed"}
+
+
+@api_router.get("/payment/gateway-info")
+async def get_gateway_info():
+    """Return payment gateway status for frontend."""
+    settings = await get_platform_settings()
+    gw = settings.get("payment_gateway", {})
+    key_id = gw.get("key_id", "")
+    has_gateway = bool(key_id and gw.get("key_secret", ""))
+    return {"has_gateway": has_gateway, "key_id": key_id, "provider": gw.get("provider", "razorpay")}
 
 @api_router.get("/bookings")
 async def list_bookings(user=Depends(get_current_user)):
