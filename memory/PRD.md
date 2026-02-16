@@ -66,6 +66,11 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 
 ## Mocked: Razorpay (SDK wired, mock fallback when no keys)
 
+### Booking Flow Redis Graceful Degradation (COMPLETE - Feb 16)
+- Frontend handles Redis 503/520 errors gracefully — only blocks on 409 (real conflict)
+- Booking proceeds without slot locking when Redis is unavailable
+- Lock extension conditionally skipped when no lock is held
+
 ## Remaining Backlog
 - **P1**: Fix mobile responsiveness (nav truncation, small screen layouts)
 - **P2**: Rule-based dynamic pricing UI for venue owners
