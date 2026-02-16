@@ -303,7 +303,8 @@ export default function VenueDiscovery() {
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground" data-testid="results-count">
             <span className="font-bold text-foreground">{venues.length}</span> venue{venues.length !== 1 ? "s" : ""} found
-            {selectedCity !== "all" && <> in <span className="text-primary font-bold">{selectedCity}</span></>}
+            {nearMeActive && <> <span className="text-primary font-bold">near you</span> <span className="text-xs">(within 50 km)</span></>}
+            {!nearMeActive && selectedCity !== "all" && <> in <span className="text-primary font-bold">{selectedCity}</span></>}
             {selectedArea !== "all" && <>, <span className="text-primary">{selectedArea}</span></>}
           </p>
         </div>
