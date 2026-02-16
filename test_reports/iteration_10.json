@@ -1,0 +1,87 @@
+{
+  "summary": "Tested P1 (mobile responsiveness) and P2 (pricing rules CRUD UI). All 12 backend API tests passed. All frontend UI tests passed. P2 pricing rules fully working with toggle, edit, delete. P1 mobile nav text not truncated, bookings use card layout on mobile.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "VenueOwnerDashboard.js",
+        "issues": ["ESLint warning: useEffect has missing dependency 'loadData' (line 135) - not critical but should be fixed with useCallback"]
+      }
+    ]
+  },
+  "passed_tests": [
+    "GET /api/venues/{venue_id}/pricing-rules - Returns rules list",
+    "POST /api/venues/{venue_id}/pricing-rules - Creates discount rule",
+    "POST /api/venues/{venue_id}/pricing-rules - Creates multiplier rule",
+    "POST /api/venues/{venue_id}/pricing-rules - Returns 403 for player (only owners)",
+    "PUT /api/pricing-rules/{rule_id} - Updates rule name, priority, action",
+    "PUT /api/pricing-rules/{rule_id} - Returns 404 for nonexistent rule",
+    "PUT /api/pricing-rules/{rule_id}/toggle - Toggles is_active state",
+    "PUT /api/pricing-rules/{rule_id}/toggle - Returns 404 for nonexistent rule",
+    "DELETE /api/pricing-rules/{rule_id} - Deletes rule and removes from list",
+    "DELETE /api/pricing-rules/{rule_id} - Returns 404 for nonexistent rule",
+    "GET /api/venues/{venue_id}/slots - Applies pricing rules to slot prices",
+    "Cleanup - Deleted TEST_ prefixed rules"
+  ],
+  "frontend_tests_passed": [
+    "P2: Venue owner pricing rules tab shows 4 seeded rules",
+    "P2: Create rule dialog opens with all fields (name, priority, days, time range, action type, value)",
+    "P2: Live price preview shows correct calculation (₹2000 → ₹2400 for 1.2x multiplier)",
+    "P2: Day-of-week selection buttons work (Sun-Sat toggle)",
+    "P2: Toggle switch activates/deactivates rules",
+    "P2: Edit pencil icon opens dialog with existing rule data",
+    "P2: Delete trash icon removes rule from list",
+    "P1: Mobile bottom navbar (375px) shows text labels without truncation",
+    "P1: Player mobile nav: Dashboard, Venues, Matches, Ranks, Alerts, Profile all visible",
+    "P1: Venue owner mobile nav: Dashboard, Alerts, Profile visible",
+    "P1: VenueOwnerDashboard bookings tab uses card layout (not table)",
+    "P1: Booking cards show venue name, guest, date, time, status badge, price",
+    "P1: Pricing rules work on mobile with card layout",
+    "Player booking flow regression: Venue detail loads with 34 slots",
+    "Pricing rules applied to slot prices (₹1700 early bird, ₹2200 peak)"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_pricing_rules.py",
+    "/app/test_reports/pytest/pricing_rules_tests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "VenueOwnerDashboard.js line 135: useEffect missing loadData dependency - wrap loadData in useCallback to fix",
+    "Dialog accessibility warning: Missing Description for DialogContent - add aria-describedby or DialogDescription"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_pricing_rules.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12 passed, 0 failed)",
+    "frontend": "100% (15 tests passed)"
+  },
+  "test_credentials": {
+    "venue_owner": {"email": "demo@owner.com", "password": "demo123"},
+    "player": {"email": "demo@player.com", "password": "demo123"},
+    "admin": {"email": "admin@horizon.com", "password": "admin123"}
+  },
+  "seed_data_creation": "Created TEST_ prefixed pricing rules during testing, cleaned up after tests",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "P1 mobile responsiveness and P2 pricing rules CRUD fully working. Pricing rules API endpoints: GET/POST /venues/{id}/pricing-rules, PUT/PUT-toggle/DELETE /pricing-rules/{id}. PowerPlay Arena has 4 pricing rules: Weekend Peak Updated (1.3x), Weekend Surge (1.2x), Peak Hours (1.1x), Early Bird Discount (0.85x). Mobile nav uses w-14 (56px) buttons with text-[9px] labels. Bookings tab uses glass-card layout.",
+  "mocked_apis": {
+    "Razorpay payment processing": "MOCKED - falls back to mock mode when no gateway keys configured"
+  },
+  "verified_features": {
+    "pricing_rules_get": {"status": "VERIFIED", "details": "GET /api/venues/{venue_id}/pricing-rules returns list with id, name, priority, conditions, action, is_active"},
+    "pricing_rules_create": {"status": "VERIFIED", "details": "POST creates rule with discount or multiplier action type"},
+    "pricing_rules_update": {"status": "VERIFIED", "details": "PUT /api/pricing-rules/{id} updates all fields"},
+    "pricing_rules_toggle": {"status": "VERIFIED", "details": "PUT /api/pricing-rules/{id}/toggle flips is_active boolean"},
+    "pricing_rules_delete": {"status": "VERIFIED", "details": "DELETE /api/pricing-rules/{id} removes rule"},
+    "pricing_rules_ui": {"status": "VERIFIED", "details": "Full UI with cards, toggle switch, edit/delete buttons, live preview"},
+    "mobile_navbar": {"status": "VERIFIED", "details": "375px width shows Dashboard/Venues/Matches/Ranks/Alerts/Profile without truncation"},
+    "mobile_bookings_cards": {"status": "VERIFIED", "details": "VenueOwnerDashboard bookings tab uses glass-card layout, not table"},
+    "player_booking_flow": {"status": "VERIFIED", "details": "Venue detail shows slots with pricing rules applied"}
+  }
+}
