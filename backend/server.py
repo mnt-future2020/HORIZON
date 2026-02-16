@@ -1714,18 +1714,47 @@ async def seed_demo_data():
     ]
     await db.match_requests.insert_many(match_requests)
 
+    # Create seed bookings for mercenary posts
+    merc_booking_1 = {
+        "id": str(uuid.uuid4()), "venue_id": venues[0]["id"],
+        "venue_name": "PowerPlay Arena", "host_id": player_id,
+        "host_name": "Arjun Kumar", "date": tomorrow,
+        "start_time": "19:00", "end_time": "20:00",
+        "turf_number": 1, "sport": "football",
+        "total_amount": 2400, "commission_amount": 240,
+        "payment_mode": "full", "payment_gateway": "mock",
+        "players": [player_id], "status": "confirmed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    merc_booking_2 = {
+        "id": str(uuid.uuid4()), "venue_id": venues[1]["id"],
+        "venue_name": "SmashPoint Courts", "host_id": coach_id,
+        "host_name": "Coach Sarah", "date": tomorrow,
+        "start_time": "20:00", "end_time": "21:00",
+        "turf_number": 1, "sport": "badminton",
+        "total_amount": 800, "commission_amount": 80,
+        "payment_mode": "full", "payment_gateway": "mock",
+        "players": [coach_id], "status": "confirmed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.bookings.insert_many([merc_booking_1, merc_booking_2])
+
     mercenary_posts = [
         {"id": str(uuid.uuid4()), "host_id": player_id, "host_name": "Arjun Kumar",
+         "booking_id": merc_booking_1["id"], "venue_id": venues[0]["id"],
          "sport": "football", "venue_name": "PowerPlay Arena",
          "date": tomorrow, "time": "19:00", "position_needed": "Goalkeeper",
-         "amount_per_player": 200, "spots_available": 1,
-         "applicants": [], "accepted": [], "status": "open",
+         "description": "Need a GK for 5v5 friendly. Intermediate level preferred.",
+         "amount_per_player": 200, "spots_available": 2, "spots_filled": 0,
+         "applicants": [], "accepted": [], "paid_players": [], "status": "open",
          "created_at": datetime.now(timezone.utc).isoformat()},
-        {"id": str(uuid.uuid4()), "host_id": str(uuid.uuid4()), "host_name": "Priya Nair",
+        {"id": str(uuid.uuid4()), "host_id": coach_id, "host_name": "Coach Sarah",
+         "booking_id": merc_booking_2["id"], "venue_id": venues[1]["id"],
          "sport": "badminton", "venue_name": "SmashPoint Courts",
          "date": tomorrow, "time": "20:00", "position_needed": "Doubles Partner",
-         "amount_per_player": 400, "spots_available": 1,
-         "applicants": [], "accepted": [], "status": "open",
+         "description": "Looking for a strong doubles partner for practice session.",
+         "amount_per_player": 400, "spots_available": 1, "spots_filled": 0,
+         "applicants": [], "accepted": [], "paid_players": [], "status": "open",
          "created_at": datetime.now(timezone.utc).isoformat()},
     ]
     await db.mercenary_posts.insert_many(mercenary_posts)
