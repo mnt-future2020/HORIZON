@@ -108,7 +108,7 @@ function VenueOwnerDashboardContent() {
     finally { setUpgrading(false); }
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true);
     try {
       const [vRes, bRes] = await Promise.all([
@@ -130,9 +130,10 @@ function VenueOwnerDashboardContent() {
     } finally {
       setLoading(false);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { loadData(); }, [loadData]);
 
   const handleCreateVenue = async () => {
     try {
