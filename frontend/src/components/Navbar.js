@@ -68,9 +68,11 @@ export default function Navbar() {
       { to: "/venues", icon: MapPin, label: "Venues" },
       { to: "/matchmaking", icon: Swords, label: "Matches" },
       { to: "/leaderboard", icon: Trophy, label: "Ranks" },
+      { to: "/highlights", icon: Video, label: "Highlights" },
     ],
     venue_owner: [
       { to: "/owner", icon: Building2, label: "Dashboard" },
+      { to: "/highlights", icon: Video, label: "Highlights" },
     ],
     coach: [
       { to: "/coach", icon: GraduationCap, label: "Dashboard" },
