@@ -1,0 +1,83 @@
+{
+  "summary": "Completed comprehensive testing of P2: Mercenary Marketplace feature. All 17 backend API tests passed (2 skipped due to no applicants). Frontend UI verified working correctly with all requested features.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "GET /api/mercenary - lists open mercenary posts (unauthenticated access works)",
+    "GET /api/mercenary?sport=football - filter by sport works",
+    "GET /api/mercenary/my-posts - requires auth, returns user's own posts",
+    "POST /api/mercenary - requires auth, creates post linked to booking_id",
+    "POST /api/mercenary - validates booking exists and belongs to user (404 on invalid)",
+    "POST /api/mercenary - creates post with all fields correctly populated",
+    "POST /api/mercenary/{id}/apply - requires auth",
+    "POST /api/mercenary/{id}/apply - prevents applying to own post (400 error)",
+    "POST /api/mercenary/{id}/apply - successful application creates applicant entry",
+    "POST /api/mercenary/{id}/apply - prevents duplicate applications (400 error)",
+    "POST /api/mercenary/{id}/accept/{applicantId} - only host can accept (403 for non-host)",
+    "POST /api/mercenary/{id}/reject/{applicantId} - host can reject applicants",
+    "POST /api/mercenary/{id}/pay - requires acceptance first (403 if not accepted)",
+    "POST /api/mercenary/{id}/pay - returns mock or razorpay payment info",
+    "Notifications - application notification sent to host",
+    "Notifications - acceptance notification sent to player",
+    "Full flow test - Apply → Accept → Pay flow works end-to-end",
+    "Frontend: Mercenary tab displays posts with position, venue, fee, spots",
+    "Frontend: Apply button works for non-host players",
+    "Frontend: Host sees ACCEPTED section with Paid/Awaiting Payment badges",
+    "Frontend: 'Applied — Waiting' badge shown after applying",
+    "Frontend: Create dialog has Match/Mercenary toggle",
+    "Frontend: Mercenary mode shows booking selector, position, fee, spots inputs"
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_mercenary_marketplace.py",
+    "/app/test_reports/pytest/mercenary_tests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Mercenary post creation correctly validates booking ownership before creating",
+    "Payment flow correctly uses mock fallback when Razorpay not configured",
+    "After mock payment, player is added to booking's players list automatically",
+    "Spots_filled is incremented and status changes to 'filled' when all spots taken",
+    "Proper data-testid attributes on all interactive elements for testing"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_mercenary_marketplace.py"
+  ],
+  "success_rate": {
+    "backend": "100% (17 passed, 2 skipped)",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "player": {"email": "demo@player.com", "password": "demo123", "role": "Host of football/goalkeeper posts"},
+    "coach": {"email": "demo@coach.com", "password": "demo123", "role": "Host of badminton/doubles post, paid for football posts"},
+    "owner": {"email": "demo@owner.com", "password": "demo123", "role": "Venue owner - no matchmaking access"}
+  },
+  "seed_data_creation": "Backend tests created TEST_Midfielder mercenary post via API. Coach Sarah accepted and paid for Goalkeeper and TEST_Midfielder posts.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "P2 Mercenary Marketplace fully implemented and tested. Three mercenary posts exist: 1) TEST_Midfielder at PowerPlay Arena (2 spots, 1 filled by Coach Sarah), 2) Goalkeeper at PowerPlay Arena (2 spots, 1 filled by Coach Sarah), 3) Doubles Partner at SmashPoint Courts (1 spot, open - Player Arjun has applied). Payment uses Razorpay MOCK fallback. Only 'player' role has access to /matchmaking route - coach and owner roles have different dashboards. Key endpoints: /api/mercenary (list), /api/mercenary/my-posts, /api/mercenary (create), /api/mercenary/{id}/apply, /api/mercenary/{id}/accept/{applicantId}, /api/mercenary/{id}/reject/{applicantId}, /api/mercenary/{id}/pay, /api/mercenary/{id}/verify-payment.",
+  "mocked_apis": {
+    "Razorpay payment processing": "MOCKED - payment gateway falls back to mock mode when no gateway keys configured"
+  },
+  "feature_verification": {
+    "mercenary_list": "VERIFIED - Returns open posts with all required fields",
+    "mercenary_my_posts": "VERIFIED - Returns user's own posts",
+    "mercenary_create_linked_to_booking": "VERIFIED - Creates post linked to user's booking, inherits venue info",
+    "mercenary_apply": "VERIFIED - Prevents self-apply, duplicate apply, creates notification",
+    "mercenary_accept": "VERIFIED - Only host can accept, moves applicant to accepted list",
+    "mercenary_reject": "VERIFIED - Only host can reject, removes applicant from list",
+    "mercenary_pay_mock": "VERIFIED - Auto-processes payment, adds to paid_players, increments spots_filled",
+    "mercenary_notifications": "VERIFIED - Application notification to host, acceptance notification to player",
+    "frontend_mercenary_tab": "VERIFIED - Shows posts with position, venue, fee, spots",
+    "frontend_apply_button": "VERIFIED - Works for non-host players",
+    "frontend_host_view": "VERIFIED - Shows ACCEPTED section with Paid/Awaiting badges",
+    "frontend_applied_badge": "VERIFIED - Shows 'Applied — Waiting' after applying",
+    "frontend_create_mercenary_dialog": "VERIFIED - Has booking selector, position, fee, spots inputs"
+  }
+}
