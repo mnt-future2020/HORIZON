@@ -131,6 +131,22 @@ export const subscriptionAPI = {
   upgrade: (data) => api.put("/subscription/upgrade", data),
 };
 
+export const iotAPI = {
+  listDevices: (venueId) => api.get("/iot/devices", { params: { venue_id: venueId } }),
+  createDevice: (data) => api.post("/iot/devices", data),
+  updateDevice: (id, data) => api.put(`/iot/devices/${id}`, data),
+  deleteDevice: (id) => api.delete(`/iot/devices/${id}`),
+  controlDevice: (id, data) => api.post(`/iot/devices/${id}/control`, data),
+  listZones: (venueId) => api.get("/iot/zones", { params: { venue_id: venueId } }),
+  createZone: (data) => api.post("/iot/zones", data),
+  updateZone: (id, data) => api.put(`/iot/zones/${id}`, data),
+  deleteZone: (id) => api.delete(`/iot/zones/${id}`),
+  controlZone: (id, data) => api.post(`/iot/zones/${id}/control`, data),
+  energy: (venueId, period) => api.get("/iot/energy", { params: { venue_id: venueId, period } }),
+  schedules: (venueId, date) => api.get("/iot/schedules", { params: { venue_id: venueId, date } }),
+  syncBookings: (venueId) => api.post("/iot/sync-bookings", null, { params: { venue_id: venueId } }),
+};
+
 export const highlightAPI = {
   upload: (formData, onProgress) =>
     api.post("/highlights/upload", formData, {
