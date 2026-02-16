@@ -1,14 +1,14 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from database import db
-from auth import get_current_user, hash_pw, verify_pw, create_token
-from models import RegisterInput, LoginInput
+from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
+from database import db
+from auth import hash_pw, verify_pw, create_token, get_current_user
+from models import RegisterInput, LoginInput
 import uuid
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 
 
-@router.post("/register")
+@router.post("/auth/register")
 async def register(input: RegisterInput):
     if input.role == "super_admin":
         raise HTTPException(403, "Cannot register as super admin")
@@ -45,7 +45,7 @@ async def register(input: RegisterInput):
     return {"token": token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
 
 
-@router.post("/login")
+@router.post("/auth/login")
 async def login(input: LoginInput):
     user = await db.users.find_one({"email": input.email})
     if not user or not verify_pw(input.password, user["password_hash"]):
@@ -55,15 +55,15 @@ async def login(input: LoginInput):
     return {"token": token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
 
 
-@router.get("/me")
+@router.get("/auth/me")
 async def get_me(user=Depends(get_current_user)):
-    return user
+    return {k: v for k, v in user.items() if k != "password_hash"}
 
 
-@router.put("/profile")
+@router.put("/auth/profile")
 async def update_profile(request: Request, user=Depends(get_current_user)):
     data = await request.json()
-    allowed = ["name", "phone", "avatar", "sports", "preferred_position"]
+    allowed = ["name", "phone", "sports", "preferred_position", "avatar"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})

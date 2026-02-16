@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional
+from datetime import datetime, timezone
 from database import db
 from auth import get_current_user
 from models import AcademyCreate
-from datetime import datetime, timezone
 import uuid
 
-router = APIRouter(tags=["academies"])
+router = APIRouter()
 
 
 @router.get("/academies")
@@ -25,7 +25,8 @@ async def create_academy(input: AcademyCreate, user=Depends(get_current_user)):
     academy = {
         "id": str(uuid.uuid4()), "coach_id": user["id"],
         "coach_name": user["name"], **input.model_dump(),
-        "students": [], "current_students": 0, "status": "active",
+        "current_students": 0, "students": [],
+        "status": "active",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.academies.insert_one(academy)
@@ -43,14 +44,14 @@ async def get_academy(academy_id: str):
 
 @router.post("/academies/{academy_id}/students")
 async def add_student(academy_id: str, request: Request, user=Depends(get_current_user)):
-    data = await request.json()
-    academy = await db.academies.find_one({"id": academy_id})
-    if not academy or academy["coach_id"] != user["id"]:
-        raise HTTPException(403, "Not authorized")
+    body = await request.json()
     student = {
-        "id": str(uuid.uuid4()), "name": data.get("name", ""),
-        "email": data.get("email", ""), "phone": data.get("phone", ""),
-        "joined_at": datetime.now(timezone.utc).isoformat()
+        "id": str(uuid.uuid4()),
+        "name": body.get("name", ""),
+        "email": body.get("email", ""),
+        "phone": body.get("phone", ""),
+        "joined_at": datetime.now(timezone.utc).isoformat(),
+        "subscription_status": "active"
     }
     await db.academies.update_one(
         {"id": academy_id},
@@ -62,10 +63,11 @@ async def add_student(academy_id: str, request: Request, user=Depends(get_curren
 @router.delete("/academies/{academy_id}/students/{student_id}")
 async def remove_student(academy_id: str, student_id: str, user=Depends(get_current_user)):
     academy = await db.academies.find_one({"id": academy_id})
-    if not academy or academy["coach_id"] != user["id"]:
-        raise HTTPException(403, "Not authorized")
+    if not academy:
+        raise HTTPException(404, "Academy not found")
+    students = [s for s in academy.get("students", []) if s["id"] != student_id]
     await db.academies.update_one(
         {"id": academy_id},
-        {"$pull": {"students": {"id": student_id}}, "$inc": {"current_students": -1}}
+        {"$set": {"students": students, "current_students": len(students)}}
     )
     return {"message": "Student removed"}

@@ -1,17 +1,17 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional
+from datetime import datetime, timezone
 from database import db
 from auth import get_current_user, get_razorpay_client, get_platform_settings
 from models import MatchRequestCreate, MercenaryCreate
-from datetime import datetime, timezone
 import uuid
 import logging
 
+router = APIRouter()
 logger = logging.getLogger("horizon")
-router = APIRouter(tags=["matchmaking"])
 
 
-# ── Matchmaking Routes ──
+# --- Matchmaking Routes ---
 @router.get("/matchmaking")
 async def list_matches(sport: Optional[str] = None):
     query = {"status": "open"}
@@ -27,7 +27,8 @@ async def create_match(input: MatchRequestCreate, user=Depends(get_current_user)
         "id": str(uuid.uuid4()), "creator_id": user["id"],
         "creator_name": user["name"], **input.model_dump(),
         "players_joined": [user["id"]], "player_names": [user["name"]],
-        "status": "open", "created_at": datetime.now(timezone.utc).isoformat()
+        "status": "open",
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.match_requests.insert_one(match)
     match.pop("_id", None)
@@ -41,17 +42,18 @@ async def join_match(match_id: str, user=Depends(get_current_user)):
         raise HTTPException(404, "Match not found")
     if user["id"] in match.get("players_joined", []):
         raise HTTPException(400, "Already joined")
-    sr = user.get("skill_rating", 1500)
-    if sr < match.get("min_skill", 0) or sr > match.get("max_skill", 3000):
-        raise HTTPException(400, f"Skill rating {sr} outside range {match.get('min_skill')}-{match.get('max_skill')}")
-    updates = {"$push": {"players_joined": user["id"], "player_names": user["name"]}}
-    if len(match.get("players_joined", [])) + 1 >= match.get("players_needed", 10):
-        updates["$set"] = {"status": "filled"}
-    await db.match_requests.update_one({"id": match_id}, updates)
+    joined = match.get("players_joined", [])
+    names = match.get("player_names", [])
+    joined.append(user["id"])
+    names.append(user["name"])
+    updates = {"players_joined": joined, "player_names": names}
+    if len(joined) >= match.get("players_needed", 10):
+        updates["status"] = "filled"
+    await db.match_requests.update_one({"id": match_id}, {"$set": updates})
     return {"message": "Joined match"}
 
 
-# ── Mercenary Routes ──
+# --- Mercenary Routes ---
 @router.get("/mercenary")
 async def list_mercenary(sport: Optional[str] = None):
     query = {"status": "open"}
@@ -113,10 +115,13 @@ async def apply_mercenary(post_id: str, user=Depends(get_current_user)):
         "sports": user.get("sports", []),
         "applied_at": datetime.now(timezone.utc).isoformat()
     }
-    await db.mercenary_posts.update_one({"id": post_id}, {"$push": {"applicants": applicant}})
+    await db.mercenary_posts.update_one(
+        {"id": post_id}, {"$push": {"applicants": applicant}}
+    )
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": post["host_id"],
-        "type": "mercenary_application", "title": "New Mercenary Application",
+        "type": "mercenary_application",
+        "title": "New Mercenary Application",
         "message": f"{user['name']} (Rating: {user.get('skill_rating', 1500)}) applied for {post['position_needed']}",
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
@@ -141,9 +146,11 @@ async def accept_mercenary(post_id: str, applicant_id: str, user=Depends(get_cur
     })
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": applicant_id,
-        "type": "mercenary_accepted", "title": "You're In!",
+        "type": "mercenary_accepted",
+        "title": "You're In!",
         "message": f"You've been accepted for {post['position_needed']} at {post['venue_name']} on {post['date']} at {post['time']}. Pay {chr(8377)}{post['amount_per_player']} to confirm.",
-        "venue_id": post.get("venue_id", ""), "mercenary_post_id": post_id,
+        "venue_id": post.get("venue_id", ""),
+        "mercenary_post_id": post_id,
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
     return {"message": "Applicant accepted"}
@@ -156,7 +163,9 @@ async def reject_mercenary(post_id: str, applicant_id: str, user=Depends(get_cur
         raise HTTPException(404, "Post not found")
     if post["host_id"] != user["id"]:
         raise HTTPException(403, "Only the host can reject applicants")
-    await db.mercenary_posts.update_one({"id": post_id}, {"$pull": {"applicants": {"id": applicant_id}}})
+    await db.mercenary_posts.update_one(
+        {"id": post_id}, {"$pull": {"applicants": {"id": applicant_id}}}
+    )
     return {"message": "Applicant rejected"}
 
 
@@ -182,8 +191,10 @@ async def pay_mercenary(post_id: str, user=Depends(get_current_user)):
             })
             gw = (await get_platform_settings()).get("payment_gateway", {})
             return {
-                "payment_gateway": "razorpay", "razorpay_order_id": rzp_order["id"],
-                "razorpay_key_id": gw.get("key_id", ""), "amount": amount
+                "payment_gateway": "razorpay",
+                "razorpay_order_id": rzp_order["id"],
+                "razorpay_key_id": gw.get("key_id", ""),
+                "amount": amount
             }
         except Exception as e:
             logger.warning(f"Razorpay failed for mercenary: {e}")
@@ -194,8 +205,11 @@ async def pay_mercenary(post_id: str, user=Depends(get_current_user)):
     if new_filled >= post.get("spots_available", 1):
         updates["$set"]["status"] = "filled"
     await db.mercenary_posts.update_one({"id": post_id}, updates)
+
     if post.get("booking_id"):
-        await db.bookings.update_one({"id": post["booking_id"]}, {"$addToSet": {"players": user["id"]}})
+        await db.bookings.update_one(
+            {"id": post["booking_id"]}, {"$addToSet": {"players": user["id"]}}
+        )
     return {"payment_gateway": "mock", "message": "Payment successful", "amount": amount}
 
 
@@ -204,17 +218,23 @@ async def verify_mercenary_payment(post_id: str, request: Request, user=Depends(
     post = await db.mercenary_posts.find_one({"id": post_id})
     if not post:
         raise HTTPException(404, "Post not found")
+
     paid_player = {"id": user["id"], "name": user["name"], "paid_at": datetime.now(timezone.utc).isoformat()}
     new_filled = post.get("spots_filled", 0) + 1
     updates = {"$push": {"paid_players": paid_player}, "$set": {"spots_filled": new_filled}}
     if new_filled >= post.get("spots_available", 1):
         updates["$set"]["status"] = "filled"
     await db.mercenary_posts.update_one({"id": post_id}, updates)
+
     if post.get("booking_id"):
-        await db.bookings.update_one({"id": post["booking_id"]}, {"$addToSet": {"players": user["id"]}})
+        await db.bookings.update_one(
+            {"id": post["booking_id"]}, {"$addToSet": {"players": user["id"]}}
+        )
+
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": post["host_id"],
-        "type": "mercenary_paid", "title": "Player Confirmed!",
+        "type": "mercenary_paid",
+        "title": "Player Confirmed!",
         "message": f"{user['name']} paid and joined your game at {post['venue_name']}",
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })

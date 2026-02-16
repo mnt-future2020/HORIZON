@@ -1,41 +1,51 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
+from datetime import datetime, timezone
 from database import db
 from auth import get_current_user
 from models import NotifySubscribeInput
-from datetime import datetime, timezone
 import uuid
 import logging
 
+router = APIRouter()
 logger = logging.getLogger("horizon")
-router = APIRouter(tags=["notifications"])
 
 
-async def _notify_slot_available(venue_id: str, date: str, start_time: str, turf_number: int):
+async def notify_slot_available(venue_id: str, date: str, start_time: str, turf_number: int):
     subs = await db.notification_subscriptions.find({
         "venue_id": venue_id, "date": date,
         "start_time": start_time, "turf_number": turf_number,
         "status": "active"
     }, {"_id": 0}).to_list(100)
+
     if not subs:
         return
+
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0, "name": 1})
     venue_name = venue["name"] if venue else "Unknown Venue"
+
     notifications = []
     for sub in subs:
         notifications.append({
-            "id": str(uuid.uuid4()), "user_id": sub["user_id"],
-            "type": "slot_available", "title": "Slot Now Available!",
+            "id": str(uuid.uuid4()),
+            "user_id": sub["user_id"],
+            "type": "slot_available",
+            "title": "Slot Now Available!",
             "message": f"{venue_name} - {start_time} on {date} (Turf {turf_number}) is now free. Book it before someone else does!",
-            "venue_id": venue_id, "date": date, "start_time": start_time,
-            "turf_number": turf_number, "is_read": False,
+            "venue_id": venue_id,
+            "date": date,
+            "start_time": start_time,
+            "turf_number": turf_number,
+            "is_read": False,
             "created_at": datetime.now(timezone.utc).isoformat()
         })
+
     if notifications:
         await db.notifications.insert_many(notifications)
         sub_ids = [s["id"] for s in subs]
         await db.notification_subscriptions.update_many(
-            {"id": {"$in": sub_ids}}, {"$set": {"status": "notified"}}
+            {"id": {"$in": sub_ids}},
+            {"$set": {"status": "notified"}}
         )
     logger.info(f"Sent {len(notifications)} slot-available notifications for {venue_id}/{date}/{start_time}")
 
@@ -49,11 +59,16 @@ async def subscribe_notification(input: NotifySubscribeInput, user=Depends(get_c
     })
     if existing:
         return {"message": "Already subscribed", "subscribed": True}
+
     sub = {
-        "id": str(uuid.uuid4()), "user_id": user["id"],
-        "venue_id": input.venue_id, "date": input.date,
-        "start_time": input.start_time, "turf_number": input.turf_number,
-        "status": "active", "created_at": datetime.now(timezone.utc).isoformat()
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "venue_id": input.venue_id,
+        "date": input.date,
+        "start_time": input.start_time,
+        "turf_number": input.turf_number,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.notification_subscriptions.insert_one(sub)
     sub.pop("_id", None)
@@ -86,13 +101,19 @@ async def get_unread_count(user=Depends(get_current_user)):
 
 @router.put("/notifications/{notif_id}/read")
 async def mark_notification_read(notif_id: str, user=Depends(get_current_user)):
-    await db.notifications.update_one({"id": notif_id, "user_id": user["id"]}, {"$set": {"is_read": True}})
+    await db.notifications.update_one(
+        {"id": notif_id, "user_id": user["id"]},
+        {"$set": {"is_read": True}}
+    )
     return {"message": "Marked as read"}
 
 
 @router.put("/notifications/read-all")
 async def mark_all_read(user=Depends(get_current_user)):
-    await db.notifications.update_many({"user_id": user["id"], "is_read": False}, {"$set": {"is_read": True}})
+    await db.notifications.update_many(
+        {"user_id": user["id"], "is_read": False},
+        {"$set": {"is_read": True}}
+    )
     return {"message": "All marked as read"}
 
 

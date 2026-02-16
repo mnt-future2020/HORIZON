@@ -1,19 +1,15 @@
-from fastapi import APIRouter, Depends, Request, HTTPException
-from database import db, redis_client
+from fastapi import APIRouter, HTTPException, Depends, Request
+from datetime import datetime, timezone
+from database import db, get_redis, lock_key
 from auth import get_current_user, get_razorpay_client, get_platform_settings
 from models import BookingCreate
-from datetime import datetime, timezone
 import uuid
 import hmac
 import hashlib
 import logging
 
+router = APIRouter()
 logger = logging.getLogger("horizon")
-router = APIRouter(tags=["bookings"])
-
-
-def lock_key(venue_id, date, start_time, turf_number):
-    return f"lock:{venue_id}:{date}:{start_time}:{turf_number}"
 
 
 @router.post("/bookings")
@@ -22,6 +18,7 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     if not venue:
         raise HTTPException(404, "Venue not found")
 
+    redis_client = get_redis()
     if redis_client:
         key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
         lock_owner = await redis_client.get(key)
@@ -84,8 +81,10 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
         split_token = str(uuid.uuid4())[:8]
         per_share = price // input.split_count
         booking["split_config"] = {
-            "total_shares": input.split_count, "per_share": per_share,
-            "shares_paid": 0, "split_token": split_token
+            "total_shares": input.split_count,
+            "per_share": per_share,
+            "shares_paid": 0,
+            "split_token": split_token
         }
         booking["status"] = "pending"
         await db.bookings.insert_one(booking)
@@ -130,6 +129,7 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     if redis_client:
         key = lock_key(input.venue_id, input.date, input.start_time, input.turf_number)
         await redis_client.delete(key)
+        logger.info(f"Lock released after booking: {key}")
 
     gw = (await get_platform_settings()).get("payment_gateway", {})
     booking["razorpay_key_id"] = gw.get("key_id", "")
@@ -150,6 +150,7 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
     settings = await get_platform_settings()
     gw = settings.get("payment_gateway", {})
     key_secret = gw.get("key_secret", "")
+
     if key_secret:
         msg = f"{razorpay_order_id}|{razorpay_payment_id}"
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
@@ -169,8 +170,11 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
         new_shares_paid = booking["split_config"]["shares_paid"] + 1
         new_status = "confirmed" if new_shares_paid >= booking["split_config"]["total_shares"] else "pending"
         await db.bookings.update_one({"id": booking_id}, {
-            "$set": {"split_config.shares_paid": new_shares_paid, "status": new_status,
-                     "payment_details.last_payment_id": razorpay_payment_id},
+            "$set": {
+                "split_config.shares_paid": new_shares_paid,
+                "status": new_status,
+                "payment_details.last_payment_id": razorpay_payment_id
+            },
             "$push": {"players": user["id"]}
         })
         return {"message": "Share paid", "shares_paid": new_shares_paid, "status": new_status}
@@ -198,9 +202,14 @@ async def get_gateway_info():
 
 @router.get("/bookings")
 async def list_bookings(user=Depends(get_current_user)):
-    bookings = await db.bookings.find(
-        {"$or": [{"host_id": user["id"]}, {"players": user["id"]}]}, {"_id": 0}
-    ).sort("date", -1).to_list(100)
+    if user["role"] == "venue_owner":
+        venues = await db.venues.find({"owner_id": user["id"]}, {"id": 1, "_id": 0}).to_list(100)
+        vids = [v["id"] for v in venues]
+        bookings = await db.bookings.find({"venue_id": {"$in": vids}}, {"_id": 0}).sort("date", -1).to_list(200)
+    else:
+        bookings = await db.bookings.find(
+            {"$or": [{"host_id": user["id"]}, {"players": user["id"]}]}, {"_id": 0}
+        ).sort("date", -1).to_list(200)
     return bookings
 
 
@@ -221,25 +230,29 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
         raise HTTPException(403, "Only the host can cancel")
     await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "cancelled"}})
     if booking.get("split_config"):
-        await db.split_payments.update_many({"booking_id": booking_id}, {"$set": {"status": "refunded"}})
+        await db.split_payments.update_many(
+            {"booking_id": booking_id}, {"$set": {"status": "refunded"}}
+        )
+    redis_client = get_redis()
     if redis_client:
         key = lock_key(booking["venue_id"], booking["date"], booking["start_time"], booking.get("turf_number", 1))
         await redis_client.delete(key)
-    from routes.notifications import _notify_slot_available
-    await _notify_slot_available(
+
+    from routes.notifications import notify_slot_available
+    await notify_slot_available(
         booking["venue_id"], booking["date"],
         booking["start_time"], booking.get("turf_number", 1)
     )
     return {"message": "Booking cancelled"}
 
 
-# ── Split Payment Routes ──
+# --- Split Payment Routes ---
 @router.get("/split/{token}")
 async def get_split_info(token: str):
     booking = await db.bookings.find_one({"split_config.split_token": token}, {"_id": 0})
     if not booking:
-        raise HTTPException(404, "Not found")
-    payments = await db.split_payments.find({"split_token": token}, {"_id": 0}).to_list(50)
+        raise HTTPException(404, "Split payment not found")
+    payments = await db.split_payments.find({"split_token": token}, {"_id": 0}).to_list(100)
     sc = booking.get("split_config", {})
     return {
         "booking": booking, "payments": payments,
@@ -278,12 +291,13 @@ async def pay_split(token: str, request: Request):
 
     payment = {
         "id": str(uuid.uuid4()), "booking_id": booking["id"],
-        "split_token": token, "payer_id": "", "payer_name": payer_name,
-        "amount": sc["per_share"], "status": "paid",
-        "paid_at": datetime.now(timezone.utc).isoformat()
+        "split_token": token, "payer_id": "",
+        "payer_name": payer_name, "amount": sc["per_share"],
+        "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()
     }
     await db.split_payments.insert_one(payment)
     payment.pop("_id", None)
+
     new_paid = sc["shares_paid"] + 1
     updates = {"split_config.shares_paid": new_paid}
     if new_paid >= sc["total_shares"]:
@@ -301,6 +315,7 @@ async def verify_split_payment(token: str, request: Request):
     booking = await db.bookings.find_one({"split_config.split_token": token})
     if not booking:
         raise HTTPException(404, "Booking not found")
+
     payment = {
         "id": str(uuid.uuid4()), "booking_id": booking["id"],
         "split_token": token, "payer_id": data.get("payer_id", ""),
@@ -311,37 +326,11 @@ async def verify_split_payment(token: str, request: Request):
     }
     await db.split_payments.insert_one(payment)
     payment.pop("_id", None)
+
     sc = booking["split_config"]
     new_paid = sc["shares_paid"] + 1
     updates = {"split_config.shares_paid": new_paid}
     if new_paid >= sc["total_shares"]:
         updates["status"] = "confirmed"
     await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
-    return {"message": "Share paid", "shares_paid": new_paid,
-            "status": "confirmed" if new_paid >= sc["total_shares"] else "pending"}
-
-
-# ── Pricing Rules Routes ──
-@router.get("/venues/{venue_id}/pricing-rules")
-async def get_pricing_rules(venue_id: str):
-    rules = await db.pricing_rules.find({"venue_id": venue_id}, {"_id": 0}).sort("priority", -1).to_list(50)
-    return rules
-
-
-@router.post("/venues/{venue_id}/pricing-rules")
-async def create_pricing_rule(venue_id: str, input: PricingRuleCreate, user=Depends(get_current_user)):
-    from models import PricingRuleCreate as _unused  # noqa: just for import clarity
-    rule = {
-        "id": str(uuid.uuid4()), "venue_id": venue_id,
-        **input.model_dump(), "is_active": True,
-        "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    await db.pricing_rules.insert_one(rule)
-    rule.pop("_id", None)
-    return rule
-
-
-@router.delete("/pricing-rules/{rule_id}")
-async def delete_pricing_rule(rule_id: str, user=Depends(get_current_user)):
-    await db.pricing_rules.delete_one({"id": rule_id})
-    return {"message": "Rule deleted"}
+    return {"message": "Share paid", "shares_paid": new_paid, "status": "confirmed" if new_paid >= sc["total_shares"] else "pending"}
