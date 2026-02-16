@@ -315,6 +315,14 @@ export default function IoTDashboard() {
           <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mt-1">
             Smart <span className="text-primary">Lighting</span>
           </h1>
+          {mqttStatus && (
+            <div className="flex items-center gap-1.5 mt-1" data-testid="mqtt-status">
+              <Radio className={`h-3 w-3 ${mqttStatus.connected ? "text-emerald-400" : "text-muted-foreground"}`} />
+              <span className={`text-[10px] font-mono ${mqttStatus.connected ? "text-emerald-400" : "text-muted-foreground"}`}>
+                MQTT {mqttStatus.connected ? "Connected" : "Disconnected"} &bull; {mqttStatus.broker}
+              </span>
+            </div>
+          )}
         </div>
         <Button size="sm" variant="outline" className="font-bold text-xs h-8 shrink-0"
           onClick={handleSync} data-testid="sync-btn">
