@@ -33,82 +33,49 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - 1833-line monolith -> 14 modular files, server.py now 58 lines
 
 ### AI-Driven Matchmaking with Glicko-2 (COMPLETE - Feb 16)
-- Glicko-2 rating algorithm (rating, deviation, volatility)
-- Recommended matches (compatibility scoring 0-100%), Auto-Match, AI team balancing
-- Match result submission with majority-rule confirmation
-- Leaderboard with tier badges, sport filter, clickable rows
+- Glicko-2 rating algorithm, Recommended matches, Auto-Match, AI team balancing
+- Match result submission, Leaderboard with tier badges
 
 ### Tamper-Proof Rating History (COMPLETE - Feb 16)
-- **Blockchain-style SHA-256 chain hashing** — Each rating change is a cryptographic record chained to the previous via prev_hash
-- **GENESIS hash** as chain start; no manual edits possible
-- **`/api/rating/verify/{userId}`** — Cryptographic verification of entire chain integrity
-- **`/api/rating/certificate/{userId}`** — Shareable certificate with journey stats, peak/lowest, timeline
-- **Rating Profile page** (`/profile`, `/profile/:userId}`) with:
-  - Rating card (tier, RD, W/L/D), Canvas sparkline chart
-  - Chain Integrity panel (status, fingerprint, Verify Now button)
-  - Expandable match history showing SHA-256 hash, prev_hash, opponents, confirmations
-  - Green "Verified Rating" badge when chain is intact
-- **Leaderboard** rows clickable → navigate to player rating profiles
+- Blockchain-style SHA-256 chain hashing, GENESIS hash
+- Rating Profile page, Chain Integrity panel, Verified Rating badge
+
+### Mobile Responsiveness Fix (COMPLETE - Feb 16)
+- Bottom nav, card layouts, flex-wrap, responsive breakpoints
+
+### Rule-Based Dynamic Pricing (COMPLETE - Feb 16)
+- Full CRUD, day-of-week selector, time range, multiplier/discount actions
+
+### AI Video Highlights (COMPLETE - Feb 16)
+- Video Upload, Gemini AI Analysis, Key Moments, Shareable Links
+
+### IoT Smart Lighting (COMPLETE - Feb 16)
+- Real MQTT Broker (broker.emqx.io), Device Simulator, WebSocket, Zone Management
+- Auto-Scheduling, Energy Analytics, Device Control
+
+### Booking Flow Fix - Mock Payment Two-Step (COMPLETE - Feb 16)
+- **Problem**: Mock payments instantly confirmed bookings without any payment step
+- **Fix**: Mock payments now create bookings as `payment_pending`, requiring explicit confirmation
+- **New endpoint**: `POST /api/bookings/{id}/mock-confirm` for explicit mock payment confirmation
+- **Frontend**: 3-step flow: Pay -> Review ("Awaiting Payment") -> Confirm Payment -> Booking Confirmed
+- **Expiry**: All bookings now have `expires_at` (24h), with `POST /api/bookings/cleanup-expired` for stale ones
+- **Redis**: Correctly uses SOFT_LOCK_TTL=600s (10min), HARD_LOCK_TTL=1800s (30min), graceful degradation when unavailable
 
 ## Architecture
 ```
 backend/
-  server.py, database.py, models.py, auth.py, seed.py, glicko2.py
+  server.py, database.py, models.py, auth.py, seed.py, glicko2.py, mqtt_service.py, device_simulator.py
   routes/ auth.py, venues.py, bookings.py, matchmaking.py,
-          notifications.py, admin.py, academies.py, analytics.py, ratings.py
+          notifications.py, admin.py, academies.py, analytics.py, ratings.py, highlights.py, iot.py
 ```
 
 ## DB Collections
-users, venues, bookings, split_payments, pricing_rules, match_requests, mercenary_posts, academies, notifications, notification_subscriptions, platform_settings, **rating_history**
+users, venues, bookings, split_payments, pricing_rules, match_requests, mercenary_posts, academies, notifications, notification_subscriptions, platform_settings, rating_history, iot_devices, video_highlights
 
 ## Test Credentials
-Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: demo@owner.com/demo123 | Coach: demo@coach.com/demo123
+Player: demo@player.com/demo123 | Owner: demo@owner.com/demo123 | Coach: demo@coach.com/demo123 | Admin: admin@horizon.com/admin123
 
-## Mocked: Razorpay (SDK wired, mock fallback when no keys)
-
-### Mobile Responsiveness Fix (COMPLETE - Feb 16)
-- Bottom nav: tighter spacing (w-14, text-[9px]) prevents truncation on 375px screens
-- VenueOwnerDashboard: bookings tab uses card layout instead of table for mobile
-- All tabs use flex-wrap for mobile-safe wrapping
-- Stat cards, pricing rule cards, plan cards responsive with sm: breakpoints
-
-### Rule-Based Dynamic Pricing (COMPLETE - Feb 16)
-- **Full CRUD** for pricing rules: Create, Read, Update, Delete
-- **Day-of-week selector**: Toggle buttons (Sun-Sat) for targeted pricing
-- **Time range**: Start/end time inputs for peak/off-peak hours
-- **Action types**: Multiplier (e.g., 1.5x surge) or Discount (e.g., 15% off)
-- **Toggle active/inactive**: Switch component per rule
-- **Live price preview**: Shows base price -> effective price with diff badge
-- **Color-coded cards**: Amber border for surcharge, emerald for discount
-- **Backend endpoints**: PUT /pricing-rules/{id}, PUT /pricing-rules/{id}/toggle
-
-### AI Video Highlights (COMPLETE - Feb 16)
-- **Video Upload**: Drag & drop or browse, up to 100MB, progress bar
-- **AI Analysis**: Gemini 2.5 Flash analyzes match videos via Emergent LLM key
-- **Key Moments**: Auto-detected with timestamps, descriptions, and significance badges
-- **Match Summary**: Sport detection, duration, intensity, player count
-- **Shareable Links**: Toggle public share with 8-char unique ID
-- **Public Page**: /highlights/shared/{shareId} renders without auth
-- **Multi-role**: Both players and venue owners can use
-- **Backend**: Full CRUD + AI endpoints at /api/highlights/*
-- **Frontend**: HighlightsPage.js + SharedHighlightPage.js + nav link
-
-### IoT Smart Lighting (COMPLETE - Feb 16)
-- **Device Management**: Full CRUD for IoT devices (floodlight, LED, ambient, emergency)
-- **Real MQTT Broker**: Connected to broker.emqx.io:1883 via gmqtt library
-  - Bidirectional: publish commands + subscribe to device status/telemetry
-  - Username/password auth ready (env vars: MQTT_USERNAME, MQTT_PASSWORD)
-  - Graceful fallback when broker unreachable
-- **Device Simulator**: `device_simulator.py` — 6 virtual devices connect to same broker, respond to commands, publish telemetry every 10s
-- **WebSocket**: Real-time device status updates at `/api/iot/ws`
-- **Zone Management**: Group devices by turf, zone-level control (All On/Off)
-- **Auto-Scheduling**: Lights auto on/off linked to booking times (5-min buffer)
-- **Energy Analytics**: kWh usage, cost estimation, daily trend charts (7d/30d)
-- **Device Control**: On/off toggle, brightness slider per device
-- **Multi-role**: Venue owners + Super admin access (players blocked)
-- **Live Dashboard**: MQTT status indicator, online/active count, power draw
-- **Backend**: /api/iot/* + mqtt_service.py + device_simulator.py
-- **Frontend**: IoTDashboard.js with 4 tabs + MQTT status + WebSocket
+## Mocked: Razorpay (SDK wired, mock fallback with two-step confirmation when no keys)
 
 ## Remaining Backlog
 - **P3**: Offline-First POS system for venue amenities
