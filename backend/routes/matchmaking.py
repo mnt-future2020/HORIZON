@@ -269,10 +269,13 @@ async def confirm_match_result(match_id: str, request: Request, user=Depends(get
 
 
 async def _apply_rating_updates(match_id: str, result: dict):
-    """Apply Glicko-2 rating updates after a confirmed result."""
+    """Apply Glicko-2 rating updates with tamper-proof history chain."""
+    from routes.ratings import create_rating_record
+
     team_a_ids = result.get("team_a", [])
     team_b_ids = result.get("team_b", [])
     winner = result.get("winner", "draw")
+    confirmations = result.get("confirmations", [])
 
     # Fetch all players
     all_ids = team_a_ids + team_b_ids
@@ -284,6 +287,11 @@ async def _apply_rating_updates(match_id: str, result: dict):
 
     if not players:
         return
+
+    # Get match metadata
+    match = await db.match_requests.find_one({"id": match_id}, {"_id": 0})
+    match_sport = match.get("sport", "unknown") if match else "unknown"
+    match_date = match.get("date", "") if match else ""
 
     # Calculate team averages for opponents
     team_a_ratings = [(players[p]["skill_rating"], players[p].get("skill_deviation", 350))
@@ -299,7 +307,6 @@ async def _apply_rating_updates(match_id: str, result: dict):
     avg_b = sum(r for r, _ in team_b_ratings) / len(team_b_ratings)
     avg_rd_b = sum(d for _, d in team_b_ratings) / len(team_b_ratings)
 
-    # Determine scores
     if winner == "team_a":
         score_a, score_b = 1.0, 0.0
     elif winner == "team_b":
@@ -307,70 +314,78 @@ async def _apply_rating_updates(match_id: str, result: dict):
     else:
         score_a, score_b = 0.5, 0.5
 
+    now = datetime.now(timezone.utc).isoformat()
     updates = []
 
-    # Update Team A players
+    # Process Team A
     for pid in team_a_ids:
         if pid not in players:
             continue
         p = players[pid]
-        new_r, new_rd, new_vol = update_rating(
-            p.get("skill_rating", 1500),
-            p.get("skill_deviation", 350),
-            p.get("volatility", 0.06),
-            [(avg_b, avg_rd_b, score_a)]
-        )
-        update_fields = {
-            "skill_rating": new_r,
-            "skill_deviation": new_rd,
-            "volatility": new_vol,
-        }
-        if winner == "team_a":
+        prev_r = p.get("skill_rating", 1500)
+        prev_rd = p.get("skill_deviation", 350)
+        prev_vol = p.get("volatility", 0.06)
+        new_r, new_rd, new_vol = update_rating(prev_r, prev_rd, prev_vol, [(avg_b, avg_rd_b, score_a)])
+        res_label = "win" if winner == "team_a" else ("loss" if winner == "team_b" else "draw")
+        update_fields = {"skill_rating": new_r, "skill_deviation": new_rd, "volatility": new_vol}
+        if res_label == "win":
             update_fields["wins"] = p.get("wins", 0) + 1
-        elif winner == "team_b":
+        elif res_label == "loss":
             update_fields["losses"] = p.get("losses", 0) + 1
         else:
             update_fields["draws"] = p.get("draws", 0) + 1
-        updates.append((pid, update_fields, new_r - p.get("skill_rating", 1500)))
 
-    # Update Team B players
+        opponent_snap = [{"id": oid, "name": players[oid]["name"], "rating_at_time": players[oid].get("skill_rating", 1500), "rd_at_time": players[oid].get("skill_deviation", 350)} for oid in team_b_ids if oid in players]
+        updates.append((pid, update_fields, new_r - prev_r, prev_r, prev_rd, prev_vol, new_r, new_rd, new_vol, res_label, "a", opponent_snap))
+
+    # Process Team B
     for pid in team_b_ids:
         if pid not in players:
             continue
         p = players[pid]
-        new_r, new_rd, new_vol = update_rating(
-            p.get("skill_rating", 1500),
-            p.get("skill_deviation", 350),
-            p.get("volatility", 0.06),
-            [(avg_a, avg_rd_a, score_b)]
-        )
-        update_fields = {
-            "skill_rating": new_r,
-            "skill_deviation": new_rd,
-            "volatility": new_vol,
-        }
-        if winner == "team_b":
+        prev_r = p.get("skill_rating", 1500)
+        prev_rd = p.get("skill_deviation", 350)
+        prev_vol = p.get("volatility", 0.06)
+        new_r, new_rd, new_vol = update_rating(prev_r, prev_rd, prev_vol, [(avg_a, avg_rd_a, score_b)])
+        res_label = "win" if winner == "team_b" else ("loss" if winner == "team_a" else "draw")
+        update_fields = {"skill_rating": new_r, "skill_deviation": new_rd, "volatility": new_vol}
+        if res_label == "win":
             update_fields["wins"] = p.get("wins", 0) + 1
-        elif winner == "team_a":
+        elif res_label == "loss":
             update_fields["losses"] = p.get("losses", 0) + 1
         else:
             update_fields["draws"] = p.get("draws", 0) + 1
-        updates.append((pid, update_fields, new_r - p.get("skill_rating", 1500)))
 
-    # Apply all updates
-    for pid, fields, delta in updates:
+        opponent_snap = [{"id": oid, "name": players[oid]["name"], "rating_at_time": players[oid].get("skill_rating", 1500), "rd_at_time": players[oid].get("skill_deviation", 350)} for oid in team_a_ids if oid in players]
+        updates.append((pid, update_fields, new_r - prev_r, prev_r, prev_rd, prev_vol, new_r, new_rd, new_vol, res_label, "b", opponent_snap))
+
+    # Apply updates + create chain-hashed history records
+    for pid, fields, delta, prev_r, prev_rd, prev_vol, new_r, new_rd, new_vol, res_label, team, opp_snap in updates:
         await db.users.update_one({"id": pid}, {"$set": fields})
-        # Notify player of rating change
+
+        # Create tamper-proof rating record
+        await create_rating_record(
+            user_id=pid, match_id=match_id,
+            prev_rating=prev_r, new_rating=new_r,
+            prev_rd=prev_rd, new_rd=new_rd,
+            prev_vol=prev_vol, new_vol=new_vol,
+            result=res_label, team=team,
+            opponent_snapshot=opp_snap,
+            confirmations=confirmations,
+            match_sport=match_sport, match_date=match_date,
+            timestamp=now
+        )
+
         direction = "+" if delta > 0 else ""
         await db.notifications.insert_one({
             "id": str(uuid.uuid4()), "user_id": pid,
             "type": "rating_update",
             "title": "Rating Updated!",
             "message": f"Your skill rating changed by {direction}{delta} to {fields['skill_rating']} after the match.",
-            "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+            "is_read": False, "created_at": now
         })
 
-    logger.info(f"Glicko-2 ratings updated for match {match_id}: {len(updates)} players")
+    logger.info(f"Glicko-2 ratings + chain history updated for match {match_id}: {len(updates)} players")
 
 
 # --- Leaderboard ---
