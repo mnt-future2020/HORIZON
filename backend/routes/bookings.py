@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from database import db, get_redis, lock_key
 from auth import get_current_user, get_razorpay_client, get_platform_settings
 from models import BookingCreate
@@ -10,6 +10,8 @@ import logging
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
+
+PENDING_BOOKING_EXPIRY_HOURS = 24  # Auto-cancel pending bookings after 24h
 
 
 @router.post("/bookings")
