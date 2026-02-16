@@ -145,6 +145,7 @@ export const iotAPI = {
   energy: (venueId, period) => api.get("/iot/energy", { params: { venue_id: venueId, period } }),
   schedules: (venueId, date) => api.get("/iot/schedules", { params: { venue_id: venueId, date } }),
   syncBookings: (venueId) => api.post("/iot/sync-bookings", null, { params: { venue_id: venueId } }),
+  mqttStatus: () => api.get("/iot/mqtt-status"),
 };
 
 export const highlightAPI = {
