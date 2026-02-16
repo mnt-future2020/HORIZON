@@ -48,6 +48,8 @@ app.add_middleware(
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+import mqtt_service
+
 
 @app.on_event("startup")
 async def startup():
@@ -55,8 +57,14 @@ async def startup():
     count = await db.users.count_documents({})
     if count == 0:
         await seed_demo_data()
+    # Connect to MQTT broker (non-blocking, graceful failure)
+    try:
+        await mqtt_service.connect()
+    except Exception as e:
+        logging.warning(f"MQTT connection failed on startup: {e}")
 
 
 @app.on_event("shutdown")
 async def shutdown():
+    await mqtt_service.disconnect()
     await close_connections()
