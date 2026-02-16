@@ -325,7 +325,7 @@ async def control_zone(zone_id: str, ctrl: DeviceControl, user=Depends(get_curre
     brightness = ctrl.brightness if ctrl.brightness is not None else (100 if ctrl.action == "on" else 0)
     results = []
     for d in devices:
-        success = await mqtt.send_command(d, ctrl.action, brightness)
+        success = await mqtt_service.send_device_command(d, ctrl.action, brightness)
         new_status = "on" if ctrl.action in ("on", "brightness") and brightness > 0 else "off"
         await db.iot_devices.update_one({"id": d["id"]}, {"$set": {
             "status": new_status, "brightness": brightness,
