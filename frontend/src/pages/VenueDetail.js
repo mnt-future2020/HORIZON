@@ -16,6 +16,7 @@ import { format } from "date-fns";
 
 export default function VenueDetail() {
   const { id } = useParams();
+  const { user } = useAuth();
   const [venue, setVenue] = useState(null);
   const [slots, setSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -34,9 +35,49 @@ export default function VenueDetail() {
   const [mockPayStep, setMockPayStep] = useState(null); // null | "review" | "processing" | "done"
   const [subscribing, setSubscribing] = useState(null);
 
+  // Reviews state
+  const [reviews, setReviews] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState(null);
+  const [eligibleBookings, setEligibleBookings] = useState([]);
+  const [canReview, setCanReview] = useState(false);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewHover, setReviewHover] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewBookingId, setReviewBookingId] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+
   useEffect(() => {
     venueAPI.get(id).then(res => setVenue(res.data)).catch(() => toast.error("Venue not found")).finally(() => setLoading(false));
+    loadReviews();
   }, [id]);
+
+  const loadReviews = useCallback(() => {
+    venueAPI.getReviews(id).then(res => setReviews(res.data)).catch(() => {});
+    venueAPI.getReviewSummary(id).then(res => setReviewSummary(res.data)).catch(() => {});
+    venueAPI.canReview(id).then(res => {
+      setCanReview(res.data.can_review);
+      setEligibleBookings(res.data.eligible_bookings || []);
+      if (res.data.eligible_bookings?.length > 0) setReviewBookingId(res.data.eligible_bookings[0].id);
+    }).catch(() => {});
+  }, [id]);
+
+  const handleSubmitReview = async () => {
+    if (!reviewRating || !reviewBookingId) {
+      toast.error("Please select a rating and booking");
+      return;
+    }
+    setSubmittingReview(true);
+    try {
+      await venueAPI.createReview(id, { rating: reviewRating, comment: reviewComment, booking_id: reviewBookingId });
+      toast.success("Review submitted! Thank you.");
+      setReviewRating(0); setReviewComment(""); setShowReviewForm(false);
+      loadReviews();
+      venueAPI.get(id).then(res => setVenue(res.data)).catch(() => {});
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to submit review");
+    } finally { setSubmittingReview(false); }
+  };
 
   const loadSlots = useCallback(() => {
     if (!id || !selectedDate) return;
