@@ -829,6 +829,27 @@ async def pay_split(token: str, request: Request):
     if sc.get("shares_paid", 0) >= sc.get("total_shares", 0):
         raise HTTPException(400, "All shares already paid")
 
+    rzp_client = await get_razorpay_client()
+    result = {"payer_name": payer_name, "amount": sc["per_share"]}
+
+    if rzp_client:
+        # Create Razorpay order for this share
+        try:
+            rzp_order = rzp_client.order.create({
+                "amount": sc["per_share"] * 100,
+                "currency": "INR",
+                "payment_capture": 1,
+                "notes": {"booking_id": booking["id"], "type": "split_share", "payer_name": payer_name}
+            })
+            gw = (await get_platform_settings()).get("payment_gateway", {})
+            result["razorpay_order_id"] = rzp_order["id"]
+            result["razorpay_key_id"] = gw.get("key_id", "")
+            result["payment_gateway"] = "razorpay"
+            return result
+        except Exception as e:
+            logger.warning(f"Razorpay order failed for split: {e}")
+
+    # Mock fallback
     payment = {
         "id": str(uuid.uuid4()), "booking_id": booking["id"],
         "split_token": token, "payer_id": "",
@@ -843,7 +864,38 @@ async def pay_split(token: str, request: Request):
     if new_paid >= sc["total_shares"]:
         updates["status"] = "confirmed"
     await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
-    return {"message": "Payment successful (MOCKED)", "payment": payment}
+    result["payment_gateway"] = "mock"
+    result["message"] = "Payment successful"
+    result["payment"] = payment
+    return result
+
+
+@api_router.post("/split/{token}/verify-payment")
+async def verify_split_payment(token: str, request: Request):
+    """Verify split share payment from Razorpay."""
+    data = await request.json()
+    booking = await db.bookings.find_one({"split_config.split_token": token})
+    if not booking:
+        raise HTTPException(404, "Booking not found")
+
+    payment = {
+        "id": str(uuid.uuid4()), "booking_id": booking["id"],
+        "split_token": token, "payer_id": data.get("payer_id", ""),
+        "payer_name": data.get("payer_name", "Anonymous"),
+        "amount": booking["split_config"]["per_share"],
+        "razorpay_payment_id": data.get("razorpay_payment_id", ""),
+        "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.split_payments.insert_one(payment)
+    payment.pop("_id", None)
+
+    sc = booking["split_config"]
+    new_paid = sc["shares_paid"] + 1
+    updates = {"split_config.shares_paid": new_paid}
+    if new_paid >= sc["total_shares"]:
+        updates["status"] = "confirmed"
+    await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
+    return {"message": "Share paid", "shares_paid": new_paid, "status": "confirmed" if new_paid >= sc["total_shares"] else "pending"}
 
 
 # ── Pricing Rules Routes ──
