@@ -6,10 +6,19 @@ from auth import get_current_user, get_optional_user, get_platform_settings
 from models import VenueCreate, SlotLockInput, PricingRuleCreate
 import uuid
 import random
+import math
 import logging
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
+
+
+def haversine_km(lat1, lng1, lat2, lng2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat / 2) ** 2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
 @router.get("/venues")
