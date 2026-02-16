@@ -271,6 +271,16 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
         raise HTTPException(403, "Only venue owners can create venues")
     if user.get("account_status") != "active":
         raise HTTPException(403, "Your account is pending approval. Please wait for admin to approve.")
+
+    # Enforce subscription plan venue limits
+    user_plan = user.get("subscription_plan", "free")
+    platform = await get_platform_settings()
+    plans = platform.get("subscription_plans", [])
+    plan_config = next((p for p in plans if p["id"] == user_plan), None)
+    max_venues = plan_config["max_venues"] if plan_config else 1
+    current_venues = await db.venues.count_documents({"owner_id": user["id"]})
+    if current_venues >= max_venues:
+        raise HTTPException(403, f"Your {user_plan.title()} plan allows max {max_venues} venue(s). Upgrade your plan to add more.")
     venue = {
         "id": str(uuid.uuid4()),
         "owner_id": user["id"],
