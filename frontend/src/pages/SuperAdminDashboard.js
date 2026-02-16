@@ -127,6 +127,9 @@ function UsersTab() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <Badge variant="secondary" className="text-[10px]">{u.role.replace("_", " ")}</Badge>
+                  {u.role === "venue_owner" && u.subscription_plan && (
+                    <Badge className="text-[10px] bg-purple-500/20 text-purple-400">{u.subscription_plan}</Badge>
+                  )}
                   <Badge className={`text-[10px] ${u.account_status === "active" ? "bg-emerald-500/20 text-emerald-400" : u.account_status === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-destructive/20 text-destructive"}`}>
                     {u.account_status}
                   </Badge>
