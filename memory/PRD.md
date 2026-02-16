@@ -80,6 +80,12 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - **LandingPage**: "Near Me" button in hero search bar alongside Search — navigates to `/venues?nearme=1`
 - **Graceful fallback**: Permission denied or geolocation unavailable shows toast error and falls back to all venues
 
+### Venue Reviews & Ratings System (COMPLETE - Feb 16)
+- **Backend**: New `/api/venues/{id}/reviews` endpoints — GET (list), POST (create with booking verification), `/reviews/summary` (avg + star distribution), `/reviews/can-review` (eligible bookings check)
+- **Enforcement**: One review per booking, must have confirmed booking at venue, rating 1-5 required, auto-updates venue's `rating` and `total_reviews`
+- **VenueDetail**: Reviews section with summary card (avg rating + star distribution bars), "Write a Review" form (star picker + booking selector + comment), review cards with avatar/name/stars/date/comment
+- **VenueOwnerDashboard**: Reviews tab showing all reviews for selected venue with quick stats (avg rating, total, 5-star count)
+
 ## Architecture
 ```
 backend/
