@@ -29,7 +29,7 @@ class TestAuthHelpers:
     def get_token(email, password):
         res = requests.post(f"{BASE_URL}/api/auth/login", json={"email": email, "password": password})
         if res.status_code == 200:
-            return res.json().get("access_token")
+            return res.json().get("token")
         return None
     
     @staticmethod
