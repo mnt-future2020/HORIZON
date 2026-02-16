@@ -75,6 +75,8 @@ function VenueOwnerDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [createVenueOpen, setCreateVenueOpen] = useState(false);
   const [createRuleOpen, setCreateRuleOpen] = useState(false);
+  const [planData, setPlanData] = useState(null);
+  const [upgrading, setUpgrading] = useState(false);
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: ["football"], address: "", city: "Bengaluru",
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
@@ -84,6 +86,21 @@ function VenueOwnerDashboardContent() {
     name: "", priority: 10, conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
     action: { type: "multiplier", value: 1.2 },
   });
+
+  useEffect(() => {
+    subscriptionAPI.myPlan().then(r => setPlanData(r.data)).catch(() => {});
+  }, []);
+
+  const handleUpgrade = async (planId) => {
+    setUpgrading(true);
+    try {
+      await subscriptionAPI.upgrade({ plan_id: planId });
+      const r = await subscriptionAPI.myPlan();
+      setPlanData(r.data);
+      toast.success("Plan upgraded!");
+    } catch (err) { toast.error(err.response?.data?.detail || "Upgrade failed"); }
+    finally { setUpgrading(false); }
+  };
 
   const loadData = async () => {
     setLoading(true);
