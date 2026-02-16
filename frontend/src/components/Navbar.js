@@ -172,13 +172,13 @@ export default function Navbar() {
         data-testid="mobile-navbar">
         {navLinks.map(l => (
           <Link key={l.to} to={l.to} data-testid={`mobile-nav-${l.label.toLowerCase()}`}
-            className={`flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg transition-colors ${
+            className={`flex flex-col items-center justify-center gap-0.5 min-w-0 w-14 min-h-[48px] rounded-lg transition-colors ${
               path === l.to || path.startsWith(l.to + "/")
                 ? "text-primary bg-primary/10"
                 : "text-muted-foreground active:text-foreground active:bg-secondary"
             }`}>
-            <l.icon className="h-5 w-5" />
-            <span className="text-[10px] font-semibold">{l.label}</span>
+            <l.icon className="h-5 w-5 shrink-0" />
+            <span className="text-[9px] font-semibold leading-tight truncate max-w-full px-0.5">{l.label}</span>
           </Link>
         ))}
         <Popover>
