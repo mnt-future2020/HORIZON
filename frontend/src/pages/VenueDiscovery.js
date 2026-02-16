@@ -188,10 +188,16 @@ export default function VenueDiscovery() {
             </Button>
           </div>
 
-          {/* Quick City Pills */}
+          {/* Quick City Pills + Near Me */}
           <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-hide" data-testid="city-pills">
-            <button onClick={() => setSelectedCity("all")} data-testid="city-pill-all"
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCity === "all" ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+            <button onClick={handleNearMe} data-testid="near-me-btn"
+              disabled={locatingUser}
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${nearMeActive ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-primary/30"}`}>
+              {locatingUser ? <Loader2 className="h-3 w-3 animate-spin" /> : <Navigation className="h-3 w-3" />}
+              {locatingUser ? "Locating..." : nearMeActive ? "Near Me" : "Near Me"}
+            </button>
+            <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid="city-pill-all"
+              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCity === "all" && !nearMeActive ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
               All Cities
             </button>
             {cities.map(c => (
