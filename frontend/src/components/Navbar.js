@@ -183,15 +183,15 @@ export default function Navbar() {
         ))}
         <Popover>
           <PopoverTrigger asChild>
-            <button className="relative flex flex-col items-center justify-center gap-1 min-w-[60px] min-h-[48px] rounded-lg text-muted-foreground active:text-foreground active:bg-secondary transition-colors"
+            <button className="relative flex flex-col items-center justify-center gap-0.5 min-w-0 w-14 min-h-[48px] rounded-lg text-muted-foreground active:text-foreground active:bg-secondary transition-colors"
               data-testid="mobile-notification-bell">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-5 w-5 shrink-0" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-2 h-3.5 min-w-[14px] px-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                <span className="absolute top-1 right-1 h-3.5 min-w-[14px] px-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}
-              <span className="text-[10px] font-semibold">Alerts</span>
+              <span className="text-[9px] font-semibold leading-tight">Alerts</span>
             </button>
           </PopoverTrigger>
           <PopoverContent align="center" side="top" className="w-80 p-0 mb-2">
