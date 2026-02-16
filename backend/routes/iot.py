@@ -216,9 +216,11 @@ async def control_device(device_id: str, ctrl: DeviceControl, user=Depends(get_c
         raise HTTPException(503, "Device is offline")
 
     brightness = ctrl.brightness if ctrl.brightness is not None else (100 if ctrl.action == "on" else 0)
-    success = await mqtt.send_command(device, ctrl.action, brightness)
-    if not success:
-        raise HTTPException(502, "Failed to communicate with device")
+
+    # Send command via real MQTT
+    success = await mqtt_service.send_device_command(device, ctrl.action, brightness)
+    if not success and mqtt_service.is_connected():
+        raise HTTPException(502, "Failed to publish MQTT command")
 
     new_status = "on" if ctrl.action in ("on", "brightness") and brightness > 0 else "off"
     update = {
@@ -249,6 +251,9 @@ async def control_device(device_id: str, ctrl: DeviceControl, user=Depends(get_c
             "brightness": 0,
             "timestamp": datetime.now(timezone.utc).isoformat(),
         })
+
+    # Broadcast status change to WebSocket clients
+    await broadcast_ws({"type": "device_control", "device_id": device_id, **update})
 
     return {**device, **update}
 
