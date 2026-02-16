@@ -21,7 +21,7 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 ### Super Admin System (COMPLETE - Feb 15)
 - Admin Console (Overview, Users, Venues, Settings)
 - Payment Gateway (dynamic Razorpay creds), Commission, SaaS Plans
-- Venue Owner approval flow (pending → approved)
+- Venue Owner approval flow (pending -> approved)
 
 ### Razorpay Payment Integration (COMPLETE - Feb 15)
 - Dynamic gateway from admin Settings
@@ -33,17 +33,41 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - Plan tab in owner dashboard, admin can set plans
 
 ### Split & Pay Engine (COMPLETE - Feb 15)
-- Host creates split → share link → friends pay individually → auto-confirm
+- Host creates split -> share link -> friends pay individually -> auto-confirm
 
 ### Dynamic Pricing (COMPLETE - Feb 15)
 - Rule-based: weekend surge, peak hours, early bird, custom ranges
 
 ### Mercenary Marketplace (COMPLETE - Feb 16)
-- **Linked to bookings**: Host must have a confirmed booking to create a mercenary post
-- **Full flow**: Post → Apply → Host accepts/rejects → Accepted player pays → Added to booking
-- **Razorpay integration**: Mercenary fees via Razorpay (or mock fallback)
-- **Notifications**: Application alerts to host, acceptance alerts to player, payment confirmations
-- **Skill ratings visible**: Applicants show their rating for host to evaluate
+- Linked to bookings, full apply/accept/reject/pay flow
+- Razorpay integration with mock fallback
+- Notifications for all mercenary events
+
+### Backend Modularization (COMPLETE - Feb 16)
+- Refactored 1833-line monolithic server.py into 14 modular files
+- server.py: 58 lines (slim entrypoint)
+- Modules: database.py, models.py, auth.py, seed.py
+- Routes: auth, venues, bookings, matchmaking, notifications, admin, academies, analytics
+- 100% test pass rate (38 backend + all frontend flows verified)
+
+## Architecture
+```
+backend/
+  server.py          # 58 lines - FastAPI app init, router includes, startup/shutdown
+  database.py        # MongoDB & Redis connections, lock helpers
+  models.py          # All Pydantic models
+  auth.py            # JWT auth, password hashing, Razorpay client, platform settings
+  seed.py            # Demo data seeding
+  routes/
+    auth.py          # Register, Login, Profile
+    venues.py        # Venue CRUD, Slots, Locks, Pricing Rules
+    bookings.py      # Bookings, Payments, Split Pay
+    matchmaking.py   # Matchmaking + Mercenary Marketplace
+    notifications.py # Notifications + Subscriptions
+    admin.py         # Admin Dashboard + Subscription Management
+    academies.py     # Coach Academies
+    analytics.py     # Venue & Player Analytics
+```
 
 ## DB Collections
 users, venues, bookings, split_payments, pricing_rules, match_requests, mercenary_posts, academies, notifications, notification_subscriptions, platform_settings
@@ -54,6 +78,6 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 ## Mocked: Razorpay (SDK wired, mock fallback when no keys)
 
 ## Remaining Backlog
+- **P1**: Fix mobile responsiveness (nav truncation, small screen layouts)
 - **P2**: AI-driven matchmaking (Glicko-2 skill rating)
 - **P3**: Automated video highlights, IoT lighting, Offline POS
-- **Refactoring**: server.py 1600+ lines → modularize
