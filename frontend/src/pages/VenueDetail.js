@@ -165,7 +165,8 @@ export default function VenueDetail() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
               });
-              setConfirmResult(booking);
+              setConfirmResult({ ...booking, status: "confirmed" });
+              setMockPayStep("done");
               toast.success("Payment successful! Booking confirmed.");
               loadSlots();
             } catch { toast.error("Payment verification failed"); }
