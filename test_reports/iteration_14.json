@@ -1,0 +1,167 @@
+{
+  "summary": "COMPREHENSIVE DEEP TEST - All 54 backend tests passed. Full frontend E2E testing completed across all roles (player, venue_owner, super_admin, coach). All major features verified: Auth, Player Dashboard, Venue Discovery, Booking Flow with Split Payment, Matchmaking with Compatibility Scores, Leaderboard with Rankings, Rating Profile with Chain Verification, Dynamic Pricing Rules, Subscription Plans, Super Admin Console, Video Highlights Upload, IoT Smart Lighting with MQTT Connected (broker.emqx.io), Notifications, Mobile Responsiveness.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "passed_tests": {
+    "auth_tests": [
+      "Player login (demo@player.com/demo123) - 200 OK",
+      "Venue owner login (demo@owner.com/demo123) - 200 OK",
+      "Super admin login (admin@horizon.com/admin123) - 200 OK",
+      "Coach login (demo@coach.com/demo123) - 200 OK",
+      "Invalid credentials rejected - 401",
+      "Unauthenticated protected endpoint rejected - 401/403"
+    ],
+    "player_dashboard_tests": [
+      "GET /api/auth/me - player stats (skill_rating, total_games, wins)",
+      "GET /api/bookings - upcoming bookings list",
+      "GET /api/analytics/player - player analytics"
+    ],
+    "venue_discovery_tests": [
+      "GET /api/venues - list venues (4 venues returned)",
+      "GET /api/venues?sport=football - filter by sport",
+      "GET /api/venues?search=Sports - search venues",
+      "Venue cards display correctly with images, ratings, prices, amenities"
+    ],
+    "venue_detail_tests": [
+      "GET /api/venues/{id} - venue info",
+      "GET /api/venues/{id}/slots?date=YYYY-MM-DD - slot grid with prices per turf",
+      "Calendar date picker functional",
+      "Dynamic pricing applied to slots (morning ₹1700, afternoon ₹2000, evening ₹2200)"
+    ],
+    "booking_flow_tests": [
+      "POST /api/bookings - create booking (graceful degradation with Redis down)",
+      "Booking dialog opens with Full Payment and Split Payment options",
+      "Split payment with 4 shares created successfully"
+    ],
+    "matchmaking_tests": [
+      "GET /api/matchmaking - list available matches",
+      "POST /api/matchmaking - create match request",
+      "GET /api/matchmaking/recommended - For You with compatibility scores (100% match)",
+      "POST /api/matchmaking/auto-match - find best match"
+    ],
+    "leaderboard_tests": [
+      "GET /api/leaderboard - player rankings",
+      "GET /api/leaderboard?sport=football - filter by sport",
+      "Rankings show rating, games, wins, tier badges (Gold/Silver)"
+    ],
+    "rating_profile_tests": [
+      "GET /api/rating/history/{userId} - rating history with chain-hashed records",
+      "GET /api/rating/verify/{userId} - verify chain integrity",
+      "GET /api/rating/certificate/{userId} - certificate with fingerprint"
+    ],
+    "mercenary_tests": [
+      "GET /api/mercenary - list mercenary posts",
+      "GET /api/mercenary/my-posts - user's mercenary posts"
+    ],
+    "venue_owner_dashboard_tests": [
+      "GET /api/owner/venues - owner venues (4 venues)",
+      "GET /api/bookings - owner bookings (card layout)",
+      "GET /api/analytics/venue/{id} - venue analytics with revenue chart"
+    ],
+    "dynamic_pricing_tests": [
+      "GET /api/venues/{id}/pricing-rules - get rules",
+      "POST /api/venues/{id}/pricing-rules - create rule",
+      "PUT /api/pricing-rules/{id}/toggle - toggle active/inactive",
+      "DELETE /api/pricing-rules/{id} - delete rule",
+      "Live price preview showing effect (₹2000 → ₹2200 +₹200)"
+    ],
+    "subscription_tests": [
+      "GET /api/subscription/my-plan - current plan (Pro, 4/100 venues used)",
+      "Available plans: Free, Basic (₹2,999/mo), Pro (₹7,999/mo)"
+    ],
+    "super_admin_tests": [
+      "GET /api/admin/dashboard - stats (users, venues, revenue, commission)",
+      "GET /api/admin/users - users list with role badges",
+      "GET /api/admin/venues - venue approval list",
+      "GET /api/admin/settings - platform settings"
+    ],
+    "video_highlights_tests": [
+      "GET /api/highlights - list highlights",
+      "POST /api/highlights/upload - upload video",
+      "Upload page with drag & drop (MP4, MOV, AVI, WebM - Max 100MB)"
+    ],
+    "shared_highlight_tests": [
+      "GET /api/highlights/shared/{shareId} - public page works without auth"
+    ],
+    "iot_tests": [
+      "GET /api/iot/mqtt-status - MQTT Connected • broker.emqx.io",
+      "GET /api/iot/devices?venue_id={id} - 7 devices listed",
+      "GET /api/iot/zones?venue_id={id} - 3 zones with device counts",
+      "POST /api/iot/devices/{id}/control - device toggle on/off via MQTT",
+      "GET /api/iot/energy?venue_id={id}&period=7d - energy analytics charts",
+      "GET /api/iot/schedules?venue_id={id} - booking-linked lighting schedule"
+    ],
+    "notification_tests": [
+      "GET /api/notifications - list notifications",
+      "GET /api/notifications/unread-count - unread count",
+      "PUT /api/notifications/read-all - mark all as read"
+    ],
+    "mobile_tests": [
+      "Bottom nav visible on mobile viewport (390px)",
+      "Cards responsive - no text truncation",
+      "Dashboard stats in 2x2 grid on mobile"
+    ]
+  },
+  "frontend_verification": {
+    "landing_page": "Beautiful hero with stats (500+ Active Venues, 50K+ Players, 99.9% IoT Uptime, 4.8 Avg Rating)",
+    "auth_page": "Login/SignUp tabs with demo credentials shown",
+    "player_dashboard": "Stats cards (Skill Rating: 1650, Games: 49, Win Rate: 45%, Upcoming: 3), Upcoming Bookings list",
+    "venue_discovery": "4 venue cards with images, sport tags, ratings, prices, amenities, search and filter",
+    "venue_detail": "Hero image, calendar picker, slot grid with 2 turfs, dynamic pricing, booking dialog with split payment",
+    "matchmaking": "For You/All Games/My Games/Mercenary tabs, Auto-Match feature, compatibility scores",
+    "leaderboard": "Your Ranking card, player rankings with tier badges (Gold/Silver)",
+    "rating_profile": "Rating Certificate with Verified badge, Chain Integrity section (Intact/Consistent), Match History",
+    "owner_dashboard": "Stats (4 Venues, 3 Bookings, ₹4.1K Revenue), venue selector, Bookings/Pricing/Analytics/Plan tabs",
+    "pricing_rules": "3 rules (Weekend Surge 1.2x, Peak Hours 1.1x, Early Bird Discount 0.85x) with toggles and edit/delete",
+    "subscription_plans": "Current Plan: Pro, Available Plans: Free/Basic/Pro with features",
+    "admin_dashboard": "Overview/Users/Venues/Settings tabs, platform stats and recent registrations",
+    "highlights_page": "AI Analysis header, drag & drop upload area, Your Highlights list",
+    "iot_dashboard": "MQTT Connected status, 6/7 Online, 5 Active devices, Devices/Zones/Energy/Schedule tabs",
+    "notifications": "Bell icon with popover",
+    "mobile": "Responsive layout, bottom navigation bar"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_comprehensive_e2e.py",
+    "/app/test_reports/pytest/comprehensive_e2e_tests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_comprehensive_e2e.py"
+  ],
+  "success_rate": {
+    "backend": "100% (54/54 tests passed)",
+    "frontend": "100% (All flows verified)"
+  },
+  "test_credentials": {
+    "player": {"email": "demo@player.com", "password": "demo123"},
+    "venue_owner": {"email": "demo@owner.com", "password": "demo123"},
+    "super_admin": {"email": "admin@horizon.com", "password": "admin123"},
+    "coach": {"email": "demo@coach.com", "password": "demo123"}
+  },
+  "seed_data_creation": "4 venues, 3 bookings, 7 IoT devices, 3 zones, pricing rules - all seeded from demo data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "COMPREHENSIVE DEEP TEST COMPLETE. All features working end-to-end. MQTT is LIVE (broker.emqx.io:1883). Redis is DOWN but booking flow gracefully degrades. Razorpay is MOCKED. AI analysis uses live Gemini 2.5 Flash via EMERGENT_LLM_KEY. All 4 roles tested (player, venue_owner, super_admin, coach).",
+  "mocked_apis": {
+    "Razorpay payments": "MOCKED - Payment dialog shows 'Payment is MOCKED for demo purposes'",
+    "MQTT broker": "LIVE - broker.emqx.io:1883 (connected)",
+    "Gemini AI": "LIVE - via EMERGENT_LLM_KEY for video analysis"
+  },
+  "feature_summary": {
+    "auth": "Multi-role authentication working (player, venue_owner, super_admin, coach)",
+    "booking": "Full booking flow with split payment, dynamic pricing applied correctly",
+    "matchmaking": "Match creation, recommendations with compatibility scores, auto-match",
+    "rating": "Glicko-2 rating system with tamper-proof chain verification",
+    "iot": "Real MQTT connection to broker.emqx.io, device/zone control, energy analytics",
+    "highlights": "Video upload and AI analysis (Gemini 2.5 Flash)",
+    "admin": "Full platform management with users, venues, settings"
+  }
+}
