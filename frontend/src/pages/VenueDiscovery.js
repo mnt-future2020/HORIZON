@@ -27,6 +27,10 @@ export default function VenueDiscovery() {
   const [priceRange, setPriceRange] = useState("all");
   const [selectedAmenity, setSelectedAmenity] = useState("all");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [nearMeActive, setNearMeActive] = useState(searchParams.get("nearme") === "1");
+  const [userLocation, setUserLocation] = useState(null);
+  const [locatingUser, setLocatingUser] = useState(false);
+  const [distanceMap, setDistanceMap] = useState({});
 
   // Load initial data
   useEffect(() => {
