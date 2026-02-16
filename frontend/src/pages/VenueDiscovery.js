@@ -354,6 +354,15 @@ export default function VenueDiscovery() {
                         {"\u20B9"}{venue.base_price}
                       </Badge>
                     </div>
+                    {/* Distance badge */}
+                    {(distanceMap[venue.id] != null || venue.distance_km != null) && (
+                      <div className="absolute bottom-2 left-2" data-testid={`distance-badge-${venue.id}`}>
+                        <Badge className="bg-primary/90 backdrop-blur-sm border-none text-primary-foreground text-[10px] font-bold">
+                          <Navigation className="h-2.5 w-2.5 mr-1" />
+                          {(distanceMap[venue.id] ?? venue.distance_km)} km away
+                        </Badge>
+                      </div>
+                    )}
                   </div>
 
                   {/* Info */}
