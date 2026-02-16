@@ -11,7 +11,7 @@ import json
 from datetime import datetime, timedelta
 
 # Use the public endpoint from the environment file
-BASE_URL = "https://skill-rating-hub-1.preview.emergentagent.com/api"
+BASE_URL = "https://horizon-booking-1.preview.emergentagent.com/api"
 
 class RedisSlotLockingTester:
     def __init__(self):
