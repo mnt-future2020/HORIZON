@@ -24,45 +24,44 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - Venue Owner approval flow (pending -> approved)
 
 ### Razorpay Payment Integration (COMPLETE - Feb 15)
-- Dynamic gateway from admin Settings
-- Razorpay checkout when configured, mock fallback when not
-- Commission tracking per booking
+- Dynamic gateway from admin Settings, checkout when configured, mock fallback
 
 ### SaaS Subscription Plans (COMPLETE - Feb 15)
 - Free/Basic/Pro plans with venue limits enforced
-- Plan tab in owner dashboard, admin can set plans
 
-### Split & Pay Engine (COMPLETE - Feb 15)
-- Host creates split -> share link -> friends pay individually -> auto-confirm
-
-### Dynamic Pricing (COMPLETE - Feb 15)
-- Rule-based: weekend surge, peak hours, early bird, custom ranges
+### Split & Pay + Dynamic Pricing (COMPLETE - Feb 15)
+- Host creates split -> share link -> friends pay -> auto-confirm
+- Rule-based pricing: weekend surge, peak hours, early bird
 
 ### Mercenary Marketplace (COMPLETE - Feb 16)
-- Linked to bookings, full apply/accept/reject/pay flow
-- Razorpay integration with mock fallback
-- Notifications for all mercenary events
+- Linked to bookings, apply/accept/reject/pay flow, Razorpay + mock
 
 ### Backend Modularization (COMPLETE - Feb 16)
-- Refactored 1833-line monolithic server.py into 14 modular files
-- server.py: 58 lines (slim entrypoint)
-- Modules: database.py, models.py, auth.py, seed.py
-- Routes: auth, venues, bookings, matchmaking, notifications, admin, academies, analytics
-- 100% test pass rate (38 backend + all frontend flows verified)
+- 1833-line monolith -> 14 modular files, server.py now 58 lines
+
+### AI-Driven Matchmaking with Glicko-2 (COMPLETE - Feb 16)
+- **Glicko-2 Rating System**: Full algorithm (rating, deviation, volatility) updates after confirmed match results
+- **Match Result Flow**: Any player submits result -> others confirm (majority rule) -> ratings auto-update
+- **Recommended Matches**: "For You" tab shows matches sorted by skill compatibility (0-100% score)
+- **Auto-Match**: One-click find best available match for player's skill level + sport
+- **Team Suggestion**: AI-balanced team splits using serpentine draft by rating
+- **Leaderboard**: `/leaderboard` page with tier badges (Diamond/Gold/Silver/Bronze), sport filter, W/L/D records
+- **Rating Notifications**: Players get notified of rating changes after each confirmed match
 
 ## Architecture
 ```
 backend/
-  server.py          # 58 lines - FastAPI app init, router includes, startup/shutdown
+  server.py          # 58 lines - FastAPI app init + router includes
   database.py        # MongoDB & Redis connections, lock helpers
   models.py          # All Pydantic models
-  auth.py            # JWT auth, password hashing, Razorpay client, platform settings
+  auth.py            # JWT auth, password hashing, Razorpay client
   seed.py            # Demo data seeding
+  glicko2.py         # Glicko-2 algorithm + compatibility + team balancing
   routes/
     auth.py          # Register, Login, Profile
     venues.py        # Venue CRUD, Slots, Locks, Pricing Rules
     bookings.py      # Bookings, Payments, Split Pay
-    matchmaking.py   # Matchmaking + Mercenary Marketplace
+    matchmaking.py   # Matchmaking, Mercenary, Leaderboard, Results
     notifications.py # Notifications + Subscriptions
     admin.py         # Admin Dashboard + Subscription Management
     academies.py     # Coach Academies
@@ -79,5 +78,5 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 
 ## Remaining Backlog
 - **P1**: Fix mobile responsiveness (nav truncation, small screen layouts)
-- **P2**: AI-driven matchmaking (Glicko-2 skill rating)
+- **P2**: Rule-based dynamic pricing engine for venue owners
 - **P3**: Automated video highlights, IoT lighting, Offline POS
