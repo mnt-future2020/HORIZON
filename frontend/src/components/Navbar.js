@@ -72,6 +72,7 @@ export default function Navbar() {
     ],
     venue_owner: [
       { to: "/owner", icon: Building2, label: "Dashboard" },
+      { to: "/iot", icon: Lightbulb, label: "IoT" },
       { to: "/highlights", icon: Video, label: "Highlights" },
     ],
     coach: [
@@ -79,6 +80,7 @@ export default function Navbar() {
     ],
     super_admin: [
       { to: "/admin", icon: Shield, label: "Admin Console" },
+      { to: "/iot", icon: Lightbulb, label: "IoT" },
     ],
   };
 
