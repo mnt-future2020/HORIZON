@@ -201,8 +201,8 @@ export default function VenueDiscovery() {
               All Cities
             </button>
             {cities.map(c => (
-              <button key={c.city} onClick={() => setSelectedCity(c.city)} data-testid={`city-pill-${c.city}`}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCity === c.city ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+              <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCity === c.city && !nearMeActive ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
                 {c.city} <span className="opacity-60 ml-0.5">({c.count})</span>
               </button>
             ))}
