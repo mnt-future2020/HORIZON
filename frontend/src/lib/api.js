@@ -61,6 +61,12 @@ export const matchAPI = {
   leaderboard: (params) => api.get("/leaderboard", { params }),
 };
 
+export const ratingAPI = {
+  history: (userId, limit) => api.get(`/rating/history/${userId}`, { params: { limit } }),
+  verify: (userId) => api.get(`/rating/verify/${userId}`),
+  certificate: (userId) => api.get(`/rating/certificate/${userId}`),
+};
+
 export const mercenaryAPI = {
   list: (params) => api.get("/mercenary", { params }),
   myPosts: () => api.get("/mercenary/my-posts"),
