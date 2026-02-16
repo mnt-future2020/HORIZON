@@ -1336,6 +1336,44 @@ async def admin_change_password(request: Request, user=Depends(get_current_user)
     await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(new_pw)}})
     return {"message": "Password updated"}
 
+@api_router.put("/admin/users/{user_id}/set-plan")
+async def admin_set_user_plan(user_id: str, request: Request, user=Depends(get_current_user)):
+    await require_admin(user)
+    data = await request.json()
+    plan_id = data.get("plan_id", "free")
+    await db.users.update_one({"id": user_id}, {"$set": {"subscription_plan": plan_id}})
+    return {"message": f"Plan set to {plan_id}"}
+
+@api_router.get("/subscription/my-plan")
+async def get_my_plan(user=Depends(get_current_user)):
+    """Get current user's subscription plan details."""
+    user_plan = user.get("subscription_plan", "free")
+    platform = await get_platform_settings()
+    plans = platform.get("subscription_plans", [])
+    plan_config = next((p for p in plans if p["id"] == user_plan), None)
+    if not plan_config:
+        plan_config = {"id": "free", "name": "Free", "price": 0, "features": ["1 venue"], "max_venues": 1}
+    current_venues = await db.venues.count_documents({"owner_id": user["id"]})
+    return {
+        "current_plan": plan_config,
+        "venues_used": current_venues,
+        "venues_limit": plan_config["max_venues"],
+        "all_plans": plans
+    }
+
+@api_router.put("/subscription/upgrade")
+async def upgrade_plan(request: Request, user=Depends(get_current_user)):
+    """Upgrade subscription plan (mock for now, would integrate with Razorpay subscription)."""
+    data = await request.json()
+    plan_id = data.get("plan_id")
+    platform = await get_platform_settings()
+    plans = platform.get("subscription_plans", [])
+    plan = next((p for p in plans if p["id"] == plan_id), None)
+    if not plan:
+        raise HTTPException(400, "Invalid plan")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_plan": plan_id}})
+    return {"message": f"Upgraded to {plan['name']}", "plan": plan}
+
 
 # ── Seed Demo Data ──
 VENUE_IMAGES = [
