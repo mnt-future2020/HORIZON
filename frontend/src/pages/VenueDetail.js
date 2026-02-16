@@ -179,9 +179,10 @@ export default function VenueDetail() {
         return; // Don't setBookingLoading(false) here — handled in handler/ondismiss
       }
 
-      // Mock payment - auto confirmed
+      // Mock payment - show payment review step instead of auto-confirming
+      setMockPayStep("review");
       setConfirmResult(booking);
-      toast.success(booking.status === "confirmed" ? "Booking confirmed!" : "Booking created!");
+      toast.info("Review your payment details before confirming");
       loadSlots();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Booking failed");
