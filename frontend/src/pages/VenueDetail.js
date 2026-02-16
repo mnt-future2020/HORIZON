@@ -205,6 +205,22 @@ export default function VenueDetail() {
     setBookingDialog(open);
   };
 
+  const handleMockPayment = async () => {
+    if (!confirmResult) return;
+    setMockPayStep("processing");
+    try {
+      await bookingAPI.mockConfirm(confirmResult.id);
+      setMockPayStep("done");
+      setConfirmResult({ ...confirmResult, status: "confirmed" });
+      toast.success("Payment successful! Booking confirmed.");
+      loadSlots();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Payment failed");
+      setMockPayStep("review");
+    }
+  };
+
+
   const copyLink = () => {
     const token = confirmResult?.split_config?.split_token;
     if (token) {
