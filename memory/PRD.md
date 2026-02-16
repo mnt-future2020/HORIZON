@@ -61,6 +61,12 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - **Expiry**: All bookings now have `expires_at` (24h), with `POST /api/bookings/cleanup-expired` for stale ones
 - **Redis**: Correctly uses SOFT_LOCK_TTL=600s (10min), HARD_LOCK_TTL=1800s (30min), graceful degradation when unavailable
 
+### Venue Owner Dashboard Enhancement (COMPLETE - Feb 16)
+- **Booking Detail View**: Click any booking card to open full detail dialog showing: status banner, venue/host info, date/time/turf/sport, payment info (amount, commission, mode, gateway, paid_at, payment_id), split payment progress bar, timeline timestamps, and cancel booking action
+- **Booking Stats Bar**: Quick stats showing Total, Confirmed, Pending, Cancelled, Upcoming counts
+- **Booking Filters**: Time filter (All Time/Upcoming/Past), status dropdown (All/Confirmed/Pending/Awaiting Pay/Cancelled/Expired), sort toggle (Newest/Oldest)
+- **History Tab**: Chronological timeline grouped by date with day totals, booking count badges, color-coded status indicators, and clickable entries that open the same detail dialog
+
 ## Architecture
 ```
 backend/
