@@ -67,6 +67,13 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - **Booking Filters**: Time filter (All Time/Upcoming/Past), status dropdown (All/Confirmed/Pending/Awaiting Pay/Cancelled/Expired), sort toggle (Newest/Oldest)
 - **History Tab**: Chronological timeline grouped by date with day totals, booking count badges, color-coded status indicators, and clickable entries that open the same detail dialog
 
+### Advanced Venue Search & Website Enhancement (COMPLETE - Feb 16)
+- **Backend**: Enhanced `/api/venues` with area, city, min_price, max_price, sort_by, amenity filters + new endpoints `/api/venues/cities`, `/api/venues/areas`, `/api/venues/amenities`
+- **Seed Data**: 16 venues across 5 cities (Bengaluru 5, Chennai 4, Mumbai 3, Hyderabad 2, Delhi 2) with area fields
+- **VenueDiscovery Page**: Complete revamp with search bar, city pills, expandable filter panel (area/sport/price/amenity/sort), animated venue cards with area/rating/amenity badges, URL param sync
+- **Landing Page**: Hero search bar with popular city links, Browse by City section with venue counts, Top Rated Venues section
+- **PlayerDashboard**: Quick venue search widget
+
 ## Architecture
 ```
 backend/
