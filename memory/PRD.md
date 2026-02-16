@@ -21,55 +21,45 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 ### Super Admin System (COMPLETE - Feb 15)
 - Admin Console (Overview, Users, Venues, Settings)
 - Payment Gateway (dynamic Razorpay creds), Commission, SaaS Plans
-- Venue Owner approval flow (pending -> approved)
 
-### Razorpay Payment Integration (COMPLETE - Feb 15)
-- Dynamic gateway from admin Settings, checkout when configured, mock fallback
-
-### SaaS Subscription Plans (COMPLETE - Feb 15)
-- Free/Basic/Pro plans with venue limits enforced
-
-### Split & Pay + Dynamic Pricing (COMPLETE - Feb 15)
-- Host creates split -> share link -> friends pay -> auto-confirm
-- Rule-based pricing: weekend surge, peak hours, early bird
+### Razorpay + SaaS + Split Pay + Dynamic Pricing (COMPLETE - Feb 15)
+- Live Razorpay checkout, mock fallback, commission tracking
+- Free/Basic/Pro plans with venue limits, split pay flow, rule-based pricing
 
 ### Mercenary Marketplace (COMPLETE - Feb 16)
-- Linked to bookings, apply/accept/reject/pay flow, Razorpay + mock
+- Linked to bookings, apply/accept/reject/pay flow
 
 ### Backend Modularization (COMPLETE - Feb 16)
 - 1833-line monolith -> 14 modular files, server.py now 58 lines
 
 ### AI-Driven Matchmaking with Glicko-2 (COMPLETE - Feb 16)
-- **Glicko-2 Rating System**: Full algorithm (rating, deviation, volatility) updates after confirmed match results
-- **Match Result Flow**: Any player submits result -> others confirm (majority rule) -> ratings auto-update
-- **Recommended Matches**: "For You" tab shows matches sorted by skill compatibility (0-100% score)
-- **Auto-Match**: One-click find best available match for player's skill level + sport
-- **Team Suggestion**: AI-balanced team splits using serpentine draft by rating
-- **Leaderboard**: `/leaderboard` page with tier badges (Diamond/Gold/Silver/Bronze), sport filter, W/L/D records
-- **Rating Notifications**: Players get notified of rating changes after each confirmed match
+- Glicko-2 rating algorithm (rating, deviation, volatility)
+- Recommended matches (compatibility scoring 0-100%), Auto-Match, AI team balancing
+- Match result submission with majority-rule confirmation
+- Leaderboard with tier badges, sport filter, clickable rows
+
+### Tamper-Proof Rating History (COMPLETE - Feb 16)
+- **Blockchain-style SHA-256 chain hashing** — Each rating change is a cryptographic record chained to the previous via prev_hash
+- **GENESIS hash** as chain start; no manual edits possible
+- **`/api/rating/verify/{userId}`** — Cryptographic verification of entire chain integrity
+- **`/api/rating/certificate/{userId}`** — Shareable certificate with journey stats, peak/lowest, timeline
+- **Rating Profile page** (`/profile`, `/profile/:userId}`) with:
+  - Rating card (tier, RD, W/L/D), Canvas sparkline chart
+  - Chain Integrity panel (status, fingerprint, Verify Now button)
+  - Expandable match history showing SHA-256 hash, prev_hash, opponents, confirmations
+  - Green "Verified Rating" badge when chain is intact
+- **Leaderboard** rows clickable → navigate to player rating profiles
 
 ## Architecture
 ```
 backend/
-  server.py          # 58 lines - FastAPI app init + router includes
-  database.py        # MongoDB & Redis connections, lock helpers
-  models.py          # All Pydantic models
-  auth.py            # JWT auth, password hashing, Razorpay client
-  seed.py            # Demo data seeding
-  glicko2.py         # Glicko-2 algorithm + compatibility + team balancing
-  routes/
-    auth.py          # Register, Login, Profile
-    venues.py        # Venue CRUD, Slots, Locks, Pricing Rules
-    bookings.py      # Bookings, Payments, Split Pay
-    matchmaking.py   # Matchmaking, Mercenary, Leaderboard, Results
-    notifications.py # Notifications + Subscriptions
-    admin.py         # Admin Dashboard + Subscription Management
-    academies.py     # Coach Academies
-    analytics.py     # Venue & Player Analytics
+  server.py, database.py, models.py, auth.py, seed.py, glicko2.py
+  routes/ auth.py, venues.py, bookings.py, matchmaking.py,
+          notifications.py, admin.py, academies.py, analytics.py, ratings.py
 ```
 
 ## DB Collections
-users, venues, bookings, split_payments, pricing_rules, match_requests, mercenary_posts, academies, notifications, notification_subscriptions, platform_settings
+users, venues, bookings, split_payments, pricing_rules, match_requests, mercenary_posts, academies, notifications, notification_subscriptions, platform_settings, **rating_history**
 
 ## Test Credentials
 Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: demo@owner.com/demo123 | Coach: demo@coach.com/demo123
@@ -78,5 +68,5 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 
 ## Remaining Backlog
 - **P1**: Fix mobile responsiveness (nav truncation, small screen layouts)
-- **P2**: Rule-based dynamic pricing engine for venue owners
+- **P2**: Rule-based dynamic pricing UI for venue owners
 - **P3**: Automated video highlights, IoT lighting, Offline POS
