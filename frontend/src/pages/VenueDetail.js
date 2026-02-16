@@ -96,16 +96,24 @@ export default function VenueDetail() {
       const res = await slotLockAPI.lock(lockData);
       lockRef.current = lockData;
       setLockInfo(res.data);
-      setSelectedSlot(slot);
-      setBookingDialog(true);
       toast.success(`Slot locked for ${res.data.lock_type === "soft" ? "10 min" : "30 min"}`);
-      loadSlots(); // Refresh to show lock status
+      loadSlots();
     } catch (err) {
-      const msg = err.response?.data?.detail || "Failed to lock slot";
-      toast.error(msg);
-    } finally {
-      setLocking(false);
+      // If locking service is unavailable (503), proceed without lock
+      const status = err.response?.status;
+      if (status === 503) {
+        lockRef.current = null;
+        setLockInfo(null);
+      } else {
+        const msg = err.response?.data?.detail || "Failed to lock slot";
+        toast.error(msg);
+        setLocking(false);
+        return;
+      }
     }
+    setSelectedSlot(slot);
+    setBookingDialog(true);
+    setLocking(false);
   };
 
   const loadRazorpayScript = () => {
