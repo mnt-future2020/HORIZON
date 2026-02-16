@@ -215,4 +215,74 @@ async def seed_demo_data():
             {"id": "pro", "name": "Pro", "price": 7999, "features": ["Unlimited venues", "Full analytics", "Dedicated support", "Custom branding"], "max_venues": 100},
         ]
     })
+
+    # --- IoT Seed Data ---
+    await db.iot_devices.delete_many({})
+    await db.iot_zones.delete_many({})
+    await db.iot_energy_logs.delete_many({})
+
+    zone_ids = [str(uuid.uuid4()) for _ in range(3)]
+    iot_zones = [
+        {"id": zone_ids[0], "venue_id": v_ids[0], "name": "Turf 1 Main", "turf_number": 1,
+         "description": "Primary floodlight zone for Turf 1", "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": zone_ids[1], "venue_id": v_ids[0], "name": "Turf 2 Main", "turf_number": 2,
+         "description": "Primary floodlight zone for Turf 2", "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": zone_ids[2], "venue_id": v_ids[0], "name": "Common Area", "turf_number": None,
+         "description": "Parking, entrance, and walkway lights", "created_at": datetime.now(timezone.utc).isoformat()},
+    ]
+    await db.iot_zones.insert_many(iot_zones)
+
+    iot_devices = [
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Turf 1 - North Flood",
+         "zone_id": zone_ids[0], "device_type": "floodlight", "protocol": "mqtt",
+         "mqtt_topic": "horizon/powerplay/turf1/north", "ip_address": "192.168.1.101",
+         "power_watts": 1000, "turf_number": 1, "status": "on", "brightness": 100,
+         "is_online": True, "auto_schedule": True,
+         "last_seen": datetime.now(timezone.utc).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 4320},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Turf 1 - South Flood",
+         "zone_id": zone_ids[0], "device_type": "floodlight", "protocol": "mqtt",
+         "mqtt_topic": "horizon/powerplay/turf1/south", "ip_address": "192.168.1.102",
+         "power_watts": 1000, "turf_number": 1, "status": "on", "brightness": 100,
+         "is_online": True, "auto_schedule": True,
+         "last_seen": datetime.now(timezone.utc).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 4280},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Turf 1 - East LED",
+         "zone_id": zone_ids[0], "device_type": "led_panel", "protocol": "mqtt",
+         "mqtt_topic": "horizon/powerplay/turf1/east", "ip_address": "192.168.1.103",
+         "power_watts": 300, "turf_number": 1, "status": "off", "brightness": 0,
+         "is_online": True, "auto_schedule": True,
+         "last_seen": datetime.now(timezone.utc).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 2150},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Turf 2 - Main Flood",
+         "zone_id": zone_ids[1], "device_type": "floodlight", "protocol": "mqtt",
+         "mqtt_topic": "horizon/powerplay/turf2/main", "ip_address": "192.168.1.201",
+         "power_watts": 1500, "turf_number": 2, "status": "off", "brightness": 0,
+         "is_online": True, "auto_schedule": True,
+         "last_seen": datetime.now(timezone.utc).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 3800},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Turf 2 - Auxiliary LED",
+         "zone_id": zone_ids[1], "device_type": "led_panel", "protocol": "http",
+         "mqtt_topic": None, "ip_address": "192.168.1.202",
+         "power_watts": 400, "turf_number": 2, "status": "off", "brightness": 0,
+         "is_online": False, "auto_schedule": True,
+         "last_seen": (datetime.now(timezone.utc) - timedelta(hours=3)).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 1200},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Parking Lights",
+         "zone_id": zone_ids[2], "device_type": "ambient", "protocol": "mqtt",
+         "mqtt_topic": "horizon/powerplay/common/parking", "ip_address": "192.168.1.50",
+         "power_watts": 200, "turf_number": None, "status": "on", "brightness": 60,
+         "is_online": True, "auto_schedule": False,
+         "last_seen": datetime.now(timezone.utc).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 8500},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Emergency Exit",
+         "zone_id": zone_ids[2], "device_type": "emergency", "protocol": "http",
+         "mqtt_topic": None, "ip_address": "192.168.1.51",
+         "power_watts": 50, "turf_number": None, "status": "on", "brightness": 100,
+         "is_online": True, "auto_schedule": False,
+         "last_seen": datetime.now(timezone.utc).isoformat(),
+         "created_at": datetime.now(timezone.utc).isoformat(), "total_runtime_minutes": 12000},
+    ]
+    await db.iot_devices.insert_many(iot_devices)
+
     logger.info("Demo data seeded successfully!")
