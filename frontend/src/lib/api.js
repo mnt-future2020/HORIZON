@@ -131,6 +131,20 @@ export const subscriptionAPI = {
   upgrade: (data) => api.put("/subscription/upgrade", data),
 };
 
+export const highlightAPI = {
+  upload: (formData, onProgress) =>
+    api.post("/highlights/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: onProgress,
+    }),
+  list: () => api.get("/highlights"),
+  get: (id) => api.get(`/highlights/${id}`),
+  analyze: (id) => api.post(`/highlights/${id}/analyze`),
+  share: (id) => api.post(`/highlights/${id}/share`),
+  getShared: (shareId) => api.get(`/highlights/shared/${shareId}`),
+  delete: (id) => api.delete(`/highlights/${id}`),
+};
+
 export const seedAPI = {
   seed: () => api.post("/seed"),
 };
