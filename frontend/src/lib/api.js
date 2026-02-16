@@ -36,6 +36,7 @@ export const bookingAPI = {
   list: () => api.get("/bookings"),
   get: (id) => api.get(`/bookings/${id}`),
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
+  mockConfirm: (id) => api.post(`/bookings/${id}/mock-confirm`),
 };
 
 export const slotLockAPI = {
