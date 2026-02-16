@@ -370,7 +370,10 @@ function VenueOwnerDashboardContent() {
 
       <Tabs defaultValue="bookings" data-testid="owner-tabs">
         <TabsList className="bg-secondary/50 mb-6 flex-wrap h-auto gap-1 p-1">
-          <TabsTrigger value="bookings" className="font-bold text-xs">Bookings</TabsTrigger>
+          <TabsTrigger value="bookings" className="font-bold text-xs" data-testid="tab-bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="history" className="font-bold text-xs" data-testid="tab-history">
+            <History className="h-3 w-3 mr-1" />History
+          </TabsTrigger>
           <TabsTrigger value="pricing" className="font-bold text-xs" data-testid="tab-pricing">Pricing</TabsTrigger>
           <TabsTrigger value="analytics" className="font-bold text-xs">Analytics</TabsTrigger>
           <TabsTrigger value="plan" className="font-bold text-xs" data-testid="tab-plan">Plan</TabsTrigger>
