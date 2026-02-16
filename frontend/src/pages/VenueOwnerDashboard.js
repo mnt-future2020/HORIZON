@@ -383,6 +383,60 @@ function VenueOwnerDashboardContent() {
             <div className="text-center py-12 text-muted-foreground"><BarChart3 className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No analytics data</p></div>
           )}
         </TabsContent>
+
+        <TabsContent value="plan" data-testid="plan-tab-content">
+          {planData ? (
+            <div className="space-y-6">
+              <div className="glass-card rounded-lg p-5" data-testid="current-plan-card">
+                <div className="flex items-center gap-3 mb-4">
+                  <Crown className="h-5 w-5 text-primary" />
+                  <div>
+                    <h3 className="text-base font-bold">Current Plan: <span className="text-primary">{planData.current_plan.name}</span></h3>
+                    <p className="text-xs text-muted-foreground">{planData.venues_used} / {planData.venues_limit} venues used</p>
+                  </div>
+                </div>
+                <div className="w-full bg-secondary/50 rounded-full h-2 mb-2">
+                  <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${Math.min(100, (planData.venues_used / planData.venues_limit) * 100)}%` }} />
+                </div>
+              </div>
+
+              <h3 className="text-sm font-bold">Available Plans</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {planData.all_plans.map(plan => {
+                  const isCurrent = plan.id === planData.current_plan.id;
+                  return (
+                    <div key={plan.id} className={`glass-card rounded-lg p-5 border-2 transition-all ${isCurrent ? "border-primary" : "border-transparent hover:border-primary/30"}`}
+                      data-testid={`plan-card-${plan.id}`}>
+                      <div className="text-sm font-bold mb-1">{plan.name}</div>
+                      <div className="text-2xl font-display font-black text-primary mb-3">
+                        {plan.price === 0 ? "Free" : `\u20B9${plan.price.toLocaleString()}`}
+                        {plan.price > 0 && <span className="text-xs text-muted-foreground font-normal">/mo</span>}
+                      </div>
+                      <div className="text-xs text-muted-foreground mb-1">Up to {plan.max_venues} venue{plan.max_venues > 1 ? "s" : ""}</div>
+                      <ul className="space-y-1 mb-4">
+                        {plan.features.map((f, i) => (
+                          <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <CheckCircle className="h-3 w-3 text-primary shrink-0" /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                      {isCurrent ? (
+                        <Badge className="w-full justify-center bg-primary/20 text-primary text-xs py-1">Current Plan</Badge>
+                      ) : (
+                        <Button size="sm" className="w-full text-xs font-bold" disabled={upgrading}
+                          onClick={() => handleUpgrade(plan.id)} data-testid={`upgrade-${plan.id}`}>
+                          {upgrading ? "..." : plan.price > planData.current_plan.price ? "Upgrade" : "Switch"}
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
