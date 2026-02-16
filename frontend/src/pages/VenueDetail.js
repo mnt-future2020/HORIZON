@@ -31,6 +31,7 @@ export default function VenueDetail() {
   const lockRef = useRef(null);
   const [subscribedSlots, setSubscribedSlots] = useState(new Set());
   const [mockPayStep, setMockPayStep] = useState(null); // null | "review" | "processing" | "done"
+  const [subscribing, setSubscribing] = useState(null);
 
   useEffect(() => {
     venueAPI.get(id).then(res => setVenue(res.data)).catch(() => toast.error("Venue not found")).finally(() => setLoading(false));
