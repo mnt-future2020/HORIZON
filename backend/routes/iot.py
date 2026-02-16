@@ -119,7 +119,7 @@ async def iot_websocket(ws: WebSocket):
 @router.get("/mqtt-status")
 async def get_mqtt_status(user=Depends(get_current_user)):
     await require_iot_access(user)
-    return mqtt_service.get_status()()
+    return mqtt_service.get_status()
 
 
 # --- Auth Helpers ---
