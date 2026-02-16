@@ -63,6 +63,11 @@ export default function LandingPage() {
                 data-testid="hero-search-btn">
                 <Search className="h-4 w-4 mr-2" />Search
               </Button>
+              <Button type="button" variant="outline" onClick={() => navigate("/venues?nearme=1")}
+                className="h-12 px-4 font-bold text-xs rounded-xl shrink-0 border-primary/30 hover:bg-primary/10"
+                data-testid="hero-near-me-btn">
+                <Navigation className="h-4 w-4 mr-1.5 text-primary" />Near Me
+              </Button>
             </div>
             {/* Quick city links */}
             <div className="flex items-center gap-2 mt-3 flex-wrap">
