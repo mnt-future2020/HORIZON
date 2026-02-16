@@ -82,5 +82,16 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 - **Color-coded cards**: Amber border for surcharge, emerald for discount
 - **Backend endpoints**: PUT /pricing-rules/{id}, PUT /pricing-rules/{id}/toggle
 
+### AI Video Highlights (COMPLETE - Feb 16)
+- **Video Upload**: Drag & drop or browse, up to 100MB, progress bar
+- **AI Analysis**: Gemini 2.5 Flash analyzes match videos via Emergent LLM key
+- **Key Moments**: Auto-detected with timestamps, descriptions, and significance badges
+- **Match Summary**: Sport detection, duration, intensity, player count
+- **Shareable Links**: Toggle public share with 8-char unique ID
+- **Public Page**: /highlights/shared/{shareId} renders without auth
+- **Multi-role**: Both players and venue owners can use
+- **Backend**: Full CRUD + AI endpoints at /api/highlights/*
+- **Frontend**: HighlightsPage.js + SharedHighlightPage.js + nav link
+
 ## Remaining Backlog
-- **P3**: Automated video highlights, IoT lighting, Offline POS
+- **P3**: IoT lighting, Offline POS
