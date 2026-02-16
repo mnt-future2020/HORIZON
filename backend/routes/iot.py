@@ -1,15 +1,21 @@
 import uuid
+import json
 import logging
 import asyncio
 from datetime import datetime, timezone, timedelta
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
 from auth import get_current_user
 from database import db
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
+import mqtt_service
 
 router = APIRouter(prefix="/iot", tags=["iot"])
 logger = logging.getLogger(__name__)
+
+# WebSocket connections for real-time updates
+_ws_clients: list[WebSocket] = []
+
 
 # --- Pydantic Models ---
 
@@ -37,39 +43,83 @@ class ZoneCreate(BaseModel):
     description: str = ""
 
 
-# --- MQTT Simulation Layer ---
-# In production, replace with real paho-mqtt client connection
-class MQTTSimulator:
-    """Simulates MQTT device communication. Replace with real MQTT broker in production."""
+# --- MQTT Telemetry Handler ---
 
-    @staticmethod
-    async def publish(topic: str, payload: dict) -> dict:
-        """Simulate publishing to MQTT topic. Returns simulated device ACK."""
-        await asyncio.sleep(0.05)  # Simulate network latency
-        return {
-            "topic": topic,
-            "status": "delivered",
-            "timestamp": datetime.now(timezone.utc).isoformat()
+async def handle_mqtt_telemetry(topic: str, data: dict):
+    """Process incoming MQTT messages from devices (status updates, telemetry)."""
+    device_id = data.get("device_id")
+    if not device_id:
+        return
+
+    if topic.endswith("/status"):
+        # Update device status in DB
+        update = {
+            "last_seen": datetime.now(timezone.utc).isoformat(),
+            "is_online": True,
         }
+        if "status" in data:
+            update["status"] = data["status"]
+        if "brightness" in data:
+            update["brightness"] = data["brightness"]
+        await db.iot_devices.update_one(
+            {"mqtt_topic": {"$regex": topic.replace("/status", "")}},
+            {"$set": update}
+        )
+        # Broadcast to WebSocket clients
+        await broadcast_ws({"type": "device_status", "data": data})
 
-    @staticmethod
-    async def send_command(device: dict, action: str, brightness: int = 100) -> bool:
-        """Send control command to device via its configured protocol."""
-        protocol = device.get("protocol", "mqtt")
-        topic = device.get("mqtt_topic", f"horizon/lights/{device['id']}")
-
-        if protocol == "mqtt":
-            payload = {"action": action, "brightness": brightness, "device_id": device["id"]}
-            result = await MQTTSimulator.publish(topic, payload)
-            return result["status"] == "delivered"
-        elif protocol == "http":
-            # Simulate HTTP call to device
-            await asyncio.sleep(0.05)
-            return True
-        return False
+    elif topic.endswith("/telemetry"):
+        # Store telemetry data
+        await db.iot_telemetry.insert_one({
+            "device_id": device_id,
+            "topic": topic,
+            "data": data,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "_ttl": datetime.now(timezone.utc) + timedelta(days=7),
+        })
+        await broadcast_ws({"type": "telemetry", "data": data})
 
 
-mqtt = MQTTSimulator()
+# Register handler with MQTT service
+mqtt_service.register_handler(handle_mqtt_telemetry)
+
+
+async def broadcast_ws(message: dict):
+    """Broadcast a message to all connected WebSocket clients."""
+    dead = []
+    for ws in _ws_clients:
+        try:
+            await ws.send_json(message)
+        except Exception:
+            dead.append(ws)
+    for ws in dead:
+        _ws_clients.remove(ws)
+
+
+# --- WebSocket Endpoint ---
+
+@router.websocket("/ws")
+async def iot_websocket(ws: WebSocket):
+    await ws.accept()
+    _ws_clients.append(ws)
+    logger.info(f"IoT WebSocket connected ({len(_ws_clients)} clients)")
+    try:
+        while True:
+            await ws.receive_text()  # Keep alive
+    except WebSocketDisconnect:
+        pass
+    finally:
+        if ws in _ws_clients:
+            _ws_clients.remove(ws)
+        logger.info(f"IoT WebSocket disconnected ({len(_ws_clients)} clients)")
+
+
+# --- MQTT Status Endpoint ---
+
+@router.get("/mqtt-status")
+async def get_mqtt_status(user=Depends(get_current_user)):
+    await require_iot_access(user)
+    return mqtt_service.get_status()()
 
 
 # --- Auth Helpers ---
