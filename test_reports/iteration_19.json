@@ -1,0 +1,95 @@
+{
+  "summary": "Comprehensive testing of GPS-based 'Near Me' venue search feature. All 11 backend tests passed. All frontend features verified: Near Me button in VenueDiscovery city pills, Hero Near Me button on LandingPage, city pill interactions, filters panel, and venue cards.",
+  "features_tested": {
+    "backend_api_nearby_bengaluru": "PASS - Returns venues near Bengaluru (12.97, 77.59) sorted by distance_km",
+    "backend_api_nearby_chennai": "PASS - Returns Chennai venues only within 30km radius (13.08, 80.27)",
+    "backend_api_nearby_mumbai": "PASS - Returns Mumbai venues with correct distances (19.07, 72.87)",
+    "backend_api_nearby_far_coords": "PASS - Returns empty list for coordinates (0, 0) far from any venue",
+    "backend_api_nearby_required_params": "PASS - Returns 422 for missing lat/lng parameters",
+    "backend_api_nearby_default_radius": "PASS - Uses default 50km radius when not specified",
+    "backend_api_nearby_sport_filter": "PASS - Filters by sport (football) works with nearby",
+    "backend_api_nearby_venue_fields": "PASS - Returns all required fields (id, name, city, rating, price, sports, distance_km)",
+    "backend_api_nearby_hyderabad": "PASS - Returns Hyderabad venues (17.385, 78.4867)",
+    "backend_api_nearby_delhi": "PASS - Returns Delhi venues (28.6139, 77.2090)",
+    "backend_api_nearby_limit": "PASS - Limit parameter correctly restricts results",
+    "frontend_vd_near_me_btn": "PASS - Near Me button visible in city pills row with navigation icon",
+    "frontend_vd_all_cities_pill": "PASS - All Cities pill works, shows all 16 venues",
+    "frontend_vd_city_pills": "PASS - City pills (Bengaluru, Chennai, Mumbai, Hyderabad, Delhi) clickable, update URL",
+    "frontend_vd_results_count": "PASS - Shows '16 venues found' for all, '5 venues found in Bengaluru' for city filter",
+    "frontend_vd_filters_panel": "PASS - All filter elements present (area, sport, price, amenity, sort)",
+    "frontend_vd_venue_cards": "PASS - 16 venue cards with sport badges, location, rating, price, amenities",
+    "frontend_landing_near_me_btn": "PASS - Hero Near Me button visible next to Search button",
+    "frontend_landing_hero_form": "PASS - Hero search form with input and search button present"
+  },
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "notes": [
+      "VenueDiscovery page requires authentication - users must login to access /venues",
+      "Near Me button uses browser geolocation which will fail in automated tests (graceful error handling works)",
+      "Near Me feature displays 'Locating...' state during geolocation request",
+      "When geolocation fails/denied, the app gracefully falls back to showing all venues"
+    ]
+  },
+  "passed_tests": {
+    "backend_tests": [
+      "test_nearby_bengaluru_returns_venues - PASS",
+      "test_nearby_chennai_returns_only_chennai_venues - PASS",
+      "test_nearby_mumbai_returns_mumbai_venues - PASS",
+      "test_nearby_far_coordinates_returns_empty - PASS",
+      "test_nearby_required_params - PASS",
+      "test_nearby_default_radius - PASS",
+      "test_nearby_with_sport_filter - PASS",
+      "test_nearby_venue_has_all_fields - PASS",
+      "test_nearby_hyderabad - PASS",
+      "test_nearby_delhi - PASS",
+      "test_nearby_limit_parameter - PASS"
+    ],
+    "frontend_tests": [
+      "Landing page loads with Near Me button in hero - PASS",
+      "Hero search form with Near Me button visible - PASS",
+      "VenueDiscovery page loads after login - PASS",
+      "Near Me button in city pills row - PASS",
+      "All Cities pill shows 16 venues - PASS",
+      "City pill click updates URL and results - PASS",
+      "Bengaluru pill shows 5 venues - PASS",
+      "Filters panel opens with all dropdowns - PASS",
+      "Venue cards display correctly - PASS"
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_nearby_venues.py",
+    "/app/test_reports/pytest/nearby_venues_tests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Haversine formula implementation is correct for distance calculation",
+    "Backend properly sorts results by distance_km in ascending order",
+    "Frontend Near Me button has proper data-testid for testing",
+    "Graceful error handling for geolocation permission denied",
+    "URL params properly sync with Near Me state (?nearme=1)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_nearby_venues.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (All features working as designed)"
+  },
+  "test_credentials": {
+    "player": {"email": "demo@player.com", "password": "demo123"},
+    "owner": {"email": "demo@owner.com", "password": "demo123"}
+  },
+  "seed_data_creation": "Using existing 16 venues across 5 cities (Bengaluru: 5, Chennai: 4, Mumbai: 3, Hyderabad: 2, Delhi: 2) with lat/lng coordinates",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Near Me GPS-based search feature fully tested. Backend /api/venues/nearby endpoint works correctly with Haversine distance calculation. Frontend has Near Me button in both LandingPage hero and VenueDiscovery city pills. Note: VenueDiscovery requires authentication. Browser geolocation testing is limited in automated tests due to permission requirements.",
+  "mocked_apis": {
+    "Razorpay payment gateway": "MOCKED - Using mock-confirm endpoint instead of real Razorpay"
+  }
+}
