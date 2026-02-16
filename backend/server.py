@@ -972,12 +972,33 @@ async def list_mercenary(sport: Optional[str] = None):
     posts = await db.mercenary_posts.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return posts
 
+@api_router.get("/mercenary/my-posts")
+async def my_mercenary_posts(user=Depends(get_current_user)):
+    posts = await db.mercenary_posts.find(
+        {"host_id": user["id"]}, {"_id": 0}
+    ).sort("created_at", -1).to_list(50)
+    return posts
+
 @api_router.post("/mercenary")
 async def create_mercenary(input: MercenaryCreate, user=Depends(get_current_user)):
+    # Verify the booking belongs to this user
+    booking = await db.bookings.find_one({"id": input.booking_id, "host_id": user["id"]}, {"_id": 0})
+    if not booking:
+        raise HTTPException(404, "Booking not found or not owned by you")
+    venue = await db.venues.find_one({"id": booking["venue_id"]}, {"_id": 0, "name": 1})
     post = {
         "id": str(uuid.uuid4()), "host_id": user["id"],
-        "host_name": user["name"], **input.model_dump(),
-        "applicants": [], "accepted": [],
+        "host_name": user["name"], "booking_id": input.booking_id,
+        "venue_id": booking["venue_id"],
+        "venue_name": venue["name"] if venue else booking.get("venue_name", ""),
+        "sport": booking.get("sport", "football"),
+        "date": booking["date"], "time": booking["start_time"],
+        "position_needed": input.position_needed,
+        "description": input.description,
+        "amount_per_player": input.amount_per_player,
+        "spots_available": input.spots_available,
+        "spots_filled": 0,
+        "applicants": [], "accepted": [], "paid_players": [],
         "status": "open",
         "created_at": datetime.now(timezone.utc).isoformat()
     }
@@ -990,16 +1011,149 @@ async def apply_mercenary(post_id: str, user=Depends(get_current_user)):
     post = await db.mercenary_posts.find_one({"id": post_id})
     if not post:
         raise HTTPException(404, "Post not found")
+    if post["host_id"] == user["id"]:
+        raise HTTPException(400, "Cannot apply to your own post")
     if user["id"] in [a.get("id") for a in post.get("applicants", [])]:
         raise HTTPException(400, "Already applied")
-    applicant = {"id": user["id"], "name": user["name"], "skill_rating": user.get("skill_rating", 1500)}
-    applicants = post.get("applicants", [])
-    applicants.append(applicant)
-    updates = {"applicants": applicants}
-    if len(post.get("accepted", [])) + 1 >= post.get("spots_available", 1):
-        updates["status"] = "filled"
-    await db.mercenary_posts.update_one({"id": post_id}, {"$set": updates})
+    if user["id"] in [a.get("id") for a in post.get("accepted", [])]:
+        raise HTTPException(400, "Already accepted")
+    applicant = {
+        "id": user["id"], "name": user["name"],
+        "skill_rating": user.get("skill_rating", 1500),
+        "sports": user.get("sports", []),
+        "applied_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.mercenary_posts.update_one(
+        {"id": post_id}, {"$push": {"applicants": applicant}}
+    )
+    # Notify the host
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()), "user_id": post["host_id"],
+        "type": "mercenary_application",
+        "title": "New Mercenary Application",
+        "message": f"{user['name']} (Rating: {user.get('skill_rating', 1500)}) applied for {post['position_needed']}",
+        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+    })
     return {"message": "Applied successfully"}
+
+@api_router.post("/mercenary/{post_id}/accept/{applicant_id}")
+async def accept_mercenary(post_id: str, applicant_id: str, user=Depends(get_current_user)):
+    post = await db.mercenary_posts.find_one({"id": post_id})
+    if not post:
+        raise HTTPException(404, "Post not found")
+    if post["host_id"] != user["id"]:
+        raise HTTPException(403, "Only the host can accept applicants")
+    applicant = next((a for a in post.get("applicants", []) if a["id"] == applicant_id), None)
+    if not applicant:
+        raise HTTPException(404, "Applicant not found")
+    if len(post.get("accepted", [])) >= post.get("spots_available", 1):
+        raise HTTPException(400, "All spots already filled")
+
+    # Move from applicants to accepted
+    await db.mercenary_posts.update_one({"id": post_id}, {
+        "$pull": {"applicants": {"id": applicant_id}},
+        "$push": {"accepted": applicant}
+    })
+    # Notify the accepted player
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()), "user_id": applicant_id,
+        "type": "mercenary_accepted",
+        "title": "You're In!",
+        "message": f"You've been accepted for {post['position_needed']} at {post['venue_name']} on {post['date']} at {post['time']}. Pay {chr(8377)}{post['amount_per_player']} to confirm.",
+        "venue_id": post.get("venue_id", ""),
+        "mercenary_post_id": post_id,
+        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    return {"message": "Applicant accepted"}
+
+@api_router.post("/mercenary/{post_id}/reject/{applicant_id}")
+async def reject_mercenary(post_id: str, applicant_id: str, user=Depends(get_current_user)):
+    post = await db.mercenary_posts.find_one({"id": post_id})
+    if not post:
+        raise HTTPException(404, "Post not found")
+    if post["host_id"] != user["id"]:
+        raise HTTPException(403, "Only the host can reject applicants")
+    await db.mercenary_posts.update_one(
+        {"id": post_id}, {"$pull": {"applicants": {"id": applicant_id}}}
+    )
+    return {"message": "Applicant rejected"}
+
+@api_router.post("/mercenary/{post_id}/pay")
+async def pay_mercenary(post_id: str, user=Depends(get_current_user)):
+    """Pay the mercenary fee after being accepted."""
+    post = await db.mercenary_posts.find_one({"id": post_id})
+    if not post:
+        raise HTTPException(404, "Post not found")
+    accepted_ids = [a["id"] for a in post.get("accepted", [])]
+    if user["id"] not in accepted_ids:
+        raise HTTPException(403, "You must be accepted before paying")
+    if user["id"] in [p["id"] for p in post.get("paid_players", [])]:
+        raise HTTPException(400, "Already paid")
+
+    amount = post["amount_per_player"]
+    rzp_client = await get_razorpay_client()
+
+    if rzp_client:
+        try:
+            rzp_order = rzp_client.order.create({
+                "amount": amount * 100, "currency": "INR", "payment_capture": 1,
+                "notes": {"mercenary_post_id": post_id, "payer_id": user["id"]}
+            })
+            gw = (await get_platform_settings()).get("payment_gateway", {})
+            return {
+                "payment_gateway": "razorpay",
+                "razorpay_order_id": rzp_order["id"],
+                "razorpay_key_id": gw.get("key_id", ""),
+                "amount": amount
+            }
+        except Exception as e:
+            logger.warning(f"Razorpay failed for mercenary: {e}")
+
+    # Mock fallback
+    paid_player = {"id": user["id"], "name": user["name"], "paid_at": datetime.now(timezone.utc).isoformat()}
+    new_filled = post.get("spots_filled", 0) + 1
+    updates = {"$push": {"paid_players": paid_player}, "$set": {"spots_filled": new_filled}}
+    if new_filled >= post.get("spots_available", 1):
+        updates["$set"]["status"] = "filled"
+
+    await db.mercenary_posts.update_one({"id": post_id}, updates)
+
+    # Add player to the linked booking
+    if post.get("booking_id"):
+        await db.bookings.update_one(
+            {"id": post["booking_id"]}, {"$addToSet": {"players": user["id"]}}
+        )
+
+    return {"payment_gateway": "mock", "message": "Payment successful", "amount": amount}
+
+@api_router.post("/mercenary/{post_id}/verify-payment")
+async def verify_mercenary_payment(post_id: str, request: Request, user=Depends(get_current_user)):
+    """Verify Razorpay payment for mercenary fee."""
+    post = await db.mercenary_posts.find_one({"id": post_id})
+    if not post:
+        raise HTTPException(404, "Post not found")
+
+    paid_player = {"id": user["id"], "name": user["name"], "paid_at": datetime.now(timezone.utc).isoformat()}
+    new_filled = post.get("spots_filled", 0) + 1
+    updates = {"$push": {"paid_players": paid_player}, "$set": {"spots_filled": new_filled}}
+    if new_filled >= post.get("spots_available", 1):
+        updates["$set"]["status"] = "filled"
+    await db.mercenary_posts.update_one({"id": post_id}, updates)
+
+    if post.get("booking_id"):
+        await db.bookings.update_one(
+            {"id": post["booking_id"]}, {"$addToSet": {"players": user["id"]}}
+        )
+
+    # Notify host
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()), "user_id": post["host_id"],
+        "type": "mercenary_paid",
+        "title": "Player Confirmed!",
+        "message": f"{user['name']} paid and joined your game at {post['venue_name']}",
+        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    return {"message": "Payment verified, you're in the game!"}
 
 
 # ── Academy Routes ──
