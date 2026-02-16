@@ -46,6 +46,7 @@ export const slotLockAPI = {
 export const splitAPI = {
   getInfo: (token) => api.get(`/split/${token}`),
   pay: (token, data) => api.post(`/split/${token}/pay`, data),
+  verifyPayment: (token, data) => api.post(`/split/${token}/verify-payment`, data),
 };
 
 export const matchAPI = {
