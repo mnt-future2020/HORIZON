@@ -103,7 +103,7 @@ async def get_slots(venue_id: str, date: str, request: Request):
     ).sort("priority", -1).to_list(100)
 
     bookings = await db.bookings.find(
-        {"venue_id": venue_id, "date": date, "status": {"$in": ["confirmed", "pending"]}},
+        {"venue_id": venue_id, "date": date, "status": {"$in": ["confirmed", "pending", "payment_pending"]}},
         {"_id": 0}
     ).to_list(100)
     booked_set = {f"{b['start_time']}-{b.get('turf_number', 1)}" for b in bookings}
@@ -185,7 +185,7 @@ async def acquire_slot_lock(input: SlotLockInput, user=Depends(get_current_user)
     existing = await db.bookings.find_one({
         "venue_id": input.venue_id, "date": input.date,
         "start_time": input.start_time, "turf_number": input.turf_number,
-        "status": {"$in": ["confirmed", "pending"]}
+        "status": {"$in": ["confirmed", "pending", "payment_pending"]}
     })
     if existing:
         raise HTTPException(409, "Slot already booked")
