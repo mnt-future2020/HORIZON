@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { matchAPI } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -31,6 +32,7 @@ function getRankIcon(rank) {
 
 export default function LeaderboardPage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [sport, setSport] = useState("all");
   const [loading, setLoading] = useState(true);
