@@ -382,6 +382,9 @@ function VenueOwnerDashboardContent() {
           <TabsTrigger value="history" className="font-bold text-xs" data-testid="tab-history">
             <History className="h-3 w-3 mr-1" />History
           </TabsTrigger>
+          <TabsTrigger value="reviews" className="font-bold text-xs" data-testid="tab-reviews">
+            <Star className="h-3 w-3 mr-1" />Reviews
+          </TabsTrigger>
           <TabsTrigger value="pricing" className="font-bold text-xs" data-testid="tab-pricing">Pricing</TabsTrigger>
           <TabsTrigger value="analytics" className="font-bold text-xs">Analytics</TabsTrigger>
           <TabsTrigger value="plan" className="font-bold text-xs" data-testid="tab-plan">Plan</TabsTrigger>
