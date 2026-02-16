@@ -95,3 +95,11 @@ class SlotLockInput(BaseModel):
     date: str
     start_time: str
     turf_number: int = 1
+
+
+class MatchResultSubmit(BaseModel):
+    team_a: List[str]
+    team_b: List[str]
+    winner: str  # "team_a", "team_b", "draw"
+    score_a: Optional[int] = None
+    score_b: Optional[int] = None
