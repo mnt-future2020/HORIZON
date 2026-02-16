@@ -139,18 +139,19 @@ export default function VenueDiscovery() {
     if (selectedCity !== "all") params.set("city", selectedCity);
     if (selectedArea !== "all") params.set("area", selectedArea);
     if (selectedSport !== "all") params.set("sport", selectedSport);
+    if (nearMeActive) params.set("nearme", "1");
     setSearchParams(params, { replace: true });
-  }, [searchText, selectedCity, selectedArea, selectedSport, setSearchParams]);
+  }, [searchText, selectedCity, selectedArea, selectedSport, nearMeActive, setSearchParams]);
 
   const activeFilterCount = [
     selectedCity !== "all", selectedArea !== "all", selectedSport !== "all",
-    priceRange !== "all", selectedAmenity !== "all"
+    priceRange !== "all", selectedAmenity !== "all", nearMeActive
   ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSearchText(""); setSelectedCity("all"); setSelectedArea("all");
     setSelectedSport("all"); setSortBy("rating"); setPriceRange("all");
-    setSelectedAmenity("all");
+    setSelectedAmenity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({});
   };
 
   const sports = ["football", "cricket", "badminton", "basketball", "tennis", "table_tennis"];
