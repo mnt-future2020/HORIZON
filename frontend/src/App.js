@@ -63,7 +63,7 @@ function AppRoutes() {
         <Route path="/split/:token" element={<SplitPaymentPage />} />
         <Route path="/highlights" element={<ProtectedRoute><HighlightsPage /></ProtectedRoute>} />
         <Route path="/highlights/shared/:shareId" element={<SharedHighlightPage />} />
-        <Route path="/iot" element={<ProtectedRoute><IoTDashboard /></ProtectedRoute>} />
+        <Route path="/iot" element={<ProtectedRoute roles={["venue_owner", "super_admin"]}><IoTDashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
       </Routes>
       <Toaster position="top-right" richColors />
