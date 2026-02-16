@@ -301,8 +301,8 @@ async def get_energy_analytics(
     active_count = sum(1 for d in devices if d.get("status") == "on")
     total_power = sum(d.get("power_watts", 0) for d in devices if d.get("status") == "on")
 
-    # Get energy logs
-    logs = await db.iot_energy_logs.find(
+    # Get energy logs for the period
+    await db.iot_energy_logs.find(
         {"venue_id": venue_id, "timestamp": {"$gte": cutoff}}, {"_id": 0}
     ).sort("timestamp", 1).to_list(1000)
 
