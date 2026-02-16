@@ -261,6 +261,7 @@ export default function VenueDetail() {
       setConfirmResult({ ...confirmResult, status: "confirmed" });
       toast.success("Payment successful! Booking confirmed.");
       loadSlots();
+      loadReviews(); // Refresh eligible bookings for reviews
     } catch (err) {
       toast.error(err.response?.data?.detail || "Payment failed");
       setMockPayStep("review");
