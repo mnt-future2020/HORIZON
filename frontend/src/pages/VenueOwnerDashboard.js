@@ -76,7 +76,8 @@ function VenueOwnerDashboardContent() {
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [loading, setLoading] = useState(true);
   const [createVenueOpen, setCreateVenueOpen] = useState(false);
-  const [createRuleOpen, setCreateRuleOpen] = useState(false);
+  const [ruleDialogOpen, setRuleDialogOpen] = useState(false);
+  const [editingRule, setEditingRule] = useState(null);
   const [planData, setPlanData] = useState(null);
   const [upgrading, setUpgrading] = useState(false);
   const [venueForm, setVenueForm] = useState({
@@ -84,10 +85,13 @@ function VenueOwnerDashboardContent() {
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
     amenities: [], images: [],
   });
-  const [ruleForm, setRuleForm] = useState({
-    name: "", priority: 10, conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
+  const emptyRule = {
+    name: "", priority: 10,
+    conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
     action: { type: "multiplier", value: 1.2 },
-  });
+    is_active: true,
+  };
+  const [ruleForm, setRuleForm] = useState({ ...emptyRule });
 
   useEffect(() => {
     subscriptionAPI.myPlan().then(r => setPlanData(r.data)).catch(() => {});
@@ -141,16 +145,59 @@ function VenueOwnerDashboardContent() {
     }
   };
 
-  const handleCreateRule = async () => {
+  const openCreateRule = () => {
+    setEditingRule(null);
+    setRuleForm({ ...emptyRule });
+    setRuleDialogOpen(true);
+  };
+
+  const openEditRule = (rule) => {
+    setEditingRule(rule);
+    setRuleForm({
+      name: rule.name,
+      priority: rule.priority,
+      conditions: {
+        days: rule.conditions?.days || [],
+        time_range: rule.conditions?.time_range || { start: "18:00", end: "22:00" },
+      },
+      action: rule.action || { type: "multiplier", value: 1.2 },
+      is_active: rule.is_active !== false,
+    });
+    setRuleDialogOpen(true);
+  };
+
+  const handleSaveRule = async () => {
     if (!selectedVenue) return;
     try {
-      await venueAPI.createPricingRule(selectedVenue.id, ruleForm);
-      toast.success("Pricing rule created!");
-      setCreateRuleOpen(false);
+      if (editingRule) {
+        await venueAPI.updatePricingRule(editingRule.id, ruleForm);
+        toast.success("Rule updated!");
+      } else {
+        await venueAPI.createPricingRule(selectedVenue.id, ruleForm);
+        toast.success("Rule created!");
+      }
+      setRuleDialogOpen(false);
+      setEditingRule(null);
       loadData();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed");
     }
+  };
+
+  const handleToggleRule = async (ruleId) => {
+    try {
+      await venueAPI.togglePricingRule(ruleId);
+      setPricingRules(prev => prev.map(r => r.id === ruleId ? { ...r, is_active: !r.is_active } : r));
+      toast.success("Rule toggled");
+    } catch (err) { toast.error("Failed to toggle rule"); }
+  };
+
+  const handleDeleteRule = async (ruleId) => {
+    try {
+      await venueAPI.deletePricingRule(ruleId);
+      setPricingRules(prev => prev.filter(r => r.id !== ruleId));
+      toast.success("Rule deleted");
+    } catch (err) { toast.error("Failed to delete rule"); }
   };
 
   const handleSelectVenue = async (v) => {
@@ -163,6 +210,26 @@ function VenueOwnerDashboardContent() {
     setPricingRules(pRes.data || []);
   };
 
+  const toggleDay = (dayIndex) => {
+    setRuleForm(prev => {
+      const days = prev.conditions.days || [];
+      return {
+        ...prev,
+        conditions: {
+          ...prev.conditions,
+          days: days.includes(dayIndex) ? days.filter(d => d !== dayIndex) : [...days, dayIndex],
+        },
+      };
+    });
+  };
+
+  const basePrice = selectedVenue?.base_price || 2000;
+  const previewPrice = (rule) => {
+    if (rule.action?.type === "multiplier") return Math.round(basePrice * (rule.action.value || 1));
+    if (rule.action?.type === "discount") return Math.round(basePrice * (1 - (rule.action.value || 0)));
+    return basePrice;
+  };
+
   const totalRevenue = analytics?.total_revenue || 0;
   const totalBookings = analytics?.total_bookings || 0;
 
@@ -172,16 +239,16 @@ function VenueOwnerDashboardContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="owner-dashboard">
-      <div className="flex items-start justify-between mb-8">
-        <div>
+      <div className="flex items-start justify-between gap-3 mb-8">
+        <div className="min-w-0">
           <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Venue Owner</span>
-          <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight mt-1">
+          <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mt-1 truncate">
             Welcome, <span className="text-primary">{user?.name}</span>
           </h1>
         </div>
         <Dialog open={createVenueOpen} onOpenChange={setCreateVenueOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground font-bold text-xs h-9" data-testid="create-venue-btn">
+            <Button className="bg-primary text-primary-foreground font-bold text-xs h-9 shrink-0" data-testid="create-venue-btn">
               <Plus className="h-4 w-4 mr-1" /> Add Venue
             </Button>
           </DialogTrigger>
@@ -220,7 +287,7 @@ function VenueOwnerDashboardContent() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
         <StatCard icon={Building2} label="Venues" value={venues.length} color="bg-primary/10 text-primary" />
         <StatCard icon={Calendar} label="Bookings" value={totalBookings} color="bg-violet-500/10 text-violet-400" />
         <StatCard icon={IndianRupee} label="Revenue" value={`\u20B9${(totalRevenue / 1000).toFixed(1)}K`} color="bg-amber-500/10 text-amber-400" />
@@ -229,11 +296,11 @@ function VenueOwnerDashboardContent() {
 
       {/* Venue Selector */}
       {venues.length > 0 && (
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
           {venues.map(v => (
             <Button key={v.id} variant={selectedVenue?.id === v.id ? "default" : "outline"} size="sm"
               onClick={() => handleSelectVenue(v)} data-testid={`venue-tab-${v.id}`}
-              className={`shrink-0 ${selectedVenue?.id === v.id ? "bg-primary text-primary-foreground" : ""}`}>
+              className={`shrink-0 text-xs ${selectedVenue?.id === v.id ? "bg-primary text-primary-foreground" : ""}`}>
               {v.name}
             </Button>
           ))}
@@ -241,138 +308,238 @@ function VenueOwnerDashboardContent() {
       )}
 
       <Tabs defaultValue="bookings" data-testid="owner-tabs">
-        <TabsList className="bg-secondary/50 mb-6">
-          <TabsTrigger value="bookings" className="font-bold">Bookings</TabsTrigger>
-          <TabsTrigger value="pricing" className="font-bold">Pricing Rules</TabsTrigger>
-          <TabsTrigger value="analytics" className="font-bold">Analytics</TabsTrigger>
-          <TabsTrigger value="plan" className="font-bold" data-testid="tab-plan">Plan</TabsTrigger>
+        <TabsList className="bg-secondary/50 mb-6 flex-wrap h-auto gap-1 p-1">
+          <TabsTrigger value="bookings" className="font-bold text-xs">Bookings</TabsTrigger>
+          <TabsTrigger value="pricing" className="font-bold text-xs" data-testid="tab-pricing">Pricing</TabsTrigger>
+          <TabsTrigger value="analytics" className="font-bold text-xs">Analytics</TabsTrigger>
+          <TabsTrigger value="plan" className="font-bold text-xs" data-testid="tab-plan">Plan</TabsTrigger>
         </TabsList>
 
+        {/* Bookings - Mobile card layout */}
         <TabsContent value="bookings">
           {bookings.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground"><Calendar className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No bookings yet</p></div>
           ) : (
-            <div className="glass-card rounded-lg overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border hover:bg-transparent">
-                    <TableHead className="text-muted-foreground font-mono text-xs">Date</TableHead>
-                    <TableHead className="text-muted-foreground font-mono text-xs">Time</TableHead>
-                    <TableHead className="text-muted-foreground font-mono text-xs">Venue</TableHead>
-                    <TableHead className="text-muted-foreground font-mono text-xs">Host</TableHead>
-                    <TableHead className="text-muted-foreground font-mono text-xs">Amount</TableHead>
-                    <TableHead className="text-muted-foreground font-mono text-xs">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bookings.slice(0, 20).map(b => (
-                    <TableRow key={b.id} className="border-border">
-                      <TableCell className="text-sm">{b.date}</TableCell>
-                      <TableCell className="text-sm">{b.start_time}-{b.end_time}</TableCell>
-                      <TableCell className="text-sm font-medium">{b.venue_name}</TableCell>
-                      <TableCell className="text-sm">{b.host_name}</TableCell>
-                      <TableCell className="text-sm font-bold text-primary">{"\u20B9"}{b.total_amount}</TableCell>
-                      <TableCell><Badge variant={b.status === "confirmed" ? "default" : b.status === "pending" ? "secondary" : "destructive"} className="text-[10px]">{b.status}</Badge></TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="pricing">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-lg">Pricing Rules {selectedVenue && `- ${selectedVenue.name}`}</h3>
-            <Dialog open={createRuleOpen} onOpenChange={setCreateRuleOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8" data-testid="create-rule-btn">
-                  <Plus className="h-3.5 w-3.5 mr-1" /> Add Rule
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-card border-border max-w-md">
-                <DialogHeader><DialogTitle className="font-display">Create Pricing Rule</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <div><Label className="text-xs text-muted-foreground">Rule Name</Label>
-                    <Input value={ruleForm.name} onChange={e => setRuleForm(p => ({ ...p, name: e.target.value }))}
-                      placeholder="Weekend Surge" className="mt-1 bg-background border-border" data-testid="rule-name-input" /></div>
-                  <div><Label className="text-xs text-muted-foreground">Priority (higher = more important)</Label>
-                    <Input type="number" value={ruleForm.priority} onChange={e => setRuleForm(p => ({ ...p, priority: Number(e.target.value) }))}
-                      className="mt-1 bg-background border-border" data-testid="rule-priority-input" /></div>
-                  <div><Label className="text-xs text-muted-foreground">Action Type</Label>
-                    <Select value={ruleForm.action.type} onValueChange={v => setRuleForm(p => ({ ...p, action: { ...p.action, type: v } }))}>
-                      <SelectTrigger className="mt-1 bg-background border-border" data-testid="rule-action-select"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="multiplier">Multiplier (e.g., 1.2 = +20%)</SelectItem>
-                        <SelectItem value="discount">Discount (e.g., 0.15 = -15%)</SelectItem>
-                      </SelectContent>
-                    </Select></div>
-                  <div><Label className="text-xs text-muted-foreground">Value</Label>
-                    <Input type="number" step="0.01" value={ruleForm.action.value}
-                      onChange={e => setRuleForm(p => ({ ...p, action: { ...p.action, value: Number(e.target.value) } }))}
-                      className="mt-1 bg-background border-border" data-testid="rule-value-input" /></div>
-                  <div><Label className="text-xs text-muted-foreground">Time Range (start - end)</Label>
-                    <div className="grid grid-cols-2 gap-2 mt-1">
-                      <Input value={ruleForm.conditions.time_range?.start || ""}
-                        onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
-                        placeholder="18:00" className="bg-background border-border" data-testid="rule-time-start" />
-                      <Input value={ruleForm.conditions.time_range?.end || ""}
-                        onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
-                        placeholder="22:00" className="bg-background border-border" data-testid="rule-time-end" />
-                    </div></div>
-                  <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateRule} data-testid="submit-rule-btn">Create Rule</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-          {pricingRules.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground"><BarChart3 className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No pricing rules</p></div>
-          ) : (
             <div className="space-y-3">
-              {pricingRules.map(r => (
-                <div key={r.id} className="glass-card rounded-lg p-4 flex items-center justify-between" data-testid={`rule-card-${r.id}`}>
-                  <div>
-                    <div className="font-bold text-sm text-foreground">{r.name}</div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      Priority: {r.priority} | {r.action?.type}: {r.action?.value}
-                      {r.conditions?.time_range && ` | ${r.conditions.time_range.start}-${r.conditions.time_range.end}`}
-                      {r.conditions?.days && ` | Days: ${r.conditions.days.join(",")}`}
+              {bookings.slice(0, 20).map(b => (
+                <div key={b.id} className="glass-card rounded-lg p-4" data-testid={`booking-row-${b.id}`}>
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0">
+                      <span className="font-bold text-sm text-foreground truncate block">{b.venue_name}</span>
+                      <span className="text-xs text-muted-foreground">{b.host_name}</span>
                     </div>
+                    <Badge variant={b.status === "confirmed" ? "default" : b.status === "pending" ? "secondary" : "destructive"}
+                      className="text-[10px] shrink-0">{b.status}</Badge>
                   </div>
-                  <Badge className={r.is_active ? "bg-primary/20 text-primary" : "bg-destructive/20 text-destructive"}>
-                    {r.is_active ? "Active" : "Inactive"}
-                  </Badge>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{b.date}</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
+                    </div>
+                    <span className="font-bold text-primary">{"\u20B9"}{b.total_amount}</span>
+                  </div>
                 </div>
               ))}
             </div>
           )}
         </TabsContent>
 
+        {/* Pricing Rules - Enhanced P2 */}
+        <TabsContent value="pricing">
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <div className="min-w-0">
+              <h3 className="font-display font-bold text-base sm:text-lg truncate">
+                Pricing Rules {selectedVenue && <span className="text-muted-foreground font-normal text-sm">- {selectedVenue.name}</span>}
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Base price: <span className="text-primary font-bold">{"\u20B9"}{basePrice}/hr</span></p>
+            </div>
+            <Button size="sm" onClick={openCreateRule} className="bg-primary text-primary-foreground font-bold text-xs h-8 shrink-0" data-testid="create-rule-btn">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Add Rule
+            </Button>
+          </div>
+
+          {pricingRules.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <BarChart3 className="h-8 w-8 mx-auto mb-3" />
+              <p className="text-sm">No pricing rules yet</p>
+              <p className="text-xs mt-1">Add rules to set peak-hour surcharges or off-peak discounts</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {pricingRules.map(r => {
+                const effectivePrice = previewPrice(r);
+                const diff = effectivePrice - basePrice;
+                const isUp = diff > 0;
+                return (
+                  <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
+                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isUp ? "border-l-amber-500" : "border-l-emerald-500") : "border-l-muted-foreground/30 opacity-60"}`}
+                    data-testid={`rule-card-${r.id}`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-foreground">{r.name}</span>
+                          <Badge className={`text-[10px] ${r.action?.type === "multiplier" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"} border`}>
+                            {r.action?.type === "multiplier" ? `${r.action.value}x` : `-${Math.round((r.action.value || 0) * 100)}%`}
+                          </Badge>
+                          <span className="text-[10px] text-muted-foreground">P{r.priority}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
+                          {r.conditions?.time_range && (
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.conditions.time_range.start}-{r.conditions.time_range.end}</span>
+                          )}
+                          {r.conditions?.days?.length > 0 && (
+                            <span className="flex items-center gap-1">
+                              {r.conditions.days.map(d => DAY_LABELS[d]).join(", ")}
+                            </span>
+                          )}
+                          {(!r.conditions?.days || r.conditions.days.length === 0) && <span>All days</span>}
+                        </div>
+                        {r.is_active && (
+                          <div className="mt-2 text-xs">
+                            <span className="text-muted-foreground">Effect: </span>
+                            <span className="text-muted-foreground">{"\u20B9"}{basePrice}</span>
+                            <span className="text-muted-foreground mx-1">{"\u2192"}</span>
+                            <span className={`font-bold ${isUp ? "text-amber-400" : "text-emerald-400"}`}>{"\u20B9"}{effectivePrice}</span>
+                            <span className={`ml-1 text-[10px] ${isUp ? "text-amber-400" : "text-emerald-400"}`}>
+                              ({isUp ? "+" : ""}{"\u20B9"}{diff})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Switch checked={r.is_active !== false} onCheckedChange={() => handleToggleRule(r.id)} data-testid={`toggle-rule-${r.id}`} />
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                          onClick={() => openEditRule(r)} data-testid={`edit-rule-${r.id}`}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteRule(r.id)} data-testid={`delete-rule-${r.id}`}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Rule Create/Edit Dialog */}
+          <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
+            <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-display">{editingRule ? "Edit" : "Create"} Pricing Rule</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Rule Name</Label>
+                  <Input value={ruleForm.name} onChange={e => setRuleForm(p => ({ ...p, name: e.target.value }))}
+                    placeholder="Weekend Peak Hours" className="mt-1 bg-background border-border" data-testid="rule-name-input" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Priority (higher = applied first)</Label>
+                  <Input type="number" value={ruleForm.priority} onChange={e => setRuleForm(p => ({ ...p, priority: Number(e.target.value) }))}
+                    className="mt-1 bg-background border-border" data-testid="rule-priority-input" />
+                </div>
+
+                {/* Days of week */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">Days of Week</Label>
+                  <p className="text-[10px] text-muted-foreground mb-2">Leave empty for all days</p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {DAY_LABELS.map((label, i) => (
+                      <button key={i} onClick={() => toggleDay(i)} data-testid={`day-btn-${i}`}
+                        className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
+                          (ruleForm.conditions.days || []).includes(i)
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary/50 text-muted-foreground hover:text-foreground"
+                        }`}>{label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time range */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">Time Range</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <Input value={ruleForm.conditions.time_range?.start || ""}
+                      onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
+                      placeholder="18:00" className="bg-background border-border" data-testid="rule-time-start" />
+                    <Input value={ruleForm.conditions.time_range?.end || ""}
+                      onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
+                      placeholder="22:00" className="bg-background border-border" data-testid="rule-time-end" />
+                  </div>
+                </div>
+
+                {/* Action */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">Action Type</Label>
+                  <Select value={ruleForm.action.type} onValueChange={v => setRuleForm(p => ({ ...p, action: { ...p.action, type: v } }))}>
+                    <SelectTrigger className="mt-1 bg-background border-border" data-testid="rule-action-select"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="multiplier">Multiplier (e.g., 1.2 = +20%)</SelectItem>
+                      <SelectItem value="discount">Discount (e.g., 0.15 = -15%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Value</Label>
+                  <Input type="number" step="0.01" value={ruleForm.action.value}
+                    onChange={e => setRuleForm(p => ({ ...p, action: { ...p.action, value: Number(e.target.value) } }))}
+                    className="mt-1 bg-background border-border" data-testid="rule-value-input" />
+                </div>
+
+                {/* Live Preview */}
+                <div className="glass-card rounded-lg p-3" data-testid="rule-preview">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Price Preview</span>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-sm text-muted-foreground">{"\u20B9"}{basePrice}</span>
+                    <span className="text-muted-foreground">{"\u2192"}</span>
+                    <span className="text-lg font-display font-bold text-primary">{"\u20B9"}{previewPrice(ruleForm)}</span>
+                    {(() => {
+                      const d = previewPrice(ruleForm) - basePrice;
+                      return d !== 0 && (
+                        <Badge className={`text-[10px] ${d > 0 ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"}`}>
+                          {d > 0 ? "+" : ""}{"\u20B9"}{d}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveRule} data-testid="submit-rule-btn">
+                  {editingRule ? "Update Rule" : "Create Rule"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </TabsContent>
+
         <TabsContent value="analytics">
           {analytics ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="glass-card rounded-lg p-4">
-                  <div className="text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
-                  <div className="text-2xl font-display font-black text-primary mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
+                  <div className="text-xl sm:text-2xl font-display font-black text-primary mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
                 </div>
                 <div className="glass-card rounded-lg p-4">
-                  <div className="text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
-                  <div className="text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
+                  <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
                 </div>
                 <div className="glass-card rounded-lg p-4">
-                  <div className="text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
-                  <div className="text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
+                  <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
                 </div>
               </div>
               {analytics.daily_revenue?.length > 0 && (
-                <div className="glass-card rounded-lg p-6">
+                <div className="glass-card rounded-lg p-4 sm:p-6">
                   <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={220}>
                     <BarChart data={analytics.daily_revenue}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2, 32.6%, 17.5%)" />
-                      <XAxis dataKey="date" tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 11 }} />
-                      <YAxis tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 11 }} />
+                      <XAxis dataKey="date" tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} />
+                      <YAxis tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} width={40} />
                       <Tooltip contentStyle={{ background: "hsl(222.2, 47.4%, 11.2%)", border: "1px solid hsl(217.2, 32.6%, 17.5%)", borderRadius: 8 }}
                         labelStyle={{ color: "hsl(210, 40%, 98%)" }} />
                       <Bar dataKey="revenue" fill="hsl(160, 84%, 39.4%)" radius={[4, 4, 0, 0]} />
@@ -389,11 +556,11 @@ function VenueOwnerDashboardContent() {
         <TabsContent value="plan" data-testid="plan-tab-content">
           {planData ? (
             <div className="space-y-6">
-              <div className="glass-card rounded-lg p-5" data-testid="current-plan-card">
+              <div className="glass-card rounded-lg p-4 sm:p-5" data-testid="current-plan-card">
                 <div className="flex items-center gap-3 mb-4">
-                  <Crown className="h-5 w-5 text-primary" />
-                  <div>
-                    <h3 className="text-base font-bold">Current Plan: <span className="text-primary">{planData.current_plan.name}</span></h3>
+                  <Crown className="h-5 w-5 text-primary shrink-0" />
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-primary">{planData.current_plan.name}</span></h3>
                     <p className="text-xs text-muted-foreground">{planData.venues_used} / {planData.venues_limit} venues used</p>
                   </div>
                 </div>
@@ -403,11 +570,11 @@ function VenueOwnerDashboardContent() {
               </div>
 
               <h3 className="text-sm font-bold">Available Plans</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {planData.all_plans.map(plan => {
                   const isCurrent = plan.id === planData.current_plan.id;
                   return (
-                    <div key={plan.id} className={`glass-card rounded-lg p-5 border-2 transition-all ${isCurrent ? "border-primary" : "border-transparent hover:border-primary/30"}`}
+                    <div key={plan.id} className={`glass-card rounded-lg p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-primary" : "border-transparent hover:border-primary/30"}`}
                       data-testid={`plan-card-${plan.id}`}>
                       <div className="text-sm font-bold mb-1">{plan.name}</div>
                       <div className="text-2xl font-display font-black text-primary mb-3">
