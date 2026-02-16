@@ -243,6 +243,7 @@ function VenueOwnerDashboardContent() {
           <TabsTrigger value="bookings" className="font-bold">Bookings</TabsTrigger>
           <TabsTrigger value="pricing" className="font-bold">Pricing Rules</TabsTrigger>
           <TabsTrigger value="analytics" className="font-bold">Analytics</TabsTrigger>
+          <TabsTrigger value="plan" className="font-bold" data-testid="tab-plan">Plan</TabsTrigger>
         </TabsList>
 
         <TabsContent value="bookings">
