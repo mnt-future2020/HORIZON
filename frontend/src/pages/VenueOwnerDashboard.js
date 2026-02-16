@@ -141,6 +141,13 @@ function VenueOwnerDashboardContent() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Load reviews when selectedVenue changes
+  useEffect(() => {
+    if (selectedVenue) {
+      venueAPI.getReviews(selectedVenue.id).then(res => setVenueReviews(res.data)).catch(() => setVenueReviews([]));
+    }
+  }, [selectedVenue]);
+
   const handleCreateVenue = async () => {
     try {
       await venueAPI.create(venueForm);
