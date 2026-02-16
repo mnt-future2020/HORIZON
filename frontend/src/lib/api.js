@@ -29,6 +29,9 @@ export const venueAPI = {
   togglePricingRule: (ruleId) => api.put(`/pricing-rules/${ruleId}/toggle`),
   deletePricingRule: (ruleId) => api.delete(`/pricing-rules/${ruleId}`),
   getOwnerVenues: () => api.get("/owner/venues"),
+  cities: () => api.get("/venues/cities"),
+  areas: (city) => api.get("/venues/areas", { params: city ? { city } : {} }),
+  amenities: () => api.get("/venues/amenities"),
 };
 
 export const bookingAPI = {
