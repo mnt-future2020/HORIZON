@@ -13,6 +13,7 @@ import CoachDashboard from "@/pages/CoachDashboard";
 import SplitPaymentPage from "@/pages/SplitPaymentPage";
 import ProfilePage from "@/pages/ProfilePage";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
+import LeaderboardPage from "@/pages/LeaderboardPage";
 import Navbar from "@/components/Navbar";
 
 function ProtectedRoute({ children, roles }) {
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="/venues" element={<ProtectedRoute><VenueDiscovery /></ProtectedRoute>} />
         <Route path="/venues/:id" element={<ProtectedRoute><VenueDetail /></ProtectedRoute>} />
         <Route path="/matchmaking" element={<ProtectedRoute><MatchmakingPage /></ProtectedRoute>} />
+        <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
         <Route path="/owner" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard /></ProtectedRoute>} />
         <Route path="/coach" element={<ProtectedRoute roles={["coach"]}><CoachDashboard /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />

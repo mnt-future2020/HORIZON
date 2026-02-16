@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield } from "lucide-react";
+import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy } from "lucide-react";
 
 function NavLink({ to, icon: Icon, label, active }) {
   return (
@@ -66,7 +66,8 @@ export default function Navbar() {
     player: [
       { to: "/player", icon: LayoutDashboard, label: "Dashboard" },
       { to: "/venues", icon: MapPin, label: "Venues" },
-      { to: "/matchmaking", icon: Swords, label: "Matchmaking" },
+      { to: "/matchmaking", icon: Swords, label: "Matches" },
+      { to: "/leaderboard", icon: Trophy, label: "Ranks" },
     ],
     venue_owner: [
       { to: "/owner", icon: Building2, label: "Dashboard" },
