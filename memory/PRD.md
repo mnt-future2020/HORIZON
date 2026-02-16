@@ -74,6 +74,12 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - **Landing Page**: Hero search bar with popular city links, Browse by City section with venue counts, Top Rated Venues section
 - **PlayerDashboard**: Quick venue search widget
 
+### Near Me GPS-Based Search (COMPLETE - Feb 16)
+- **Backend**: `/api/venues/nearby` endpoint with Haversine formula — accepts `lat`, `lng`, `radius_km`, returns venues sorted by distance with `distance_km` field
+- **VenueDiscovery**: "Near Me" button in city pills row — triggers browser geolocation, shows distance badges (e.g., "5.4 km away") on venue cards, deactivates when city pill selected
+- **LandingPage**: "Near Me" button in hero search bar alongside Search — navigates to `/venues?nearme=1`
+- **Graceful fallback**: Permission denied or geolocation unavailable shows toast error and falls back to all venues
+
 ## Architecture
 ```
 backend/
