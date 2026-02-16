@@ -92,8 +92,7 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             "split_token": split_token
         }
         booking["status"] = "pending"
-        await db.bookings.insert_one(booking)
-        booking.pop("_id", None)
+        # Set payment_gateway BEFORE insert
         if rzp_client:
             try:
                 rzp_order = rzp_client.order.create({
@@ -107,6 +106,8 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
                 booking["payment_gateway"] = "mock"
         else:
             booking["payment_gateway"] = "mock"
+        await db.bookings.insert_one(booking)
+        booking.pop("_id", None)
     elif rzp_client:
         booking["status"] = "payment_pending"
         try:
