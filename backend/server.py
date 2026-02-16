@@ -1425,6 +1425,7 @@ async def seed_demo_data():
          "skill_rating": 1500, "skill_deviation": 350, "reliability_score": 100,
          "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
          "business_name": "Reddy Sports Pvt Ltd", "gst_number": "29AABCR1234F1Z5",
+         "subscription_plan": "pro",
          "created_at": datetime.now(timezone.utc).isoformat()},
         {"id": coach_id, "name": "Coach Sarah", "email": "demo@coach.com",
          "password_hash": hash_pw("demo123"), "role": "coach", "account_status": "active",
