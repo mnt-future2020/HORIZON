@@ -108,7 +108,7 @@ async def analyze_video(highlight_id: str, user=Depends(get_current_user)):
             api_key=GEMINI_KEY,
             session_id=f"highlight-{highlight_id}",
             system_message="You are an expert sports video analyst. Always respond with valid JSON only."
-        ).with_model("gemini", "gemini-2.5-flash-preview-04-17")
+        ).with_model("gemini", "gemini-2.5-flash")
 
         video_file = FileContentWithMimeType(
             file_path=video_path,
