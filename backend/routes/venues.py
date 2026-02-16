@@ -13,19 +13,86 @@ logger = logging.getLogger("horizon")
 
 
 @router.get("/venues")
-async def list_venues(sport: Optional[str] = None, city: Optional[str] = None, search: Optional[str] = None):
+async def list_venues(
+    sport: Optional[str] = None, city: Optional[str] = None,
+    area: Optional[str] = None, search: Optional[str] = None,
+    min_price: Optional[int] = None, max_price: Optional[int] = None,
+    sort_by: Optional[str] = None, amenity: Optional[str] = None
+):
     query = {"status": "active"}
     if sport:
         query["sports"] = {"$in": [sport]}
     if city:
-        query["city"] = {"$regex": city, "$options": "i"}
+        query["city"] = {"$regex": f"^{city}$", "$options": "i"}
+    if area:
+        query["area"] = {"$regex": area, "$options": "i"}
     if search:
         query["$or"] = [
             {"name": {"$regex": search, "$options": "i"}},
-            {"address": {"$regex": search, "$options": "i"}}
+            {"address": {"$regex": search, "$options": "i"}},
+            {"city": {"$regex": search, "$options": "i"}},
+            {"area": {"$regex": search, "$options": "i"}}
         ]
-    venues = await db.venues.find(query, {"_id": 0}).to_list(100)
+    if min_price is not None:
+        query["base_price"] = query.get("base_price", {})
+        query["base_price"]["$gte"] = min_price
+    if max_price is not None:
+        query["base_price"] = query.get("base_price", {})
+        query["base_price"]["$lte"] = max_price
+    if amenity:
+        query["amenities"] = {"$in": [amenity]}
+
+    sort_field = [("rating", -1)]
+    if sort_by == "price_low":
+        sort_field = [("base_price", 1)]
+    elif sort_by == "price_high":
+        sort_field = [("base_price", -1)]
+    elif sort_by == "rating":
+        sort_field = [("rating", -1)]
+    elif sort_by == "name":
+        sort_field = [("name", 1)]
+    elif sort_by == "bookings":
+        sort_field = [("total_bookings", -1)]
+
+    venues = await db.venues.find(query, {"_id": 0}).sort(sort_field).to_list(200)
     return venues
+
+
+@router.get("/venues/cities")
+async def list_cities():
+    pipeline = [
+        {"$match": {"status": "active"}},
+        {"$group": {"_id": "$city", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = await db.venues.aggregate(pipeline).to_list(100)
+    return [{"city": r["_id"], "count": r["count"]} for r in result if r["_id"]]
+
+
+@router.get("/venues/areas")
+async def list_areas(city: Optional[str] = None):
+    match = {"status": "active", "area": {"$ne": "", "$exists": True}}
+    if city:
+        match["city"] = {"$regex": f"^{city}$", "$options": "i"}
+    pipeline = [
+        {"$match": match},
+        {"$group": {"_id": "$area", "count": {"$sum": 1}, "city": {"$first": "$city"}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = await db.venues.aggregate(pipeline).to_list(200)
+    return [{"area": r["_id"], "city": r["city"], "count": r["count"]} for r in result if r["_id"]]
+
+
+@router.get("/venues/amenities")
+async def list_amenities():
+    pipeline = [
+        {"$match": {"status": "active"}},
+        {"$unwind": "$amenities"},
+        {"$group": {"_id": "$amenities", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = await db.venues.aggregate(pipeline).to_list(100)
+    return [{"amenity": r["_id"], "count": r["count"]} for r in result if r["_id"]]
 
 
 @router.get("/venues/{venue_id}")
