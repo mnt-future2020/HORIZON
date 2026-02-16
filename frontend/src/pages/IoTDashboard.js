@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { iotAPI, venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import {
   Lightbulb, Power, Zap, Wifi, WifiOff, Plus, Trash2, Pencil,
   BarChart3, Clock, Calendar, RefreshCw, Layers, Sun, Moon,
-  Activity, DollarSign, TrendingDown, Loader2
+  Activity, DollarSign, TrendingDown, Loader2, Radio
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 
