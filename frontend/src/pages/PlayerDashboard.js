@@ -4,8 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { bookingAPI, analyticsAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { MapPin, Swords, Calendar, Trophy, TrendingUp, Clock, ChevronRight, Star } from "lucide-react";
+import { MapPin, Swords, Calendar, Trophy, TrendingUp, Clock, ChevronRight, Star, Search } from "lucide-react";
 
 function StatCard({ icon: Icon, label, value, color }) {
   return (
