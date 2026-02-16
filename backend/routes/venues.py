@@ -104,6 +104,25 @@ async def list_amenities():
     return [{"amenity": r["_id"], "count": r["count"]} for r in result if r["_id"]]
 
 
+@router.get("/venues/nearby")
+async def nearby_venues(
+    lat: float, lng: float, radius_km: float = 50,
+    sport: Optional[str] = None, limit: int = 20
+):
+    query = {"status": "active", "lat": {"$exists": True}, "lng": {"$exists": True}}
+    if sport:
+        query["sports"] = {"$in": [sport]}
+    venues = await db.venues.find(query, {"_id": 0}).to_list(200)
+    results = []
+    for v in venues:
+        dist = haversine_km(lat, lng, v.get("lat", 0), v.get("lng", 0))
+        if dist <= radius_km:
+            v["distance_km"] = round(dist, 1)
+            results.append(v)
+    results.sort(key=lambda x: x["distance_km"])
+    return results[:limit]
+
+
 @router.get("/venues/{venue_id}")
 async def get_venue(venue_id: str):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
