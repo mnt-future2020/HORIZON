@@ -57,6 +57,7 @@ export default function PlayerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [searchQ, setSearchQ] = useState("");
 
   useEffect(() => {
     Promise.all([
