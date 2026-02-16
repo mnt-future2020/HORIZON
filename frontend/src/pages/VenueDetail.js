@@ -431,12 +431,60 @@ export default function VenueDetail() {
         <DialogContent className="bg-card border-border max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-bold">
-              {confirmResult ? "Booking Confirmed!" : "Confirm Booking"}
+              {mockPayStep === "done" || (confirmResult && !mockPayStep) ? "Booking Confirmed!" :
+               mockPayStep === "processing" ? "Processing Payment..." :
+               mockPayStep === "review" ? "Complete Payment" :
+               "Confirm Booking"}
             </DialogTitle>
           </DialogHeader>
 
-          {confirmResult ? (
-            <div className="space-y-4">
+          {/* Mock Payment Processing State */}
+          {mockPayStep === "processing" && (
+            <div className="flex flex-col items-center py-8 gap-4" data-testid="mock-payment-processing">
+              <div className="relative">
+                <div className="w-16 h-16 rounded-full border-4 border-primary/20 flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              </div>
+              <p className="text-sm text-muted-foreground text-center">Verifying payment with gateway...</p>
+              <p className="text-xs text-muted-foreground/60">Please do not close this window</p>
+            </div>
+          )}
+
+          {/* Mock Payment Review State - user must click to confirm */}
+          {mockPayStep === "review" && confirmResult && (
+            <div className="space-y-4" data-testid="mock-payment-review">
+              <div className="glass-card rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Venue</span><span className="font-bold">{confirmResult.venue_name}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date</span><span className="font-bold">{confirmResult.date}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Time</span><span className="font-bold">{confirmResult.start_time}-{confirmResult.end_time}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-primary text-lg">{"\u20B9"}{confirmResult.total_amount}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status</span><Badge variant="secondary">Awaiting Payment</Badge></div>
+              </div>
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
+                This is a simulated payment for demo purposes. In production, you will be redirected to Razorpay.
+              </div>
+              {confirmResult.split_config && (
+                <div className="glass-card rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-bold">Split Payment</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Your share: {"\u20B9"}{confirmResult.split_config.per_share} ({confirmResult.split_config.total_shares} players)
+                  </p>
+                </div>
+              )}
+              <Button className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11"
+                onClick={handleMockPayment} data-testid="mock-confirm-payment-btn">
+                Confirm Payment {"\u20B9"}{confirmResult.split_config ? confirmResult.split_config.per_share : confirmResult.total_amount}
+              </Button>
+            </div>
+          )}
+
+          {/* Booking Confirmed State */}
+          {(mockPayStep === "done" || (confirmResult && !mockPayStep)) && confirmResult && (
+            <div className="space-y-4" data-testid="booking-confirmed-view">
               <div className="glass-card rounded-lg p-4 space-y-2">
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Venue</span><span className="font-bold">{confirmResult.venue_name}</span></div>
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date</span><span className="font-bold">{confirmResult.date}</span></div>
@@ -463,10 +511,13 @@ export default function VenueDetail() {
                 </div>
               )}
               <Button className="w-full bg-primary text-primary-foreground font-bold"
-                onClick={() => { setBookingDialog(false); setConfirmResult(null); setSelectedSlot(null); loadSlots(); }}
+                onClick={() => { setBookingDialog(false); setConfirmResult(null); setSelectedSlot(null); setMockPayStep(null); loadSlots(); }}
                 data-testid="booking-done-btn">Done</Button>
             </div>
-          ) : selectedSlot && (
+          )}
+
+          {/* Initial Booking Form (before any payment) */}
+          {!confirmResult && selectedSlot && (
             <div className="space-y-4">
               {lockInfo && (
                 <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20" data-testid="lock-status-banner">
