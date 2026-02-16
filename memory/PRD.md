@@ -66,12 +66,21 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 
 ## Mocked: Razorpay (SDK wired, mock fallback when no keys)
 
-### Booking Flow Redis Graceful Degradation (COMPLETE - Feb 16)
-- Frontend handles Redis 503/520 errors gracefully — only blocks on 409 (real conflict)
-- Booking proceeds without slot locking when Redis is unavailable
-- Lock extension conditionally skipped when no lock is held
+### Mobile Responsiveness Fix (COMPLETE - Feb 16)
+- Bottom nav: tighter spacing (w-14, text-[9px]) prevents truncation on 375px screens
+- VenueOwnerDashboard: bookings tab uses card layout instead of table for mobile
+- All tabs use flex-wrap for mobile-safe wrapping
+- Stat cards, pricing rule cards, plan cards responsive with sm: breakpoints
+
+### Rule-Based Dynamic Pricing (COMPLETE - Feb 16)
+- **Full CRUD** for pricing rules: Create, Read, Update, Delete
+- **Day-of-week selector**: Toggle buttons (Sun-Sat) for targeted pricing
+- **Time range**: Start/end time inputs for peak/off-peak hours
+- **Action types**: Multiplier (e.g., 1.5x surge) or Discount (e.g., 15% off)
+- **Toggle active/inactive**: Switch component per rule
+- **Live price preview**: Shows base price -> effective price with diff badge
+- **Color-coded cards**: Amber border for surcharge, emerald for discount
+- **Backend endpoints**: PUT /pricing-rules/{id}, PUT /pricing-rules/{id}/toggle
 
 ## Remaining Backlog
-- **P1**: Fix mobile responsiveness (nav truncation, small screen layouts)
-- **P2**: Rule-based dynamic pricing UI for venue owners
 - **P3**: Automated video highlights, IoT lighting, Offline POS
