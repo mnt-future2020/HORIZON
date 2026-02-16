@@ -53,6 +53,12 @@ export const matchAPI = {
   list: (params) => api.get("/matchmaking", { params }),
   create: (data) => api.post("/matchmaking", data),
   join: (id) => api.post(`/matchmaking/${id}/join`),
+  recommended: () => api.get("/matchmaking/recommended"),
+  autoMatch: (data) => api.post("/matchmaking/auto-match", data),
+  suggestTeams: (id) => api.get(`/matchmaking/${id}/suggest-teams`),
+  submitResult: (id, data) => api.post(`/matchmaking/${id}/submit-result`, data),
+  confirmResult: (id, data) => api.post(`/matchmaking/${id}/confirm-result`, data),
+  leaderboard: (params) => api.get("/leaderboard", { params }),
 };
 
 export const mercenaryAPI = {
