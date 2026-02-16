@@ -25,15 +25,63 @@ export default function SplitPaymentPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (document.getElementById("razorpay-script")) { resolve(true); return; }
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handlePay = async () => {
     if (!payerName.trim()) { toast.error("Enter your name"); return; }
     setPaying(true);
     try {
-      await splitAPI.pay(token, { payer_name: payerName });
-      toast.success("Payment successful! (MOCKED)");
+      const res = await splitAPI.pay(token, { payer_name: payerName });
+      const result = res.data;
+
+      if (result.payment_gateway === "razorpay" && result.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed to load"); setPaying(false); return; }
+        const options = {
+          key: result.razorpay_key_id,
+          amount: result.amount * 100,
+          currency: "INR",
+          order_id: result.razorpay_order_id,
+          name: "Horizon Sports",
+          description: `Split Payment - ${payerName}`,
+          handler: async (response) => {
+            try {
+              await splitAPI.verifyPayment(token, {
+                payer_name: payerName,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              toast.success("Payment successful!");
+              setPaid(true);
+              const r = await splitAPI.getInfo(token);
+              setData(r.data);
+            } catch { toast.error("Payment verification failed"); }
+            setPaying(false);
+          },
+          modal: { ondismiss: () => { toast.info("Payment cancelled"); setPaying(false); } },
+          theme: { color: "#10B981" }
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+        return;
+      }
+
+      // Mock payment
+      toast.success("Payment successful!");
       setPaid(true);
-      const res = await splitAPI.getInfo(token);
-      setData(res.data);
+      const infoRes = await splitAPI.getInfo(token);
+      setData(infoRes.data);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Payment failed");
     } finally {
