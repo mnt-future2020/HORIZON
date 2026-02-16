@@ -196,6 +196,48 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
         return {"message": "Payment verified, booking confirmed", "status": "confirmed"}
 
 
+@router.post("/bookings/{booking_id}/mock-confirm")
+async def mock_confirm_payment(booking_id: str, user=Depends(get_current_user)):
+    """Simulate payment confirmation for mock gateway. Only works for mock bookings."""
+    booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    if not booking:
+        raise HTTPException(404, "Booking not found")
+    if booking.get("payment_gateway") != "mock":
+        raise HTTPException(400, "This endpoint is only for mock payments")
+    if booking["status"] not in ("payment_pending", "pending"):
+        raise HTTPException(400, f"Booking is already {booking['status']}")
+    if booking["host_id"] != user["id"]:
+        raise HTTPException(403, "Only the booking host can confirm payment")
+
+    await db.bookings.update_one({"id": booking_id}, {"$set": {
+        "status": "confirmed",
+        "payment_details": {
+            "method": "mock",
+            "mock_payment_id": f"mock_{uuid.uuid4().hex[:12]}",
+            "paid_at": datetime.now(timezone.utc).isoformat()
+        }
+    }})
+    return {"message": "Mock payment confirmed", "status": "confirmed"}
+
+
+@router.post("/bookings/cleanup-expired")
+async def cleanup_expired_bookings():
+    """Auto-cancel bookings that have been pending beyond the expiry window."""
+    now = datetime.now(timezone.utc).isoformat()
+    result = await db.bookings.update_many(
+        {
+            "status": {"$in": ["pending", "payment_pending"]},
+            "expires_at": {"$lt": now}
+        },
+        {"$set": {"status": "expired"}}
+    )
+    count = result.modified_count
+    if count > 0:
+        logger.info(f"Cleaned up {count} expired bookings")
+    return {"expired_count": count}
+
+
+
 @router.get("/payment/gateway-info")
 async def get_gateway_info():
     settings = await get_platform_settings()
