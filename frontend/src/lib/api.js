@@ -90,6 +90,7 @@ export const adminAPI = {
   rejectUser: (id) => api.put(`/admin/users/${id}/reject`),
   suspendUser: (id) => api.put(`/admin/users/${id}/suspend`),
   activateUser: (id) => api.put(`/admin/users/${id}/activate`),
+  setUserPlan: (id, data) => api.put(`/admin/users/${id}/set-plan`, data),
   venues: () => api.get("/admin/venues"),
   suspendVenue: (id) => api.put(`/admin/venues/${id}/suspend`),
   activateVenue: (id) => api.put(`/admin/venues/${id}/activate`),
@@ -97,6 +98,16 @@ export const adminAPI = {
   getSettings: () => api.get("/admin/settings"),
   updateSettings: (data) => api.put("/admin/settings", data),
   changePassword: (data) => api.put("/admin/change-password", data),
+};
+
+export const paymentAPI = {
+  gatewayInfo: () => api.get("/payment/gateway-info"),
+  verifyPayment: (bookingId, data) => api.post(`/bookings/${bookingId}/verify-payment`, data),
+};
+
+export const subscriptionAPI = {
+  myPlan: () => api.get("/subscription/my-plan"),
+  upgrade: (data) => api.put("/subscription/upgrade", data),
 };
 
 export const seedAPI = {
