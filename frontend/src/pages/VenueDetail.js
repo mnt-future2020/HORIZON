@@ -108,11 +108,22 @@ export default function VenueDetail() {
     }
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (document.getElementById("razorpay-script")) { resolve(true); return; }
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleBook = async () => {
     if (!selectedSlot) return;
     setBookingLoading(true);
     try {
-      // Extend lock to hard lock for payment processing
       if (lockRef.current) {
         await slotLockAPI.extendLock(lockRef.current).catch(() => {});
       }
@@ -124,11 +135,46 @@ export default function VenueDetail() {
       };
       if (payMode === "split") data.split_count = splitCount;
       const res = await bookingAPI.create(data);
-      lockRef.current = null; // Lock released by server on successful booking
+      const booking = res.data;
+      lockRef.current = null;
       setLockInfo(null);
-      setConfirmResult(res.data);
-      toast.success("Booking confirmed! (MOCKED payment)");
-      loadSlots(); // Refresh to show slot as booked
+
+      // Check if Razorpay payment is needed
+      if (booking.payment_gateway === "razorpay" && booking.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed to load"); setBookingLoading(false); return; }
+        const options = {
+          key: booking.razorpay_key_id,
+          amount: booking.total_amount * 100,
+          currency: "INR",
+          order_id: booking.razorpay_order_id,
+          name: venue?.name || "Horizon Sports",
+          description: `${booking.start_time} - ${booking.end_time} | Turf ${booking.turf_number}`,
+          handler: async (response) => {
+            try {
+              await paymentAPI.verifyPayment(booking.id, {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              setConfirmResult(booking);
+              toast.success("Payment successful! Booking confirmed.");
+              loadSlots();
+            } catch { toast.error("Payment verification failed"); }
+            setBookingLoading(false);
+          },
+          modal: { ondismiss: () => { toast.info("Payment cancelled"); setBookingLoading(false); } },
+          theme: { color: "#10B981" }
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+        return; // Don't setBookingLoading(false) here — handled in handler/ondismiss
+      }
+
+      // Mock payment - auto confirmed
+      setConfirmResult(booking);
+      toast.success(booking.status === "confirmed" ? "Booking confirmed!" : "Booking created!");
+      loadSlots();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Booking failed");
     } finally {
