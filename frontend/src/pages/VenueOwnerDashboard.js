@@ -239,6 +239,61 @@ function VenueOwnerDashboardContent() {
   const totalRevenue = analytics?.total_revenue || 0;
   const totalBookings = analytics?.total_bookings || 0;
 
+  const today = new Date().toISOString().split("T")[0];
+
+  const filteredBookings = useMemo(() => {
+    let filtered = [...bookings];
+    if (selectedVenue) {
+      filtered = filtered.filter(b => b.venue_id === selectedVenue.id);
+    }
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(b => b.status === statusFilter);
+    }
+    if (timeFilter === "upcoming") {
+      filtered = filtered.filter(b => b.date >= today);
+    } else if (timeFilter === "past") {
+      filtered = filtered.filter(b => b.date < today);
+    }
+    filtered.sort((a, b) => sortOrder === "desc" ? b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time) : a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
+    return filtered;
+  }, [bookings, selectedVenue, statusFilter, timeFilter, sortOrder, today]);
+
+  const bookingStats = useMemo(() => {
+    const venueBookings = selectedVenue ? bookings.filter(b => b.venue_id === selectedVenue.id) : bookings;
+    return {
+      total: venueBookings.length,
+      confirmed: venueBookings.filter(b => b.status === "confirmed").length,
+      pending: venueBookings.filter(b => ["pending", "payment_pending"].includes(b.status)).length,
+      cancelled: venueBookings.filter(b => b.status === "cancelled").length,
+      upcoming: venueBookings.filter(b => b.date >= today).length,
+    };
+  }, [bookings, selectedVenue, today]);
+
+  const openBookingDetail = (booking) => {
+    setSelectedBooking(booking);
+    setBookingDetailOpen(true);
+  };
+
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      await bookingAPI.cancel(bookingId);
+      toast.success("Booking cancelled");
+      setBookingDetailOpen(false);
+      setSelectedBooking(null);
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to cancel");
+    }
+  };
+
+  const statusConfig = {
+    confirmed: { color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", label: "Confirmed" },
+    pending: { color: "bg-amber-500/15 text-amber-400 border-amber-500/20", label: "Pending" },
+    payment_pending: { color: "bg-sky-500/15 text-sky-400 border-sky-500/20", label: "Awaiting Payment" },
+    cancelled: { color: "bg-destructive/15 text-destructive border-destructive/20", label: "Cancelled" },
+    expired: { color: "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/20", label: "Expired" },
+  };
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
   );
