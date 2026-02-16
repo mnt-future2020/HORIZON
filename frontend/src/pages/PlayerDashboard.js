@@ -102,6 +102,21 @@ export default function PlayerDashboard() {
         <StatCard icon={Calendar} label="Upcoming" value={upcoming.length} color="bg-sky-500/10 text-sky-400" />
       </div>
 
+      {/* Quick Venue Search */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+        className="mb-8 glass-card rounded-xl p-4" data-testid="quick-venue-search">
+        <form onSubmit={(e) => { e.preventDefault(); navigate(`/venues?q=${encodeURIComponent(searchQ)}`); }} className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Search venue, area, or city..." value={searchQ} onChange={e => setSearchQ(e.target.value)}
+              className="pl-10 bg-secondary/50 border-border h-10 text-sm" data-testid="dashboard-search-input" />
+          </div>
+          <Button type="submit" className="bg-primary text-primary-foreground font-bold text-xs h-10 px-5" data-testid="dashboard-search-btn">
+            <Search className="h-4 w-4" />
+          </Button>
+        </form>
+      </motion.div>
+
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
         {[
