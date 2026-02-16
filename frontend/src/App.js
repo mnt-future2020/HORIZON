@@ -15,6 +15,8 @@ import ProfilePage from "@/pages/ProfilePage";
 import SuperAdminDashboard from "@/pages/SuperAdminDashboard";
 import LeaderboardPage from "@/pages/LeaderboardPage";
 import RatingProfilePage from "@/pages/RatingProfilePage";
+import HighlightsPage from "@/pages/HighlightsPage";
+import SharedHighlightPage from "@/pages/SharedHighlightPage";
 import Navbar from "@/components/Navbar";
 
 function ProtectedRoute({ children, roles }) {
