@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { venueAPI, bookingAPI, slotLockAPI, notificationAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, slotLockAPI, notificationAPI, paymentAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
