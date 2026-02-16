@@ -654,6 +654,88 @@ function VenueOwnerDashboardContent() {
           </DialogContent>
         </Dialog>
 
+
+        {/* History Tab - Comprehensive booking timeline */}
+        <TabsContent value="history">
+          <div className="space-y-6" data-testid="booking-history-tab">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="font-display font-bold text-base sm:text-lg">Booking History</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Complete timeline of all bookings across your venues</p>
+              </div>
+            </div>
+
+            {/* History by Date Groups */}
+            {bookings.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <History className="h-8 w-8 mx-auto mb-3" />
+                <p className="text-sm">No booking history</p>
+              </div>
+            ) : (() => {
+              const sorted = [...bookings].sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
+              const grouped = {};
+              sorted.forEach(b => {
+                const key = b.date;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(b);
+              });
+              return (
+                <div className="space-y-6">
+                  {Object.entries(grouped).map(([date, dateBookings]) => {
+                    const isPast = date < today;
+                    const isToday = date === today;
+                    const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? b.total_amount : 0), 0);
+                    return (
+                      <div key={date} data-testid={`history-date-${date}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${isToday ? "bg-primary animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
+                            <span className="text-sm font-bold text-foreground">
+                              {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                            <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
+                          </div>
+                          {totalAmount > 0 && (
+                            <span className="text-xs font-bold text-primary">{"\u20B9"}{totalAmount.toLocaleString()}</span>
+                          )}
+                        </div>
+                        <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
+                          {dateBookings.map(b => {
+                            const sc = statusConfig[b.status] || statusConfig.pending;
+                            return (
+                              <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
+                                onClick={() => openBookingDetail(b)}
+                                className={`glass-card rounded-lg p-3 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
+                                data-testid={`history-booking-${b.id}`}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
+                                      <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
+                                      <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
+                                      {b.payment_mode === "split" && <Badge variant="outline" className="text-[9px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-sm font-bold text-primary">{"\u20B9"}{b.total_amount}</span>
+                                    <Badge className={`text-[9px] border ${sc.color}`}>{sc.label}</Badge>
+                                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+
         {/* Pricing Rules - Enhanced P2 */}
         <TabsContent value="pricing">
           <div className="flex items-center justify-between mb-4 gap-3">
