@@ -25,6 +25,9 @@ export const venueAPI = {
   getSlots: (id, date) => api.get(`/venues/${id}/slots`, { params: { date } }),
   getPricingRules: (id) => api.get(`/venues/${id}/pricing-rules`),
   createPricingRule: (id, data) => api.post(`/venues/${id}/pricing-rules`, data),
+  updatePricingRule: (ruleId, data) => api.put(`/pricing-rules/${ruleId}`, data),
+  togglePricingRule: (ruleId) => api.put(`/pricing-rules/${ruleId}/toggle`),
+  deletePricingRule: (ruleId) => api.delete(`/pricing-rules/${ruleId}`),
   getOwnerVenues: () => api.get("/owner/venues"),
 };
 
