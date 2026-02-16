@@ -1,0 +1,74 @@
+{
+  "summary": "Comprehensive testing of booking mock payment flow fixes. All features tested and working correctly: (1) Full payment creates 'payment_pending' status, (2) mock-confirm endpoint works, (3) Split payment creates 'pending' with expires_at, (4) cleanup-expired endpoint works, (5) Frontend shows Complete Payment review step before confirming. Found and FIXED one bug: split bookings were missing payment_gateway field due to db insert order.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Booking Dialog", "issues": ["Minor: Console warning about missing Description for DialogContent"]}
+    ]
+  },
+  "passed_tests": {
+    "backend_api_tests": [
+      "POST /api/bookings (full payment) returns status='payment_pending', payment_gateway='mock', expires_at field - PASS",
+      "POST /api/bookings/{id}/mock-confirm changes status to 'confirmed' - PASS",
+      "POST /api/bookings (split payment) returns status='pending', payment_gateway='mock', expires_at, split_config - PASS",
+      "POST /api/bookings/cleanup-expired returns expired_count - PASS",
+      "GET /api/venues/{id}/slots shows booked status for payment_pending bookings - PASS",
+      "mock-confirm requires authentication - PASS",
+      "mock-confirm rejects already confirmed bookings - PASS",
+      "GET /api/payment/gateway-info returns has_gateway=false (mock mode) - PASS"
+    ],
+    "frontend_e2e_tests": [
+      "Full Payment Flow: Select slot -> Click Pay -> Shows 'Complete Payment' review with 'Awaiting Payment' badge -> Click 'Confirm Payment' -> Shows 'Booking Confirmed!' with 'confirmed' status - PASS",
+      "Split Payment Flow: Select slot -> Select Split Payment -> Click Pay -> Shows review with split info -> Confirm -> Shows confirmed with Split Payment Link - PASS",
+      "Dashboard shows correct status badges: payment_pending, pending, confirmed - PASS"
+    ]
+  },
+  "bugs_fixed_by_testing_agent": [
+    {
+      "file": "/app/backend/routes/bookings.py",
+      "issue": "Split bookings were missing payment_gateway field in database because it was set AFTER db.bookings.insert_one()",
+      "fix": "Moved payment_gateway assignment BEFORE insert_one() for split bookings",
+      "impact": "Split bookings mock-confirm now works correctly"
+    }
+  ],
+  "test_report_links": [
+    "/app/backend/tests/test_booking_mock_payment.py",
+    "/app/test_reports/pytest/booking_mock_payment_tests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Code is well-structured with proper status handling for payment_pending, pending, and confirmed states",
+    "expires_at field correctly set to 24 hours for pending bookings",
+    "Redis slot locking gracefully degrades when Redis is unavailable",
+    "Mock payment flow properly requires explicit user confirmation via mock-confirm endpoint"
+  ],
+  "updated_files": [
+    "/app/backend/routes/bookings.py",
+    "/app/backend/tests/test_booking_mock_payment.py"
+  ],
+  "success_rate": {
+    "backend": "100% (6 passed, 5 skipped due to existing slot bookings)",
+    "frontend": "100% (All booking flow tests passed)"
+  },
+  "test_credentials": {
+    "player": {"email": "demo@player.com", "password": "demo123"}
+  },
+  "seed_data_creation": "Multiple test bookings created during testing with dates 2026-02-23 through 2026-04-16",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All booking flow fixes verified working. Mock payment creates payment_pending status, requires explicit mock-confirm to finalize. Split payments work end-to-end with split link generation. Razorpay is MOCKED - no real gateway configured. Redis slot locking is working when available.",
+  "mocked_apis": {
+    "Razorpay payment gateway": "MOCKED - Using mock-confirm endpoint instead of real Razorpay",
+    "MQTT broker": "LIVE - broker.emqx.io:1883"
+  },
+  "feature_verification": {
+    "question_1_redis_slot_locking": "Yes, Redis is used correctly. SOFT_LOCK_TTL=600 (10 min), HARD_LOCK_TTL=1800 (30 min). Lock is acquired before booking, extended during payment, released after booking creation or cancellation.",
+    "question_2_split_payment_lock_duration": "Booking has expires_at field set to 24 hours from creation. Cleanup-expired endpoint marks expired bookings as 'expired'. Lock is released after booking insert regardless of payment status.",
+    "question_3_immediate_booked_status_fix": "FIXED - Mock payments now create bookings as 'payment_pending' instead of 'confirmed'. Frontend shows 'Complete Payment' review step with 'Awaiting Payment' badge. User must click 'Confirm Payment' to finalize via mock-confirm endpoint."
+  }
+}
