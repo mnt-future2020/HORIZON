@@ -192,15 +192,19 @@ export default function VenueDetail() {
   };
 
   const handleDialogClose = (open) => {
-    if (!open && !confirmResult) {
-      // Releasing lock when closing dialog without booking
-      if (lockRef.current) {
-        slotLockAPI.unlock(lockRef.current).catch(() => {});
-        lockRef.current = null;
-        setLockInfo(null);
-        loadSlots();
+    if (!open && mockPayStep !== "processing") {
+      if (!confirmResult || mockPayStep === "review") {
+        // Releasing lock when closing dialog without completing payment
+        if (lockRef.current) {
+          slotLockAPI.unlock(lockRef.current).catch(() => {});
+          lockRef.current = null;
+          setLockInfo(null);
+          loadSlots();
+        }
       }
       setSelectedSlot(null);
+      setConfirmResult(null);
+      setMockPayStep(null);
     }
     setBookingDialog(open);
   };
