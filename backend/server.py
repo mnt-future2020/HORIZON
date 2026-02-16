@@ -163,13 +163,11 @@ class NotifySubscribeInput(BaseModel):
     turf_number: int = 1
 
 class MercenaryCreate(BaseModel):
-    sport: str
-    venue_name: str
-    date: str
-    time: str
+    booking_id: str
     position_needed: str
     amount_per_player: int
     spots_available: int = 1
+    description: str = ""
 
 class AcademyCreate(BaseModel):
     name: str
