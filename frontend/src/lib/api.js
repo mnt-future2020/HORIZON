@@ -32,6 +32,7 @@ export const venueAPI = {
   cities: () => api.get("/venues/cities"),
   areas: (city) => api.get("/venues/areas", { params: city ? { city } : {} }),
   amenities: () => api.get("/venues/amenities"),
+  nearby: (lat, lng, radius_km) => api.get("/venues/nearby", { params: { lat, lng, radius_km } }),
 };
 
 export const bookingAPI = {
