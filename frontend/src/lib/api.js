@@ -57,8 +57,13 @@ export const matchAPI = {
 
 export const mercenaryAPI = {
   list: (params) => api.get("/mercenary", { params }),
+  myPosts: () => api.get("/mercenary/my-posts"),
   create: (data) => api.post("/mercenary", data),
   apply: (id) => api.post(`/mercenary/${id}/apply`),
+  accept: (postId, applicantId) => api.post(`/mercenary/${postId}/accept/${applicantId}`),
+  reject: (postId, applicantId) => api.post(`/mercenary/${postId}/reject/${applicantId}`),
+  pay: (id) => api.post(`/mercenary/${id}/pay`),
+  verifyPayment: (id, data) => api.post(`/mercenary/${id}/verify-payment`, data),
 };
 
 export const academyAPI = {
