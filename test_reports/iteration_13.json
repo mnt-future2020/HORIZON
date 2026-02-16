@@ -1,0 +1,108 @@
+{
+  "summary": "Iteration 13: Tested real MQTT broker integration (broker.emqx.io:1883). All 16 MQTT backend API tests passed. Frontend shows MQTT Connected status and device/zone controls successfully publish MQTT commands. Device simulator connects and subscribes to command topics. Previous features (booking flow, pricing rules, admin) working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/owner/bookings",
+        "issue": "Returns 404 instead of empty array when no bookings exist",
+        "priority": "LOW"
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "WebSocket connection",
+        "issue": "WebSocket shows 'closed before connection established' warning when navigating quickly - race condition but works after page settles",
+        "affected_selectors": [],
+        "priority": "LOW"
+      }
+    ],
+    "design_issues": []
+  },
+  "passed_tests": [
+    "GET /api/iot/mqtt-status - Returns connected=true, broker=broker.emqx.io (200)",
+    "GET /api/iot/mqtt-status - Super admin access (200)",
+    "GET /api/iot/mqtt-status - Unauthenticated rejected (401)",
+    "POST /api/iot/devices/{id}/control - Turn on device via MQTT (200)",
+    "POST /api/iot/devices/{id}/control - Set brightness via MQTT (200)",
+    "POST /api/iot/devices/{id}/control - Turn off device via MQTT (200)",
+    "POST /api/iot/devices/{id}/control - Invalid device 404",
+    "POST /api/iot/zones/{id}/control - Zone All On via MQTT (200)",
+    "POST /api/iot/zones/{id}/control - Zone All Off via MQTT (200)",
+    "POST /api/iot/zones/{id}/control - Zone brightness via MQTT (200)",
+    "POST /api/iot/devices - Create device with MQTT topic (200)",
+    "GET /api/iot/devices - List devices with MQTT topics (200)",
+    "GET /api/iot/energy - Energy analytics 7d (200)",
+    "GET /api/iot/schedules - Today's schedules (200)",
+    "POST /api/iot/sync-bookings - Sync bookings (200)",
+    "WebSocket /api/iot/ws - Endpoint exists and accepts connections"
+  ],
+  "frontend_tests_passed": [
+    "IoT Dashboard loads with MQTT status indicator showing 'MQTT Connected • broker.emqx.io'",
+    "7 device cards displayed with online/offline status",
+    "Device toggle switch sends MQTT command (verified in backend logs)",
+    "Zones tab shows 3 zones with device counts",
+    "Zone All On button works - 'Zone activated' toast displayed",
+    "Energy tab shows analytics charts (2 recharts)",
+    "Schedule tab displays booking-linked schedules",
+    "Stats bar shows Online/Active/Power Draw/Avg Daily Cost"
+  ],
+  "regression_tests_passed": [
+    "Player login (200)",
+    "Player list venues (200)",
+    "Player my bookings (200)",
+    "Player matchmaking (200)",
+    "Owner login (200)",
+    "Owner venues (200)",
+    "Owner pricing rules (200)",
+    "Admin login (200)",
+    "Admin dashboard (200)",
+    "Admin users (200)"
+  ],
+  "mqtt_verification": {
+    "broker": "broker.emqx.io:1883",
+    "connection_status": "CONNECTED (verified via /api/iot/mqtt-status)",
+    "backend_logs_confirm": "MQTT published to horizon/devices/... and horizon/powerplay/turf1/... topics",
+    "device_simulator": "Connects to broker and subscribes to command topics successfully"
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_mqtt_features.py",
+    "/app/test_reports/pytest/mqtt_tests.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "WebSocket race condition on quick navigation - consider adding reconnection logic with backoff"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_mqtt_features.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 MQTT tests passed)",
+    "frontend": "100% (8/8 UI tests passed)",
+    "regression": "100% (10/10 regression tests passed)"
+  },
+  "test_credentials": {
+    "venue_owner": {"email": "demo@owner.com", "password": "demo123"},
+    "super_admin": {"email": "admin@horizon.com", "password": "admin123"},
+    "player": {"email": "demo@player.com", "password": "demo123"}
+  },
+  "seed_data_creation": "TEST_ prefixed devices created and deleted during pytest run",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "MQTT broker integration is LIVE (not mocked) - connects to broker.emqx.io:1883. Backend successfully publishes commands to MQTT topics. Device simulator can be run with: cd /app/backend && python device_simulator.py. WebSocket endpoint /api/iot/ws works for real-time updates. All 7 seeded devices and 3 zones work with real MQTT.",
+  "mocked_apis": {
+    "Razorpay payments": "MOCKED",
+    "MQTT broker": "LIVE - broker.emqx.io:1883 (NOT mocked)"
+  },
+  "verified_mqtt_features": {
+    "mqtt_status_endpoint": "VERIFIED - returns connected=true, broker=broker.emqx.io",
+    "device_control_mqtt": "VERIFIED - commands published to MQTT topics",
+    "zone_control_mqtt": "VERIFIED - bulk commands to all zone devices",
+    "websocket_realtime": "VERIFIED - endpoint accepts connections",
+    "device_simulator": "VERIFIED - connects and subscribes to command topics",
+    "telemetry_subscription": "VERIFIED - backend subscribes to horizon/+/+/status and telemetry"
+  }
+}
