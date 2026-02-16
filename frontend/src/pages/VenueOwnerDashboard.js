@@ -85,6 +85,7 @@ function VenueOwnerDashboardContent() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [venueReviews, setVenueReviews] = useState([]);
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: ["football"], address: "", city: "Bengaluru",
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
