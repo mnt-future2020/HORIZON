@@ -57,32 +57,80 @@ export default function VenueDiscovery() {
     setSelectedArea("all");
   }, [selectedCity]);
 
+  // Near Me handler
+  const handleNearMe = () => {
+    if (nearMeActive) {
+      setNearMeActive(false);
+      setUserLocation(null);
+      setDistanceMap({});
+      return;
+    }
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser");
+      return;
+    }
+    setLocatingUser(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setNearMeActive(true);
+        setLocatingUser(false);
+        setSelectedCity("all");
+        setSelectedArea("all");
+        toast.success("Location detected! Showing nearest venues.");
+      },
+      (err) => {
+        setLocatingUser(false);
+        if (err.code === 1) toast.error("Location permission denied. Please allow location access.");
+        else toast.error("Could not detect your location. Please try again.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Load venues with filters
   const loadVenues = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
-      if (searchText.trim()) params.search = searchText.trim();
-      if (selectedCity !== "all") params.city = selectedCity;
-      if (selectedArea !== "all") params.area = selectedArea;
-      if (selectedSport !== "all") params.sport = selectedSport;
-      if (sortBy) params.sort_by = sortBy;
-      if (selectedAmenity !== "all") params.amenity = selectedAmenity;
-      if (priceRange === "budget") { params.max_price = 1000; }
-      else if (priceRange === "mid") { params.min_price = 1001; params.max_price = 2000; }
-      else if (priceRange === "premium") { params.min_price = 2001; }
+      if (nearMeActive && userLocation) {
+        const res = await venueAPI.nearby(userLocation.lat, userLocation.lng, 50);
+        setVenues(res.data);
+        const dm = {};
+        res.data.forEach(v => { dm[v.id] = v.distance_km; });
+        setDistanceMap(dm);
+      } else {
+        const params = {};
+        if (searchText.trim()) params.search = searchText.trim();
+        if (selectedCity !== "all") params.city = selectedCity;
+        if (selectedArea !== "all") params.area = selectedArea;
+        if (selectedSport !== "all") params.sport = selectedSport;
+        if (sortBy) params.sort_by = sortBy;
+        if (selectedAmenity !== "all") params.amenity = selectedAmenity;
+        if (priceRange === "budget") { params.max_price = 1000; }
+        else if (priceRange === "mid") { params.min_price = 1001; params.max_price = 2000; }
+        else if (priceRange === "premium") { params.min_price = 2001; }
 
-      const res = await venueAPI.list(params);
-      setVenues(res.data);
+        const res = await venueAPI.list(params);
+        setVenues(res.data);
+        setDistanceMap({});
+      }
     } catch (err) {
       toast.error("Failed to load venues");
     } finally { setLoading(false); }
-  }, [searchText, selectedCity, selectedArea, selectedSport, sortBy, priceRange, selectedAmenity]);
+  }, [searchText, selectedCity, selectedArea, selectedSport, sortBy, priceRange, selectedAmenity, nearMeActive, userLocation]);
 
   useEffect(() => {
     const timer = setTimeout(loadVenues, 300);
     return () => clearTimeout(timer);
   }, [loadVenues]);
+
+  // Auto-activate Near Me from URL param
+  useEffect(() => {
+    if (searchParams.get("nearme") === "1" && !nearMeActive && !userLocation) {
+      handleNearMe();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Update URL params
   useEffect(() => {
