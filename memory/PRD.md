@@ -95,16 +95,20 @@ Admin: admin@horizon.com/admin123 | Player: demo@player.com/demo123 | Owner: dem
 
 ### IoT Smart Lighting (COMPLETE - Feb 16)
 - **Device Management**: Full CRUD for IoT devices (floodlight, LED, ambient, emergency)
-- **MQTT Protocol Layer**: Simulated broker (production-ready for real MQTT swap)
+- **Real MQTT Broker**: Connected to broker.emqx.io:1883 via gmqtt library
+  - Bidirectional: publish commands + subscribe to device status/telemetry
+  - Username/password auth ready (env vars: MQTT_USERNAME, MQTT_PASSWORD)
+  - Graceful fallback when broker unreachable
+- **Device Simulator**: `device_simulator.py` — 6 virtual devices connect to same broker, respond to commands, publish telemetry every 10s
+- **WebSocket**: Real-time device status updates at `/api/iot/ws`
 - **Zone Management**: Group devices by turf, zone-level control (All On/Off)
 - **Auto-Scheduling**: Lights auto on/off linked to booking times (5-min buffer)
 - **Energy Analytics**: kWh usage, cost estimation, daily trend charts (7d/30d)
 - **Device Control**: On/off toggle, brightness slider per device
 - **Multi-role**: Venue owners + Super admin access (players blocked)
-- **Live Dashboard**: Online/active count, power draw, avg daily cost
-- **Backend**: /api/iot/* (devices, zones, energy, schedules, sync-bookings)
-- **Frontend**: IoTDashboard.js with 4 tabs (Devices, Zones, Energy, Schedule)
-- **Seed Data**: 7 devices + 3 zones for PowerPlay Arena
+- **Live Dashboard**: MQTT status indicator, online/active count, power draw
+- **Backend**: /api/iot/* + mqtt_service.py + device_simulator.py
+- **Frontend**: IoTDashboard.js with 4 tabs + MQTT status + WebSocket
 
 ## Remaining Backlog
 - **P3**: Offline-First POS system for venue amenities
