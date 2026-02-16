@@ -1,0 +1,218 @@
+from datetime import datetime, timezone, timedelta
+from database import db
+from auth import hash_pw
+import uuid
+import logging
+
+logger = logging.getLogger("horizon")
+
+VENUE_IMAGES = [
+    "https://images.unsplash.com/photo-1763494392824-bbb80840ead4?w=800&q=80",
+    "https://images.unsplash.com/photo-1750716413341-fd5d93296a76?w=800&q=80",
+    "https://images.unsplash.com/photo-1770085057829-97e7a45e1916?w=800&q=80",
+    "https://images.unsplash.com/photo-1750716413756-b66624b64ce4?w=800&q=80"
+]
+
+
+async def seed_demo_data():
+    logger.info("Seeding demo data...")
+    await db.users.delete_many({})
+    await db.venues.delete_many({})
+    await db.bookings.delete_many({})
+    await db.split_payments.delete_many({})
+    await db.pricing_rules.delete_many({})
+    await db.match_requests.delete_many({})
+    await db.mercenary_posts.delete_many({})
+    await db.academies.delete_many({})
+    await db.notifications.delete_many({})
+    await db.notification_subscriptions.delete_many({})
+    await db.platform_settings.delete_many({})
+
+    admin_id = str(uuid.uuid4())
+    owner_id = str(uuid.uuid4())
+    player_id = str(uuid.uuid4())
+    coach_id = str(uuid.uuid4())
+
+    users = [
+        {"id": admin_id, "name": "Horizon Admin", "email": "admin@horizon.com",
+         "password_hash": hash_pw("admin123"), "role": "super_admin", "account_status": "active",
+         "phone": "9000000000", "avatar": "", "sports": [], "preferred_position": "",
+         "skill_rating": 0, "skill_deviation": 0, "reliability_score": 100,
+         "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
+         "business_name": "", "gst_number": "",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": player_id, "name": "Arjun Kumar", "email": "demo@player.com",
+         "password_hash": hash_pw("demo123"), "role": "player", "account_status": "active",
+         "phone": "9876543210",
+         "avatar": "", "sports": ["football", "cricket"], "preferred_position": "midfielder",
+         "skill_rating": 1650, "skill_deviation": 200, "reliability_score": 92,
+         "total_games": 47, "wins": 22, "losses": 18, "draws": 7, "no_shows": 1,
+         "business_name": "", "gst_number": "",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": owner_id, "name": "Mr. Reddy", "email": "demo@owner.com",
+         "password_hash": hash_pw("demo123"), "role": "venue_owner", "account_status": "active",
+         "phone": "9876543211",
+         "avatar": "", "sports": [], "preferred_position": "",
+         "skill_rating": 1500, "skill_deviation": 350, "reliability_score": 100,
+         "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
+         "business_name": "Reddy Sports Pvt Ltd", "gst_number": "29AABCR1234F1Z5",
+         "subscription_plan": "pro",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": coach_id, "name": "Coach Sarah", "email": "demo@coach.com",
+         "password_hash": hash_pw("demo123"), "role": "coach", "account_status": "active",
+         "phone": "9876543212",
+         "avatar": "", "sports": ["badminton"], "preferred_position": "",
+         "skill_rating": 2100, "skill_deviation": 150, "reliability_score": 98,
+         "total_games": 120, "wins": 85, "losses": 30, "draws": 5, "no_shows": 0,
+         "business_name": "", "gst_number": "",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+    ]
+    await db.users.insert_many(users)
+
+    v_ids = [str(uuid.uuid4()) for _ in range(4)]
+    venues = [
+        {"id": v_ids[0], "owner_id": owner_id, "name": "PowerPlay Arena",
+         "description": "Premium football turf with floodlights and changing rooms. Bengaluru's finest 5-a-side arena.",
+         "sports": ["football"], "address": "123 Koramangala 5th Block", "city": "Bengaluru",
+         "lat": 12.9352, "lng": 77.6245, "amenities": ["Parking", "Changing Rooms", "Floodlights", "Water Cooler"],
+         "images": [VENUE_IMAGES[0]], "base_price": 2000, "slot_duration_minutes": 60,
+         "opening_hour": 6, "closing_hour": 23, "turfs": 2, "rating": 4.6,
+         "total_reviews": 128, "total_bookings": 45, "status": "active",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": v_ids[1], "owner_id": owner_id, "name": "SmashPoint Courts",
+         "description": "Professional badminton and table tennis facility. Air-conditioned indoor courts.",
+         "sports": ["badminton", "table_tennis"], "address": "45 Indiranagar 12th Main", "city": "Bengaluru",
+         "lat": 12.9784, "lng": 77.6408, "amenities": ["AC", "Pro Shop", "Coaching", "Cafe"],
+         "images": [VENUE_IMAGES[2]], "base_price": 800, "slot_duration_minutes": 60,
+         "opening_hour": 7, "closing_hour": 22, "turfs": 4, "rating": 4.8,
+         "total_reviews": 89, "total_bookings": 67, "status": "active",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": v_ids[2], "owner_id": owner_id, "name": "The Cricket Hub",
+         "description": "Full-size cricket nets and practice pitches. Bowling machines available.",
+         "sports": ["cricket"], "address": "78 HSR Layout Sector 2", "city": "Bengaluru",
+         "lat": 12.9081, "lng": 77.6476, "amenities": ["Bowling Machine", "Nets", "Video Analysis", "Parking"],
+         "images": [VENUE_IMAGES[1]], "base_price": 2500, "slot_duration_minutes": 60,
+         "opening_hour": 6, "closing_hour": 21, "turfs": 3, "rating": 4.4,
+         "total_reviews": 56, "total_bookings": 32, "status": "active",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": v_ids[3], "owner_id": owner_id, "name": "Goal Zone",
+         "description": "Budget-friendly football turf. Artificial grass, great for casual games.",
+         "sports": ["football"], "address": "12 Whitefield Main Road", "city": "Bengaluru",
+         "lat": 12.9698, "lng": 77.7500, "amenities": ["Parking", "Floodlights"],
+         "images": [VENUE_IMAGES[3]], "base_price": 1500, "slot_duration_minutes": 60,
+         "opening_hour": 6, "closing_hour": 23, "turfs": 1, "rating": 4.2,
+         "total_reviews": 34, "total_bookings": 21, "status": "active",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+    ]
+    await db.venues.insert_many(venues)
+
+    pricing_rules = [
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Weekend Surge",
+         "priority": 10, "conditions": {"days": [5, 6], "time_range": {"start": "18:00", "end": "22:00"}},
+         "action": {"type": "multiplier", "value": 1.2}, "is_active": True,
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Early Bird Discount",
+         "priority": 5, "conditions": {"time_range": {"start": "06:00", "end": "09:00"}},
+         "action": {"type": "multiplier", "value": 0.85}, "is_active": True,
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "venue_id": v_ids[0], "name": "Peak Hours",
+         "priority": 8, "conditions": {"days": [0, 1, 2, 3, 4], "time_range": {"start": "18:00", "end": "21:00"}},
+         "action": {"type": "multiplier", "value": 1.1}, "is_active": True,
+         "created_at": datetime.now(timezone.utc).isoformat()},
+    ]
+    await db.pricing_rules.insert_many(pricing_rules)
+
+    tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+    next_week = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%Y-%m-%d")
+
+    match_requests = [
+        {"id": str(uuid.uuid4()), "creator_id": player_id, "creator_name": "Arjun Kumar",
+         "sport": "football", "date": tomorrow, "time": "18:00",
+         "venue_name": "PowerPlay Arena", "players_needed": 10, "min_skill": 1200,
+         "max_skill": 2000, "description": "Friendly 5v5 after work. All levels welcome!",
+         "players_joined": [player_id], "player_names": ["Arjun Kumar"],
+         "status": "open", "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "creator_id": str(uuid.uuid4()), "creator_name": "Vikram Shah",
+         "sport": "cricket", "date": next_week, "time": "09:00",
+         "venue_name": "The Cricket Hub", "players_needed": 22, "min_skill": 1000,
+         "max_skill": 3000, "description": "Weekend cricket match. Need full teams!",
+         "players_joined": [], "player_names": [],
+         "status": "open", "created_at": datetime.now(timezone.utc).isoformat()},
+    ]
+    await db.match_requests.insert_many(match_requests)
+
+    merc_booking_1 = {
+        "id": str(uuid.uuid4()), "venue_id": venues[0]["id"],
+        "venue_name": "PowerPlay Arena", "host_id": player_id,
+        "host_name": "Arjun Kumar", "date": tomorrow,
+        "start_time": "19:00", "end_time": "20:00",
+        "turf_number": 1, "sport": "football",
+        "total_amount": 2400, "commission_amount": 240,
+        "payment_mode": "full", "payment_gateway": "mock",
+        "players": [player_id], "status": "confirmed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    merc_booking_2 = {
+        "id": str(uuid.uuid4()), "venue_id": venues[1]["id"],
+        "venue_name": "SmashPoint Courts", "host_id": coach_id,
+        "host_name": "Coach Sarah", "date": tomorrow,
+        "start_time": "20:00", "end_time": "21:00",
+        "turf_number": 1, "sport": "badminton",
+        "total_amount": 800, "commission_amount": 80,
+        "payment_mode": "full", "payment_gateway": "mock",
+        "players": [coach_id], "status": "confirmed",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.bookings.insert_many([merc_booking_1, merc_booking_2])
+
+    mercenary_posts = [
+        {"id": str(uuid.uuid4()), "host_id": player_id, "host_name": "Arjun Kumar",
+         "booking_id": merc_booking_1["id"], "venue_id": venues[0]["id"],
+         "sport": "football", "venue_name": "PowerPlay Arena",
+         "date": tomorrow, "time": "19:00", "position_needed": "Goalkeeper",
+         "description": "Need a GK for 5v5 friendly. Intermediate level preferred.",
+         "amount_per_player": 200, "spots_available": 2, "spots_filled": 0,
+         "applicants": [], "accepted": [], "paid_players": [], "status": "open",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+        {"id": str(uuid.uuid4()), "host_id": coach_id, "host_name": "Coach Sarah",
+         "booking_id": merc_booking_2["id"], "venue_id": venues[1]["id"],
+         "sport": "badminton", "venue_name": "SmashPoint Courts",
+         "date": tomorrow, "time": "20:00", "position_needed": "Doubles Partner",
+         "description": "Looking for a strong doubles partner for practice session.",
+         "amount_per_player": 400, "spots_available": 1, "spots_filled": 0,
+         "applicants": [], "accepted": [], "paid_players": [], "status": "open",
+         "created_at": datetime.now(timezone.utc).isoformat()},
+    ]
+    await db.mercenary_posts.insert_many(mercenary_posts)
+
+    academy = {
+        "id": str(uuid.uuid4()), "coach_id": coach_id, "coach_name": "Coach Sarah",
+        "name": "Sarah's Badminton Academy", "sport": "badminton",
+        "description": "Professional badminton coaching for all ages. From beginners to advanced.",
+        "monthly_fee": 2000, "location": "SmashPoint Courts, Indiranagar",
+        "max_students": 50, "schedule": "Mon/Wed/Fri 5-7 PM, Sat 9-12 PM",
+        "current_students": 3,
+        "students": [
+            {"id": str(uuid.uuid4()), "name": "Rahul Mehta", "email": "rahul@test.com",
+             "phone": "9999888877", "joined_at": "2026-01-15T10:00:00Z", "subscription_status": "active"},
+            {"id": str(uuid.uuid4()), "name": "Ananya Iyer", "email": "ananya@test.com",
+             "phone": "9999888866", "joined_at": "2026-01-20T10:00:00Z", "subscription_status": "active"},
+            {"id": str(uuid.uuid4()), "name": "Dev Patel", "email": "dev@test.com",
+             "phone": "9999888855", "joined_at": "2026-02-01T10:00:00Z", "subscription_status": "pending"},
+        ],
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.academies.insert_one(academy)
+
+    await db.platform_settings.insert_one({
+        "key": "platform",
+        "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "is_live": False},
+        "booking_commission_pct": 10,
+        "subscription_plans": [
+            {"id": "free", "name": "Free", "price": 0, "features": ["1 venue", "Basic analytics"], "max_venues": 1},
+            {"id": "basic", "name": "Basic", "price": 2999, "features": ["3 venues", "Advanced analytics", "Priority support"], "max_venues": 3},
+            {"id": "pro", "name": "Pro", "price": 7999, "features": ["Unlimited venues", "Full analytics", "Dedicated support", "Custom branding"], "max_venues": 100},
+        ]
+    })
+    logger.info("Demo data seeded successfully!")

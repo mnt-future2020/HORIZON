@@ -24,13 +24,15 @@ class VenueCreate(BaseModel):
     sports: List[str]
     address: str
     city: str
-    base_price: int
+    lat: Optional[float] = 12.9716
+    lng: Optional[float] = 77.5946
+    amenities: Optional[List[str]] = []
+    images: Optional[List[str]] = []
+    base_price: int = 2000
     slot_duration_minutes: int = 60
     opening_hour: int = 6
     closing_hour: int = 23
     turfs: int = 1
-    amenities: List[str] = []
-    images: List[str] = []
 
 
 class BookingCreate(BaseModel):
@@ -46,20 +48,21 @@ class BookingCreate(BaseModel):
 
 class PricingRuleCreate(BaseModel):
     name: str
-    priority: int = 10
+    priority: int = 0
     conditions: dict = {}
     action: dict = {}
+    is_active: bool = True
 
 
 class MatchRequestCreate(BaseModel):
     sport: str
     date: str
     time: str
-    venue_name: str
+    venue_name: Optional[str] = ""
     players_needed: int
-    min_skill: int = 0
-    max_skill: int = 3000
-    description: str = ""
+    min_skill: Optional[int] = 0
+    max_skill: Optional[int] = 3000
+    description: Optional[str] = ""
 
 
 class NotifySubscribeInput(BaseModel):
@@ -84,6 +87,7 @@ class AcademyCreate(BaseModel):
     monthly_fee: int
     location: str
     max_students: int = 50
+    schedule: str
 
 
 class SlotLockInput(BaseModel):
