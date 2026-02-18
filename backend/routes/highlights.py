@@ -2,12 +2,15 @@ import os
 import uuid
 import asyncio
 import logging
+import httpx
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from auth import get_current_user
 from database import db
 from emergentintegrations.llm.chat import LlmChat, UserMessage, FileContentWithMimeType
+import s3_service
 
 router = APIRouter(prefix="/highlights", tags=["highlights"])
 logger = logging.getLogger(__name__)
