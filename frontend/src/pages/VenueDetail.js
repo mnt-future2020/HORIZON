@@ -330,7 +330,19 @@ export default function VenueDetail() {
             <div className="flex items-center gap-2 mb-1">
               {venue.sports?.map(s => <Badge key={s} className="bg-primary/80 text-primary-foreground text-[10px]">{s}</Badge>)}
             </div>
-            <h1 className="font-display text-2xl md:text-3xl font-black text-foreground">{venue.name}</h1>
+            <div className="flex items-end justify-between gap-2">
+              <h1 className="font-display text-2xl md:text-3xl font-black text-foreground">{venue.name}</h1>
+              {venue.slug && (
+                <Link
+                  to={`/venue/${venue.slug}`}
+                  className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm text-primary hover:bg-background/95 transition-colors"
+                  title="View shareable public page"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  Public Page
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
