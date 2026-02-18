@@ -141,7 +141,15 @@ export default function AppNavigator() {
         {!user ? (
           <Stack.Screen name="Auth" component={AuthScreen} />
         ) : (
-          <Stack.Screen name="Main" component={MainTabs} />
+          <>
+            <Stack.Screen name="Main" component={MainTabs} />
+            <Stack.Screen name="Highlights" component={HighlightsScreen}
+              options={{ headerShown: true, title: 'Highlights', headerStyle: { backgroundColor: Colors.card }, headerTintColor: Colors.foreground }} />
+            <Stack.Screen name="RatingProfile" component={RatingProfileScreen}
+              options={{ headerShown: true, title: 'Rating Profile', headerStyle: { backgroundColor: Colors.card }, headerTintColor: Colors.foreground }} />
+            <Stack.Screen name="SplitPayment" component={SplitPaymentScreen}
+              options={{ headerShown: true, title: 'Split Payment', headerStyle: { backgroundColor: Colors.card }, headerTintColor: Colors.foreground }} />
+          </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
