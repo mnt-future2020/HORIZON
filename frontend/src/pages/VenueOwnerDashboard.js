@@ -1329,6 +1329,10 @@ function VenueOwnerDashboardContent() {
                   className="mt-1 bg-background border-border" />
               </div>
             </div>
+            <VenueImageUpload
+              images={editVenueForm.images || []}
+              onChange={imgs => setEditVenueForm(p => ({ ...p, images: imgs }))}
+            />
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditVenueOpen(false)}>Cancel</Button>
               <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleSaveVenue} disabled={savingVenue}>
