@@ -56,7 +56,7 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-        <div className="max-w-6xl mx-auto px-4 pt-20 pb-16 sm:pt-28 sm:pb-24 relative">
+        <div className="max-w-6xl mx-auto px-4 pt-24 pb-16 sm:pt-32 sm:pb-24 relative">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
             <Badge2 text="SPORTS FACILITY OPERATING SYSTEM" />
             <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mt-4 leading-[1.1]">
