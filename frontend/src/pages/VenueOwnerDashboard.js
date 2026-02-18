@@ -1135,6 +1135,49 @@ function VenueOwnerDashboardContent() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Venue QR Code Dialog */}
+      <Dialog open={showVenueQR} onOpenChange={setShowVenueQR}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Venue QR Code</DialogTitle>
+          </DialogHeader>
+          {selectedVenue?.slug && (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div className="p-4 bg-white rounded-xl shadow-inner">
+                <QRCodeSVG
+                  value={`${window.location.origin}/venue/${selectedVenue.slug}`}
+                  size={200}
+                  level="H"
+                  includeMargin={false}
+                />
+              </div>
+              <div className="text-center">
+                <p className="font-semibold">{selectedVenue.name}</p>
+                <p className="text-sm text-muted-foreground font-mono">/venue/{selectedVenue.slug}</p>
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Share this QR code with your customers so they can quickly access your venue's public page.
+              </p>
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/venue/${selectedVenue.slug}`;
+                    await navigator.clipboard.writeText(url);
+                    toast.success("Link copied!");
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy Link
+                </Button>
+                <Button className="flex-1" onClick={() => setShowVenueQR(false)}>Done</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
