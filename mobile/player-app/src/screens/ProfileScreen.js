@@ -207,6 +207,25 @@ export default function ProfileScreen() {
 
         {activeTab === 'overview' ? (
           <View style={styles.tabContent}>
+            {/* Quick Links */}
+            <View style={{ gap: Spacing.sm }}>
+              {[
+                { icon: '🏆', label: 'Rating Profile', desc: 'Match history & skill chart', screen: 'RatingProfile', params: { userId: user?.id, userName: user?.name } },
+                { icon: '🎬', label: 'AI Highlights', desc: 'Upload & analyze match videos', screen: 'Highlights' },
+                { icon: '💰', label: 'Split Payment', desc: 'Split booking cost with friends', screen: 'SplitPayment', params: { bookings } },
+              ].map((item, i) => (
+                <TouchableOpacity key={i} style={styles.quickLink} onPress={() => navigation.navigate(item.screen, item.params)} activeOpacity={0.75}>
+                  <View style={styles.quickLinkIcon}>
+                    <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.quickLinkLabel}>{item.label}</Text>
+                    <Text style={styles.quickLinkDesc}>{item.desc}</Text>
+                  </View>
+                  <Text style={{ color: Colors.mutedForeground }}>›</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
             {/* Rating Card */}
             <Card style={styles.ratingCard}>
               <Text style={styles.cardTitle}>Skill Rating</Text>
