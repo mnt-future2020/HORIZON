@@ -154,8 +154,11 @@ frontend:
     file: "frontend/src/pages/VenueOwnerDashboard.js"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
+      - working: true
+        agent: "testing"
+        comment: "Confirmed public venues feature working correctly. Users can access /venue/:slug pages without requiring login. City filtering also works correctly."
       - working: true
         agent: "testing"
         comment: "100% pass."
