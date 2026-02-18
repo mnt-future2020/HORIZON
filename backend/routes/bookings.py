@@ -7,6 +7,12 @@ import uuid
 import hmac
 import hashlib
 import logging
+import asyncio
+try:
+    from push_service import notify_booking_confirmed, notify_booking_cancelled
+except Exception:
+    async def notify_booking_confirmed(*a, **k): pass
+    async def notify_booking_cancelled(*a, **k): pass
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
