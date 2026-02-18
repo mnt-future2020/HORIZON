@@ -91,6 +91,9 @@ function VenueOwnerDashboardContent() {
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState(false);
+  const [editVenueOpen, setEditVenueOpen] = useState(false);
+  const [editVenueForm, setEditVenueForm] = useState({});
+  const [savingVenue, setSavingVenue] = useState(false);
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: ["football"], address: "", city: "Bengaluru",
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
