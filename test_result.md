@@ -241,19 +241,33 @@ frontend:
         agent: "testing"
         comment: "Settings tab loads correctly with all required sections: Payment Gateway, AWS S3 Storage, Booking Commission, SaaS Subscription Plans, Change Admin Password. AWS S3 Storage section includes Access Key ID input, Secret Access Key input (password type), Bucket Name input, Region dropdown with ap-south-1 (Mumbai) as default, 'Test S3 Connection' button (disabled), and status badge showing 'Not configured'. Was able to fill the fields with dummy values but the 'Test S3 Connection' button remained disabled after filling (likely by design). 'Save All Settings' button works properly with toast notification 'Settings saved!' appearing after clicking."
 
+  - task: "Venue Image Upload in Owner Dashboard"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/VenueOwnerDashboard.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Implemented VenueImageUpload component in VenueOwnerDashboard.js. Added to both Create Venue and Edit Venue dialogs. Uses POST /api/upload/image (S3). Shows thumbnails, progress, S3-not-configured warning. Also added uploadAPI to api.js."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: true
 
 test_plan:
-  current_focus: ["Admin Console Settings Tab"]
+  current_focus: ["Venue Image Upload in Owner Dashboard", "Admin Console Settings Tab"]
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: "Implemented Venue Image Upload feature. Added VenueImageUpload component in VenueOwnerDashboard.js (both Create and Edit dialogs). Added uploadAPI to api.js. Key tests needed: 1) Login as demo@owner.com/demo123, 2) Open Edit Venue dialog for any venue, 3) Verify 'Venue Images' section appears with upload button, 4) Try clicking the upload area (file picker should open), 5) Verify S3 not configured warning appears when upload is attempted without S3 (503 response), 6) Verify existing images show as thumbnails. Also test: Admin S3 settings tab - fill all 4 S3 fields and verify Test S3 Connection button becomes enabled."
   - agent: "testing"
     message: "Completed testing of Admin Console Settings tab functionality. The Settings tab loads correctly with all required sections (Payment Gateway, AWS S3 Storage, Booking Commission, SaaS Subscription Plans, Change Admin Password). The AWS S3 Storage section contains all specified inputs including Access Key ID, Secret Access Key (password field), Bucket Name, Region dropdown with ap-south-1 Mumbai as default, Test S3 Connection button, and status badge showing 'Not configured'. I was able to fill in the fields with dummy values (AKIATEST123, testsecret, test-bucket, ap-south-1), but the 'Test S3 Connection' button remained disabled even after filling the fields (likely by design). The 'Save All Settings' button works properly, displaying a 'Settings saved!' toast notification after clicking. Overall, the functionality is working as expected except for the Test S3 Connection button which remains disabled."
   - agent: "testing"
