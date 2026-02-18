@@ -47,6 +47,28 @@ export default function ProfilePage() {
     }
   };
 
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingAvatar(true);
+    try {
+      const res = await uploadAPI.image(file);
+      const url = res.data.url;
+      const profileRes = await authAPI.updateProfile({ avatar: url });
+      updateUser(profileRes.data);
+      toast.success("Profile photo updated!");
+    } catch (err) {
+      if (err?.response?.status === 503) {
+        toast.error("S3 not configured. Ask the admin to set up S3 in Admin → Settings.");
+      } else {
+        toast.error("Failed to upload photo");
+      }
+    } finally {
+      setUploadingAvatar(false);
+      e.target.value = "";
+    }
+  };
+
   const getRatingTier = (r) => {
     if (r >= 2500) return { label: "Diamond", color: "text-cyan-400", bg: "bg-cyan-500/10" };
     if (r >= 2000) return { label: "Gold", color: "text-amber-400", bg: "bg-amber-500/10" };
