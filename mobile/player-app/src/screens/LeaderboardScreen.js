@@ -91,7 +91,7 @@ export default function LeaderboardScreen() {
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}
         >
-          {/* Top 3 podium */}
+          {/* Top 3 podium - only if 3+ players */}
           {leaderboard.length >= 3 && (
             <View style={styles.podium}>
               {/* 2nd place */}
@@ -103,10 +103,14 @@ export default function LeaderboardScreen() {
             </View>
           )}
 
-          {/* Rest of leaderboard */}
+          {/* All players as rows - show top 3 as rows if podium not shown, rest always shown */}
           <View style={{ gap: Spacing.sm }}>
-            {leaderboard.slice(3).map((player, idx) => (
-              <LeaderRow key={player.id} player={player} rank={idx + 4} />
+            {(leaderboard.length < 3 ? leaderboard : leaderboard.slice(3)).map((player, idx) => (
+              <LeaderRow
+                key={player.id}
+                player={player}
+                rank={leaderboard.length < 3 ? idx + 1 : idx + 4}
+              />
             ))}
           </View>
         </ScrollView>
