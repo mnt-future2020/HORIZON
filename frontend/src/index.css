@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  /* ====== DARK THEME (default) ====== */
+  :root, .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 47.4% 11.2%;
@@ -31,6 +32,44 @@
     --chart-4: 200 70% 50%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
+    --glass-bg: rgba(15, 23, 42, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --glass-bg-hover: rgba(15, 23, 42, 0.8);
+    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
+    --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+  }
+
+  /* ====== LIGHT THEME ====== */
+  .light {
+    --background: 0 0% 98%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 160 84% 36%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 20% 93%;
+    --secondary-foreground: 222.2 47% 15%;
+    --muted: 210 20% 93%;
+    --muted-foreground: 215 15% 47%;
+    --accent: 263 70% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84.2% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 160 84% 36%;
+    --chart-1: 160 84% 36%;
+    --chart-2: 263 70% 58%;
+    --chart-3: 30 80% 50%;
+    --chart-4: 200 70% 45%;
+    --chart-5: 340 75% 50%;
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --glass-bg-hover: rgba(255, 255, 255, 0.9);
+    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.06);
+    --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.1);
   }
 }
 
@@ -41,6 +80,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Manrope', sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Chivo', sans-serif;
@@ -52,35 +92,20 @@
     display: contents !important;
   }
   [data-debug-wrapper="true"] > * {
-    margin-left: inherit;
-    margin-right: inherit;
-    margin-top: inherit;
-    margin-bottom: inherit;
-    padding-left: inherit;
-    padding-right: inherit;
-    padding-top: inherit;
-    padding-bottom: inherit;
-    column-gap: inherit;
-    row-gap: inherit;
-    gap: inherit;
-    border-left-width: inherit;
-    border-right-width: inherit;
-    border-top-width: inherit;
-    border-bottom-width: inherit;
+    margin-left: inherit; margin-right: inherit; margin-top: inherit; margin-bottom: inherit;
+    padding-left: inherit; padding-right: inherit; padding-top: inherit; padding-bottom: inherit;
+    column-gap: inherit; row-gap: inherit; gap: inherit;
+    border-left-width: inherit; border-right-width: inherit; border-top-width: inherit; border-bottom-width: inherit;
   }
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: hsl(222.2, 84%, 4.9%);
-}
-::-webkit-scrollbar-thumb {
-  background: hsl(217.2, 32.6%, 17.5%);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(215, 20.2%, 35%);
-}
+.dark::-webkit-scrollbar, .dark ::-webkit-scrollbar { width: 6px; }
+.dark::-webkit-scrollbar-track, .dark ::-webkit-scrollbar-track { background: hsl(222.2, 84%, 4.9%); }
+.dark::-webkit-scrollbar-thumb, .dark ::-webkit-scrollbar-thumb { background: hsl(217.2, 32.6%, 17.5%); border-radius: 3px; }
+.dark::-webkit-scrollbar-thumb:hover, .dark ::-webkit-scrollbar-thumb:hover { background: hsl(215, 20.2%, 35%); }
+
+.light::-webkit-scrollbar, .light ::-webkit-scrollbar { width: 6px; }
+.light::-webkit-scrollbar-track, .light ::-webkit-scrollbar-track { background: hsl(0, 0%, 96%); }
+.light::-webkit-scrollbar-thumb, .light ::-webkit-scrollbar-thumb { background: hsl(214, 20%, 82%); border-radius: 3px; }
+.light::-webkit-scrollbar-thumb:hover, .light ::-webkit-scrollbar-thumb:hover { background: hsl(215, 15%, 70%); }
