@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
