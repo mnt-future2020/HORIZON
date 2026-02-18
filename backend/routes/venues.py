@@ -261,6 +261,8 @@ async def update_venue(venue_id: str, request: Request, user=Depends(get_current
     if updates:
         await db.venues.update_one({"id": venue_id}, {"$set": updates})
     updated = await db.venues.find_one({"id": venue_id}, {"_id": 0})
+    # Broadcast live update to all public page viewers
+    await venue_manager.broadcast(venue_id, {"type": "venue_update", "venue": updated})
     return updated
 
 
