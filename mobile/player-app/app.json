@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Horizon",
+    "slug": "horizon-player-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#080e1d"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#080e1d"
+      }
+    },
+    "web": {
+      "backgroundColor": "#080e1d"
+    }
+  }
+}
