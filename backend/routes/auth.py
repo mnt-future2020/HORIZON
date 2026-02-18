@@ -69,3 +69,18 @@ async def update_profile(request: Request, user=Depends(get_current_user)):
         await db.users.update_one({"id": user["id"]}, {"$set": updates})
     updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
     return updated
+
+
+@router.post("/auth/push-token")
+async def register_push_token(request: Request, user=Depends(get_current_user)):
+    """Register a device push token for push notifications."""
+    data = await request.json()
+    push_token = data.get("push_token", "").strip()
+    platform = data.get("platform", "")
+    if not push_token:
+        raise HTTPException(400, "push_token required")
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"push_token": push_token, "push_platform": platform}}
+    )
+    return {"message": "Push token registered"}
