@@ -173,7 +173,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[1]], "base_price": 3000, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 23, "turfs": 3, "rating": 4.5,
          "total_reviews": 234, "total_bookings": 120, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner3_id, "name": "Powai Pitch",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Powai Pitch"), "owner_id": owner3_id, "name": "Powai Pitch",
          "description": "Premium football turf near IIT Bombay. Great for college and corporate games.",
          "sports": ["football"], "address": "Hiranandani Gardens, Powai", "area": "Powai", "city": "Mumbai",
          "lat": 19.1176, "lng": 72.9060, "amenities": ["Parking", "Floodlights", "Shower", "Cafe"],
