@@ -328,7 +328,7 @@ export default function VenueDiscovery() {
               {venues.map((venue, idx) => (
                 <motion.div key={venue.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.03 }}
-                  onClick={() => navigate(`/venues/${venue.id}`)}
+                  onClick={() => venue.slug ? navigate(`/venue/${venue.slug}`) : navigate(`/venues/${venue.id}`)}
                   className="glass-card rounded-xl overflow-hidden cursor-pointer group hover:border-primary/30 transition-all"
                   data-testid={`venue-card-${venue.id}`}>
                   {/* Image */}
