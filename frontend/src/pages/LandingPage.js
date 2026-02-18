@@ -192,6 +192,18 @@ export default function LandingPage() {
                     <span className="truncate">{v.area ? `${v.area}, ` : ""}{v.city}</span>
                     <span className="ml-auto font-bold text-primary">{"\u20B9"}{v.base_price}</span>
                   </div>
+                  {v.slug && (
+                    <div className="mt-2 pt-2 border-t border-border/50">
+                      <Link
+                        to={`/venue/${v.slug}`}
+                        onClick={e => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 text-[10px] text-primary hover:underline"
+                      >
+                        <Globe className="h-3 w-3" />
+                        View public page
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             ))}
