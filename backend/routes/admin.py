@@ -135,6 +135,7 @@ async def admin_get_settings(user=Depends(get_current_user)):
             "key": "platform",
             "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "is_live": False},
             "booking_commission_pct": 10,
+            "s3_storage": {"access_key_id": "", "secret_access_key": "", "bucket_name": "", "region": "ap-south-1", "enabled": False},
             "subscription_plans": [
                 {"id": "free", "name": "Free", "price": 0, "features": ["1 venue", "Basic analytics"], "max_venues": 1},
                 {"id": "basic", "name": "Basic", "price": 2999, "features": ["3 venues", "Advanced analytics", "Priority support"], "max_venues": 3},
@@ -143,6 +144,9 @@ async def admin_get_settings(user=Depends(get_current_user)):
         }
         await db.platform_settings.insert_one(settings)
         settings.pop("_id", None)
+    # Ensure s3_storage field exists in old records
+    if "s3_storage" not in settings:
+        settings["s3_storage"] = {"access_key_id": "", "secret_access_key": "", "bucket_name": "", "region": "ap-south-1", "enabled": False}
     return settings
 
 
