@@ -341,4 +341,8 @@ const styles = StyleSheet.create({
   infoLabel: { fontSize: Typography.sm, fontFamily: Typography.fontBody, color: Colors.mutedForeground },
   infoValue: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground, textAlign: 'right', flex: 1, marginLeft: Spacing.sm },
   logoutSection: { margin: Spacing.base, marginTop: Spacing.xl },
+  quickLink: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, backgroundColor: Colors.card, borderRadius: Spacing.radiusLg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md },
+  quickLinkIcon: { width: 40, height: 40, borderRadius: Spacing.radiusMd, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+  quickLinkLabel: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground },
+  quickLinkDesc: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, marginTop: 2 },
 });
