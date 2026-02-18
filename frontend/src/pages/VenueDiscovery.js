@@ -12,6 +12,7 @@ import { toast } from "sonner";
 
 export default function VenueDiscovery() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [venues, setVenues] = useState([]);
