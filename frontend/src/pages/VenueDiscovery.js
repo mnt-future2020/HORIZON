@@ -160,8 +160,19 @@ export default function VenueDiscovery() {
 
   return (
     <div className="min-h-screen bg-background" data-testid="venue-discovery-page">
+      {/* Top bar for non-logged-in users */}
+      {!user && (
+        <nav className="fixed top-0 w-full z-40 h-14 flex items-center justify-between px-4 sm:px-6 bg-background/90 backdrop-blur-xl border-b border-border">
+          <Link to="/" className="font-display font-black text-base tracking-tighter uppercase text-primary">Horizon</Link>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="text-xs font-bold">Log in</Button>
+            <Button size="sm" onClick={() => navigate("/auth")} className="bg-primary text-primary-foreground text-xs font-bold rounded-lg">Get Started</Button>
+          </div>
+        </nav>
+      )}
+
       {/* Search Hero */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-16 z-30">
+      <div className={`border-b border-border bg-card/50 backdrop-blur-sm sticky z-30 ${user ? "top-16" : "top-14"}`}>
         <div className="max-w-7xl mx-auto px-4 py-4">
           {/* Main Search Bar */}
           <div className="flex gap-2 items-center" data-testid="search-bar">
