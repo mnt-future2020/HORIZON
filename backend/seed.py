@@ -166,7 +166,7 @@ async def seed_demo_data():
          "total_reviews": 45, "total_bookings": 28, "status": "active", "created_at": now},
 
         # --- Mumbai ---
-        {"id": str(uuid.uuid4()), "owner_id": owner3_id, "name": "Andheri Sports Complex",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Andheri Sports Complex"), "owner_id": owner3_id, "name": "Andheri Sports Complex",
          "description": "Multi-sport facility in the heart of Mumbai. Football, cricket, and more.",
          "sports": ["football", "cricket", "basketball"], "address": "Andheri West, Off Link Road", "area": "Andheri", "city": "Mumbai",
          "lat": 19.1365, "lng": 72.8296, "amenities": ["Parking", "Floodlights", "Changing Rooms", "Cafe", "First Aid"],
