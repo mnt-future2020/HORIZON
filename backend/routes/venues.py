@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
+from typing import Optional, Dict, List
 from datetime import datetime, timezone
 from database import db, get_redis, lock_key, SOFT_LOCK_TTL, HARD_LOCK_TTL
 from auth import get_current_user, get_optional_user, get_platform_settings
@@ -9,9 +9,44 @@ import random
 import math
 import logging
 import re
+import json
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
+
+
+# ---------------------------------------------------------------------------
+# Venue Live Connection Manager
+# ---------------------------------------------------------------------------
+class VenueConnectionManager:
+    def __init__(self):
+        self._clients: Dict[str, List[WebSocket]] = {}
+
+    async def connect(self, venue_id: str, ws: WebSocket):
+        await ws.accept()
+        self._clients.setdefault(venue_id, []).append(ws)
+        logger.info(f"WS connected venue={venue_id} total={len(self._clients[venue_id])}")
+
+    def disconnect(self, venue_id: str, ws: WebSocket):
+        lst = self._clients.get(venue_id, [])
+        if ws in lst:
+            lst.remove(ws)
+        if not lst:
+            self._clients.pop(venue_id, None)
+
+    async def broadcast(self, venue_id: str, message: dict):
+        clients = list(self._clients.get(venue_id, []))
+        dead = []
+        for ws in clients:
+            try:
+                await ws.send_text(json.dumps(message))
+            except Exception:
+                dead.append(ws)
+        for ws in dead:
+            self.disconnect(venue_id, ws)
+
+
+venue_manager = VenueConnectionManager()
 
 
 def generate_slug(name: str) -> str:
