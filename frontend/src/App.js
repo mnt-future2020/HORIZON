@@ -19,6 +19,7 @@ import RatingProfilePage from "@/pages/RatingProfilePage";
 import HighlightsPage from "@/pages/HighlightsPage";
 import SharedHighlightPage from "@/pages/SharedHighlightPage";
 import IoTDashboard from "@/pages/IoTDashboard";
+import PublicVenuePage from "@/pages/PublicVenuePage";
 import Navbar from "@/components/Navbar";
 
 function ProtectedRoute({ children, roles }) {
