@@ -233,6 +233,8 @@ test_plan:
   test_priority: "high_first"
 
 agent_communication:
+  - agent: "testing"
+    message: "Starting testing of the Horizon Sports website footer and legal pages according to the user request: 1) Testing footer on landing page for HORIZON brand, MnT company, Product/Company/Contact columns, and links to legal pages; 2) Checking existence of About, Contact, Privacy Policy, Terms, and Refund Policy pages; 3) Testing footer links functionality - Privacy link navigation and HORIZON logo returning to homepage."
   - agent: "main"
     message: "Implemented WebSocket real-time updates. Key points: 1) Backend: VenueConnectionManager in venues.py manages per-venue WS connections at /api/venues/ws/{venue_id}. update_venue endpoint now broadcasts {type: venue_update, venue: {...}} to all active viewers. 2) Frontend PublicVenuePage.js: Replaced 30s polling with WebSocket connection. Shows live/reconnecting/connecting status indicator. On venue_update message, updates venue state, shows toast, and flashes a ring on the About card. Reconnects with exponential backoff (2s, 4s, 8s... max 30s). 3) VenueOwnerDashboard.js: Added Edit Details button that opens a dialog. Saving calls venueAPI.update() which triggers the broadcast. Test by: a) Open /venue/powerplay-arena in one browser tab, b) Login as demo@owner.com/demo123 in another tab, c) Click Edit Details, change description, Save & Go Live - first tab should update instantly with toast notification."
   - agent: "testing"
