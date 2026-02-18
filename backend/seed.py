@@ -99,7 +99,7 @@ async def seed_demo_data():
 
     venues = [
         # --- Bengaluru ---
-        {"id": str(uuid.uuid4()), "owner_id": owner_id, "name": "PowerPlay Arena",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("PowerPlay Arena"), "owner_id": owner_id, "name": "PowerPlay Arena",
          "description": "Premium football turf with floodlights and changing rooms. Bengaluru's finest 5-a-side arena.",
          "sports": ["football"], "address": "123 Koramangala 5th Block", "area": "Koramangala", "city": "Bengaluru",
          "lat": 12.9352, "lng": 77.6245, "amenities": ["Parking", "Changing Rooms", "Floodlights", "Water Cooler"],
