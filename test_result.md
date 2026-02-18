@@ -256,21 +256,45 @@ frontend:
         agent: "testing"
         comment: "All tests passed 100%. Create/Edit Venue dialogs both show 'Venue Images' section. Test S3 Connection button enables after filling all 4 fields. S3 warning shows on 503 response. Existing venue images shown as thumbnails."
 
+  - task: "Profile Picture Upload"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/ProfilePage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added avatar upload to ProfilePage.js - camera icon overlay on avatar, file input, uploads via uploadAPI.image(), then saves URL via authAPI.updateProfile({avatar: url}). Navbar.js updated to show AvatarImage if user.avatar is set."
+
+  - task: "Video Highlights S3 Migration"
+    implemented: true
+    working: "NA"
+    file: "backend/routes/highlights.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Updated highlights.py: upload_video now pushes to S3 after local save, stores video_url. analyze_video falls back to S3 download if local file missing. Added httpx for temp S3 download. s3_service.upload_bytes used."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 3
+  test_sequence: 4
   run_ui: true
 
 test_plan:
-  current_focus: ["Venue Image Upload in Owner Dashboard", "Admin Console Settings Tab"]
+  current_focus: ["Profile Picture Upload", "Video Highlights S3 Migration"]
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Implemented Venue Image Upload feature. Added VenueImageUpload component in VenueOwnerDashboard.js (both Create and Edit dialogs). Added uploadAPI to api.js. Key tests needed: 1) Login as demo@owner.com/demo123, 2) Open Edit Venue dialog for any venue, 3) Verify 'Venue Images' section appears with upload button, 4) Try clicking the upload area (file picker should open), 5) Verify S3 not configured warning appears when upload is attempted without S3 (503 response), 6) Verify existing images show as thumbnails. Also test: Admin S3 settings tab - fill all 4 S3 fields and verify Test S3 Connection button becomes enabled."
+    message: "Implemented 2 new features: 1) Profile Picture Upload - ProfilePage.js has camera overlay on avatar, uploads to S3 via /api/upload/image, saves URL to user.avatar via /api/auth/profile, Navbar shows actual avatar image. 2) Video Highlights S3 Migration - highlights.py upload_video now tries to backup to S3 after local save, stores video_url. analyze_video downloads from S3 if local file missing after restart. Test with: demo@player.com/demo123. S3 not configured so avatar upload should show toast 503 error. S3 status badge in Admin Settings should show 'Not configured'. Test that profile page has camera icon on avatar, clicking opens file picker."
   - agent: "testing"
     message: "Completed testing of Admin Console Settings tab functionality. The Settings tab loads correctly with all required sections (Payment Gateway, AWS S3 Storage, Booking Commission, SaaS Subscription Plans, Change Admin Password). The AWS S3 Storage section contains all specified inputs including Access Key ID, Secret Access Key (password field), Bucket Name, Region dropdown with ap-south-1 Mumbai as default, Test S3 Connection button, and status badge showing 'Not configured'. I was able to fill in the fields with dummy values (AKIATEST123, testsecret, test-bucket, ap-south-1), but the 'Test S3 Connection' button remained disabled even after filling the fields (likely by design). The 'Save All Settings' button works properly, displaying a 'Settings saved!' toast notification after clicking. Overall, the functionality is working as expected except for the Test S3 Connection button which remains disabled."
   - agent: "testing"
