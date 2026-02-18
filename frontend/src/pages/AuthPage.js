@@ -61,6 +61,13 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      {/* Theme toggle - top right */}
+      <div className="fixed top-4 right-4 z-50">
+        <button onClick={toggleTheme} data-testid="auth-theme-toggle"
+          className="h-9 w-9 rounded-lg flex items-center justify-center bg-secondary/50 hover:bg-secondary transition-colors">
+          {resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
+        </button>
+      </div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md">
         <button onClick={() => navigate("/")} data-testid="auth-back-btn"
