@@ -148,6 +148,13 @@ export default function Navbar() {
             </PopoverContent>
           </Popover>
 
+          {/* Theme Toggle */}
+          <button onClick={toggleTheme} data-testid="theme-toggle"
+            className="h-9 w-9 rounded-lg flex items-center justify-center bg-secondary/50 hover:bg-secondary transition-colors"
+            title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}>
+            {resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
+          </button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-9 px-3" data-testid="user-menu-trigger">
