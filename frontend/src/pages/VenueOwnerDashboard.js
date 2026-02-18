@@ -370,14 +370,58 @@ function VenueOwnerDashboardContent() {
 
       {/* Venue Selector */}
       {venues.length > 0 && (
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-2 -mx-1 px-1">
-          {venues.map(v => (
-            <Button key={v.id} variant={selectedVenue?.id === v.id ? "default" : "outline"} size="sm"
-              onClick={() => handleSelectVenue(v)} data-testid={`venue-tab-${v.id}`}
-              className={`shrink-0 text-xs ${selectedVenue?.id === v.id ? "bg-primary text-primary-foreground" : ""}`}>
-              {v.name}
-            </Button>
-          ))}
+        <div className="mb-6 space-y-3">
+          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+            {venues.map(v => (
+              <Button key={v.id} variant={selectedVenue?.id === v.id ? "default" : "outline"} size="sm"
+                onClick={() => handleSelectVenue(v)} data-testid={`venue-tab-${v.id}`}
+                className={`shrink-0 text-xs ${selectedVenue?.id === v.id ? "bg-primary text-primary-foreground" : ""}`}>
+                {v.name}
+              </Button>
+            ))}
+          </div>
+          {/* Public page actions for selected venue */}
+          {selectedVenue?.slug && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                <span className="font-mono">/venue/{selectedVenue.slug}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => navigate(`/venue/${selectedVenue.slug}`)}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View Public Page
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setShowVenueQR(true)}
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                QR Code
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={async () => {
+                  const url = `${window.location.origin}/venue/${selectedVenue.slug}`;
+                  await navigator.clipboard.writeText(url);
+                  setCopiedSlug(true);
+                  toast.success("Public link copied!");
+                  setTimeout(() => setCopiedSlug(false), 2000);
+                }}
+              >
+                {copiedSlug ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedSlug ? "Copied!" : "Copy Link"}
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
