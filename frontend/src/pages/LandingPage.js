@@ -34,6 +34,25 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-background" data-testid="landing-page">
+      {/* Top Bar */}
+      <nav className="fixed top-0 w-full z-50 h-14 flex items-center justify-between px-6 bg-background/80 backdrop-blur-xl border-b border-border">
+        <span className="font-display font-black text-lg tracking-tighter uppercase text-primary">Horizon</span>
+        <div className="flex items-center gap-3">
+          <button onClick={toggleTheme} data-testid="landing-theme-toggle"
+            className="h-9 w-9 rounded-lg flex items-center justify-center bg-secondary/50 hover:bg-secondary transition-colors"
+            title={resolvedTheme === "dark" ? "Light mode" : "Dark mode"}>
+            {resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
+          </button>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="text-xs font-bold" data-testid="nav-login">
+            Log in
+          </Button>
+          <Button size="sm" onClick={() => navigate("/auth")}
+            className="bg-primary text-primary-foreground text-xs font-bold rounded-lg" data-testid="nav-get-started">
+            Get Started
+          </Button>
+        </div>
+      </nav>
+
       {/* Hero */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
