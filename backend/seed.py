@@ -127,7 +127,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[3]], "base_price": 1500, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 23, "turfs": 1, "rating": 4.2,
          "total_reviews": 34, "total_bookings": 21, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner_id, "name": "Kick Off Bengaluru",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Kick Off Bengaluru"), "owner_id": owner_id, "name": "Kick Off Bengaluru",
          "description": "State-of-the-art football complex with FIFA standard turf and night play.",
          "sports": ["football", "basketball"], "address": "56 JP Nagar 6th Phase", "area": "JP Nagar", "city": "Bengaluru",
          "lat": 12.8912, "lng": 77.5850, "amenities": ["Floodlights", "Parking", "Cafe", "First Aid", "Shower"],
