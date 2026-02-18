@@ -188,10 +188,7 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus:
-    - "WebSocket real-time venue updates"
-    - "Edit Venue dialog in owner dashboard"
-    - "Public venue page live indicator"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
