@@ -224,7 +224,10 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus: 
+    - "Footer on landing page"
+    - "Legal pages existence"
+    - "Footer links functionality"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
