@@ -72,6 +72,14 @@ function MainTabs() {
         }}
       />
       <Tab.Screen
+        name="Matchmaking"
+        component={MatchmakingScreen}
+        options={{
+          tabBarLabel: 'Game',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="⚔️" focused={focused} />,
+        }}
+      />
+      <Tab.Screen
         name="Bookings"
         component={BookingsScreen}
         options={{
