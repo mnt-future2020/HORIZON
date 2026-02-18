@@ -205,7 +205,7 @@ async def seed_demo_data():
          "total_reviews": 98, "total_bookings": 52, "status": "active", "created_at": now},
 
         # --- Delhi ---
-        {"id": str(uuid.uuid4()), "owner_id": owner3_id, "name": "Connaught Place Indoor",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Connaught Place Indoor"), "owner_id": owner3_id, "name": "Connaught Place Indoor",
          "description": "Central Delhi's premium indoor sports venue. Badminton, TT and basketball.",
          "sports": ["badminton", "table_tennis", "basketball"], "address": "Inner Circle, CP", "area": "Connaught Place", "city": "Delhi",
          "lat": 28.6315, "lng": 77.2167, "amenities": ["AC", "Parking", "Pro Shop", "Cafe", "First Aid"],
