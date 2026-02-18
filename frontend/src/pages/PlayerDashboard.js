@@ -123,7 +123,7 @@ export default function PlayerDashboard() {
         {[
           { icon: MapPin, label: "Find Venue", desc: "Browse available turfs", to: "/venues", color: "bg-primary/10 text-primary" },
           { icon: Swords, label: "Find Game", desc: "Join or create matches", to: "/matchmaking", color: "bg-violet-500/10 text-violet-400" },
-          { icon: Trophy, label: "My Profile", desc: "Stats & match history", to: "/profile", color: "bg-amber-500/10 text-amber-400" },
+          { icon: Trophy, label: "My Profile", desc: "Stats & match history", to: "/rating-profile", color: "bg-amber-500/10 text-amber-400" },
         ].map((a, i) => (
           <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 + i * 0.05 }}>
             <Button variant="ghost" onClick={() => navigate(a.to)} data-testid={`quick-action-${a.label.toLowerCase().replace(/\s/g, "-")}`}
