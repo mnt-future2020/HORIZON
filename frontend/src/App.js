@@ -20,6 +20,7 @@ import HighlightsPage from "@/pages/HighlightsPage";
 import SharedHighlightPage from "@/pages/SharedHighlightPage";
 import IoTDashboard from "@/pages/IoTDashboard";
 import PublicVenuePage from "@/pages/PublicVenuePage";
+import POSPage from "@/pages/POSPage";
 import AboutPage from "@/pages/AboutPage";
 import ContactPage from "@/pages/ContactPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
