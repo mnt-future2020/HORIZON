@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { venueAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,10 +13,10 @@ import {
   ChevronLeft, ExternalLink, Phone, CheckCircle2,
   Calendar, Tag, ShieldCheck, Trophy, Wifi, Coffee,
   Car, Droplets, Wind, Video, ShoppingBag, AlertCircle,
-  Copy, Check
+  Copy, Check, Radio
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const SPORT_LABELS = {
   football: "Football", cricket: "Cricket", badminton: "Badminton",
