@@ -30,6 +30,82 @@ function StatCard({ icon: Icon, label, value, color }) {
   );
 }
 
+/** Image upload component for venue images — uses /api/upload/image (S3) */
+function VenueImageUpload({ images = [], onChange }) {
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [s3Missing, setS3Missing] = useState(false);
+
+  const handleFiles = async (files) => {
+    const arr = Array.from(files).filter(f => f.type.startsWith("image/"));
+    if (!arr.length) return;
+    setUploading(true);
+    setS3Missing(false);
+    const uploaded = [...images];
+    for (const file of arr) {
+      try {
+        const res = await uploadAPI.image(file, (e) => {
+          if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
+        });
+        uploaded.push(res.data.url);
+        setUploadProgress(0);
+      } catch (err) {
+        const status = err?.response?.status;
+        if (status === 503) {
+          setS3Missing(true);
+          toast.error("S3 not configured. Ask the admin to set up S3 in Admin → Settings.");
+        } else {
+          toast.error(`Upload failed: ${err?.response?.data?.detail || "Unknown error"}`);
+        }
+        break;
+      }
+    }
+    onChange(uploaded);
+    setUploading(false);
+  };
+
+  const removeImage = (idx) => onChange(images.filter((_, i) => i !== idx));
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs text-muted-foreground">Venue Images</Label>
+      {/* Thumbnails */}
+      {images.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {images.map((url, i) => (
+            <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
+              <img src={url} alt="" className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeImage(i)}
+                className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {/* Upload button */}
+      <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-primary/40 hover:border-primary hover:bg-primary/5 text-muted-foreground hover:text-primary"}`}>
+        {uploading ? (
+          <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />Uploading {uploadProgress > 0 ? `${uploadProgress}%` : "..."}</>
+        ) : (
+          <><ImagePlus className="h-4 w-4" />{images.length > 0 ? "Add more images" : "Upload venue images"}</>
+        )}
+        <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} disabled={uploading} />
+      </label>
+      {s3Missing && (
+        <div className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 rounded-lg px-3 py-2 border border-amber-500/20">
+          <ImageOff className="h-3.5 w-3.5 shrink-0" />
+          S3 not configured. Contact admin to enable image uploads.
+        </div>
+      )}
+      <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP · max 10 MB each. Images appear on your public venue page.</p>
+    </div>
+  );
+}
+
 export default function VenueOwnerDashboard() {
   const { user } = useAuth();
 
