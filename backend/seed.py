@@ -106,7 +106,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[0]], "base_price": 2000, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 23, "turfs": 2, "rating": 4.6,
          "total_reviews": 128, "total_bookings": 45, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner_id, "name": "SmashPoint Courts",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("SmashPoint Courts"), "owner_id": owner_id, "name": "SmashPoint Courts",
          "description": "Professional badminton and table tennis facility. Air-conditioned indoor courts.",
          "sports": ["badminton", "table_tennis"], "address": "45 Indiranagar 12th Main", "area": "Indiranagar", "city": "Bengaluru",
          "lat": 12.9784, "lng": 77.6408, "amenities": ["AC", "Pro Shop", "Coaching", "Cafe"],
