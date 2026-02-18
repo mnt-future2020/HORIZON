@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
 import { analyticsAPI, bookingAPI, authAPI, uploadAPI } from '../api';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
