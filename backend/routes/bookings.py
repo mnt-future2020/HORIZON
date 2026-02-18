@@ -224,6 +224,13 @@ async def mock_confirm_payment(booking_id: str, user=Depends(get_current_user)):
             "paid_at": datetime.now(timezone.utc).isoformat()
         }
     }})
+    # Send push notification
+    asyncio.create_task(notify_booking_confirmed(
+        booking["host_id"],
+        booking.get("venue_name", "Venue"),
+        booking.get("date", ""),
+        booking.get("start_time", ""),
+    ))
     return {"message": "Mock payment confirmed", "status": "confirmed"}
 
 
