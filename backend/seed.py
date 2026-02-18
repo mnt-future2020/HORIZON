@@ -157,7 +157,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[3]], "base_price": 1500, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 21, "turfs": 3, "rating": 4.6,
          "total_reviews": 67, "total_bookings": 38, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner2_id, "name": "OMR Football Factory",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("OMR Football Factory"), "owner_id": owner2_id, "name": "OMR Football Factory",
          "description": "Budget turf on the IT corridor. Perfect for post-work games.",
          "sports": ["football"], "address": "Thoraipakkam Signal", "area": "OMR", "city": "Chennai",
          "lat": 12.9406, "lng": 80.2335, "amenities": ["Parking", "Floodlights", "Water Cooler"],
