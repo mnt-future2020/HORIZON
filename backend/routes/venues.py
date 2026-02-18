@@ -205,6 +205,10 @@ async def update_venue(venue_id: str, request: Request, user=Depends(get_current
     allowed = ["name", "description", "sports", "address", "city", "amenities", "images",
                "base_price", "slot_duration_minutes", "opening_hour", "closing_hour", "turfs"]
     updates = {k: v for k, v in data.items() if k in allowed}
+    # If name is being updated, regenerate slug
+    if "name" in updates:
+        base_slug = generate_slug(updates["name"])
+        updates["slug"] = await unique_slug(base_slug, exclude_id=venue_id)
     if updates:
         await db.venues.update_one({"id": venue_id}, {"$set": updates})
     updated = await db.venues.find_one({"id": venue_id}, {"_id": 0})
