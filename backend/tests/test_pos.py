@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://dynamic-s3-flow.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://player-app-preview-1.preview.emergentagent.com').rstrip('/')
 
 # Test credentials for venue owner
 VENUE_OWNER_EMAIL = "demo@owner.com"
