@@ -189,7 +189,7 @@ async def seed_demo_data():
          "total_reviews": 145, "total_bookings": 88, "status": "active", "created_at": now},
 
         # --- Hyderabad ---
-        {"id": str(uuid.uuid4()), "owner_id": owner2_id, "name": "HITEC City Sports Hub",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("HITEC City Sports Hub"), "owner_id": owner2_id, "name": "HITEC City Sports Hub",
          "description": "Modern sports complex for IT professionals. Football, cricket, and badminton.",
          "sports": ["football", "cricket", "badminton"], "address": "Cyber Towers Road", "area": "HITEC City", "city": "Hyderabad",
          "lat": 17.4435, "lng": 78.3772, "amenities": ["AC", "Parking", "Floodlights", "Cafe", "Shower", "Changing Rooms"],
