@@ -148,6 +148,14 @@ async def nearby_venues(
     return results[:limit]
 
 
+@router.get("/venues/slug/{venue_slug}")
+async def get_venue_by_slug(venue_slug: str):
+    venue = await db.venues.find_one({"slug": venue_slug, "status": "active"}, {"_id": 0})
+    if not venue:
+        raise HTTPException(404, "Venue not found")
+    return venue
+
+
 @router.get("/venues/{venue_id}")
 async def get_venue(venue_id: str):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
