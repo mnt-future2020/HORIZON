@@ -391,20 +391,7 @@ export default function VenueDiscovery() {
                         <span className="flex items-center gap-0.5"><Zap className="h-3 w-3" />{venue.turfs} turf{venue.turfs > 1 ? "s" : ""}</span>
                         <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{venue.total_bookings || 0} bookings</span>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        {venue.slug && (
-                          <Link
-                            to={`/venue/${venue.slug}`}
-                            onClick={e => e.stopPropagation()}
-                            className="flex items-center gap-1 text-[10px] text-primary hover:underline px-1.5 py-0.5 rounded-md hover:bg-primary/10 transition-colors"
-                            title="View public page"
-                          >
-                            <Globe className="h-3 w-3" />
-                            Public
-                          </Link>
-                        )}
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
 
                     {/* Amenity pills */}
