@@ -312,7 +312,7 @@ export default function VenueDiscovery() {
       </div>
 
       {/* Results */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className={`max-w-7xl mx-auto px-4 py-6 ${!user ? "pt-4" : ""}`}>
         <div className="flex items-center justify-between mb-4">
           <p className="text-sm text-muted-foreground" data-testid="results-count">
             <span className="font-bold text-foreground">{venues.length}</span> venue{venues.length !== 1 ? "s" : ""} found
