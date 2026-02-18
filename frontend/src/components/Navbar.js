@@ -21,6 +21,7 @@ function NavLink({ to, icon: Icon, label, active }) {
 
 export default function Navbar() {
   const { user, logout } = useAuth();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
