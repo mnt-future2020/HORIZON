@@ -154,7 +154,7 @@ async def admin_get_settings(user=Depends(get_current_user)):
 async def admin_update_settings(request: Request, user=Depends(get_current_user)):
     await require_admin(user)
     data = await request.json()
-    allowed = ["payment_gateway", "booking_commission_pct", "subscription_plans"]
+    allowed = ["payment_gateway", "booking_commission_pct", "subscription_plans", "s3_storage"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         raise HTTPException(400, "No valid fields to update")
