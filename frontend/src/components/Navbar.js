@@ -74,6 +74,7 @@ export default function Navbar() {
     ],
     venue_owner: [
       { to: "/owner", icon: Building2, label: "Dashboard" },
+      { to: "/pos", icon: ShoppingCart, label: "POS" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
       { to: "/highlights", icon: Video, label: "Highlights" },
     ],
