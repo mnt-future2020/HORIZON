@@ -26,6 +26,7 @@ const TABS = ['overview', 'edit'];
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
+  const navigation = useNavigation();
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
