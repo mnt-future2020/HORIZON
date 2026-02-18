@@ -1,0 +1,43 @@
+{
+  "files": {
+    "main.js": "/static/js/main.cec7d4f8.js",
+    "static/js/92.c7f1814f.js": "/static/js/92.c7f1814f.js",
+    "static/media/Manrope_800ExtraBold.ttf": "/static/media/Manrope_800ExtraBold.b0ac9f1b582da5d98892.ttf",
+    "static/media/Manrope_600SemiBold.ttf": "/static/media/Manrope_600SemiBold.0a3797b8dd78c25ef6b4.ttf",
+    "static/media/Manrope_500Medium.ttf": "/static/media/Manrope_500Medium.7e416a42443e06ed7d57.ttf",
+    "static/media/Manrope_400Regular.ttf": "/static/media/Manrope_400Regular.25323263b2aac026e777.ttf",
+    "static/media/Manrope_700Bold.ttf": "/static/media/Manrope_700Bold.15c3a2fdedaee1ebf773.ttf",
+    "static/media/Manrope_300Light.ttf": "/static/media/Manrope_300Light.2c101e26164e3cadcf07.ttf",
+    "static/media/Manrope_200ExtraLight.ttf": "/static/media/Manrope_200ExtraLight.df3135e104e896d0fa31.ttf",
+    "static/media/Chivo_200ExtraLight_Italic.ttf": "/static/media/Chivo_200ExtraLight_Italic.78da25ee093cb9050c76.ttf",
+    "static/media/Chivo_300Light_Italic.ttf": "/static/media/Chivo_300Light_Italic.6ee2ddacd890a9548808.ttf",
+    "static/media/Chivo_100Thin_Italic.ttf": "/static/media/Chivo_100Thin_Italic.fb8c0b9c89b71ce13cab.ttf",
+    "static/media/Chivo_400Regular_Italic.ttf": "/static/media/Chivo_400Regular_Italic.a972e55d9f9209800c7b.ttf",
+    "static/media/Chivo_600SemiBold_Italic.ttf": "/static/media/Chivo_600SemiBold_Italic.e586b9e88fefb2d59031.ttf",
+    "static/media/Chivo_800ExtraBold_Italic.ttf": "/static/media/Chivo_800ExtraBold_Italic.3a6469b45acf1f7b208c.ttf",
+    "static/media/Chivo_700Bold_Italic.ttf": "/static/media/Chivo_700Bold_Italic.cba7f6de4649c5c0dcdf.ttf",
+    "static/media/Chivo_500Medium_Italic.ttf": "/static/media/Chivo_500Medium_Italic.9ee9e1771f60d1c425d9.ttf",
+    "static/media/Chivo_900Black_Italic.ttf": "/static/media/Chivo_900Black_Italic.cea118f695c034799861.ttf",
+    "static/media/Chivo_500Medium.ttf": "/static/media/Chivo_500Medium.05a59e9e890e21e5c844.ttf",
+    "static/media/Chivo_200ExtraLight.ttf": "/static/media/Chivo_200ExtraLight.d9763c6df917332bae45.ttf",
+    "static/media/Chivo_400Regular.ttf": "/static/media/Chivo_400Regular.4a20db978e653e11e640.ttf",
+    "static/media/Chivo_600SemiBold.ttf": "/static/media/Chivo_600SemiBold.66949caa61b484b40ae8.ttf",
+    "static/media/Chivo_300Light.ttf": "/static/media/Chivo_300Light.ee439f51fa18e5d018e4.ttf",
+    "static/media/Chivo_800ExtraBold.ttf": "/static/media/Chivo_800ExtraBold.0a7e455a1a02e2b51b01.ttf",
+    "static/media/Chivo_700Bold.ttf": "/static/media/Chivo_700Bold.9dfe5dfed5e29af67d16.ttf",
+    "static/media/Chivo_900Black.ttf": "/static/media/Chivo_900Black.fc679e8dacf81fe73df3.ttf",
+    "static/media/Chivo_100Thin.ttf": "/static/media/Chivo_100Thin.ad6538ead6f1427198b4.ttf",
+    "favicon.ico": "/favicon.ico",
+    "index.html": "/index.html",
+    "serve.json": "/serve.json",
+    "manifest.json": "/manifest.json",
+    "favicon-32.png": "/favicon-32.png",
+    "favicon-16.png": "/favicon-16.png",
+    "main.cec7d4f8.js.map": "/static/js/main.cec7d4f8.js.map",
+    "92.c7f1814f.js.map": "/static/js/92.c7f1814f.js.map"
+  },
+  "entrypoints": [
+    "static/js/92.c7f1814f.js",
+    "static/js/main.cec7d4f8.js"
+  ]
+}
