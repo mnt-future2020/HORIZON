@@ -214,8 +214,280 @@ function SettingsTab() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
+  const [showS3Secret, setShowS3Secret] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
+  const [testingS3, setTestingS3] = useState(false);
+  const [s3Status, setS3Status] = useState(null); // null | {ok, message}
+
+  useEffect(() => {
+    adminAPI.getSettings().then(r => setSettings(r.data)).catch(() => toast.error("Failed to load settings"));
+  }, []);
+
+  const saveSettings = async () => {
+    setSaving(true);
+    try {
+      const res = await adminAPI.updateSettings({
+        payment_gateway: settings.payment_gateway,
+        booking_commission_pct: settings.booking_commission_pct,
+        subscription_plans: settings.subscription_plans,
+        s3_storage: settings.s3_storage,
+      });
+      setSettings(res.data);
+      toast.success("Settings saved!");
+    } catch { toast.error("Failed to save settings"); }
+    finally { setSaving(false); }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    setChangingPw(true);
+    try {
+      await adminAPI.changePassword({ new_password: newPassword });
+      toast.success("Password updated!");
+      setNewPassword("");
+    } catch { toast.error("Failed to change password"); }
+    finally { setChangingPw(false); }
+  };
+
+  const handleTestS3 = async () => {
+    setTestingS3(true);
+    setS3Status(null);
+    try {
+      const API_URL = process.env.REACT_APP_BACKEND_URL;
+      const token = localStorage.getItem("horizon_token");
+      const res = await fetch(`${API_URL}/api/admin/s3/test`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(settings.s3_storage),
+      });
+      const data = await res.json();
+      setS3Status(data);
+      if (data.ok) toast.success("S3 connection successful!");
+      else toast.error(`S3 test failed: ${data.message}`);
+    } catch { toast.error("Connection test failed"); }
+    finally { setTestingS3(false); }
+  };
+
+  const updateGateway = (key, val) => setSettings(s => ({
+    ...s, payment_gateway: { ...s.payment_gateway, [key]: val }
+  }));
+
+  const updateS3 = (key, val) => setSettings(s => ({
+    ...s, s3_storage: { ...s.s3_storage, [key]: val }
+  }));
+
+  const updatePlan = (idx, key, val) => setSettings(s => {
+    const plans = [...s.subscription_plans];
+    plans[idx] = { ...plans[idx], [key]: val };
+    return { ...s, subscription_plans: plans };
+  });
+
+  if (!settings) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  const s3 = settings.s3_storage || {};
+  const s3Configured = !!(s3.access_key_id && s3.secret_access_key && s3.bucket_name && s3.region);
+
+  return (
+    <div className="space-y-8 max-w-2xl" data-testid="admin-settings-tab">
+      {/* Payment Gateway */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <CreditCard className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold">Payment Gateway</h3>
+        </div>
+        <div className="glass-card rounded-lg p-4 space-y-4">
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Provider</Label>
+            <Input value={settings.payment_gateway.provider} readOnly className="mt-1.5 bg-background border-border h-10 text-sm" />
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Key ID</Label>
+            <Input value={settings.payment_gateway.key_id} onChange={e => updateGateway("key_id", e.target.value)}
+              className="mt-1.5 bg-background border-border h-10 text-sm" placeholder="rzp_live_xxxx or rzp_test_xxxx"
+              data-testid="gateway-key-id" />
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Key Secret</Label>
+            <div className="relative mt-1.5">
+              <Input type={showSecret ? "text" : "password"} value={settings.payment_gateway.key_secret}
+                onChange={e => updateGateway("key_secret", e.target.value)}
+                className="bg-background border-border h-10 text-sm pr-10" placeholder="Enter key secret"
+                data-testid="gateway-key-secret" />
+              <button onClick={() => setShowSecret(!showSecret)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Switch checked={settings.payment_gateway.is_live} onCheckedChange={v => updateGateway("is_live", v)} data-testid="gateway-live-toggle" />
+            <Label className="text-sm">{settings.payment_gateway.is_live ? "Live Mode" : "Test Mode"}</Label>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── AWS S3 Storage ─── */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <Cloud className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold">AWS S3 Storage</h3>
+          {s3Configured ? (
+            <span className="ml-auto flex items-center gap-1 text-xs text-green-500 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Configured
+            </span>
+          ) : (
+            <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" /> Not configured
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Venue images, profile photos, and match videos will be stored in your S3 bucket.
+        </p>
+        <div className="glass-card rounded-lg p-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Access Key ID</Label>
+              <Input value={s3.access_key_id || ""} onChange={e => updateS3("access_key_id", e.target.value)}
+                className="mt-1.5 bg-background border-border h-10 text-sm font-mono"
+                placeholder="AKIAIOSFODNN7EXAMPLE" />
+            </div>
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Secret Access Key</Label>
+              <div className="relative mt-1.5">
+                <Input
+                  type={showS3Secret ? "text" : "password"}
+                  value={s3.secret_access_key || ""}
+                  onChange={e => updateS3("secret_access_key", e.target.value)}
+                  className="bg-background border-border h-10 text-sm font-mono pr-10"
+                  placeholder="wJalrXUtnFEMI/K7MDENG" />
+                <button onClick={() => setShowS3Secret(!showS3Secret)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  {showS3Secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Bucket Name</Label>
+              <Input value={s3.bucket_name || ""} onChange={e => updateS3("bucket_name", e.target.value)}
+                className="mt-1.5 bg-background border-border h-10 text-sm"
+                placeholder="horizon-mnt-media" />
+            </div>
+            <div>
+              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">AWS Region</Label>
+              <select
+                value={s3.region || "ap-south-1"}
+                onChange={e => updateS3("region", e.target.value)}
+                className="mt-1.5 w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+              >
+                <option value="ap-south-1">ap-south-1 (Mumbai)</option>
+                <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+                <option value="us-east-1">us-east-1 (N. Virginia)</option>
+                <option value="us-west-2">us-west-2 (Oregon)</option>
+                <option value="eu-west-1">eu-west-1 (Ireland)</option>
+                <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* S3 Test Result */}
+          {s3Status && (
+            <div className={`flex items-start gap-2 rounded-lg p-3 text-sm ${s3Status.ok ? "bg-green-500/10 text-green-600 border border-green-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20"}`}>
+              {s3Status.ok
+                ? <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                : <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />}
+              <span>{s3Status.message}</span>
+            </div>
+          )}
+
+          <Button variant="outline" onClick={handleTestS3} disabled={testingS3 || !s3Configured} className="w-full h-9 text-sm gap-2">
+            {testingS3 ? <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Testing...</>
+              : <><Wifi className="h-4 w-4" /> Test S3 Connection</>}
+          </Button>
+
+          <p className="text-[11px] text-muted-foreground">
+            ⚠️ Make sure your S3 bucket has public read access enabled (or use a CDN). IAM user needs <code className="bg-secondary px-1 rounded">s3:PutObject</code> and <code className="bg-secondary px-1 rounded">s3:HeadBucket</code> permissions.
+          </p>
+        </div>
+      </section>
+
+      {/* Booking Commission */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <Percent className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold">Booking Commission</h3>
+        </div>
+        <div className="glass-card rounded-lg p-4">
+          <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Commission Percentage</Label>
+          <div className="flex items-center gap-3 mt-1.5">
+            <Input type="number" min={0} max={50} value={settings.booking_commission_pct}
+              onChange={e => setSettings(s => ({ ...s, booking_commission_pct: Number(e.target.value) }))}
+              className="bg-background border-border h-10 text-sm w-24" data-testid="commission-input" />
+            <span className="text-sm text-muted-foreground">% of each booking goes to the platform</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Subscription Plans */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <Crown className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold">SaaS Subscription Plans</h3>
+        </div>
+        <div className="space-y-3">
+          {settings.subscription_plans.map((plan, idx) => (
+            <div key={plan.id} className="glass-card rounded-lg p-4 space-y-3" data-testid={`plan-${plan.id}`}>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold">{plan.name}</span>
+                <Badge variant="secondary" className="text-[10px]">{plan.id}</Badge>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-[10px] font-mono uppercase text-muted-foreground">Monthly Price</Label>
+                  <Input type="number" value={plan.price} onChange={e => updatePlan(idx, "price", Number(e.target.value))}
+                    className="mt-1 bg-background border-border h-9 text-sm" data-testid={`plan-price-${plan.id}`} />
+                </div>
+                <div>
+                  <Label className="text-[10px] font-mono uppercase text-muted-foreground">Max Venues</Label>
+                  <Input type="number" value={plan.max_venues} onChange={e => updatePlan(idx, "max_venues", Number(e.target.value))}
+                    className="mt-1 bg-background border-border h-9 text-sm" data-testid={`plan-venues-${plan.id}`} />
+                </div>
+              </div>
+              <div>
+                <Label className="text-[10px] font-mono uppercase text-muted-foreground">Features (comma separated)</Label>
+                <Input value={plan.features.join(", ")} onChange={e => updatePlan(idx, "features", e.target.value.split(",").map(f => f.trim()).filter(Boolean))}
+                  className="mt-1 bg-background border-border h-9 text-sm" data-testid={`plan-features-${plan.id}`} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <Button onClick={saveSettings} disabled={saving} className="bg-primary text-primary-foreground font-bold w-full h-11" data-testid="save-settings-btn">
+        {saving ? "Saving..." : <><Save className="h-4 w-4 mr-2" /> Save All Settings</>}
+      </Button>
+
+      {/* Change Password */}
+      <section>
+        <div className="flex items-center gap-2 mb-4">
+          <KeyRound className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold">Change Admin Password</h3>
+        </div>
+        <div className="glass-card rounded-lg p-4">
+          <div className="flex gap-3">
+            <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
+              placeholder="New password (min 6 chars)" className="bg-background border-border h-10 text-sm" data-testid="new-password-input" />
+            <Button onClick={handleChangePassword} disabled={changingPw} variant="outline" className="shrink-0 h-10" data-testid="change-password-btn">
+              {changingPw ? "..." : "Update"}
+            </Button>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
 
   useEffect(() => {
     adminAPI.getSettings().then(r => setSettings(r.data)).catch(() => toast.error("Failed to load settings"));
