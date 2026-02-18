@@ -1179,6 +1179,86 @@ function VenueOwnerDashboardContent() {
         </TabsContent>
       </Tabs>
 
+      {/* Edit Venue Dialog */}
+      <Dialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
+        <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-display">Edit Venue Details</DialogTitle>
+            <p className="text-xs text-muted-foreground pt-1">
+              Changes will be pushed <span className="text-primary font-semibold">live</span> to all viewers of the public page instantly.
+            </p>
+          </DialogHeader>
+          <div className="space-y-3 pt-1">
+            <div>
+              <Label className="text-xs text-muted-foreground">Venue Name</Label>
+              <Input value={editVenueForm.name || ""} onChange={e => setEditVenueForm(p => ({ ...p, name: e.target.value }))}
+                className="mt-1 bg-background border-border" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Description</Label>
+              <textarea
+                value={editVenueForm.description || ""}
+                onChange={e => setEditVenueForm(p => ({ ...p, description: e.target.value }))}
+                rows={3}
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Address</Label>
+                <Input value={editVenueForm.address || ""} onChange={e => setEditVenueForm(p => ({ ...p, address: e.target.value }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">City</Label>
+                <Input value={editVenueForm.city || ""} onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Base Price (₹)</Label>
+                <Input type="number" value={editVenueForm.base_price || 0}
+                  onChange={e => setEditVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Turfs</Label>
+                <Input type="number" value={editVenueForm.turfs || 1}
+                  onChange={e => setEditVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Slot (min)</Label>
+                <Input type="number" value={editVenueForm.slot_duration_minutes || 60}
+                  onChange={e => setEditVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Opening Hour</Label>
+                <Input type="number" min={0} max={23} value={editVenueForm.opening_hour ?? 6}
+                  onChange={e => setEditVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Closing Hour</Label>
+                <Input type="number" min={0} max={23} value={editVenueForm.closing_hour ?? 23}
+                  onChange={e => setEditVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button variant="outline" className="flex-1" onClick={() => setEditVenueOpen(false)}>Cancel</Button>
+              <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleSaveVenue} disabled={savingVenue}>
+                {savingVenue ? "Saving..." : "Save & Go Live ✨"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Venue QR Code Dialog */}
       <Dialog open={showVenueQR} onOpenChange={setShowVenueQR}>
         <DialogContent className="sm:max-w-sm">
