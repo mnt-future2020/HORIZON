@@ -101,3 +101,74 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: "Dynamic Public Venue Pages for Horizon Sports. Each venue should have a unique slug-based URL /venue/:slug accessible publicly without login. Venue owners can see their public page URL, copy it, and view a QR code."
+
+backend:
+  - task: "GET /api/venues/slug/{slug} endpoint"
+    implemented: true
+    working: true
+    file: "backend/routes/venues.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Endpoint added, returns venue by slug. Tested via curl - 200 OK for existing venues, 404 for nonexistent."
+
+  - task: "Slug auto-generation on venue create/update"
+    implemented: true
+    working: true
+    file: "backend/routes/venues.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "generate_slug and unique_slug functions added. Startup migration assigns slugs to existing venues."
+
+frontend:
+  - task: "Public venue page /venue/:slug"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/PublicVenuePage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Created PublicVenuePage.js with hero image, amenities, location, reviews, booking CTA, QR code modal, share link. API calls confirmed working via backend logs."
+
+  - task: "QR code and share link in Venue Owner Dashboard"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/VenueOwnerDashboard.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Added View Public Page, QR Code, Copy Link buttons in venue selector section. QR dialog shows scannable QR code."
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: true
+
+test_plan:
+  current_focus:
+    - "Public venue page /venue/:slug"
+    - "QR code and share link in Venue Owner Dashboard"
+    - "GET /api/venues/slug/{slug} endpoint"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: "Implemented Dynamic Public Venue Pages feature. Key points: 1) Backend adds slug field to venues with auto-generation on create/update and migration for existing venues. 2) New GET /api/venues/slug/{slug} endpoint added before the /{venue_id} route to avoid conflicts. 3) PublicVenuePage.js created as a public route (no login required) with hero image, amenities, reviews, booking CTA, QR code, and share link. 4) VenueOwnerDashboard updated with View Public Page, QR Code, Copy Link buttons. 5) Page auto-refreshes every 30s for real-time updates. Test credentials: owner@demo.com/demo123. The public page URL for PowerPlay Arena is /venue/powerplay-arena."
