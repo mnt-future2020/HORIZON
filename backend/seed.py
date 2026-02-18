@@ -180,7 +180,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[0]], "base_price": 2800, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 22, "turfs": 2, "rating": 4.7,
          "total_reviews": 178, "total_bookings": 95, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner3_id, "name": "BKC Badminton Hub",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("BKC Badminton Hub"), "owner_id": owner3_id, "name": "BKC Badminton Hub",
          "description": "Indoor air-conditioned badminton courts in Bandra-Kurla Complex.",
          "sports": ["badminton", "table_tennis"], "address": "BKC, Bandra East", "area": "BKC", "city": "Mumbai",
          "lat": 19.0596, "lng": 72.8656, "amenities": ["AC", "Pro Shop", "Coaching", "Parking", "Cafe"],
