@@ -53,7 +53,7 @@ function AppRoutes() {
         <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
         <Route path="/dashboard" element={<DashboardRouter />} />
         <Route path="/player" element={<ProtectedRoute><PlayerDashboard /></ProtectedRoute>} />
-        <Route path="/venues" element={<ProtectedRoute><VenueDiscovery /></ProtectedRoute>} />
+        <Route path="/venues" element={<VenueDiscovery />} />
         <Route path="/venues/:id" element={<ProtectedRoute><VenueDetail /></ProtectedRoute>} />
         <Route path="/matchmaking" element={<ProtectedRoute><MatchmakingPage /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
