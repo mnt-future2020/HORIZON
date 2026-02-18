@@ -22,6 +22,7 @@ from routes.ratings import router as ratings_router
 from routes.highlights import router as highlights_router
 from routes.iot import router as iot_router
 from routes.reviews import router as reviews_router
+from routes.pos import router as pos_router
 
 app = FastAPI(title="Horizon Sports API")
 
