@@ -58,6 +58,18 @@ async def startup():
     count = await db.users.count_documents({})
     if count == 0:
         await seed_demo_data()
+    # Migrate existing venues without slugs
+    import re
+    venues_without_slug = await db.venues.find({"slug": {"$exists": False}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    for v in venues_without_slug:
+        base = re.sub(r'[^a-z0-9\s-]', '', v["name"].lower())
+        base = re.sub(r'[\s_]+', '-', base).strip('-')
+        slug = base
+        counter = 1
+        while await db.venues.find_one({"slug": slug, "id": {"$ne": v["id"]}}):
+            slug = f"{base}-{counter}"
+            counter += 1
+        await db.venues.update_one({"id": v["id"]}, {"$set": {"slug": slug}})
     # Connect to MQTT broker (non-blocking, graceful failure)
     try:
         await mqtt_service.connect()
