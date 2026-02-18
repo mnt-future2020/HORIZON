@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
 from auth import get_current_user, get_platform_settings, require_admin, hash_pw
+import s3_service
 import uuid
 
 router = APIRouter()
