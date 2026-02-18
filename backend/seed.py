@@ -120,7 +120,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[1]], "base_price": 2500, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 21, "turfs": 3, "rating": 4.4,
          "total_reviews": 56, "total_bookings": 32, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner_id, "name": "Goal Zone",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Goal Zone"), "owner_id": owner_id, "name": "Goal Zone",
          "description": "Budget-friendly football turf. Artificial grass, great for casual games.",
          "sports": ["football"], "address": "12 Whitefield Main Road", "area": "Whitefield", "city": "Bengaluru",
          "lat": 12.9698, "lng": 77.7500, "amenities": ["Parking", "Floodlights"],
