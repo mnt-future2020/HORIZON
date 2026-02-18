@@ -167,6 +167,38 @@ function VenueOwnerDashboardContent() {
     }
   };
 
+  const openEditVenue = () => {
+    if (!selectedVenue) return;
+    setEditVenueForm({
+      name: selectedVenue.name || "",
+      description: selectedVenue.description || "",
+      address: selectedVenue.address || "",
+      city: selectedVenue.city || "",
+      base_price: selectedVenue.base_price || 2000,
+      opening_hour: selectedVenue.opening_hour || 6,
+      closing_hour: selectedVenue.closing_hour || 23,
+      turfs: selectedVenue.turfs || 1,
+      slot_duration_minutes: selectedVenue.slot_duration_minutes || 60,
+    });
+    setEditVenueOpen(true);
+  };
+
+  const handleSaveVenue = async () => {
+    if (!selectedVenue) return;
+    setSavingVenue(true);
+    try {
+      const res = await venueAPI.update(selectedVenue.id, editVenueForm);
+      setSelectedVenue(res.data);
+      setVenues(prev => prev.map(v => v.id === res.data.id ? res.data : v));
+      toast.success("Venue updated! Changes are live on the public page.");
+      setEditVenueOpen(false);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to save");
+    } finally {
+      setSavingVenue(false);
+    }
+  };
+
   const openCreateRule = () => {
     setEditingRule(null);
     setRuleForm({ ...emptyRule });
