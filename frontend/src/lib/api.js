@@ -20,6 +20,7 @@ export const authAPI = {
 export const venueAPI = {
   list: (params) => api.get("/venues", { params }),
   get: (id) => api.get(`/venues/${id}`),
+  getBySlug: (slug) => api.get(`/venues/slug/${slug}`),
   create: (data) => api.post("/venues", data),
   update: (id, data) => api.put(`/venues/${id}`, data),
   getSlots: (id, date) => api.get(`/venues/${id}/slots`, { params: { date } }),
