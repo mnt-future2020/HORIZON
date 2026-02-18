@@ -73,6 +73,7 @@ async def upload_video(
         "title": title,
         "video_filename": filename,
         "video_path": str(filepath),
+        "video_url": None,          # populated if S3 is configured
         "mime_type": mime,
         "file_size": size,
         "status": "uploaded",
@@ -82,6 +83,18 @@ async def upload_video(
         "created_at": datetime.now(timezone.utc).isoformat(),
         "analyzed_at": None,
     }
+
+    # Try to upload to S3 for persistent storage
+    try:
+        with open(filepath, "rb") as vf:
+            video_bytes = vf.read()
+        s3_url = await s3_service.upload_bytes(video_bytes, "videos", filename, mime)
+        if s3_url:
+            doc["video_url"] = s3_url
+            logger.info(f"Video backed up to S3: {s3_url}")
+    except Exception as s3_err:
+        logger.warning(f"S3 upload failed (video kept locally): {s3_err}")
+
     await db.highlights.insert_one(doc)
     doc.pop("_id", None)
     return doc
