@@ -62,15 +62,22 @@ export default function PublicVenuePage() {
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [wsStatus, setWsStatus] = useState("connecting"); // connecting | live | reconnecting | offline
+  const [justUpdated, setJustUpdated] = useState(false);
+
+  const wsRef = useRef(null);
+  const venueIdRef = useRef(null);
+  const reconnectTimer = useRef(null);
+  const reconnectAttempts = useRef(0);
 
   const pageUrl = window.location.href;
 
-  const fetchVenueData = useCallback(async () => {
+  const fetchVenueData = useCallback(async (showLoader = false) => {
     try {
-      setLoading(true);
+      if (showLoader) setLoading(true);
       const res = await venueAPI.getBySlug(slug);
       setVenue(res.data);
-      // Fetch reviews
+      venueIdRef.current = res.data.id;
       try {
         const [reviewsRes, summaryRes] = await Promise.all([
           venueAPI.getReviews(res.data.id),
@@ -79,30 +86,79 @@ export default function PublicVenuePage() {
         setReviews(reviewsRes.data || []);
         setReviewSummary(summaryRes.data || null);
       } catch {
-        // Reviews are optional
+        // Reviews optional
       }
-    } catch (err) {
+    } catch {
       setError("Venue not found");
     } finally {
       setLoading(false);
     }
   }, [slug]);
 
+  // WebSocket connection with reconnect
+  const connectWs = useCallback((venueId) => {
+    if (!venueId) return;
+    const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
+    const wsUrl = backendUrl.replace(/^https/, "wss").replace(/^http/, "ws") + `/api/venues/ws/${venueId}`;
+    const ws = new WebSocket(wsUrl);
+    wsRef.current = ws;
+
+    ws.onopen = () => {
+      setWsStatus("live");
+      reconnectAttempts.current = 0;
+      logger.info?.(`WS connected: ${wsUrl}`);
+    };
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === "venue_update" && msg.venue) {
+          setVenue(msg.venue);
+          setJustUpdated(true);
+          toast.info("Venue details just updated by the owner!", {
+            icon: "✨",
+            duration: 3000,
+          });
+          setTimeout(() => setJustUpdated(false), 3000);
+        }
+      } catch { /* ignore bad messages */ }
+    };
+
+    ws.onerror = () => setWsStatus("reconnecting");
+
+    ws.onclose = () => {
+      setWsStatus("reconnecting");
+      // Exponential backoff: 2s, 4s, 8s, max 30s
+      const delay = Math.min(2000 * Math.pow(2, reconnectAttempts.current), 30000);
+      reconnectAttempts.current += 1;
+      reconnectTimer.current = setTimeout(() => {
+        if (venueIdRef.current) connectWs(venueIdRef.current);
+      }, delay);
+    };
+  }, []);
+
+  // Initial fetch + start WebSocket
   useEffect(() => {
-    fetchVenueData();
-    // Poll every 30s for real-time updates
-    const interval = setInterval(fetchVenueData, 30000);
-    return () => clearInterval(interval);
+    fetchVenueData(true);
   }, [fetchVenueData]);
 
-  // Update page title for SEO
+  // Start WS once venueId is known
   useEffect(() => {
-    if (venue) {
-      document.title = `${venue.name} - ${venue.city} | Horizon Sports`;
-    }
+    if (!venue?.id) return;
+    connectWs(venue.id);
     return () => {
-      document.title = "Horizon Sports";
+      if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // prevent reconnect on unmount
+        wsRef.current.close();
+      }
     };
+  }, [venue?.id, connectWs]);
+
+  // SEO title
+  useEffect(() => {
+    if (venue) document.title = `${venue.name} - ${venue.city} | Horizon Sports`;
+    return () => { document.title = "Horizon Sports"; };
   }, [venue]);
 
   const handleCopyLink = async () => {
