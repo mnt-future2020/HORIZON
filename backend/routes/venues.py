@@ -8,9 +8,34 @@ import uuid
 import random
 import math
 import logging
+import re
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
+
+
+def generate_slug(name: str) -> str:
+    """Convert a venue name to a URL-friendly slug."""
+    slug = name.lower()
+    slug = re.sub(r'[^a-z0-9\s-]', '', slug)
+    slug = re.sub(r'[\s_]+', '-', slug)
+    slug = re.sub(r'-+', '-', slug).strip('-')
+    return slug
+
+
+async def unique_slug(base_slug: str, exclude_id: str = None) -> str:
+    """Ensure the slug is unique in the database."""
+    slug = base_slug
+    counter = 1
+    while True:
+        query = {"slug": slug}
+        if exclude_id:
+            query["id"] = {"$ne": exclude_id}
+        existing = await db.venues.find_one(query)
+        if not existing:
+            return slug
+        slug = f"{base_slug}-{counter}"
+        counter += 1
 
 
 def haversine_km(lat1, lng1, lat2, lng2):
