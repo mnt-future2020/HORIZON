@@ -117,24 +117,49 @@ async def analyze_video(highlight_id: str, user=Depends(get_current_user)):
 
     try:
         video_path = hl["video_path"]
-        if not Path(video_path).exists():
-            raise HTTPException(404, "Video file not found on disk")
+        local_path = Path(video_path)
 
-        chat = LlmChat(
-            api_key=GEMINI_KEY,
-            session_id=f"highlight-{highlight_id}",
-            system_message="You are an expert sports video analyst. Always respond with valid JSON only."
-        ).with_model("gemini", "gemini-2.5-flash")
+        # If local file is missing but S3 URL exists, download temporarily
+        tmp_file = None
+        if not local_path.exists():
+            s3_url = hl.get("video_url")
+            if s3_url:
+                logger.info(f"Local file missing, downloading from S3: {s3_url}")
+                tmp = tempfile.NamedTemporaryFile(
+                    suffix=Path(video_path).suffix or ".mp4",
+                    delete=False,
+                    dir=UPLOAD_DIR
+                )
+                tmp_file = tmp.name
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(s3_url, follow_redirects=True, timeout=120.0)
+                    resp.raise_for_status()
+                    tmp.write(resp.content)
+                tmp.close()
+                local_path = Path(tmp_file)
+            else:
+                raise HTTPException(404, "Video file not found. Re-upload the video.")
 
-        video_file = FileContentWithMimeType(
-            file_path=video_path,
-            mime_type=hl.get("mime_type", "video/mp4")
-        )
+        try:
+            chat = LlmChat(
+                api_key=GEMINI_KEY,
+                session_id=f"highlight-{highlight_id}",
+                system_message="You are an expert sports video analyst. Always respond with valid JSON only."
+            ).with_model("gemini", "gemini-2.5-flash")
 
-        response = await chat.send_message(UserMessage(
-            text=ANALYSIS_PROMPT,
-            file_contents=[video_file]
-        ))
+            video_file = FileContentWithMimeType(
+                file_path=str(local_path),
+                mime_type=hl.get("mime_type", "video/mp4")
+            )
+
+            response = await chat.send_message(UserMessage(
+                text=ANALYSIS_PROMPT,
+                file_contents=[video_file]
+            ))
+        finally:
+            # Clean up temp download if we created one
+            if tmp_file:
+                Path(tmp_file).unlink(missing_ok=True)
 
         import json
         response_text = response if isinstance(response, str) else str(response)
