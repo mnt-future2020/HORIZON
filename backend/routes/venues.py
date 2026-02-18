@@ -178,9 +178,12 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
     current_venues = await db.venues.count_documents({"owner_id": user["id"]})
     if current_venues >= max_venues:
         raise HTTPException(403, f"Your {user_plan.title()} plan allows max {max_venues} venue(s). Upgrade your plan to add more.")
+    base_slug = generate_slug(input.name)
+    slug = await unique_slug(base_slug)
     venue = {
         "id": str(uuid.uuid4()),
         "owner_id": user["id"],
+        "slug": slug,
         **input.model_dump(),
         "rating": 4.0 + round(random.random(), 1),
         "total_reviews": 0,
