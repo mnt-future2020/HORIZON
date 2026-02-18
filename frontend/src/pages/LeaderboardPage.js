@@ -128,7 +128,7 @@ export default function LeaderboardPage() {
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.03 }}
                 data-testid={`leaderboard-row-${p.id}`}
-                onClick={() => navigate(`/profile/${p.id}`)}
+                onClick={() => navigate(`/rating-profile/${p.id}`)}
                 className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
                   isMe ? "glass-card border-primary/30" : "hover:bg-secondary/30"
                 } ${i < 3 ? "glass-card" : ""}`}>
