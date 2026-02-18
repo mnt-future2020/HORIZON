@@ -86,6 +86,14 @@ FastAPI + MongoDB + Redis + Razorpay SDK | React + Tailwind + shadcn/ui + Framer
 - **VenueDetail**: Reviews section with summary card (avg rating + star distribution bars), "Write a Review" form (star picker + booking selector + comment), review cards with avatar/name/stars/date/comment
 - **VenueOwnerDashboard**: Reviews tab showing all reviews for selected venue with quick stats (avg rating, total, 5-star count)
 
+### Light/Dark Theme System + UI Enhancement (COMPLETE - Feb 18)
+- **ThemeContext**: `dark`, `light`, `system` modes persisted in localStorage (`horizon-theme` key)
+- **Theme Toggle**: Sun/Moon icon on Landing page navbar, Auth page top-right, and main Navbar (after login)
+- **CSS Variables**: Full dual-theme system — backgrounds, cards, glass-morphism, borders, shadows, scrollbar, text colors
+- **Enhanced Styles**: Glass-card adaptive to both themes, micro-animations (fadeInUp, slideInRight, shimmer), interactive-lift hover effects, skeleton loading
+- **Light Theme**: Clean whites/soft grays, dark text, green primary accent, subtle card shadows
+- **Dark Theme**: Refined dark navy, light text, green primary accent, glass-morphism cards with blur
+
 ## Architecture
 ```
 backend/
