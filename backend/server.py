@@ -29,7 +29,7 @@ app = FastAPI(title="Horizon Sports API")
 # Include all routers with /api prefix
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           notifications_router, admin_router, academies_router, analytics_router,
-          ratings_router, highlights_router, iot_router, reviews_router]:
+          ratings_router, highlights_router, iot_router, reviews_router, pos_router]:
     app.include_router(r, prefix="/api")
 
 
