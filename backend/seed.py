@@ -196,7 +196,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[3]], "base_price": 1600, "slot_duration_minutes": 60,
          "opening_hour": 5, "closing_hour": 23, "turfs": 4, "rating": 4.6,
          "total_reviews": 187, "total_bookings": 96, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner2_id, "name": "Gachibowli Stadium Turf",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Gachibowli Stadium Turf"), "owner_id": owner2_id, "name": "Gachibowli Stadium Turf",
          "description": "Adjacent to the Gachibowli stadium. International-quality surfaces.",
          "sports": ["football", "tennis"], "address": "Near Gachibowli Stadium", "area": "Gachibowli", "city": "Hyderabad",
          "lat": 17.4156, "lng": 78.3486, "amenities": ["Parking", "Floodlights", "Video Analysis", "Nets", "Water Cooler"],
