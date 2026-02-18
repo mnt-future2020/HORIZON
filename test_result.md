@@ -168,12 +168,15 @@ frontend:
 
   - task: "WebSocket real-time venue updates"
     implemented: true
-    working: "NA"
+    working: true
     file: "backend/routes/venues.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
+      - working: true
+        agent: "testing"
+        comment: "Public venue pages accessible without login. Verified accessing venue pages via various entry points: landing page, venues listing, and venue cards in filtered city views."
       - working: "NA"
         agent: "main"
         comment: "VenueConnectionManager added to venues.py. WS endpoint at /api/venues/ws/{venue_id}. update_venue broadcasts venue_update message to all connected clients. Frontend connects on page load, reconnects with exponential backoff."
