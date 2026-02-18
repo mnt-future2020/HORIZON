@@ -1184,9 +1184,9 @@ function VenueOwnerDashboardContent() {
         <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">Edit Venue Details</DialogTitle>
-            <p className="text-xs text-muted-foreground pt-1">
+            <DialogDescription className="text-xs text-muted-foreground pt-1">
               Changes will be pushed <span className="text-primary font-semibold">live</span> to all viewers of the public page instantly.
-            </p>
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-1">
             <div>
