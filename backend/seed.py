@@ -150,7 +150,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[2]], "base_price": 1200, "slot_duration_minutes": 60,
          "opening_hour": 6, "closing_hour": 23, "turfs": 4, "rating": 4.3,
          "total_reviews": 92, "total_bookings": 54, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner2_id, "name": "T Nagar Tennis Centre",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("T Nagar Tennis Centre"), "owner_id": owner2_id, "name": "T Nagar Tennis Centre",
          "description": "Professional tennis courts with clay and hard surfaces. Coaching available.",
          "sports": ["tennis"], "address": "15 GN Chetty Road", "area": "T Nagar", "city": "Chennai",
          "lat": 13.0418, "lng": 80.2341, "amenities": ["Coaching", "Pro Shop", "Parking", "Shower"],
