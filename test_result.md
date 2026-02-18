@@ -132,27 +132,45 @@ backend:
 frontend:
   - task: "Public venue page /venue/:slug"
     implemented: true
-    working: "NA"
+    working: true
     file: "frontend/src/pages/PublicVenuePage.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "100% pass - all features confirmed working."
+      - working: "NA"
+        agent: "main"
+        comment: "Upgraded: replaced 30s polling with WebSocket. Added VenueConnectionManager on backend, wsStatus indicator (live/reconnecting/connecting), justUpdated highlight ring, toast on venue_update message. Exponential backoff reconnect."
+
+  - task: "QR code and share link in Venue Owner Dashboard"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/VenueOwnerDashboard.js"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "100% pass."
+      - working: "NA"
+        agent: "main"
+        comment: "Added Edit Details button that opens Edit Venue Dialog. Save calls venueAPI.update which triggers WS broadcast. Edit dialog has all fields: name, description, address, city, base_price, turfs, hours."
+
+  - task: "WebSocket real-time venue updates"
+    implemented: true
+    working: "NA"
+    file: "backend/routes/venues.py"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "NA"
         agent: "main"
-        comment: "Created PublicVenuePage.js with hero image, amenities, location, reviews, booking CTA, QR code modal, share link. API calls confirmed working via backend logs."
-
-  - task: "QR code and share link in Venue Owner Dashboard"
-    implemented: true
-    working: "NA"
-    file: "frontend/src/pages/VenueOwnerDashboard.js"
-    stuck_count: 0
-    priority: "medium"
-    needs_retesting: true
-    status_history:
-      - working: "NA"
-        agent: "main"
-        comment: "Added View Public Page, QR Code, Copy Link buttons in venue selector section. QR dialog shows scannable QR code."
+        comment: "VenueConnectionManager added to venues.py. WS endpoint at /api/venues/ws/{venue_id}. update_venue broadcasts venue_update message to all connected clients. Frontend connects on page load, reconnects with exponential backoff."
 
 metadata:
   created_by: "main_agent"
