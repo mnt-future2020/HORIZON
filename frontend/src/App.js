@@ -67,6 +67,7 @@ function AppRoutes() {
         <Route path="/highlights/shared/:shareId" element={<SharedHighlightPage />} />
         <Route path="/iot" element={<ProtectedRoute roles={["venue_owner", "super_admin"]}><IoTDashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/venue/:slug" element={<PublicVenuePage />} />
       </Routes>
       <Toaster position="top-right" richColors />
     </div>
