@@ -1,0 +1,9 @@
+{
+  "background_color": "#080e1d",
+  "display": "standalone",
+  "lang": "en",
+  "name": "Horizon",
+  "short_name": "Horizon",
+  "start_url": "/?utm_source=web_app_manifest",
+  "orientation": "portrait"
+}
