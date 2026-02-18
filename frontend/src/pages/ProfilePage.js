@@ -84,8 +84,33 @@ export default function ProfilePage() {
         {/* Profile Header */}
         <div className="glass-card rounded-lg p-6 mb-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center">
-              <span className="font-display font-black text-2xl text-primary">{user?.name?.[0]?.toUpperCase()}</span>
+            {/* Clickable avatar with camera overlay */}
+            <div className="relative group">
+              <button
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="w-16 h-16 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center relative focus:outline-none focus:ring-2 focus:ring-primary"
+                title="Change profile photo"
+              >
+                {user?.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="font-display font-black text-2xl text-primary">{user?.name?.[0]?.toUpperCase()}</span>
+                )}
+                {/* Dark overlay on hover */}
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                  {uploadingAvatar
+                    ? <Loader2 className="h-5 w-5 text-white animate-spin" />
+                    : <Camera className="h-5 w-5 text-white" />}
+                </div>
+              </button>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
             </div>
             <div>
               <h1 className="font-display text-xl font-bold text-foreground">{user?.name}</h1>
