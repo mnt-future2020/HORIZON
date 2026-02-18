@@ -113,7 +113,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[2]], "base_price": 800, "slot_duration_minutes": 60,
          "opening_hour": 7, "closing_hour": 22, "turfs": 4, "rating": 4.8,
          "total_reviews": 89, "total_bookings": 67, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner_id, "name": "The Cricket Hub",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("The Cricket Hub"), "owner_id": owner_id, "name": "The Cricket Hub",
          "description": "Full-size cricket nets and practice pitches. Bowling machines available.",
          "sports": ["cricket"], "address": "78 HSR Layout Sector 2", "area": "HSR Layout", "city": "Bengaluru",
          "lat": 12.9081, "lng": 77.6476, "amenities": ["Bowling Machine", "Nets", "Video Analysis", "Parking"],
