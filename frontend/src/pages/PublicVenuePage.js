@@ -106,7 +106,6 @@ export default function PublicVenuePage() {
     ws.onopen = () => {
       setWsStatus("live");
       reconnectAttempts.current = 0;
-      logger.info?.(`WS connected: ${wsUrl}`);
     };
 
     ws.onmessage = (e) => {
