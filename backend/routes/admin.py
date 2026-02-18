@@ -176,6 +176,47 @@ async def admin_change_password(request: Request, user=Depends(get_current_user)
     return {"message": "Password updated"}
 
 
+@router.post("/admin/s3/test")
+async def admin_test_s3(request: Request, user=Depends(get_current_user)):
+    await require_admin(user)
+    data = await request.json()
+    result = await s3_service.test_connection({
+        "access_key_id": data.get("access_key_id", ""),
+        "secret_access_key": data.get("secret_access_key", ""),
+        "bucket_name": data.get("bucket_name", ""),
+        "region": data.get("region", "us-east-1"),
+    })
+    return result
+
+
+@router.post("/upload/image")
+async def upload_image(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload an image to S3. Returns {url} or 503 if S3 not configured."""
+    if file.content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
+        raise HTTPException(400, "Only JPEG/PNG/WebP/GIF images allowed")
+    if file.size and file.size > 10 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 10 MB)")
+    content = await file.read()
+    ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
+    url = await s3_service.upload_bytes(content, "images", f"{uuid.uuid4().hex}.{ext}", file.content_type)
+    if not url:
+        raise HTTPException(503, "S3 not configured. Please set up S3 in Admin → Settings.")
+    return {"url": url}
+
+
+@router.post("/upload/video")
+async def upload_video(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload a video to S3. Returns {url} or 503 if not configured."""
+    if file.content_type not in ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"]:
+        raise HTTPException(400, "Only MP4/MOV/AVI/WebM videos allowed")
+    content = await file.read()
+    ext = file.filename.split(".")[-1] if "." in file.filename else "mp4"
+    url = await s3_service.upload_bytes(content, "videos", f"{uuid.uuid4().hex}.{ext}", file.content_type)
+    if not url:
+        raise HTTPException(503, "S3 not configured. Please set up S3 in Admin → Settings.")
+    return {"url": url}
+
+
 @router.put("/admin/users/{user_id}/set-plan")
 async def admin_set_user_plan(user_id: str, request: Request, user=Depends(get_current_user)):
     await require_admin(user)
