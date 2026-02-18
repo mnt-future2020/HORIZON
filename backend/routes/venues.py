@@ -191,6 +191,20 @@ async def get_venue_by_slug(venue_slug: str):
     return venue
 
 
+@router.websocket("/venues/ws/{venue_id}")
+async def venue_websocket(venue_id: str, ws: WebSocket):
+    await venue_manager.connect(venue_id, ws)
+    try:
+        while True:
+            # Keep alive — clients can send pings
+            await ws.receive_text()
+    except WebSocketDisconnect:
+        pass
+    finally:
+        venue_manager.disconnect(venue_id, ws)
+        logger.info(f"WS disconnected venue={venue_id}")
+
+
 @router.get("/venues/{venue_id}")
 async def get_venue(venue_id: str):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
