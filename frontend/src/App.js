@@ -62,8 +62,8 @@ function AppRoutes() {
         <Route path="/venues/:id" element={<ProtectedRoute><VenueDetail /></ProtectedRoute>} />
         <Route path="/matchmaking" element={<ProtectedRoute><MatchmakingPage /></ProtectedRoute>} />
         <Route path="/leaderboard" element={<ProtectedRoute><LeaderboardPage /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
-        <Route path="/profile/:userId" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
+        <Route path="/rating-profile" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
+        <Route path="/rating-profile/:userId" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
         <Route path="/owner" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard /></ProtectedRoute>} />
         <Route path="/coach" element={<ProtectedRoute roles={["coach"]}><CoachDashboard /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute roles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
