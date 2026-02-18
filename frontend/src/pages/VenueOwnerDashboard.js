@@ -71,6 +71,7 @@ export default function VenueOwnerDashboard() {
 
 function VenueOwnerDashboardContent() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -88,6 +89,8 @@ function VenueOwnerDashboardContent() {
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
   const [venueReviews, setVenueReviews] = useState([]);
+  const [showVenueQR, setShowVenueQR] = useState(false);
+  const [copiedSlug, setCopiedSlug] = useState(false);
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: ["football"], address: "", city: "Bengaluru",
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
