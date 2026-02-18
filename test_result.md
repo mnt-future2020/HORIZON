@@ -136,8 +136,11 @@ frontend:
     file: "frontend/src/pages/PublicVenuePage.js"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
+      - working: true
+        agent: "testing"
+        comment: "Tested all 4 requirements: 1) Landing page venue card click navigates to public venue page without login, 2) View All button takes user to /venues without login, 3) Clicking venue cards from /venues page navigates to public venue page, 4) City filter pill correctly filters venues by city. All tests PASS."
       - working: true
         agent: "testing"
         comment: "100% pass - all features confirmed working."
