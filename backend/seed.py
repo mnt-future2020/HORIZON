@@ -212,7 +212,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[2]], "base_price": 1800, "slot_duration_minutes": 60,
          "opening_hour": 8, "closing_hour": 22, "turfs": 5, "rating": 4.3,
          "total_reviews": 112, "total_bookings": 65, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner3_id, "name": "Dwarka Football Grounds",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Dwarka Football Grounds"), "owner_id": owner3_id, "name": "Dwarka Football Grounds",
          "description": "Large outdoor football facility in Dwarka. Multiple turfs for tournaments.",
          "sports": ["football", "cricket"], "address": "Sector 21, Dwarka", "area": "Dwarka", "city": "Delhi",
          "lat": 28.5733, "lng": 77.0421, "amenities": ["Parking", "Floodlights", "Changing Rooms", "Water Cooler"],
