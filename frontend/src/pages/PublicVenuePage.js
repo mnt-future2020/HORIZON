@@ -525,10 +525,42 @@ export default function PublicVenuePage() {
               </CardContent>
             </Card>
 
-            {/* Realtime indicator */}
-            <div className="flex items-center gap-2 text-xs text-muted-foreground px-1">
-              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              Page updates automatically
+            {/* Live connection indicator */}
+            <div className="flex items-center gap-2 text-xs px-1">
+              <AnimatePresence mode="wait">
+                {wsStatus === "live" ? (
+                  <motion.div
+                    key="live"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="flex items-center gap-1.5 text-green-600 dark:text-green-400"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <Radio className="w-3 h-3" />
+                    Live — updates instantly
+                  </motion.div>
+                ) : wsStatus === "reconnecting" ? (
+                  <motion.div
+                    key="reconnecting"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-1.5 text-amber-500"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                    Reconnecting...
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="connecting"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex items-center gap-1.5 text-muted-foreground"
+                  >
+                    <div className="w-2 h-2 rounded-full bg-muted-foreground animate-pulse" />
+                    Connecting...
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
