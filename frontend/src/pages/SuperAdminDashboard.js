@@ -11,7 +11,8 @@ import { motion } from "framer-motion";
 import {
   Users, Building2, CalendarCheck, IndianRupee, Clock, Shield,
   CheckCircle, XCircle, Ban, RotateCcw, Settings, CreditCard,
-  Percent, Crown, Eye, EyeOff, Save, KeyRound
+  Percent, Crown, Eye, EyeOff, Save, KeyRound,
+  Cloud, Wifi, AlertCircle, CheckCircle2
 } from "lucide-react";
 
 function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
