@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { Search, MapPin, Star, ChevronRight, Zap, Shield, Users, BarChart3, Smartphone, Building2, Navigation, Sun, Moon } from "lucide-react";
+import { Search, MapPin, Star, ChevronRight, Zap, Shield, Users, BarChart3, Smartphone, Building2, Navigation, Sun, Moon, Globe } from "lucide-react";
 
 export default function LandingPage() {
   const navigate = useNavigate();
