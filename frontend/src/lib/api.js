@@ -172,6 +172,25 @@ export const highlightAPI = {
   delete: (id) => api.delete(`/highlights/${id}`),
 };
 
+export const uploadAPI = {
+  image: (file, onProgress) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post("/upload/image", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: onProgress,
+    });
+  },
+  video: (file, onProgress) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post("/upload/video", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: onProgress,
+    });
+  },
+};
+
 export const seedAPI = {
   seed: () => api.post("/seed"),
 };
