@@ -136,7 +136,7 @@ async def seed_demo_data():
          "total_reviews": 210, "total_bookings": 89, "status": "active", "created_at": now},
 
         # --- Chennai ---
-        {"id": str(uuid.uuid4()), "owner_id": owner2_id, "name": "Marina Turf Club",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Marina Turf Club"), "owner_id": owner2_id, "name": "Marina Turf Club",
          "description": "Premier football and cricket facility near Marina Beach. Sea breeze included!",
          "sports": ["football", "cricket"], "address": "22 Kamaraj Salai", "area": "Adyar", "city": "Chennai",
          "lat": 13.0067, "lng": 80.2554, "amenities": ["Parking", "Floodlights", "Changing Rooms", "Cafe", "Shower"],
