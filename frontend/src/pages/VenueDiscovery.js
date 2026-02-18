@@ -426,6 +426,7 @@ export default function VenueDiscovery() {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }
