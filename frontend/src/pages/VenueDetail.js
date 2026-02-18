@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { venueAPI, bookingAPI, slotLockAPI, notificationAPI, paymentAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff, MessageSquare, Send } from "lucide-react";
+import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff, MessageSquare, Send, Globe, Share2 } from "lucide-react";
 import { format } from "date-fns";
 
 export default function VenueDetail() {
