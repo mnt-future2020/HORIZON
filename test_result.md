@@ -286,21 +286,33 @@ frontend:
         agent: "testing"
         comment: "All tests pass 100%. Upload returns video_url: null when S3 not configured. Local file preserved. Backend correctly handles S3 failure gracefully."
 
+  - task: "B2B Offline-First POS System"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages/POSPage.js, backend/routes/pos.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Built full POS system. Backend: /api/pos/products CRUD, /api/pos/sales (online + offline batch sync), /api/pos/summary. Frontend: POSPage.js with 4 views: POS terminal (product grid + cart), Products CRUD, Today summary, History. Offline-first with localStorage queue. Navbar 'POS' link for venue owners. Route /pos added. Backend APIs verified via curl - all working."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 4
+  test_sequence: 5
   run_ui: true
 
 test_plan:
-  current_focus: ["Profile Picture Upload", "Video Highlights S3 Migration"]
+  current_focus: ["B2B Offline-First POS System"]
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Implemented 2 new features: 1) Profile Picture Upload - ProfilePage.js has camera overlay on avatar, uploads to S3 via /api/upload/image, saves URL to user.avatar via /api/auth/profile, Navbar shows actual avatar image. 2) Video Highlights S3 Migration - highlights.py upload_video now tries to backup to S3 after local save, stores video_url. analyze_video downloads from S3 if local file missing after restart. Test with: demo@player.com/demo123. S3 not configured so avatar upload should show toast 503 error. S3 status badge in Admin Settings should show 'Not configured'. Test that profile page has camera icon on avatar, clicking opens file picker."
+    message: "Built B2B Offline-First POS. Key tests: 1) Login as demo@owner.com/demo123, 2) See 'POS' in navbar, 3) Navigate to /pos - page loads with 4 tabs: POS/Products/Today/History, 4) Go to Products tab - click 'Add Product' button, fill name='Energy Drink', category=beverages, price=50, stock=10 - save, 5) Go to POS tab - product appears in grid, tap it to add to cart, 6) Adjust qty with +/- buttons, 7) Select payment method (cash/card/UPI), 8) Click Charge button - receipt dialog shows, 9) Today tab shows revenue stats, 10) History tab shows sale. Also verify: online/offline indicator visible. Credentials: demo@owner.com/demo123"
   - agent: "testing"
     message: "Completed testing of Admin Console Settings tab functionality. The Settings tab loads correctly with all required sections (Payment Gateway, AWS S3 Storage, Booking Commission, SaaS Subscription Plans, Change Admin Password). The AWS S3 Storage section contains all specified inputs including Access Key ID, Secret Access Key (password field), Bucket Name, Region dropdown with ap-south-1 Mumbai as default, Test S3 Connection button, and status badge showing 'Not configured'. I was able to fill in the fields with dummy values (AKIATEST123, testsecret, test-bucket, ap-south-1), but the 'Test S3 Connection' button remained disabled even after filling the fields (likely by design). The 'Save All Settings' button works properly, displaying a 'Settings saved!' toast notification after clicking. Overall, the functionality is working as expected except for the Test S3 Connection button which remains disabled."
   - agent: "testing"
