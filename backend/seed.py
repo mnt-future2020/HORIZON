@@ -143,7 +143,7 @@ async def seed_demo_data():
          "images": [VENUE_IMAGES[1]], "base_price": 1800, "slot_duration_minutes": 60,
          "opening_hour": 5, "closing_hour": 22, "turfs": 2, "rating": 4.5,
          "total_reviews": 156, "total_bookings": 78, "status": "active", "created_at": now},
-        {"id": str(uuid.uuid4()), "owner_id": owner2_id, "name": "Velachery Sports Arena",
+        {"id": str(uuid.uuid4()), "slug": _make_slug("Velachery Sports Arena"), "owner_id": owner2_id, "name": "Velachery Sports Arena",
          "description": "Multi-sport complex with indoor badminton, basketball and outdoor football turfs.",
          "sports": ["football", "badminton", "basketball"], "address": "100ft Road, Velachery", "area": "Velachery", "city": "Chennai",
          "lat": 12.9815, "lng": 80.2180, "amenities": ["AC", "Parking", "Pro Shop", "Water Cooler", "Floodlights"],
