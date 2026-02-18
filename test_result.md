@@ -102,7 +102,7 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
-user_problem_statement: "Dynamic Public Venue Pages for Horizon Sports. Each venue should have a unique slug-based URL /venue/:slug accessible publicly without login. Venue owners can see their public page URL, copy it, and view a QR code."
+user_problem_statement: "Test Horizon Sports landing page footer and legal pages: 1) Footer on landing page should show HORIZON brand, MnT company details, Product/Company/Contact columns, links to legal pages; 2) Legal pages existence - About, Contact, Privacy Policy, Terms, Refund Policy pages; 3) Footer links functionality - clicking Privacy link leads to /privacy-policy and clicking HORIZON logo returns to homepage."
 
 backend:
   - task: "GET /api/venues/slug/{slug} endpoint"
