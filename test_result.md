@@ -130,6 +130,42 @@ backend:
         comment: "generate_slug and unique_slug functions added. Startup migration assigns slugs to existing venues."
 
 frontend:
+  - task: "Footer on landing page"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Footer.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Need to test footer on landing page for HORIZON brand, MnT company details, Product/Company/Contact columns, links to legal pages"
+
+  - task: "Legal pages existence"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/pages"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Need to test existence of About, Contact, Privacy Policy, Terms, Refund Policy pages"
+
+  - task: "Footer links functionality"
+    implemented: true
+    working: "NA"
+    file: "frontend/src/components/Footer.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "testing"
+        comment: "Need to test that clicking Privacy link leads to /privacy-policy and clicking HORIZON logo returns to homepage"
+
   - task: "Public venue page /venue/:slug"
     implemented: true
     working: true
