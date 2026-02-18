@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { authAPI, analyticsAPI, bookingAPI } from "@/lib/api";
+import { authAPI, analyticsAPI, bookingAPI, uploadAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save } from "lucide-react";
+import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2 } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
