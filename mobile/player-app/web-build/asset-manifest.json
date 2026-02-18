@@ -1,6 +1,6 @@
 {
   "files": {
-    "main.js": "/static/js/main.cec7d4f8.js",
+    "main.js": "/static/js/main.a24d2d95.js",
     "static/js/92.c7f1814f.js": "/static/js/92.c7f1814f.js",
     "static/media/Manrope_800ExtraBold.ttf": "/static/media/Manrope_800ExtraBold.b0ac9f1b582da5d98892.ttf",
     "static/media/Manrope_600SemiBold.ttf": "/static/media/Manrope_600SemiBold.0a3797b8dd78c25ef6b4.ttf",
@@ -33,11 +33,11 @@
     "manifest.json": "/manifest.json",
     "favicon-32.png": "/favicon-32.png",
     "favicon-16.png": "/favicon-16.png",
-    "main.cec7d4f8.js.map": "/static/js/main.cec7d4f8.js.map",
+    "main.a24d2d95.js.map": "/static/js/main.a24d2d95.js.map",
     "92.c7f1814f.js.map": "/static/js/92.c7f1814f.js.map"
   },
   "entrypoints": [
     "static/js/92.c7f1814f.js",
-    "static/js/main.cec7d4f8.js"
+    "static/js/main.a24d2d95.js"
   ]
 }
