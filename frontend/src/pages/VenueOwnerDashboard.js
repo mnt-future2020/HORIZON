@@ -465,6 +465,10 @@ function VenueOwnerDashboardContent() {
                   <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))}
                     className="mt-1 bg-background border-border" data-testid="venue-slot-input" /></div>
               </div>
+              <VenueImageUpload
+                images={venueForm.images}
+                onChange={imgs => setVenueForm(p => ({ ...p, images: imgs }))}
+              />
               <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
             </div>
           </DialogContent>
