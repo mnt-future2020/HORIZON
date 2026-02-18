@@ -255,6 +255,7 @@ function VenueOwnerDashboardContent() {
       closing_hour: selectedVenue.closing_hour || 23,
       turfs: selectedVenue.turfs || 1,
       slot_duration_minutes: selectedVenue.slot_duration_minutes || 60,
+      images: selectedVenue.images || [],
     });
     setEditVenueOpen(true);
   };
