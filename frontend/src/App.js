@@ -20,6 +20,11 @@ import HighlightsPage from "@/pages/HighlightsPage";
 import SharedHighlightPage from "@/pages/SharedHighlightPage";
 import IoTDashboard from "@/pages/IoTDashboard";
 import PublicVenuePage from "@/pages/PublicVenuePage";
+import AboutPage from "@/pages/AboutPage";
+import ContactPage from "@/pages/ContactPage";
+import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
+import TermsPage from "@/pages/TermsPage";
+import RefundPolicyPage from "@/pages/RefundPolicyPage";
 import Navbar from "@/components/Navbar";
 
 function ProtectedRoute({ children, roles }) {
