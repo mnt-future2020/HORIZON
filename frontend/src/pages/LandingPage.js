@@ -243,12 +243,7 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <span className="font-display text-lg font-black text-primary">HORIZON</span>
-          <p className="text-xs text-muted-foreground">Sports Facility Operating System</p>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
