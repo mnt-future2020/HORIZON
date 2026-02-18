@@ -3,8 +3,16 @@ from database import db
 from auth import hash_pw
 import uuid
 import logging
+import re
 
 logger = logging.getLogger("horizon")
+
+
+def _make_slug(name: str) -> str:
+    slug = name.lower()
+    slug = re.sub(r'[^a-z0-9\s-]', '', slug)
+    slug = re.sub(r'[\s_]+', '-', slug)
+    return re.sub(r'-+', '-', slug).strip('-')
 
 VENUE_IMAGES = [
     "https://images.unsplash.com/photo-1763494392824-bbb80840ead4?w=800&q=80",
