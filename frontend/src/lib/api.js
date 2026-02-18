@@ -172,6 +172,17 @@ export const highlightAPI = {
   delete: (id) => api.delete(`/highlights/${id}`),
 };
 
+export const posAPI = {
+  listProducts: (venueId) => api.get("/pos/products", { params: { venue_id: venueId } }),
+  createProduct: (data) => api.post("/pos/products", data),
+  updateProduct: (id, data) => api.put(`/pos/products/${id}`, data),
+  deleteProduct: (id) => api.delete(`/pos/products/${id}`),
+  recordSale: (data) => api.post("/pos/sales", data),
+  syncBatch: (venueId, batch) => api.post("/pos/sales", { venue_id: venueId, batch }),
+  listSales: (venueId, limit) => api.get("/pos/sales", { params: { venue_id: venueId, limit } }),
+  summary: (venueId) => api.get("/pos/summary", { params: { venue_id: venueId } }),
+};
+
 export const uploadAPI = {
   image: (file, onProgress) => {
     const formData = new FormData();
