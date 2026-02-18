@@ -57,14 +57,35 @@ export const ratingAPI = {
   history: (userId, limit) => api.get(`/rating/history/${userId}`, { params: { limit } }),
 };
 
+export const mercenaryAPI = {
+  list: (params) => api.get('/mercenary', { params }),
+  myPosts: () => api.get('/mercenary/my-posts'),
+  create: (data) => api.post('/mercenary', data),
+  apply: (id) => api.post(`/mercenary/${id}/apply`),
+  accept: (postId, applicantId) => api.post(`/mercenary/${postId}/accept/${applicantId}`),
+};
+
+export const highlightAPI = {
+  upload: (formData) => api.post('/highlights/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+  list: () => api.get('/highlights'),
+  get: (id) => api.get(`/highlights/${id}`),
+  analyze: (id) => api.post(`/highlights/${id}/analyze`),
+  share: (id) => api.post(`/highlights/${id}/share`),
+  delete: (id) => api.delete(`/highlights/${id}`),
+};
+
+export const splitAPI = {
+  getInfo: (token) => api.get(`/split/${token}`),
+  pay: (token, data) => api.post(`/split/${token}/pay`, data),
+  createLink: (bookingId) => api.post(`/bookings/${bookingId}/split`),
+};
+
 export const uploadAPI = {
-  image: async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/upload/image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
+  image: (formData) => api.post('/upload/image', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
 };
 
 export default api;
