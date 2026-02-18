@@ -13,6 +13,10 @@ import VenueDetailScreen from '../screens/VenueDetailScreen';
 import BookingsScreen from '../screens/BookingsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LeaderboardScreen from '../screens/LeaderboardScreen';
+import MatchmakingScreen from '../screens/MatchmakingScreen';
+import HighlightsScreen from '../screens/HighlightsScreen';
+import RatingProfileScreen from '../screens/RatingProfileScreen';
+import SplitPaymentScreen from '../screens/SplitPaymentScreen';
 import LoadingScreen from '../components/common/LoadingScreen';
 
 import Colors from '../styles/colors';
