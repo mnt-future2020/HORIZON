@@ -6,6 +6,7 @@ import { venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
+import Footer from "@/components/Footer";
 import { Search, MapPin, Star, ChevronRight, Zap, Shield, Users, BarChart3, Smartphone, Building2, Navigation, Sun, Moon } from "lucide-react";
 
 export default function LandingPage() {
