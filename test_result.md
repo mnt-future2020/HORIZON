@@ -180,13 +180,13 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Public venue page /venue/:slug"
-    - "QR code and share link in Venue Owner Dashboard"
-    - "GET /api/venues/slug/{slug} endpoint"
+    - "WebSocket real-time venue updates"
+    - "Edit Venue dialog in owner dashboard"
+    - "Public venue page live indicator"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
 agent_communication:
   - agent: "main"
-    message: "Implemented Dynamic Public Venue Pages feature. Key points: 1) Backend adds slug field to venues with auto-generation on create/update and migration for existing venues. 2) New GET /api/venues/slug/{slug} endpoint added before the /{venue_id} route to avoid conflicts. 3) PublicVenuePage.js created as a public route (no login required) with hero image, amenities, reviews, booking CTA, QR code, and share link. 4) VenueOwnerDashboard updated with View Public Page, QR Code, Copy Link buttons. 5) Page auto-refreshes every 30s for real-time updates. Test credentials: owner@demo.com/demo123. The public page URL for PowerPlay Arena is /venue/powerplay-arena."
+    message: "Implemented WebSocket real-time updates. Key points: 1) Backend: VenueConnectionManager in venues.py manages per-venue WS connections at /api/venues/ws/{venue_id}. update_venue endpoint now broadcasts {type: venue_update, venue: {...}} to all active viewers. 2) Frontend PublicVenuePage.js: Replaced 30s polling with WebSocket connection. Shows live/reconnecting/connecting status indicator. On venue_update message, updates venue state, shows toast, and flashes a ring on the About card. Reconnects with exponential backoff (2s, 4s, 8s... max 30s). 3) VenueOwnerDashboard.js: Added Edit Details button that opens a dialog. Saving calls venueAPI.update() which triggers the broadcast. Test by: a) Open /venue/powerplay-arena in one browser tab, b) Login as demo@owner.com/demo123 in another tab, c) Click Edit Details, change description, Save & Go Live - first tab should update instantly with toast notification."
