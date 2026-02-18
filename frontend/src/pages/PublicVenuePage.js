@@ -306,7 +306,7 @@ export default function PublicVenuePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* About */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <Card>
+              <Card className={justUpdated ? "ring-2 ring-primary ring-offset-2 transition-all duration-500" : ""}>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-3">About This Venue</h2>
                   <p className="text-muted-foreground leading-relaxed">{venue.description}</p>
