@@ -213,6 +213,14 @@ export default function ProfileScreen() {
                 { icon: '🏆', label: 'Rating Profile', desc: 'Match history & skill chart', screen: 'RatingProfile', params: { userId: user?.id, userName: user?.name } },
                 { icon: '🎬', label: 'AI Highlights', desc: 'Upload & analyze match videos', screen: 'Highlights' },
                 { icon: '💰', label: 'Split Payment', desc: 'Split booking cost with friends', screen: 'SplitPayment', params: { bookings } },
+                { icon: '🎫', label: 'Player Card', desc: 'Your athletic profile card', screen: 'PlayerCard', params: { userId: user?.id } },
+                { icon: '📅', label: 'My Bookings', desc: 'Upcoming & past bookings', screen: 'Bookings' },
+                { icon: '🏅', label: 'Leaderboard', desc: 'Rankings & top players', screen: 'Leaderboard' },
+                { icon: '🔔', label: 'Notifications', desc: 'Alerts & updates', screen: 'Notifications' },
+                { icon: '🔖', label: 'Bookmarks', desc: 'Saved posts & content', screen: 'Bookmarks' },
+                { icon: '📱', label: 'Contact Sync', desc: 'Find friends on Horizon', screen: 'ContactSync' },
+                { icon: '💎', label: 'Subscription', desc: 'Manage your plan', screen: 'Subscription' },
+                { icon: '🔒', label: 'Privacy & Data', desc: 'Consent, data export, delete', screen: 'PrivacySettings' },
               ].map((item, i) => (
                 <TouchableOpacity key={i} style={styles.quickLink} onPress={() => navigation.navigate(item.screen, item.params)} activeOpacity={0.75}>
                   <View style={styles.quickLinkIcon}>
