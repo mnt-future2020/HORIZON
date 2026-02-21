@@ -86,10 +86,29 @@ export default function Navbar() {
       { to: "/communities", icon: Users, label: "Groups" },
       { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
+    venue_owner: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/owner", icon: Building2, label: "Dashboard" },
+      { to: "/pos", icon: ShoppingCart, label: "POS" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+    coach: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/coach", icon: GraduationCap, label: "Dashboard" },
+      { to: "/communities", icon: Users, label: "Groups" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+    super_admin: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/admin", icon: Shield, label: "Admin Console" },
+      { to: "/iot", icon: Lightbulb, label: "IoT" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
   };
   const links = {
     player: desktopLinks.player,
     venue_owner: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/owner", icon: Building2, label: "Dashboard" },
       { to: "/pos", icon: ShoppingCart, label: "POS" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
@@ -98,11 +117,13 @@ export default function Navbar() {
       { to: "/tournaments", icon: Medal, label: "Tournaments" },
     ],
     coach: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/coach", icon: GraduationCap, label: "Dashboard" },
       { to: "/communities", icon: Users, label: "Groups" },
       { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
     super_admin: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/admin", icon: Shield, label: "Admin Console" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
     ],
