@@ -34,6 +34,7 @@ export const venueAPI = {
   areas: (city) => api.get("/venues/areas", { params: city ? { city } : {} }),
   amenities: () => api.get("/venues/amenities"),
   nearby: (lat, lng, radius_km) => api.get("/venues/nearby", { params: { lat, lng, radius_km } }),
+  nearbyByDriveTime: (lat, lng, radius_km) => api.get("/venues/nearby/drive-time", { params: { lat, lng, radius_km } }),
   getReviews: (id) => api.get(`/venues/${id}/reviews`),
   getReviewSummary: (id) => api.get(`/venues/${id}/reviews/summary`),
   createReview: (id, data) => api.post(`/venues/${id}/reviews`, data),
@@ -45,7 +46,7 @@ export const bookingAPI = {
   list: () => api.get("/bookings"),
   get: (id) => api.get(`/bookings/${id}`),
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
-  mockConfirm: (id) => api.post(`/bookings/${id}/mock-confirm`),
+  testConfirm: (id) => api.post(`/bookings/${id}/test-confirm`),
 };
 
 export const slotLockAPI = {
@@ -139,6 +140,9 @@ export const paymentAPI = {
 export const subscriptionAPI = {
   myPlan: () => api.get("/subscription/my-plan"),
   upgrade: (data) => api.put("/subscription/upgrade", data),
+  reportPaymentFailure: (data) => api.post("/subscription/payment-failed", data),
+  resolvePayment: () => api.post("/subscription/resolve-payment"),
+  dunningStatus: () => api.get("/subscription/dunning-status"),
 };
 
 export const iotAPI = {
@@ -204,6 +208,158 @@ export const uploadAPI = {
 
 export const seedAPI = {
   seed: () => api.post("/seed"),
+};
+
+export const contactAPI = {
+  submit: (data) => api.post("/contact", data),
+};
+
+export const waitlistAPI = {
+  join: (data) => api.post("/waitlist", data),
+  leave: (entryId) => api.delete(`/waitlist/${entryId}`),
+  myWaitlist: () => api.get("/waitlist"),
+  slotInfo: (params) => api.get("/waitlist/slot", { params }),
+};
+
+export const complianceAPI = {
+  getConsent: () => api.get("/compliance/consent"),
+  updateConsent: (data) => api.put("/compliance/consent", data),
+  exportData: () => api.get("/compliance/data-export"),
+  requestErasure: (data) => api.post("/compliance/erasure-request", data),
+  getAuditLog: (limit) => api.get("/compliance/audit-log", { params: { limit } }),
+  getNotificationPrefs: () => api.get("/compliance/notification-preferences"),
+  updateNotificationPrefs: (data) => api.put("/compliance/notification-preferences", data),
+};
+
+export const pricingMLAPI = {
+  suggest: (params) => api.get("/pricing/ml-suggest", { params }),
+  demandForecast: (venueId, date) => api.get("/pricing/demand-forecast", { params: { venue_id: venueId, date } }),
+  trainModel: (venueId) => api.post(`/pricing/train-model?venue_id=${venueId}`),
+  getMode: (venueId) => api.get("/pricing/pricing-mode", { params: { venue_id: venueId } }),
+  setMode: (venueId, mode) => api.put(`/pricing/pricing-mode?venue_id=${venueId}&mode=${mode}`),
+};
+
+export const reviewSentimentAPI = {
+  getSentiment: (venueId) => api.get(`/venues/${venueId}/reviews/sentiment`),
+};
+
+export const socialAPI = {
+  getFeed: (page, tab) => api.get("/feed", { params: { page, tab } }),
+  createPost: (data) => api.post("/feed", data),
+  toggleLike: (postId) => api.post(`/feed/${postId}/like`),
+  react: (postId, reaction) => api.post(`/feed/${postId}/react`, { reaction }),
+  addComment: (postId, data) => api.post(`/feed/${postId}/comment`, data),
+  getComments: (postId) => api.get(`/feed/${postId}/comments`),
+  deletePost: (postId) => api.delete(`/feed/${postId}`),
+  trending: () => api.get("/feed/trending"),
+  toggleBookmark: (postId) => api.post(`/feed/${postId}/bookmark`),
+  getBookmarks: (page) => api.get("/feed/bookmarks", { params: { page } }),
+  getUserPosts: (userId, page) => api.get(`/feed/user/${userId}`, { params: { page } }),
+  explore: (q, category, page) => api.get("/explore", { params: { q, category, page } }),
+  syncContacts: (data) => api.post("/contacts/sync", data),
+  getSyncedContacts: () => api.get("/contacts/synced"),
+  getInviteLink: () => api.post("/contacts/invite"),
+  // Stories
+  getStories: () => api.get("/stories"),
+  createStory: (data) => api.post("/stories", data),
+  viewStory: (id) => api.post(`/stories/${id}/view`),
+  reactStory: (id, reaction) => api.post(`/stories/${id}/react`, { reaction }),
+  deleteStory: (id) => api.delete(`/stories/${id}`),
+  // Follow
+  toggleFollow: (userId) => api.post(`/follow/${userId}`),
+  followStatus: (userId) => api.get(`/follow/status/${userId}`),
+  getFollowers: (userId) => api.get(`/followers/${userId}`),
+  getFollowing: (userId) => api.get(`/following/${userId}`),
+  // Engagement
+  myEngagement: () => api.get("/engagement/me"),
+  suggestedFollows: () => api.get("/engagement/suggested-follows"),
+};
+
+export const playerCardAPI = {
+  getCard: (userId) => api.get(`/player-card/${userId}`),
+  getMyCard: () => api.get("/player-card/me"),
+};
+
+export const tournamentAPI = {
+  list: (params) => api.get("/tournaments", { params }),
+  get: (id) => api.get(`/tournaments/${id}`),
+  create: (data) => api.post("/tournaments", data),
+  update: (id, data) => api.put(`/tournaments/${id}`, data),
+  cancel: (id) => api.delete(`/tournaments/${id}`),
+  register: (id) => api.post(`/tournaments/${id}/register`),
+  withdraw: (id) => api.delete(`/tournaments/${id}/register`),
+  start: (id) => api.post(`/tournaments/${id}/start`),
+  submitResult: (tournamentId, matchId, data) =>
+    api.post(`/tournaments/${tournamentId}/matches/${matchId}/result`, data),
+  standings: (id) => api.get(`/tournaments/${id}/standings`),
+};
+
+export const coachingAPI = {
+  listCoaches: (params) => api.get("/coaching/coaches", { params }),
+  getCoach: (id) => api.get(`/coaching/coaches/${id}`),
+  updateProfile: (data) => api.put("/coaching/profile", data),
+  getAvailability: () => api.get("/coaching/availability"),
+  addAvailability: (data) => api.post("/coaching/availability", data),
+  removeAvailability: (id) => api.delete(`/coaching/availability/${id}`),
+  getCoachSlots: (coachId, date) => api.get(`/coaching/coaches/${coachId}/slots`, { params: { date } }),
+  bookSession: (data) => api.post("/coaching/sessions/book", data),
+  listSessions: (params) => api.get("/coaching/sessions", { params }),
+  cancelSession: (id) => api.post(`/coaching/sessions/${id}/cancel`),
+  completeSession: (id) => api.post(`/coaching/sessions/${id}/complete`),
+  reviewSession: (id, data) => api.post(`/coaching/sessions/${id}/review`, data),
+  stats: () => api.get("/coaching/stats"),
+  getCheckinQR: (bookingId) => api.get(`/coaching/checkin/qr/${bookingId}`),
+  verifyCheckin: (data) => api.post("/coaching/checkin/verify", data),
+};
+
+export const groupAPI = {
+  list: (params) => api.get("/groups", { params }),
+  myGroups: () => api.get("/groups/my"),
+  get: (id) => api.get(`/groups/${id}`),
+  create: (data) => api.post("/groups", data),
+  update: (id, data) => api.put(`/groups/${id}`, data),
+  join: (id) => api.post(`/groups/${id}/join`),
+  leave: (id) => api.post(`/groups/${id}/leave`),
+  remove: (id) => api.delete(`/groups/${id}`),
+  getMessages: (id, before) => api.get(`/groups/${id}/messages`, { params: { before } }),
+  sendMessage: (id, data) => api.post(`/groups/${id}/messages`, data),
+};
+
+export const teamAPI = {
+  list: (params) => api.get("/teams", { params }),
+  myTeams: () => api.get("/teams/my"),
+  get: (id) => api.get(`/teams/${id}`),
+  create: (data) => api.post("/teams", data),
+  join: (id) => api.post(`/teams/${id}/join`),
+  leave: (id) => api.post(`/teams/${id}/leave`),
+  remove: (id) => api.delete(`/teams/${id}`),
+};
+
+export const chatAPI = {
+  conversations: () => api.get("/chat/conversations"),
+  startConversation: (userId) => api.post("/chat/conversations", { user_id: userId }),
+  getMessages: (convoId, before) => api.get(`/chat/${convoId}/messages`, { params: { before } }),
+  sendMessage: (convoId, data) => api.post(`/chat/${convoId}/messages`, data),
+  deleteMessage: (convoId, msgId) => api.delete(`/chat/${convoId}/messages/${msgId}`),
+  unreadTotal: () => api.get("/chat/unread-total"),
+  heartbeat: () => api.post("/chat/online"),
+  onlineStatus: (userId) => api.get(`/chat/online/${userId}`),
+  setTyping: (convoId) => api.post(`/chat/${convoId}/typing`),
+  getTyping: (convoId) => api.get(`/chat/${convoId}/typing`),
+};
+
+export const userSearchAPI = {
+  search: (q) => api.get("/users/search", { params: { q } }),
+};
+
+export const recommendationAPI = {
+  venues: (limit) => api.get("/recommendations/venues", { params: { limit } }),
+  players: (limit) => api.get("/recommendations/players", { params: { limit } }),
+  groups: (limit) => api.get("/recommendations/groups", { params: { limit } }),
+  compatibility: (userId) => api.get(`/compatibility/${userId}`),
+  engagementScore: () => api.get("/engagement/score"),
+  userEngagement: (userId) => api.get(`/engagement/score/${userId}`),
+  churnRisk: () => api.get("/engagement/churn-risk"),
 };
 
 export default api;

@@ -10,6 +10,8 @@ async def venue_analytics(venue_id: str, user=Depends(get_current_user)):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
     if not venue:
         raise HTTPException(404, "Venue not found")
+    if user.get("role") != "super_admin" and venue.get("owner_id") != user["id"]:
+        raise HTTPException(403, "Not authorized to view this venue's analytics")
     bookings = await db.bookings.find({"venue_id": venue_id}, {"_id": 0}).to_list(500)
     total_revenue = sum(b.get("total_amount", 0) for b in bookings if b.get("status") in ["confirmed", "completed"])
     confirmed = [b for b in bookings if b.get("status") in ["confirmed", "completed"]]

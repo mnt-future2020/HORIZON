@@ -191,9 +191,8 @@ export default function SplitPaymentPage() {
               <Button className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11"
                 onClick={handlePay} disabled={paying} data-testid="split-pay-btn">
                 <CreditCard className="h-4 w-4 mr-2" />
-                {paying ? "Processing..." : `Pay ${"\u20B9"}${sc.per_share} (MOCKED)`}
+                {paying ? "Processing..." : `Pay ${"\u20B9"}${sc.per_share}`}
               </Button>
-              <p className="text-[10px] text-center text-muted-foreground">Payment is mocked for demo purposes</p>
             </div>
           )}
         </div>

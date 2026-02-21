@@ -8,6 +8,40 @@ module.exports = {
         display: ['Chivo', 'sans-serif'],
         body: ['Manrope', 'sans-serif'],
       },
+      // Athletic typography scale - bold and impactful
+      fontSize: {
+        'display-xl': ['5rem', { lineHeight: '0.95', letterSpacing: '-0.03em', fontWeight: '900' }],
+        'display-lg': ['3.5rem', { lineHeight: '1', letterSpacing: '-0.02em', fontWeight: '900' }],
+        'display-md': ['2.5rem', { lineHeight: '1.1', letterSpacing: '-0.015em', fontWeight: '900' }],
+        'display-sm': ['1.875rem', { lineHeight: '1.2', letterSpacing: '-0.01em', fontWeight: '800' }],
+        'heading-lg': ['1.5rem', { lineHeight: '1.3', letterSpacing: '-0.01em', fontWeight: '700' }],
+        'heading-md': ['1.25rem', { lineHeight: '1.4', letterSpacing: '0', fontWeight: '700' }],
+        'body-lg': ['1.125rem', { lineHeight: '1.6', letterSpacing: '0', fontWeight: '500' }],
+        'label-caps': ['0.75rem', { lineHeight: '1.2', letterSpacing: '0.1em', fontWeight: '700' }],
+      },
+      letterSpacing: {
+        'tighter': '-0.03em',
+        'athletic': '-0.015em',
+        'wide': '0.05em',
+        'ultra-wide': '0.15em',
+      },
+      // Generous spacing system (2-3x standard)
+      spacing: {
+        '18': '4.5rem',    // 72px
+        '22': '5.5rem',    // 88px
+        '26': '6.5rem',    // 104px
+        '30': '7.5rem',    // 120px
+        '34': '8.5rem',    // 136px
+        '38': '9.5rem',    // 152px
+      },
+      gap: {
+        '18': '4.5rem',
+        '22': '5.5rem',
+      },
+      padding: {
+        'section': '5rem',      // Standard section padding
+        'section-lg': '8rem',   // Large section padding
+      },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
@@ -28,13 +62,58 @@ module.exports = {
         ring: 'hsl(var(--ring))',
         chart: { '1': 'hsl(var(--chart-1))', '2': 'hsl(var(--chart-2))', '3': 'hsl(var(--chart-3))', '4': 'hsl(var(--chart-4))', '5': 'hsl(var(--chart-5))' }
       },
+      // Athletic gradient utilities
+      backgroundImage: {
+        'gradient-athletic': 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
+        'gradient-sport': 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+        'gradient-overlay': 'linear-gradient(180deg, rgba(2, 6, 23, 0.3) 0%, rgba(2, 6, 23, 0.9) 100%)',
+      },
+      // Energy glow shadows
+      boxShadow: {
+        'glow-primary': '0 0 40px rgba(16, 185, 129, 0.4)',
+        'glow-accent': '0 0 40px rgba(124, 58, 237, 0.4)',
+        'glow-hover': '0 0 60px rgba(16, 185, 129, 0.6)',
+        'glow-sm': '0 0 20px rgba(16, 185, 129, 0.3)',
+      },
+      // Athletic animation keyframes
       keyframes: {
         'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },
         'accordion-up': { from: { height: 'var(--radix-accordion-content-height)' }, to: { height: '0' } },
+        'athletic-slide-up': {
+          from: { opacity: '0', transform: 'translateY(40px)' },
+          to: { opacity: '1', transform: 'translateY(0)' }
+        },
+        'energy-pulse': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.05)', opacity: '0.9' }
+        },
+        'glow-pulse': {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(16, 185, 129, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(16, 185, 129, 0.6)' }
+        },
+        'slide-in-scale': {
+          from: { opacity: '0', transform: 'translateX(-20px) scale(0.95)' },
+          to: { opacity: '1', transform: 'translateX(0) scale(1)' }
+        },
+        'count-up': {
+          from: { transform: 'translateY(20px)', opacity: '0' },
+          to: { transform: 'translateY(0)', opacity: '1' }
+        },
+        'shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' }
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'athletic-slide-up': 'athletic-slide-up 0.6s cubic-bezier(0.22, 1, 0.36, 1)',
+        'energy-pulse': 'energy-pulse 2s ease-in-out infinite',
+        'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
+        'slide-in-scale': 'slide-in-scale 0.5s cubic-bezier(0.22, 1, 0.36, 1)',
+        'count-up': 'count-up 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
+        'shimmer': 'shimmer 3s linear infinite',
       }
     }
   },

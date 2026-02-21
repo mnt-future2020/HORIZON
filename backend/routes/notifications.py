@@ -47,6 +47,21 @@ async def notify_slot_available(venue_id: str, date: str, start_time: str, turf_
             {"id": {"$in": sub_ids}},
             {"$set": {"status": "notified"}}
         )
+    # Also send via multi-channel (email/SMS/push)
+    for sub in subs:
+        try:
+            from services.notification_service import send_notification
+            await send_notification(
+                user_id=sub["user_id"],
+                title="Slot Now Available!",
+                message=f"{venue_name} - {start_time} on {date} (Turf {turf_number}) is now free. Book it before someone else does!",
+                channels=["email", "sms", "push"],
+                notification_type="slot_available",
+                data={"venue_id": venue_id, "date": date, "start_time": start_time}
+            )
+        except Exception as e:
+            logger.debug(f"Multi-channel notification skipped: {e}")
+
     logger.info(f"Sent {len(notifications)} slot-available notifications for {venue_id}/{date}/{start_time}")
 
 

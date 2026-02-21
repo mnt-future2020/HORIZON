@@ -92,15 +92,18 @@ async def list_venues(
     if sport:
         query["sports"] = {"$in": [sport]}
     if city:
-        query["city"] = {"$regex": f"^{city}$", "$options": "i"}
+        esc_city = re.escape(city)
+        query["city"] = {"$regex": f"^{esc_city}$", "$options": "i"}
     if area:
-        query["area"] = {"$regex": area, "$options": "i"}
+        esc_area = re.escape(area)
+        query["area"] = {"$regex": esc_area, "$options": "i"}
     if search:
+        esc_search = re.escape(search)
         query["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"address": {"$regex": search, "$options": "i"}},
-            {"city": {"$regex": search, "$options": "i"}},
-            {"area": {"$regex": search, "$options": "i"}}
+            {"name": {"$regex": esc_search, "$options": "i"}},
+            {"address": {"$regex": esc_search, "$options": "i"}},
+            {"city": {"$regex": esc_search, "$options": "i"}},
+            {"area": {"$regex": esc_search, "$options": "i"}}
         ]
     if min_price is not None:
         query["base_price"] = query.get("base_price", {})
@@ -183,6 +186,36 @@ async def nearby_venues(
     return results[:limit]
 
 
+@router.get("/venues/nearby/drive-time")
+async def nearby_venues_by_drive_time(
+    lat: float, lng: float, radius_km: float = 50,
+    sport: Optional[str] = None, limit: int = 20
+):
+    """Get nearby venues sorted by estimated drive time (Google Routes API or Haversine)."""
+    query = {"status": "active", "lat": {"$exists": True}, "lng": {"$exists": True}}
+    if sport:
+        query["sports"] = {"$in": [sport]}
+    venues = await db.venues.find(query, {"_id": 0}).to_list(200)
+
+    # Filter by radius first (Haversine)
+    nearby = []
+    for v in venues:
+        dist = haversine_km(lat, lng, v.get("lat", 0), v.get("lng", 0))
+        if dist <= radius_km:
+            v["distance_km"] = round(dist, 1)
+            nearby.append(v)
+
+    # Sort by drive time
+    try:
+        from services.drive_time import sort_venues_by_drive_time
+        results = await sort_venues_by_drive_time(nearby, lat, lng)
+    except Exception as e:
+        logger.warning(f"Drive-time sorting failed, falling back to distance: {e}")
+        results = sorted(nearby, key=lambda x: x.get("distance_km", 999))
+
+    return results[:limit]
+
+
 @router.get("/venues/slug/{venue_slug}")
 async def get_venue_by_slug(venue_slug: str):
     venue = await db.venues.find_one({"slug": venue_slug, "status": "active"}, {"_id": 0})
@@ -210,6 +243,8 @@ async def get_venue(venue_id: str):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
     if not venue:
         raise HTTPException(404, "Venue not found")
+    if venue.get("status") == "suspended":
+        raise HTTPException(404, "Venue not found")
     return venue
 
 
@@ -234,7 +269,7 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
         "owner_id": user["id"],
         "slug": slug,
         **input.model_dump(),
-        "rating": 4.0 + round(random.random(), 1),
+        "rating": 0,
         "total_reviews": 0,
         "total_bookings": 0,
         "status": "active",
@@ -302,12 +337,17 @@ async def get_slots(venue_id: str, date: str, request: Request):
 
     duration = venue.get("slot_duration_minutes", 60)
     slot_defs = []
+    opening_min = venue.get("opening_hour", 6) * 60
+    closing_min = venue.get("closing_hour", 23) * 60
     for turf in range(1, venue.get("turfs", 1) + 1):
-        for hour in range(venue.get("opening_hour", 6), venue.get("closing_hour", 23)):
-            start = f"{hour:02d}:00"
-            end_h = hour + (duration // 60)
-            end = f"{end_h:02d}:00"
+        current_min = opening_min
+        while current_min + duration <= closing_min:
+            start_h, start_m = divmod(current_min, 60)
+            end_h, end_m = divmod(current_min + duration, 60)
+            start = f"{start_h:02d}:{start_m:02d}"
+            end = f"{end_h:02d}:{end_m:02d}"
             slot_defs.append((start, end, turf))
+            current_min += duration
 
     lock_map = {}
     if redis_client:
@@ -480,6 +520,9 @@ async def get_pricing_rules(venue_id: str):
 async def create_pricing_rule(venue_id: str, input: PricingRuleCreate, user=Depends(get_current_user)):
     if user["role"] != "venue_owner":
         raise HTTPException(403, "Only venue owners can manage pricing")
+    venue = await db.venues.find_one({"id": venue_id}, {"owner_id": 1})
+    if not venue or venue.get("owner_id") != user["id"]:
+        raise HTTPException(403, "Not authorized for this venue")
     rule = {
         "id": str(uuid.uuid4()), "venue_id": venue_id,
         **input.model_dump(),
@@ -494,6 +537,11 @@ async def create_pricing_rule(venue_id: str, input: PricingRuleCreate, user=Depe
 async def update_pricing_rule(rule_id: str, input: PricingRuleCreate, user=Depends(get_current_user)):
     if user["role"] != "venue_owner":
         raise HTTPException(403, "Only venue owners can manage pricing")
+    rule = await db.pricing_rules.find_one({"id": rule_id})
+    if rule:
+        venue = await db.venues.find_one({"id": rule["venue_id"]}, {"owner_id": 1})
+        if not venue or venue.get("owner_id") != user["id"]:
+            raise HTTPException(403, "Not authorized for this venue's pricing rules")
     result = await db.pricing_rules.update_one(
         {"id": rule_id},
         {"$set": {**input.model_dump(), "updated_at": datetime.now(timezone.utc).isoformat()}}
@@ -511,6 +559,9 @@ async def toggle_pricing_rule(rule_id: str, user=Depends(get_current_user)):
     rule = await db.pricing_rules.find_one({"id": rule_id})
     if not rule:
         raise HTTPException(404, "Rule not found")
+    venue = await db.venues.find_one({"id": rule["venue_id"]}, {"owner_id": 1})
+    if not venue or venue.get("owner_id") != user["id"]:
+        raise HTTPException(403, "Not authorized for this venue's pricing rules")
     new_status = not rule.get("is_active", True)
     await db.pricing_rules.update_one({"id": rule_id}, {"$set": {"is_active": new_status}})
     return {"id": rule_id, "is_active": new_status}
@@ -518,6 +569,13 @@ async def toggle_pricing_rule(rule_id: str, user=Depends(get_current_user)):
 
 @router.delete("/pricing-rules/{rule_id}")
 async def delete_pricing_rule(rule_id: str, user=Depends(get_current_user)):
+    if user["role"] not in ("venue_owner", "super_admin"):
+        raise HTTPException(403, "Only venue owners can manage pricing")
+    rule = await db.pricing_rules.find_one({"id": rule_id})
+    if rule and user["role"] == "venue_owner":
+        venue = await db.venues.find_one({"id": rule["venue_id"]}, {"owner_id": 1})
+        if not venue or venue.get("owner_id") != user["id"]:
+            raise HTTPException(403, "Not authorized for this venue's pricing rules")
     result = await db.pricing_rules.delete_one({"id": rule_id})
     if result.deleted_count == 0:
         raise HTTPException(404, "Rule not found")

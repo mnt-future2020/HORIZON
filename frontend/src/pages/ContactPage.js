@@ -1,21 +1,31 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Footer from "@/components/Footer";
+import { contactAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail, Phone, MapPin, Clock, MessageSquare, CheckCircle2 } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, MessageSquare, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function ContactPage() {
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) { toast.error("Please fill in all required fields"); return; }
-    setSubmitted(true);
-    toast.success("Message sent! We'll get back to you within 24 hours.");
+    setSubmitting(true);
+    try {
+      await contactAPI.submit(form);
+      setSubmitted(true);
+      toast.success("Message sent! We'll get back to you within 24 hours.");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to send message. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -97,7 +107,9 @@ export default function ContactPage() {
                       placeholder="Describe your issue in detail..." rows={5}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" />
                   </div>
-                  <Button type="submit" className="w-full bg-primary text-primary-foreground font-bold">Send Message</Button>
+                  <Button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground font-bold">
+                    {submitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Sending...</> : "Send Message"}
+                  </Button>
                 </form>
               </div>
             )}

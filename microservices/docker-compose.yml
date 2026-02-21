@@ -1,0 +1,245 @@
+version: "3.9"
+
+services:
+  # ═══════════════════════════════════════════════════════════════════
+  # INFRASTRUCTURE
+  # ═══════════════════════════════════════════════════════════════════
+
+  mongodb:
+    image: mongo:7
+    container_name: horizon-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: horizon
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: horizon-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ═══════════════════════════════════════════════════════════════════
+  # API GATEWAY
+  # ═══════════════════════════════════════════════════════════════════
+
+  gateway:
+    build:
+      context: ./gateway
+    container_name: horizon-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8001
+      VENUE_SERVICE_URL: http://venue-service:8002
+      BOOKING_SERVICE_URL: http://booking-service:8003
+      SOCIAL_SERVICE_URL: http://social-service:8004
+      NOTIFICATION_SERVICE_URL: http://notification-service:8005
+      IOT_SERVICE_URL: http://iot-service:8006
+      ANALYTICS_SERVICE_URL: http://analytics-service:8007
+      POS_SERVICE_URL: http://pos-service:8008
+    depends_on:
+      - auth-service
+      - venue-service
+      - booking-service
+      - social-service
+      - notification-service
+      - iot-service
+      - analytics-service
+      - pos-service
+
+  # ═══════════════════════════════════════════════════════════════════
+  # MICROSERVICES
+  # ═══════════════════════════════════════════════════════════════════
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth-service/Dockerfile
+    container_name: horizon-auth
+    ports:
+      - "8001:8001"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  venue-service:
+    build:
+      context: .
+      dockerfile: venue-service/Dockerfile
+    container_name: horizon-venue
+    ports:
+      - "8002:8002"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  booking-service:
+    build:
+      context: .
+      dockerfile: booking-service/Dockerfile
+    container_name: horizon-booking
+    ports:
+      - "8003:8003"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  social-service:
+    build:
+      context: .
+      dockerfile: social-service/Dockerfile
+    container_name: horizon-social
+    ports:
+      - "8004:8004"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: notification-service/Dockerfile
+    container_name: horizon-notification
+    ports:
+      - "8005:8005"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-noreply@horizon.sports}
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_FROM_NUMBER: ${TWILIO_FROM_NUMBER:-}
+      PUSH_ENABLED: ${PUSH_ENABLED:-false}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  iot-service:
+    build:
+      context: .
+      dockerfile: iot-service/Dockerfile
+    container_name: horizon-iot
+    ports:
+      - "8006:8006"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      MQTT_BROKER: ${MQTT_BROKER:-broker.emqx.io}
+      MQTT_PORT: ${MQTT_PORT:-1883}
+      MQTT_USERNAME: ${MQTT_USERNAME:-}
+      MQTT_PASSWORD: ${MQTT_PASSWORD:-}
+      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-horizon-iot-service}
+      MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-horizon}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: analytics-service/Dockerfile
+    container_name: horizon-analytics
+    ports:
+      - "8007:8007"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      EMERGENT_LLM_KEY: ${EMERGENT_LLM_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
+    volumes:
+      - highlight_uploads:/app/uploads/videos
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  pos-service:
+    build:
+      context: .
+      dockerfile: pos-service/Dockerfile
+    container_name: horizon-pos
+    ports:
+      - "8008:8008"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: horizon
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+# ═══════════════════════════════════════════════════════════════════
+# VOLUMES
+# ═══════════════════════════════════════════════════════════════════
+
+volumes:
+  mongo_data:
+  highlight_uploads:

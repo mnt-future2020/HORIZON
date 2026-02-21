@@ -104,3 +104,38 @@ class MatchResultSubmit(BaseModel):
     winner: str  # "team_a", "team_b", "draw"
     score_a: Optional[int] = None
     score_b: Optional[int] = None
+
+
+class SocialPostCreate(BaseModel):
+    content: str = ""
+    media_url: Optional[str] = ""
+    venue_id: Optional[str] = ""
+    match_id: Optional[str] = ""
+    post_type: str = "text"  # text, highlight, photo, match_result
+
+
+class GroupCreate(BaseModel):
+    name: str
+    description: str = ""
+    group_type: str = "community"  # community, club, team
+    sport: str = ""
+    avatar_url: Optional[str] = ""
+    cover_url: Optional[str] = ""
+    is_private: bool = False
+    max_members: int = 500
+
+
+class TeamCreate(BaseModel):
+    name: str
+    sport: str
+    description: str = ""
+    avatar_url: Optional[str] = ""
+    max_players: int = 20
+    skill_range_min: int = 0
+    skill_range_max: int = 3000
+
+
+class MessageCreate(BaseModel):
+    content: str
+    media_url: Optional[str] = ""
+    reply_to: Optional[str] = ""

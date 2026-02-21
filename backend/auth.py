@@ -35,6 +35,8 @@ async def get_current_user(request: Request):
         user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
         if not user:
             raise HTTPException(401, "User not found")
+        if user.get("account_status") in ("suspended", "deleted"):
+            raise HTTPException(403, "Account is suspended or deactivated")
         return user
     except JWTError:
         raise HTTPException(401, "Invalid token")

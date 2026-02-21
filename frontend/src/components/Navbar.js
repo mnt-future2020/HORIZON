@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Video, Lightbulb, Sun, Moon, ShoppingCart } from "lucide-react";
+import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Video, Lightbulb, Sun, Moon, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark } from "lucide-react";
 
 function NavLink({ to, icon: Icon, label, active }) {
   return (
@@ -64,22 +64,43 @@ export default function Navbar() {
     }
   };
 
-  const links = {
+  // Desktop gets full nav, mobile gets Instagram-style bottom 5
+  const desktopLinks = {
     player: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/explore", icon: Search, label: "Explore" },
       { to: "/player", icon: LayoutDashboard, label: "Dashboard" },
       { to: "/venues", icon: MapPin, label: "Venues" },
       { to: "/matchmaking", icon: Swords, label: "Matches" },
-      { to: "/leaderboard", icon: Trophy, label: "Ranks" },
-      { to: "/highlights", icon: Video, label: "Highlights" },
+      { to: "/communities", icon: Users, label: "Groups" },
+      { to: "/teams", icon: Shield, label: "Teams" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+      { to: "/tournaments", icon: Medal, label: "Tournaments" },
+      { to: "/coaching", icon: Dumbbell, label: "Coaching" },
     ],
+  };
+  const mobileLinks = {
+    player: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/explore", icon: Search, label: "Explore" },
+      { to: "/communities", icon: Users, label: "Groups" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+  };
+  const links = {
+    player: desktopLinks.player,
     venue_owner: [
       { to: "/owner", icon: Building2, label: "Dashboard" },
       { to: "/pos", icon: ShoppingCart, label: "POS" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
-      { to: "/highlights", icon: Video, label: "Highlights" },
+      { to: "/communities", icon: Users, label: "Groups" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+      { to: "/tournaments", icon: Medal, label: "Tournaments" },
     ],
     coach: [
       { to: "/coach", icon: GraduationCap, label: "Dashboard" },
+      { to: "/communities", icon: Users, label: "Groups" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
     super_admin: [
       { to: "/admin", icon: Shield, label: "Admin Console" },
@@ -88,6 +109,7 @@ export default function Navbar() {
   };
 
   const navLinks = links[user?.role] || links.player;
+  const mobileNavLinks = mobileLinks[user?.role] || mobileLinks.player;
 
   return (
     <>
@@ -95,7 +117,7 @@ export default function Navbar() {
       <nav className="hidden md:flex fixed top-0 w-full z-50 h-14 items-center justify-between px-6 bg-background/80 backdrop-blur-xl border-b border-border"
         data-testid="desktop-navbar">
         <div className="flex items-center gap-10">
-          <Link to="/dashboard" className="font-display font-black text-lg tracking-tighter uppercase text-primary">
+          <Link to="/feed" className="font-display font-black text-lg tracking-tighter uppercase text-primary">
             Horizon
           </Link>
           <div className="flex items-center gap-6">
@@ -146,6 +168,10 @@ export default function Navbar() {
                   ))
                 )}
               </div>
+              <Link to="/notifications" onClick={() => setNotifOpen(false)}
+                className="block text-center text-xs font-bold text-primary hover:underline py-2.5 border-t border-border">
+                View All Notifications
+              </Link>
             </PopoverContent>
           </Popover>
 
@@ -172,6 +198,15 @@ export default function Navbar() {
               <DropdownMenuItem onClick={() => navigate("/profile")} data-testid="menu-profile">
                 <User className="mr-2 h-4 w-4" /> Profile
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/player-card/me")}>
+                <Trophy className="mr-2 h-4 w-4" /> Player Card
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/bookmarks")}>
+                <Bookmark className="mr-2 h-4 w-4" /> Saved Posts
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/privacy")}>
+                <Lock className="mr-2 h-4 w-4" /> Privacy & Data
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout} className="text-destructive" data-testid="menu-logout">
                 <LogOut className="mr-2 h-4 w-4" /> Logout
@@ -181,71 +216,49 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Mobile bottom nav */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[72px] flex items-center justify-around bg-background border-t border-border safe-area-bottom"
-        style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}
+      {/* Mobile bottom nav — Instagram-style 5 tabs */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[64px] flex items-center justify-around bg-background/95 backdrop-blur-xl border-t border-border"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 4px)" }}
         data-testid="mobile-navbar">
-        {navLinks.map(l => (
+        {mobileNavLinks.map(l => (
           <Link key={l.to} to={l.to} data-testid={`mobile-nav-${l.label.toLowerCase()}`}
-            className={`flex flex-col items-center justify-center gap-0.5 min-w-0 w-14 min-h-[48px] rounded-lg transition-colors ${
+            className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-[48px] transition-colors ${
               path === l.to || path.startsWith(l.to + "/")
-                ? "text-primary bg-primary/10"
-                : "text-muted-foreground active:text-foreground active:bg-secondary"
+                ? "text-primary"
+                : "text-muted-foreground active:text-foreground"
             }`}>
-            <l.icon className="h-5 w-5 shrink-0" />
-            <span className="text-[9px] font-semibold leading-tight truncate max-w-full px-0.5">{l.label}</span>
+            <l.icon className={`h-6 w-6 shrink-0 ${path === l.to || path.startsWith(l.to + "/") ? "stroke-[2.5]" : ""}`} />
+            <span className="text-[9px] font-semibold leading-tight">{l.label}</span>
           </Link>
         ))}
-        <Popover>
-          <PopoverTrigger asChild>
-            <button className="relative flex flex-col items-center justify-center gap-0.5 min-w-0 w-14 min-h-[48px] rounded-lg text-muted-foreground active:text-foreground active:bg-secondary transition-colors"
-              data-testid="mobile-notification-bell">
-              <Bell className="h-5 w-5 shrink-0" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 h-3.5 min-w-[14px] px-0.5 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
-              )}
-              <span className="text-[9px] font-semibold leading-tight">Alerts</span>
-            </button>
-          </PopoverTrigger>
-          <PopoverContent align="center" side="top" className="w-80 p-0 mb-2">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <span className="text-sm font-bold">Notifications</span>
-              {unreadCount > 0 && (
-                <button onClick={handleMarkAllRead} className="text-[10px] text-primary hover:underline flex items-center gap-1">
-                  <CheckCheck className="h-3 w-3" /> Mark all read
-                </button>
-              )}
-            </div>
-            <div className="max-h-56 overflow-y-auto">
-              {notifications.length === 0 ? (
-                <div className="p-6 text-center text-muted-foreground text-xs">No notifications yet</div>
-              ) : (
-                notifications.map(n => (
-                  <button key={n.id} onClick={() => handleNotifClick(n)}
-                    className={`w-full text-left px-4 py-3 border-b border-border/50 hover:bg-secondary/50 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}>
-                    <div className="flex items-start gap-2">
-                      {!n.is_read && <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />}
-                      <div className={!n.is_read ? "" : "ml-4"}>
-                        <div className="text-xs font-semibold">{n.title}</div>
-                        <div className="text-[11px] text-muted-foreground mt-0.5">{n.message}</div>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-          </PopoverContent>
-        </Popover>
-        <Link to="/profile" data-testid="mobile-nav-profile"
-          className={`flex flex-col items-center justify-center gap-0.5 min-w-0 w-14 min-h-[48px] rounded-lg transition-colors ${
-            path === "/profile"
-              ? "text-primary bg-primary/10"
-              : "text-muted-foreground active:text-foreground active:bg-secondary"
+        {/* Notification tab */}
+        <Link to="/notifications" data-testid="mobile-nav-alerts"
+          className={`relative flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-[48px] transition-colors ${
+            path === "/notifications" ? "text-primary" : "text-muted-foreground active:text-foreground"
           }`}>
-          <User className="h-5 w-5 shrink-0" />
-          <span className="text-[9px] font-semibold leading-tight">Profile</span>
+          <Bell className={`h-6 w-6 shrink-0 ${path === "/notifications" ? "stroke-[2.5]" : ""}`} />
+          {unreadCount > 0 && (
+            <span className="absolute top-1 right-1/4 h-4 min-w-[16px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </span>
+          )}
+          <span className="text-[9px] font-semibold leading-tight">Alerts</span>
+        </Link>
+        {/* Profile tab */}
+        <Link to="/profile" data-testid="mobile-nav-profile"
+          className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 min-h-[48px] transition-colors ${
+            path === "/profile" || path.startsWith("/player-card/")
+              ? "text-primary"
+              : "text-muted-foreground active:text-foreground"
+          }`}>
+          <div className={`h-7 w-7 rounded-full flex items-center justify-center overflow-hidden ${
+            path === "/profile" ? "ring-2 ring-primary" : ""
+          }`}>
+            {user?.avatar
+              ? <img src={user.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+              : <User className="h-5 w-5" />}
+          </div>
+          <span className="text-[9px] font-semibold leading-tight">Me</span>
         </Link>
       </nav>
 

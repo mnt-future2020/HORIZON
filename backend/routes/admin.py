@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
-from auth import get_current_user, get_platform_settings, require_admin, hash_pw
+from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw
 import s3_service
 import uuid
 
@@ -44,7 +44,7 @@ async def admin_dashboard(user=Depends(get_current_user)):
 async def admin_list_users(user=Depends(get_current_user), role: Optional[str] = None, status: Optional[str] = None):
     await require_admin(user)
     query = {"role": {"$ne": "super_admin"}}
-    if role:
+    if role and role != "super_admin":
         query["role"] = role
     if status:
         query["account_status"] = status
@@ -87,14 +87,18 @@ async def admin_reject_user(user_id: str, user=Depends(get_current_user)):
 @router.put("/admin/users/{user_id}/suspend")
 async def admin_suspend_user(user_id: str, user=Depends(get_current_user)):
     await require_admin(user)
-    await db.users.update_one({"id": user_id}, {"$set": {"account_status": "suspended"}})
+    result = await db.users.update_one({"id": user_id}, {"$set": {"account_status": "suspended"}})
+    if result.matched_count == 0:
+        raise HTTPException(404, "User not found")
     return {"message": "User suspended"}
 
 
 @router.put("/admin/users/{user_id}/activate")
 async def admin_activate_user(user_id: str, user=Depends(get_current_user)):
     await require_admin(user)
-    await db.users.update_one({"id": user_id}, {"$set": {"account_status": "active"}})
+    result = await db.users.update_one({"id": user_id}, {"$set": {"account_status": "active"}})
+    if result.matched_count == 0:
+        raise HTTPException(404, "User not found")
     return {"message": "User activated"}
 
 
@@ -169,7 +173,12 @@ async def admin_update_settings(request: Request, user=Depends(get_current_user)
 async def admin_change_password(request: Request, user=Depends(get_current_user)):
     await require_admin(user)
     data = await request.json()
+    current_pw = data.get("current_password", "")
     new_pw = data.get("new_password", "")
+    # Verify current password before allowing change
+    full_user = await db.users.find_one({"id": user["id"]})
+    if not full_user or not verify_pw(current_pw, full_user.get("password_hash", "")):
+        raise HTTPException(400, "Current password is incorrect")
     if len(new_pw) < 6:
         raise HTTPException(400, "Password must be at least 6 characters")
     await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(new_pw)}})
@@ -209,6 +218,8 @@ async def upload_video(file: UploadFile = File(...), user=Depends(get_current_us
     """Upload a video to S3. Returns {url} or 503 if not configured."""
     if file.content_type not in ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"]:
         raise HTTPException(400, "Only MP4/MOV/AVI/WebM videos allowed")
+    if file.size and file.size > 100 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 100 MB)")
     content = await file.read()
     ext = file.filename.split(".")[-1] if "." in file.filename else "mp4"
     url = await s3_service.upload_bytes(content, "videos", f"{uuid.uuid4().hex}.{ext}", file.content_type)
@@ -224,34 +235,3 @@ async def admin_set_user_plan(user_id: str, request: Request, user=Depends(get_c
     plan_id = data.get("plan_id", "free")
     await db.users.update_one({"id": user_id}, {"$set": {"subscription_plan": plan_id}})
     return {"message": f"Plan set to {plan_id}"}
-
-
-# --- Subscription Routes ---
-@router.get("/subscription/my-plan")
-async def get_my_plan(user=Depends(get_current_user)):
-    user_plan = user.get("subscription_plan", "free")
-    platform = await get_platform_settings()
-    plans = platform.get("subscription_plans", [])
-    plan_config = next((p for p in plans if p["id"] == user_plan), None)
-    if not plan_config:
-        plan_config = {"id": "free", "name": "Free", "price": 0, "features": ["1 venue"], "max_venues": 1}
-    current_venues = await db.venues.count_documents({"owner_id": user["id"]})
-    return {
-        "current_plan": plan_config,
-        "venues_used": current_venues,
-        "venues_limit": plan_config["max_venues"],
-        "all_plans": plans
-    }
-
-
-@router.put("/subscription/upgrade")
-async def upgrade_plan(request: Request, user=Depends(get_current_user)):
-    data = await request.json()
-    plan_id = data.get("plan_id")
-    platform = await get_platform_settings()
-    plans = platform.get("subscription_plans", [])
-    plan = next((p for p in plans if p["id"] == plan_id), None)
-    if not plan:
-        raise HTTPException(400, "Invalid plan")
-    await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_plan": plan_id}})
-    return {"message": f"Upgraded to {plan['name']}", "plan": plan}

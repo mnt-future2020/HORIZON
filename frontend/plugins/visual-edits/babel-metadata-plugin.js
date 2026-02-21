@@ -913,18 +913,21 @@ const babelMetadataPlugin = ({ types: t }) => {
 
       let result = null;
 
+      try {
       traverse(ast, {
         ImportDeclaration(importPath) {
+          try {
           if (result) return;
 
-          const source = importPath.node.source.value;
+          const source = importPath.node?.source?.value;
+          if (!source) return;
           const resolvedPath = resolveImportPath(source, absPath);
           if (resolvedPath !== componentFile) return;
 
           // Find the local name for this import
           let localName = null;
-          for (const spec of importPath.node.specifiers) {
-            if (t.isImportSpecifier(spec) && spec.imported.name === componentName) {
+          for (const spec of importPath.node.specifiers || []) {
+            if (t.isImportSpecifier(spec) && spec.imported?.name === componentName) {
               localName = spec.local.name;
             } else if (t.isImportDefaultSpecifier(spec)) {
               localName = spec.local.name;
@@ -932,8 +935,10 @@ const babelMetadataPlugin = ({ types: t }) => {
           }
           if (!localName) return;
 
-          // Search for usages of this component
-          importPath.parentPath.parentPath.traverse({
+          // Search for usages of this component - safely get program scope
+          const programPath = importPath.findParent(p => p.isProgram());
+          if (!programPath) return;
+          programPath.traverse({
             JSXOpeningElement(jsxPath) {
               if (result) return;
 
@@ -968,8 +973,13 @@ const babelMetadataPlugin = ({ types: t }) => {
               }
             }
           });
+          } catch (_e) { /* skip this import if traversal fails */ }
         }
       });
+      } catch (err) {
+        // Gracefully handle AST traversal errors in cross-file analysis
+        continue;
+      }
 
       if (result) return result;
     }

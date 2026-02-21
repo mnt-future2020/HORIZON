@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, pricingMLAPI, coachingAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AthleticStatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -13,22 +14,14 @@ import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Power, Users, CreditCard, X, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, ImageOff } from "lucide-react";
+import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Power, Users, CreditCard, X, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, ImageOff, Rocket, Brain, Zap, Camera, ScanLine, ShieldCheck, UserCheck, UserX, ClipboardList, Loader2, XCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// Professional / venue owner imagery
+const OWNER_HERO = "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
+const VENUE_BANNER = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80";
 
-function StatCard({ icon: Icon, label, value, color }) {
-  return (
-    <div className="glass-card rounded-lg p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
-      <div className={`p-2 sm:p-2.5 rounded-lg ${color}`}><Icon className="h-4 w-4 sm:h-5 sm:w-5" /></div>
-      <div className="min-w-0">
-        <div className="text-xl sm:text-2xl font-display font-black text-foreground truncate">{value}</div>
-        <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase tracking-widest mt-0.5">{label}</div>
-      </div>
-    </div>
-  );
-}
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 /** Image upload component for venue images — uses /api/upload/image (S3) */
 function VenueImageUpload({ images = [], onChange }) {
@@ -424,20 +417,46 @@ function VenueOwnerDashboardContent() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="owner-dashboard">
-      <div className="flex items-start justify-between gap-3 mb-8">
-        <div className="min-w-0">
-          <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Venue Owner</span>
-          <h1 className="font-display text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mt-1 truncate">
-            Welcome, <span className="text-primary">{user?.name}</span>
-          </h1>
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6" data-testid="owner-dashboard">
+      {/* Welcome Hero - With Professional Imagery */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-10 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden"
+      >
+        <div className="grid md:grid-cols-3 gap-0">
+          {/* Text Content */}
+          <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Venue Owner</span>
+            <h1 className="font-display text-display-md md:text-display-lg font-black tracking-athletic mt-2 truncate">
+              Welcome, <span className="bg-gradient-athletic bg-clip-text text-transparent">{user?.name}</span>
+            </h1>
+            <p className="text-muted-foreground font-semibold mt-3 text-base">
+              Manage your venues, track revenue, and grow your sports business.
+            </p>
+            <div className="flex items-center gap-3 mt-5">
+              <Button
+                onClick={() => setCreateVenueOpen(true)}
+                className="bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-black uppercase tracking-wide h-12 px-6 shrink-0 rounded-xl"
+                data-testid="create-venue-btn"
+              >
+                <Plus className="h-5 w-5 mr-2" /> Add Venue
+              </Button>
+            </div>
+          </div>
+          {/* Professional Image */}
+          <div className="hidden md:block relative h-full min-h-[220px]">
+            <img
+              src={OWNER_HERO}
+              alt="Professional team meeting"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-card/80 to-transparent" />
+          </div>
         </div>
-        <Dialog open={createVenueOpen} onOpenChange={setCreateVenueOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-primary-foreground font-bold text-xs h-9 shrink-0" data-testid="create-venue-btn">
-              <Plus className="h-4 w-4 mr-1" /> Add Venue
-            </Button>
-          </DialogTrigger>
+      </motion.div>
+
+      <Dialog open={createVenueOpen} onOpenChange={setCreateVenueOpen}>
           <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -474,26 +493,65 @@ function VenueOwnerDashboardContent() {
             </div>
           </DialogContent>
         </Dialog>
+
+      {/* Stats - Athletic Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <AthleticStatCard
+          icon={Building2}
+          label="Total Venues"
+          value={venues.length}
+          iconColor="primary"
+          delay={0.1}
+        />
+        <AthleticStatCard
+          icon={Calendar}
+          label="Total Bookings"
+          value={totalBookings}
+          iconColor="violet"
+          delay={0.2}
+        />
+        <AthleticStatCard
+          icon={IndianRupee}
+          label="Total Revenue"
+          value={`₹${(totalRevenue / 1000).toFixed(1)}K`}
+          iconColor="amber"
+          delay={0.3}
+        />
+        <AthleticStatCard
+          icon={TrendingUp}
+          label="Avg Booking"
+          value={`₹${analytics?.avg_booking_value || 0}`}
+          iconColor="sky"
+          delay={0.4}
+        />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
-        <StatCard icon={Building2} label="Venues" value={venues.length} color="bg-primary/10 text-primary" />
-        <StatCard icon={Calendar} label="Bookings" value={totalBookings} color="bg-violet-500/10 text-violet-400" />
-        <StatCard icon={IndianRupee} label="Revenue" value={`\u20B9${(totalRevenue / 1000).toFixed(1)}K`} color="bg-amber-500/10 text-amber-400" />
-        <StatCard icon={TrendingUp} label="Avg Value" value={`\u20B9${analytics?.avg_booking_value || 0}`} color="bg-sky-500/10 text-sky-400" />
-      </div>
-
-      {/* Venue Selector */}
+      {/* Venue Selector - Athletic Pills */}
       {venues.length > 0 && (
-        <div className="mb-6 space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
-            {venues.map(v => (
-              <Button key={v.id} variant={selectedVenue?.id === v.id ? "default" : "outline"} size="sm"
-                onClick={() => handleSelectVenue(v)} data-testid={`venue-tab-${v.id}`}
-                className={`shrink-0 text-xs ${selectedVenue?.id === v.id ? "bg-primary text-primary-foreground" : ""}`}>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mb-8 space-y-4"
+        >
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Your Venues</h2>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+            {venues.map((v, idx) => (
+              <motion.button
+                key={v.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 + idx * 0.05 }}
+                onClick={() => handleSelectVenue(v)}
+                data-testid={`venue-tab-${v.id}`}
+                className={`shrink-0 px-6 py-3 rounded-xl font-bold uppercase tracking-wide text-sm transition-all duration-300 border-2 ${
+                  selectedVenue?.id === v.id
+                    ? "bg-primary/20 border-primary text-primary shadow-glow-primary scale-105"
+                    : "bg-card/50 border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary hover:scale-105"
+                }`}
+              >
                 {v.name}
-              </Button>
+              </motion.button>
             ))}
           </div>
           {/* Public page actions for selected venue */}
@@ -546,7 +604,7 @@ function VenueOwnerDashboardContent() {
               </Button>
             </div>
           )}
-        </div>
+        </motion.div>
       )}
 
       <Tabs defaultValue="bookings" data-testid="owner-tabs">
@@ -560,6 +618,12 @@ function VenueOwnerDashboardContent() {
           </TabsTrigger>
           <TabsTrigger value="pricing" className="font-bold text-xs" data-testid="tab-pricing">Pricing</TabsTrigger>
           <TabsTrigger value="analytics" className="font-bold text-xs">Analytics</TabsTrigger>
+          <TabsTrigger value="ml-pricing" className="font-bold text-xs" data-testid="tab-ml-pricing">
+            <Brain className="h-3 w-3 mr-1" />AI Pricing
+          </TabsTrigger>
+          <TabsTrigger value="checkin" className="font-bold text-xs" data-testid="tab-checkin">
+            <QrCode className="h-3 w-3 mr-1" />Check-in
+          </TabsTrigger>
           <TabsTrigger value="plan" className="font-bold text-xs" data-testid="tab-plan">Plan</TabsTrigger>
         </TabsList>
 
@@ -686,7 +750,7 @@ function VenueOwnerDashboardContent() {
                       <span className="text-sm font-bold">{(statusConfig[selectedBooking.status] || statusConfig.pending).label}</span>
                     </div>
                     {selectedBooking.payment_gateway && (
-                      <Badge variant="outline" className="text-[10px]">{selectedBooking.payment_gateway === "mock" ? "Mock Payment" : "Razorpay"}</Badge>
+                      <Badge variant="outline" className="text-[10px]">{selectedBooking.payment_gateway === "razorpay" ? "Razorpay" : "Test Mode"}</Badge>
                     )}
                   </div>
                 </div>
@@ -755,10 +819,10 @@ function VenueOwnerDashboardContent() {
                           <p className="text-xs text-foreground mt-0.5 font-mono">{selectedBooking.payment_details.razorpay_payment_id}</p>
                         </>
                       )}
-                      {selectedBooking.payment_details.mock_payment_id && (
+                      {(selectedBooking.payment_details.test_payment_id || selectedBooking.payment_details.mock_payment_id) && (
                         <>
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2 block">Mock ID</span>
-                          <p className="text-xs text-foreground mt-0.5 font-mono">{selectedBooking.payment_details.mock_payment_id}</p>
+                          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2 block">Test ID</span>
+                          <p className="text-xs text-foreground mt-0.5 font-mono">{selectedBooking.payment_details.test_payment_id || selectedBooking.payment_details.mock_payment_id}</p>
                         </>
                       )}
                     </div>
@@ -1205,6 +1269,11 @@ function VenueOwnerDashboardContent() {
           )}
         </TabsContent>
 
+        {/* ML Pricing Tab */}
+        <TabsContent value="ml-pricing" data-testid="ml-pricing-tab-content">
+          {selectedVenue && <MLPricingPanel venueId={selectedVenue.id} venueName={selectedVenue.name} />}
+        </TabsContent>
+
         <TabsContent value="plan" data-testid="plan-tab-content">
           {planData ? (
             <div className="space-y-6">
@@ -1257,6 +1326,13 @@ function VenueOwnerDashboardContent() {
           ) : (
             <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           )}
+        </TabsContent>
+
+        <TabsContent value="checkin" data-testid="checkin-tab-content">
+          <VenueCheckinPanel
+            bookings={bookings.filter(b => b.venue_id === selectedVenue?.id)}
+            venueName={selectedVenue?.name}
+          />
         </TabsContent>
       </Tabs>
 
@@ -1386,6 +1462,460 @@ function VenueOwnerDashboardContent() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── ML Pricing Panel Component ─────────────────────────────────────────────
+function MLPricingPanel({ venueId, venueName }) {
+  const [pricingMode, setPricingMode] = useState("rule_based");
+  const [forecast, setForecast] = useState(null);
+  const [forecastDate, setForecastDate] = useState(new Date().toISOString().split("T")[0]);
+  const [training, setTraining] = useState(false);
+  const [trainResult, setTrainResult] = useState(null);
+  const [loadingForecast, setLoadingForecast] = useState(false);
+  const [switching, setSwitching] = useState(false);
+
+  useEffect(() => {
+    pricingMLAPI.getMode(venueId).then(r => setPricingMode(r.data.pricing_mode || "rule_based")).catch(() => {});
+  }, [venueId]);
+
+  const loadForecast = useCallback(async () => {
+    setLoadingForecast(true);
+    try {
+      const res = await pricingMLAPI.demandForecast(venueId, forecastDate);
+      setForecast(res.data);
+    } catch {
+      setForecast(null);
+    } finally {
+      setLoadingForecast(false);
+    }
+  }, [venueId, forecastDate]);
+
+  useEffect(() => { loadForecast(); }, [loadForecast]);
+
+  const handleToggleMode = async () => {
+    const newMode = pricingMode === "rule_based" ? "ml" : "rule_based";
+    setSwitching(true);
+    try {
+      await pricingMLAPI.setMode(venueId, newMode);
+      setPricingMode(newMode);
+      toast.success(`Pricing mode switched to ${newMode === "ml" ? "AI/ML" : "Rule-based"}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to switch mode");
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const handleTrain = async () => {
+    setTraining(true);
+    setTrainResult(null);
+    try {
+      const res = await pricingMLAPI.trainModel(venueId);
+      setTrainResult(res.data);
+      if (res.data.status === "trained") {
+        toast.success("ML model trained successfully!");
+      } else {
+        toast.info(res.data.message);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Training failed");
+    } finally {
+      setTraining(false);
+    }
+  };
+
+  const demandColor = (level) => {
+    if (level === "high") return "text-emerald-400 bg-emerald-500/15";
+    if (level === "medium") return "text-amber-400 bg-amber-500/15";
+    return "text-muted-foreground bg-secondary/50";
+  };
+
+  return (
+    <div className="space-y-5" data-testid="ml-pricing-panel">
+      {/* Mode Toggle Card */}
+      <div className="glass-card rounded-xl p-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Brain className="h-5 w-5 text-primary" />
+              <h3 className="font-bold text-sm">AI Dynamic Pricing</h3>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {pricingMode === "ml"
+                ? "ML model is actively adjusting prices based on demand patterns"
+                : "Using rule-based pricing. Switch to ML for AI-driven dynamic prices."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Rule-based</span>
+            <button onClick={handleToggleMode} disabled={switching}
+              className={`w-12 h-6 rounded-full transition-all relative ${pricingMode === "ml" ? "bg-primary" : "bg-secondary"}`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${pricingMode === "ml" ? "left-6" : "left-0.5"}`} />
+            </button>
+            <span className="text-xs font-bold text-primary">AI/ML</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Train Model Card */}
+      <div className="glass-card rounded-xl p-5">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-bold text-sm mb-1">Train ML Model</h3>
+            <p className="text-xs text-muted-foreground">
+              Train the pricing model using your venue's historical booking data.
+              Requires at least 50 confirmed bookings.
+            </p>
+          </div>
+          <Button onClick={handleTrain} disabled={training}
+            className="bg-primary text-primary-foreground font-bold text-xs h-9"
+            data-testid="train-model-btn">
+            {training ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+            ) : (
+              <Zap className="h-4 w-4 mr-1" />
+            )}
+            {training ? "Training..." : "Train Model"}
+          </Button>
+        </div>
+        {trainResult && (
+          <div className={`mt-3 p-3 rounded-lg text-xs ${trainResult.status === "trained" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+            {trainResult.message}
+          </div>
+        )}
+      </div>
+
+      {/* Demand Forecast */}
+      <div className="glass-card rounded-xl p-5">
+        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div>
+            <h3 className="font-bold text-sm mb-1">Demand Forecast</h3>
+            <p className="text-xs text-muted-foreground">Predicted demand and ML-suggested prices for each slot</p>
+          </div>
+          <Input type="date" value={forecastDate}
+            onChange={e => setForecastDate(e.target.value)}
+            className="w-40 h-9 bg-background border-border text-xs" />
+        </div>
+        {loadingForecast ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : forecast?.forecasts?.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {forecast.forecasts.map((f, i) => (
+              <div key={i} className="glass-card rounded-lg p-3 text-center">
+                <div className="text-xs font-mono text-muted-foreground mb-1">{f.start_time}</div>
+                <div className={`text-lg font-display font-black ${f.ml_price ? "text-primary" : "text-foreground"}`}>
+                  ₹{f.ml_price || f.base_price || "—"}
+                </div>
+                {f.demand_level && (
+                  <Badge className={`text-[9px] mt-1 ${demandColor(f.demand_level)}`}>
+                    {f.demand_level}
+                  </Badge>
+                )}
+                {f.confidence != null && (
+                  <div className="text-[9px] text-muted-foreground mt-0.5">
+                    {Math.round(f.confidence * 100)}% conf
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Brain className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <p className="text-xs">No forecast data. Train the model with 50+ bookings first.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+// ─── Venue QR Check-in Panel ─────────────────────────────────────────────────
+function VenueCheckinPanel({ bookings = [], venueName }) {
+  const [scanMode, setScanMode] = useState("camera");
+  const [qrInput, setQrInput] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [result, setResult] = useState(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState(null);
+  const scannerRef = useRef(null);
+  const scannerInstanceRef = useRef(null);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todayBookings = bookings.filter(b => b.date === today && b.status === "confirmed");
+  const checkedIn = todayBookings.filter(b => b.checked_in);
+  const notCheckedIn = todayBookings.filter(b => !b.checked_in);
+
+  const handleVerify = async (code) => {
+    const qrData = (code || qrInput).trim();
+    if (!qrData) return;
+    setVerifying(true);
+    setResult(null);
+    try {
+      const res = await coachingAPI.verifyCheckin({ qr_data: qrData });
+      setResult(res.data);
+      stopCamera();
+    } catch (err) {
+      setResult({ error: true, message: err.response?.data?.detail || "Verification failed" });
+    }
+    setVerifying(false);
+  };
+
+  const startCamera = async () => {
+    setCameraError(null);
+    setCameraActive(true);
+    setResult(null);
+    setTimeout(async () => {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        const scanner = new Html5Qrcode("venue-qr-reader");
+        scannerInstanceRef.current = scanner;
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 250, height: 250 } },
+          (decodedText) => { handleVerify(decodedText); },
+          () => {}
+        );
+      } catch (err) {
+        setCameraError(
+          err?.toString?.().includes("NotAllowed")
+            ? "Camera permission denied. Please allow camera access."
+            : err?.toString?.().includes("NotFound")
+              ? "No camera found on this device."
+              : "Could not start camera. Try manual entry."
+        );
+        setCameraActive(false);
+      }
+    }, 100);
+  };
+
+  const stopCamera = async () => {
+    try {
+      if (scannerInstanceRef.current) {
+        await scannerInstanceRef.current.stop();
+        scannerInstanceRef.current.clear();
+        scannerInstanceRef.current = null;
+      }
+    } catch { /* ignore */ }
+    setCameraActive(false);
+  };
+
+  useEffect(() => {
+    return () => { stopCamera(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="space-y-6">
+      {/* Mode tabs */}
+      <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg w-fit">
+        <button onClick={() => { setScanMode("camera"); stopCamera(); }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <Camera className="h-3.5 w-3.5" />Camera Scan
+        </button>
+        <button onClick={() => { setScanMode("manual"); stopCamera(); }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "manual" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <ScanLine className="h-3.5 w-3.5" />Manual Entry
+        </button>
+        <button onClick={() => { setScanMode("attendance"); stopCamera(); }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <ClipboardList className="h-3.5 w-3.5" />Attendance
+          {todayBookings.length > 0 && (
+            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+              {checkedIn.length}/{todayBookings.length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* Camera */}
+      {scanMode === "camera" && (
+        <div className="glass-card rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Camera className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-base">Scan Player's QR Code</h3>
+              <p className="text-xs text-muted-foreground">
+                Point your camera at the player's phone to verify check-in at {venueName || "this venue"}.
+              </p>
+            </div>
+          </div>
+
+          {!cameraActive ? (
+            <div className="text-center">
+              <div className="w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 flex flex-col items-center justify-center mb-4 border-2 border-dashed border-border">
+                <Camera className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                <p className="text-sm text-muted-foreground mb-1">Camera preview will appear here</p>
+                {cameraError && <p className="text-xs text-destructive mt-2 px-4">{cameraError}</p>}
+              </div>
+              <Button className="bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover" onClick={startCamera}>
+                <Camera className="h-4 w-4 mr-2" /> Start Camera Scanner
+              </Button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <div id="venue-qr-reader" ref={scannerRef} className="w-full max-w-sm mx-auto rounded-xl overflow-hidden mb-4" />
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-muted-foreground font-bold">Scanning... point at QR code</span>
+              </div>
+              <Button variant="outline" size="sm" onClick={stopCamera} className="text-xs">
+                <XCircle className="h-3.5 w-3.5 mr-1" /> Stop Camera
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Manual */}
+      {scanMode === "manual" && (
+        <div className="glass-card rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <ScanLine className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-display font-bold text-base">Manual Code Entry</h3>
+              <p className="text-xs text-muted-foreground">Type the check-in code shown below the player's QR.</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <Input value={qrInput} onChange={e => setQrInput(e.target.value)}
+              placeholder="HORIZON_CHECKIN:booking-id:TOKEN"
+              className="bg-background border-border font-mono text-sm"
+              onKeyDown={e => e.key === "Enter" && handleVerify()} />
+            <Button className="w-full bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover"
+              onClick={() => handleVerify()} disabled={verifying || !qrInput.trim()}>
+              {verifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+              Verify Check-in
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Attendance */}
+      {scanMode === "attendance" && (
+        <div className="glass-card rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <ClipboardList className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-sm">Today's Attendance — {venueName}</h3>
+                <p className="text-[10px] text-muted-foreground">{today}</p>
+              </div>
+            </div>
+            {todayBookings.length > 0 && (
+              <div className="text-right">
+                <div className="font-display font-black text-xl text-primary">{checkedIn.length}/{todayBookings.length}</div>
+                <div className="text-[10px] text-muted-foreground font-bold">Checked In</div>
+              </div>
+            )}
+          </div>
+
+          {todayBookings.length > 0 && (
+            <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-4">
+              <div className="h-full bg-gradient-athletic rounded-full transition-all duration-500"
+                style={{ width: `${(checkedIn.length / todayBookings.length) * 100}%` }} />
+            </div>
+          )}
+
+          {todayBookings.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
+              <p className="text-sm">No confirmed bookings for today</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {notCheckedIn.map(b => (
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/50">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+                    <UserX className="h-4 w-4 text-amber-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm truncate">{b.host_name || b.booked_by_name || "Player"}</span>
+                      {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {b.start_time} - {b.end_time} · Turf #{b.turf_number || 1}
+                    </div>
+                  </div>
+                  <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">Pending</Badge>
+                </div>
+              ))}
+              {checkedIn.map(b => (
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <UserCheck className="h-4 w-4 text-emerald-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm truncate">{b.host_name || b.booked_by_name || "Player"}</span>
+                      {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {b.start_time} - {b.end_time} · Turf #{b.turf_number || 1}
+                      {b.checkin_time && (
+                        <span className="ml-2 text-emerald-400">
+                          at {new Date(b.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px] shrink-0">
+                    <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Present
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Result */}
+      {scanMode !== "attendance" && result && (
+        <div className={`rounded-xl border-2 p-6 text-center ${
+          result.error ? "border-destructive/50 bg-destructive/5"
+            : result.already_checked_in ? "border-amber-500/50 bg-amber-500/5"
+            : "border-emerald-500/50 bg-emerald-500/5"
+        }`}>
+          {result.error ? (
+            <>
+              <XCircle className="h-12 w-12 mx-auto mb-3 text-destructive" />
+              <p className="font-display font-bold text-lg text-destructive">Verification Failed</p>
+              <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
+            </>
+          ) : result.already_checked_in ? (
+            <>
+              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-amber-400" />
+              <p className="font-display font-bold text-lg text-amber-400">Already Checked In</p>
+              <p className="text-sm text-muted-foreground mt-1">{result.player_name} has already checked in.</p>
+            </>
+          ) : (
+            <>
+              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-emerald-400" />
+              <p className="font-display font-bold text-lg text-emerald-400">Check-in Successful!</p>
+              <p className="text-sm text-muted-foreground mt-2">
+                <span className="font-bold text-foreground">{result.player_name}</span> is checked in
+              </p>
+              {result.booking && (
+                <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
+                  <span>{result.booking.date}</span>
+                  <span>{result.booking.start_time} - {result.booking.end_time}</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }

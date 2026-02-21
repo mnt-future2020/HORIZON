@@ -44,6 +44,11 @@ async def get_academy(academy_id: str):
 
 @router.post("/academies/{academy_id}/students")
 async def add_student(academy_id: str, request: Request, user=Depends(get_current_user)):
+    academy = await db.academies.find_one({"id": academy_id})
+    if not academy:
+        raise HTTPException(404, "Academy not found")
+    if academy.get("coach_id") != user["id"]:
+        raise HTTPException(403, "Only the academy coach can manage students")
     body = await request.json()
     student = {
         "id": str(uuid.uuid4()),
@@ -65,6 +70,8 @@ async def remove_student(academy_id: str, student_id: str, user=Depends(get_curr
     academy = await db.academies.find_one({"id": academy_id})
     if not academy:
         raise HTTPException(404, "Academy not found")
+    if academy.get("coach_id") != user["id"]:
+        raise HTTPException(403, "Only the academy coach can manage students")
     students = [s for s in academy.get("students", []) if s["id"] != student_id]
     await db.academies.update_one(
         {"id": academy_id},

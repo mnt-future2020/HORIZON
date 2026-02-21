@@ -14,23 +14,21 @@ import {
   Banknote, CreditCard, Smartphone, History, ShieldAlert
 } from "lucide-react";
 
-// --- Offline queue helpers (localStorage) -----------------------------------------------
-const QUEUE_KEY = "horizon_pos_offline_queue";
-const PRODUCTS_CACHE_KEY = "horizon_pos_products_cache";
+// --- Offline queue helpers (IndexedDB with localStorage fallback) -------
+import {
+  addToOfflineQueue, getOfflineQueue, clearOfflineQueue,
+  getOfflineQueueCount, getCachedProducts as idbGetCachedProducts,
+  cacheProducts as idbCacheProducts, logSyncEvent, registerBackgroundSync,
+  migrateFromLocalStorage
+} from "@/lib/offline-store";
 
-const getQueue = () => { try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]"); } catch { return []; } };
-const setQueue = (q) => localStorage.setItem(QUEUE_KEY, JSON.stringify(q));
-const addToQueue = (sale) => setQueue([...getQueue(), sale]);
-const clearQueue = () => localStorage.removeItem(QUEUE_KEY);
-
-const getCachedProducts = (venueId) => {
-  try {
-    const raw = localStorage.getItem(`${PRODUCTS_CACHE_KEY}_${venueId}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-};
-const cacheProducts = (venueId, products) =>
-  localStorage.setItem(`${PRODUCTS_CACHE_KEY}_${venueId}`, JSON.stringify(products));
+// Async wrappers for IndexedDB operations
+const getQueueAsync = () => getOfflineQueue().catch(() => []);
+const addToQueueAsync = (sale) => addToOfflineQueue(sale).catch(() => {});
+const clearQueueAsync = () => clearOfflineQueue().catch(() => {});
+const getQueueCountAsync = () => getOfflineQueueCount().catch(() => 0);
+const getCachedProductsAsync = (venueId) => idbGetCachedProducts(venueId).catch(() => null);
+const cacheProductsAsync = (venueId, products) => idbCacheProducts(venueId, products).catch(() => {});
 
 // --- Config -------------------------------------------------------
 const CATEGORIES = [
@@ -120,7 +118,7 @@ function POSTerminal({ user }) {
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [pendingCount, setPendingCount] = useState(getQueue().length);
+  const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
   const [activeView, setActiveView] = useState("pos");
   const [summary, setSummary] = useState(null);
@@ -129,12 +127,16 @@ function POSTerminal({ user }) {
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({ name: "", category: "beverages", price: "", stock: "-1", emoji: "" });
 
-  // Online/offline listeners
+  // Online/offline listeners + IndexedDB init
   useEffect(() => {
     const onOnline = () => { setIsOnline(true); };
     const onOffline = () => setIsOnline(false);
     window.addEventListener("online", onOnline);
     window.addEventListener("offline", onOffline);
+    // Init: migrate localStorage to IndexedDB, then load count
+    migrateFromLocalStorage().then(() => getQueueCountAsync()).then(setPendingCount);
+    // Register background sync
+    registerBackgroundSync();
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
   }, []);
 
@@ -152,13 +154,12 @@ function POSTerminal({ user }) {
     }).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load products when venue changes
+  // Load products when venue changes (IndexedDB cache)
   useEffect(() => {
     if (!selectedVenue) return;
-    const cached = getCachedProducts(selectedVenue.id);
-    if (cached) setProducts(cached);
+    getCachedProductsAsync(selectedVenue.id).then(cached => { if (cached) setProducts(cached); });
     posAPI.listProducts(selectedVenue.id)
-      .then(r => { setProducts(r.data || []); cacheProducts(selectedVenue.id, r.data || []); })
+      .then(r => { setProducts(r.data || []); cacheProductsAsync(selectedVenue.id, r.data || []); })
       .catch(() => {});
   }, [selectedVenue]);
 
@@ -180,19 +181,21 @@ function POSTerminal({ user }) {
   const cartTotal = cart.reduce((s, c) => s + c.product.price * c.qty, 0);
   const cartQty = (id) => cart.find(c => c.product.id === id)?.qty || 0;
 
-  // Offline sync
+  // Offline sync (IndexedDB)
   const syncQueue = useCallback(async () => {
     if (!selectedVenue) return;
-    const queue = getQueue();
+    const queue = await getQueueAsync();
     if (!queue.length) return;
     setSyncing(true);
     try {
       await posAPI.syncBatch(selectedVenue.id, queue);
-      clearQueue();
+      await clearQueueAsync();
       setPendingCount(0);
+      await logSyncEvent({ type: "sync_success", count: queue.length, venue_id: selectedVenue.id });
       toast.success(`${queue.length} offline sale${queue.length > 1 ? "s" : ""} synced!`);
       loadSummary();
     } catch {
+      await logSyncEvent({ type: "sync_failed", count: queue.length, venue_id: selectedVenue.id });
       toast.error("Sync failed — will retry when reconnected");
     } finally { setSyncing(false); }
   }, [selectedVenue]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -232,8 +235,9 @@ function POSTerminal({ user }) {
         result = res.data;
         loadSummary();
       } else {
-        addToQueue(saleData);
-        setPendingCount(getQueue().length);
+        await addToQueueAsync(saleData);
+        const count = await getQueueCountAsync();
+        setPendingCount(count);
         result = { ...saleData, created_at: saleData.offline_at, offline: true };
         toast("Sale saved offline — will sync when connected", { icon: "📴" });
       }

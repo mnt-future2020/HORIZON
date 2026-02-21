@@ -72,23 +72,36 @@ async def create_review(venue_id: str, request_data: dict, user=Depends(get_curr
     if not booking:
         raise HTTPException(403, "You must have a confirmed booking at this venue to leave a review")
 
-    # Check if this booking already has a review from this user
-    existing = await db.reviews.find_one({"booking_id": booking_id, "user_id": user["id"]}, {"_id": 0})
-    if existing:
-        raise HTTPException(409, "You already reviewed this booking")
+    # Perform NLP sentiment analysis on review text
+    sentiment = {}
+    if comment:
+        try:
+            from services.sentiment import analyze_sentiment
+            sentiment = analyze_sentiment(comment)
+        except Exception as e:
+            logger.warning(f"Sentiment analysis failed: {e}")
 
-    review = {
-        "id": str(uuid.uuid4()),
+    review_data = {
         "venue_id": venue_id,
         "booking_id": booking_id,
         "user_id": user["id"],
         "user_name": user["name"],
         "rating": rating,
         "comment": comment,
+        "sentiment": sentiment,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
-    await db.reviews.insert_one(review)
-    review.pop("_id", None)
+    # Atomic upsert to prevent duplicate reviews (race condition fix)
+    result = await db.reviews.update_one(
+        {"booking_id": booking_id, "user_id": user["id"]},
+        {"$setOnInsert": {"id": str(uuid.uuid4()), **review_data}},
+        upsert=True
+    )
+    if result.matched_count > 0:
+        raise HTTPException(409, "You already reviewed this booking")
+    review = await db.reviews.find_one(
+        {"booking_id": booking_id, "user_id": user["id"]}, {"_id": 0}
+    )
 
     # Update venue's average rating and total reviews
     pipeline = [
@@ -125,3 +138,18 @@ async def can_review(venue_id: str, user=Depends(get_current_user)):
 
     eligible = [b for b in bookings if b["id"] not in reviewed_ids]
     return {"can_review": len(eligible) > 0, "eligible_bookings": eligible}
+
+
+@router.get("/venues/{venue_id}/reviews/sentiment")
+async def get_sentiment_summary(venue_id: str):
+    """Get aggregated NLP sentiment analysis for a venue's reviews."""
+    venue = await db.venues.find_one({"id": venue_id}, {"_id": 0, "id": 1})
+    if not venue:
+        raise HTTPException(404, "Venue not found")
+    try:
+        from services.sentiment import get_venue_sentiment_summary
+        summary = await get_venue_sentiment_summary(venue_id)
+        return summary
+    except Exception as e:
+        logger.warning(f"Sentiment summary failed: {e}")
+        return {"total_analyzed": 0, "error": str(e)}

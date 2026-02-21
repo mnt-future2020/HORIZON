@@ -15,7 +15,7 @@ import s3_service
 router = APIRouter(prefix="/highlights", tags=["highlights"])
 logger = logging.getLogger(__name__)
 
-UPLOAD_DIR = Path("/app/backend/uploads/videos")
+UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "videos"
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 GEMINI_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
@@ -107,13 +107,17 @@ async def analyze_video(highlight_id: str, user=Depends(get_current_user)):
         raise HTTPException(404, "Highlight not found")
     if hl["user_id"] != user["id"]:
         raise HTTPException(403, "Not your highlight")
-    if hl["status"] == "analyzing":
-        raise HTTPException(409, "Analysis already in progress")
 
     if not GEMINI_KEY:
         raise HTTPException(503, "AI service not configured")
 
-    await db.highlights.update_one({"id": highlight_id}, {"$set": {"status": "analyzing"}})
+    # Atomic status transition to prevent concurrent analysis (TOCTOU fix)
+    result = await db.highlights.update_one(
+        {"id": highlight_id, "status": {"$ne": "analyzing"}},
+        {"$set": {"status": "analyzing"}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(409, "Analysis already in progress")
 
     try:
         video_path = hl["video_path"]
@@ -174,13 +178,15 @@ async def analyze_video(highlight_id: str, user=Depends(get_current_user)):
         try:
             analysis = json.loads(clean)
         except json.JSONDecodeError:
+            logger.warning(f"AI returned non-JSON for highlight {highlight_id}, extracting text summary")
             analysis = {
                 "summary": response_text[:500],
-                "sport_detected": "Unknown",
-                "duration_estimate": "Unknown",
-                "match_intensity": "medium",
-                "players_observed": "Unknown",
-                "key_moments": []
+                "sport_detected": None,
+                "duration_estimate": None,
+                "match_intensity": None,
+                "players_observed": None,
+                "key_moments": [],
+                "parse_warning": "AI response was not structured JSON. Summary extracted from raw text."
             }
 
         await db.highlights.update_one(
@@ -201,7 +207,7 @@ async def analyze_video(highlight_id: str, user=Depends(get_current_user)):
         logger.error(f"Analysis failed for {highlight_id}: {e}")
         await db.highlights.update_one(
             {"id": highlight_id},
-            {"$set": {"status": "failed"}}
+            {"$set": {"status": "failed", "analysis_error": str(e)}}
         )
         raise HTTPException(500, f"Analysis failed: {str(e)}")
 

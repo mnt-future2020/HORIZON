@@ -118,16 +118,6 @@ async def _insert_sale(data: dict, user: dict) -> dict:
 
     total = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in items)
 
-    # Decrement finite stock
-    for item in items:
-        pid = item.get("product_id")
-        qty = int(item.get("qty", 1))
-        if pid:
-            product = await db.pos_products.find_one({"id": pid})
-            if product and product.get("stock", -1) >= 0:
-                new_stock = max(0, product["stock"] - qty)
-                await db.pos_products.update_one({"id": pid}, {"$set": {"stock": new_stock}})
-
     sale = {
         "id": data.get("offline_id") or str(uuid.uuid4()),   # honour offline ID for idempotency
         "venue_id": venue_id,
@@ -140,9 +130,23 @@ async def _insert_sale(data: dict, user: dict) -> dict:
         "offline_at": data.get("offline_at"),   # original timestamp if offline sale
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
-    # Upsert to handle duplicate offline sync
+    # Idempotency check BEFORE stock decrement to avoid double-decrement
     existing = await db.pos_sales.find_one({"id": sale["id"]})
     if not existing:
+        # Decrement finite stock atomically
+        for item in items:
+            pid = item.get("product_id")
+            qty = int(item.get("qty", 1))
+            if pid:
+                await db.pos_products.update_one(
+                    {"id": pid, "stock": {"$gte": 0}},
+                    {"$inc": {"stock": -qty}}
+                )
+                # Clamp to zero if it went negative
+                await db.pos_products.update_one(
+                    {"id": pid, "stock": {"$lt": 0}},
+                    {"$set": {"stock": 0}}
+                )
         await db.pos_sales.insert_one(sale)
     sale.pop("_id", None)
     return sale

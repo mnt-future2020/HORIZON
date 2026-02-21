@@ -23,13 +23,25 @@ from routes.highlights import router as highlights_router
 from routes.iot import router as iot_router
 from routes.reviews import router as reviews_router
 from routes.pos import router as pos_router
+from routes.waitlist import router as waitlist_router
+from routes.compliance import router as compliance_router
+from routes.subscriptions import router as subscriptions_router
+from routes.pricing_ml import router as pricing_ml_router
+from routes.social import router as social_router
+from routes.tournaments import router as tournaments_router
+from routes.coaching import router as coaching_router
+from routes.communities import router as communities_router
+from routes.recommendations import router as recommendations_router
 
 app = FastAPI(title="Horizon Sports API")
 
 # Include all routers with /api prefix
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           notifications_router, admin_router, academies_router, analytics_router,
-          ratings_router, highlights_router, iot_router, reviews_router, pos_router]:
+          ratings_router, highlights_router, iot_router, reviews_router, pos_router,
+          waitlist_router, compliance_router, subscriptions_router, pricing_ml_router,
+          social_router, tournaments_router, coaching_router, communities_router,
+          recommendations_router]:
     app.include_router(r, prefix="/api")
 
 
@@ -38,6 +50,35 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
 async def seed():
     await seed_demo_data()
     return {"message": "Demo data seeded"}
+
+
+# Contact form endpoint
+from fastapi import Request as FastAPIRequest
+from datetime import datetime as dt, timezone as tz
+import uuid as _uuid
+
+@app.post("/api/contact")
+async def submit_contact(request: FastAPIRequest):
+    data = await request.json()
+    name = data.get("name", "").strip()
+    email = data.get("email", "").strip()
+    subject = data.get("subject", "").strip()
+    message = data.get("message", "").strip()
+    if not name or not email or not message:
+        from fastapi import HTTPException
+        raise HTTPException(400, "Name, email, and message are required")
+    entry = {
+        "id": str(_uuid.uuid4()),
+        "name": name,
+        "email": email,
+        "subject": subject,
+        "message": message,
+        "status": "new",
+        "created_at": dt.now(tz.utc).isoformat(),
+    }
+    await db.contact_messages.insert_one(entry)
+    entry.pop("_id", None)
+    return {"message": "Message received. We'll get back to you within 24 hours.", "id": entry["id"]}
 
 
 app.add_middleware(

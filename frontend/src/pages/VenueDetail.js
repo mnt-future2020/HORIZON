@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
-import { venueAPI, bookingAPI, slotLockAPI, notificationAPI, paymentAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, slotLockAPI, notificationAPI, paymentAPI, waitlistAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff, MessageSquare, Send, Globe, Share2 } from "lucide-react";
+import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff, MessageSquare, Send, Globe, Share2, CalendarCheck, ListOrdered } from "lucide-react";
+
+// Athlete imagery for empty states
+const NO_SLOTS_IMG = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80";
 import { format } from "date-fns";
 
 export default function VenueDetail() {
@@ -32,8 +35,12 @@ export default function VenueDetail() {
   const [lockInfo, setLockInfo] = useState(null);
   const lockRef = useRef(null);
   const [subscribedSlots, setSubscribedSlots] = useState(new Set());
-  const [mockPayStep, setMockPayStep] = useState(null); // null | "review" | "processing" | "done"
+  const [payStep, setPayStep] = useState(null); // null | "review" | "processing" | "done"
   const [subscribing, setSubscribing] = useState(null);
+
+  // Waitlist state
+  const [waitlistedSlots, setWaitlistedSlots] = useState({}); // slotKey -> entry
+  const [waitlistLoading, setWaitlistLoading] = useState(null);
 
   // Reviews state
   const [reviews, setReviews] = useState([]);
@@ -100,6 +107,25 @@ export default function VenueDetail() {
   }, [id, selectedDate]);
 
   useEffect(() => { loadSubscriptions(); }, [loadSubscriptions]);
+
+  // Load waitlist entries for this venue/date
+  const loadWaitlist = useCallback(() => {
+    if (!id || !selectedDate) return;
+    const dateStr = format(selectedDate, "yyyy-MM-dd");
+    waitlistAPI.myWaitlist()
+      .then(res => {
+        const entries = {};
+        (res.data || []).forEach(e => {
+          if (e.venue_id === id && e.date === dateStr) {
+            entries[`${e.start_time}-${e.turf_number}`] = e;
+          }
+        });
+        setWaitlistedSlots(entries);
+      })
+      .catch(() => setWaitlistedSlots({}));
+  }, [id, selectedDate]);
+
+  useEffect(() => { loadWaitlist(); }, [loadWaitlist]);
 
   // Auto-refresh slots every 15s to see lock changes from other users
   useEffect(() => {
@@ -208,7 +234,7 @@ export default function VenueDetail() {
                 razorpay_signature: response.razorpay_signature,
               });
               setConfirmResult({ ...booking, status: "confirmed" });
-              setMockPayStep("done");
+              setPayStep("done");
               toast.success("Payment successful! Booking confirmed.");
               loadSlots();
             } catch { toast.error("Payment verification failed"); }
@@ -222,8 +248,8 @@ export default function VenueDetail() {
         return; // Don't setBookingLoading(false) here — handled in handler/ondismiss
       }
 
-      // Mock payment - show payment review step instead of auto-confirming
-      setMockPayStep("review");
+      // Test mode (no payment gateway) - show payment review step
+      setPayStep("review");
       setConfirmResult(booking);
       toast.info("Review your payment details before confirming");
       loadSlots();
@@ -235,8 +261,8 @@ export default function VenueDetail() {
   };
 
   const handleDialogClose = (open) => {
-    if (!open && mockPayStep !== "processing") {
-      if (!confirmResult || mockPayStep === "review") {
+    if (!open && payStep !== "processing") {
+      if (!confirmResult || payStep === "review") {
         // Releasing lock when closing dialog without completing payment
         if (lockRef.current) {
           slotLockAPI.unlock(lockRef.current).catch(() => {});
@@ -247,24 +273,24 @@ export default function VenueDetail() {
       }
       setSelectedSlot(null);
       setConfirmResult(null);
-      setMockPayStep(null);
+      setPayStep(null);
     }
     setBookingDialog(open);
   };
 
-  const handleMockPayment = async () => {
+  const handleTestPayment = async () => {
     if (!confirmResult) return;
-    setMockPayStep("processing");
+    setPayStep("processing");
     try {
-      await bookingAPI.mockConfirm(confirmResult.id);
-      setMockPayStep("done");
+      await bookingAPI.testConfirm(confirmResult.id);
+      setPayStep("done");
       setConfirmResult({ ...confirmResult, status: "confirmed" });
       toast.success("Payment successful! Booking confirmed.");
       loadSlots();
       loadReviews(); // Refresh eligible bookings for reviews
     } catch (err) {
       toast.error(err.response?.data?.detail || "Payment failed");
-      setMockPayStep("review");
+      setPayStep("review");
     }
   };
 
@@ -306,6 +332,35 @@ export default function VenueDetail() {
     }
   };
 
+  const handleWaitlist = async (slot, e) => {
+    e.stopPropagation();
+    const slotKey = `${slot.start_time}-${slot.turf_number}`;
+    setWaitlistLoading(slotKey);
+    try {
+      if (waitlistedSlots[slotKey]) {
+        await waitlistAPI.leave(waitlistedSlots[slotKey].id);
+        setWaitlistedSlots(prev => { const n = { ...prev }; delete n[slotKey]; return n; });
+        toast.success("Removed from waitlist");
+      } else {
+        const res = await waitlistAPI.join({
+          venue_id: id,
+          date: format(selectedDate, "yyyy-MM-dd"),
+          start_time: slot.start_time,
+          turf_number: slot.turf_number,
+        });
+        // Backend returns { message, position, entry: {...} } — store the entry with position
+        const entry = res.data.entry || res.data;
+        entry.position = res.data.position || entry.position;
+        setWaitlistedSlots(prev => ({ ...prev, [slotKey]: entry }));
+        toast.success(`Joined waitlist (Position #${res.data.position || "?"})`);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to update waitlist");
+    } finally {
+      setWaitlistLoading(null);
+    }
+  };
+
   const groupedSlots = {};
   slots.forEach(s => {
     const key = `Turf ${s.turf_number}`;
@@ -319,87 +374,194 @@ export default function VenueDetail() {
   if (!venue) return <div className="p-6 text-center text-muted-foreground">Venue not found</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="venue-detail">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="relative h-48 md:h-64 rounded-lg overflow-hidden mb-6">
-          <img src={venue.images?.[0] || "https://images.unsplash.com/photo-1750716413756-b66624b64ce4?w=1200&q=80"}
-            alt={venue.name} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-          <div className="absolute bottom-4 left-4 right-4">
-            <div className="flex items-center gap-2 mb-1">
-              {venue.sports?.map(s => <Badge key={s} className="bg-primary/80 text-primary-foreground text-[10px]">{s}</Badge>)}
-            </div>
-            <div className="flex items-end justify-between gap-2">
-              <h1 className="font-display text-2xl md:text-3xl font-black text-foreground">{venue.name}</h1>
-              {venue.slug && (
-                <Link
-                  to={`/venue/${venue.slug}`}
-                  className="shrink-0 flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-background/80 backdrop-blur-sm text-primary hover:bg-background/95 transition-colors"
-                  title="View shareable public page"
-                >
-                  <Globe className="h-3.5 w-3.5" />
-                  Public Page
-                </Link>
-              )}
+    <div className="min-h-screen bg-background pb-20 md:pb-6" data-testid="venue-detail">
+      {/* Athletic Hero Section - Full Width */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <div className="relative h-[400px] md:h-[500px] overflow-hidden">
+          {/* Hero Image with Gradient Overlay */}
+          <img
+            src={venue.images?.[0] || "https://images.unsplash.com/photo-1750716413756-b66624b64ce4?w=1200&q=80"}
+            alt={venue.name}
+            className="w-full h-full object-cover"
+          />
+          {/* Athletic Gradient Overlay - Bottom to Top */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+
+          {/* Hero Content - Bottom Aligned */}
+          <div className="absolute inset-x-0 bottom-0 px-4 md:px-6 pb-8 md:pb-12">
+            <div className="max-w-7xl mx-auto">
+              {/* Sport Badges - Top Right with Glow */}
+              <div className="flex items-center gap-2 mb-4">
+                {venue.sports?.map(s => (
+                  <Badge key={s} variant="athletic" className="uppercase text-xs">
+                    {s}
+                  </Badge>
+                ))}
+              </div>
+
+              {/* Venue Name - Large & Bold */}
+              <div className="flex items-end justify-between gap-4 mb-6">
+                <h1 className="font-display text-display-md md:text-display-lg font-black text-foreground tracking-athletic leading-none">
+                  {venue.name}
+                </h1>
+                {venue.slug && (
+                  <Link
+                    to={`/venue/${venue.slug}`}
+                    className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-background/90 backdrop-blur-md border-2 border-border/50 text-primary hover:border-primary/50 hover:scale-105 transition-all duration-300 font-bold text-sm"
+                    title="View shareable public page"
+                  >
+                    <Globe className="h-4 w-4" />
+                    Public Page
+                  </Link>
+                )}
+              </div>
+
+              {/* Location & Rating - Large Icons */}
+              <div className="flex flex-wrap items-center gap-4 md:gap-6">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-primary" />
+                  <span className="text-base font-bold text-foreground/90">{venue.address}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Star className="h-5 w-5 text-amber-400 fill-amber-400" />
+                  <span className="text-lg font-display font-black text-foreground">{venue.rating?.toFixed(1)}</span>
+                  <span className="text-sm text-muted-foreground font-semibold">({venue.total_reviews} reviews)</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Info */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <div className="glass-card rounded-lg p-3 flex items-center gap-2">
-            <MapPin className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-xs text-muted-foreground truncate">{venue.address}</span>
+        {/* Quick Info Cards - Athletic Style */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+          <div className="grid grid-cols-2 gap-4 md:gap-6 mb-8">
+            {/* Price Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 hover:border-primary/50 hover:scale-105 transition-all duration-300"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <IndianRupee className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Base Price</div>
+                  <div className="text-2xl font-display font-black text-primary">₹{venue.base_price}<span className="text-sm text-muted-foreground">/hr</span></div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Hours Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 hover:border-primary/50 hover:scale-105 transition-all duration-300"
+            >
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-12 h-12 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-sky-400" />
+                </div>
+                <div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground font-bold">Hours</div>
+                  <div className="text-lg font-display font-black text-foreground">{venue.opening_hour}:00 - {venue.closing_hour}:00</div>
+                </div>
+              </div>
+            </motion.div>
           </div>
-          <div className="glass-card rounded-lg p-3 flex items-center gap-2">
-            <Star className="h-4 w-4 text-amber-400 fill-amber-400 shrink-0" />
-            <span className="text-xs text-foreground font-bold">{venue.rating?.toFixed(1)}</span>
-            <span className="text-xs text-muted-foreground">({venue.total_reviews} reviews)</span>
-          </div>
-          <div className="glass-card rounded-lg p-3 flex items-center gap-2">
-            <IndianRupee className="h-4 w-4 text-primary shrink-0" />
-            <span className="text-xs text-foreground font-bold">{venue.base_price}/hr</span>
-          </div>
-          <div className="glass-card rounded-lg p-3 flex items-center gap-2">
-            <Clock className="h-4 w-4 text-sky-400 shrink-0" />
-            <span className="text-xs text-muted-foreground">{venue.opening_hour}:00 - {venue.closing_hour}:00</span>
-          </div>
+
+          {/* Description - Athletic Typography */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-8"
+          >
+            <p className="text-base text-muted-foreground leading-relaxed">{venue.description}</p>
+          </motion.div>
+
+          {/* Amenities - Athletic Badges */}
+          {venue.amenities?.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="mb-10"
+            >
+              <h3 className="text-sm uppercase tracking-wider text-muted-foreground font-bold mb-4">Amenities</h3>
+              <div className="flex flex-wrap gap-3">
+                {venue.amenities.map((a, idx) => (
+                  <motion.div
+                    key={a}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.5 + idx * 0.05 }}
+                  >
+                    <Badge variant="athletic" className="text-xs px-4 py-2">
+                      <Zap className="h-3 w-3 mr-1.5" />
+                      {a}
+                    </Badge>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </div>
-
-        <p className="text-sm text-muted-foreground mb-6 leading-relaxed">{venue.description}</p>
-
-        {venue.amenities?.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-8">
-            {venue.amenities.map(a => <Badge key={a} variant="secondary" className="text-xs">{a}</Badge>)}
-          </div>
-        )}
       </motion.div>
 
-      {/* Booking Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Calendar */}
-        <div className="lg:col-span-4">
-          <h2 className="font-display text-lg font-bold mb-4">Select Date</h2>
-          <div className="glass-card rounded-lg p-4 flex justify-center">
-            <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)}
-              className="text-foreground" disabled={(d) => d < new Date(new Date().toDateString())}
-              data-testid="venue-calendar" />
+      {/* Booking Section - Athletic Style */}
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+          {/* Calendar - Athletic Card */}
+          <div className="lg:col-span-4">
+            <h2 className="font-display text-xl font-black mb-6 uppercase tracking-wide">Select Date</h2>
+            <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 flex justify-center hover:border-primary/30 transition-colors duration-300">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(d) => d && setSelectedDate(d)}
+                className="text-foreground"
+                disabled={(d) => d < new Date(new Date().toDateString())}
+                data-testid="venue-calendar"
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Slots */}
-        <div className="lg:col-span-8">
-          <h2 className="font-display text-lg font-bold mb-4">
-            Available Slots - {format(selectedDate, "EEE, MMM d")}
-          </h2>
-          {Object.keys(groupedSlots).length === 0 ? (
-            <div className="glass-card rounded-lg p-8 text-center text-muted-foreground text-sm">No slots available</div>
-          ) : (
-            Object.entries(groupedSlots).map(([turf, turfSlots]) => (
-              <div key={turf} className="mb-6">
-                <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3 block">{turf}</span>
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+          {/* Slots - Athletic Grid */}
+          <div className="lg:col-span-8">
+            <h2 className="font-display text-xl font-black mb-6 uppercase tracking-wide">
+              Available Slots - {format(selectedDate, "EEE, MMM d")}
+            </h2>
+            {Object.keys(groupedSlots).length === 0 ? (
+              <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden">
+                <div className="grid md:grid-cols-2 gap-0">
+                  <div className="p-10 flex flex-col items-center md:items-start justify-center text-center md:text-left">
+                    <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                      <CalendarCheck className="h-7 w-7 text-primary" />
+                    </div>
+                    <p className="font-display text-lg font-black mb-2">No Slots Available</p>
+                    <p className="text-sm text-muted-foreground font-semibold">Try picking a different date to find open slots.</p>
+                  </div>
+                  <div className="hidden md:block relative min-h-[180px]">
+                    <img
+                      src={NO_SLOTS_IMG}
+                      alt="Football field"
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-r from-card/70 to-transparent" />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              Object.entries(groupedSlots).map(([turf, turfSlots]) => (
+                <div key={turf} className="mb-8">
+                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4 flex items-center gap-2">
+                    <div className="w-1 h-4 bg-primary rounded-full" />
+                    {turf}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                   {turfSlots.map((s, i) => {
                     const isSelected = selectedSlot?.start_time === s.start_time && selectedSlot?.turf_number === s.turf_number;
                     const isAvailable = s.status === "available";
@@ -411,50 +573,94 @@ export default function VenueDetail() {
                     const isSubscribed = subscribedSlots.has(slotKey);
                     const showNotify = isBooked || isOnHold;
                     return (
-                      <div key={i} className="relative">
-                        <button disabled={!canSelect || locking}
+                      <motion.div
+                        key={i}
+                        className="relative"
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.03, duration: 0.2 }}
+                      >
+                        <button
+                          disabled={!canSelect || locking}
                           onClick={() => canSelect && handleSlotSelect(s)}
                           data-testid={`slot-${s.start_time}-turf-${s.turf_number}`}
-                          className={`w-full p-2.5 rounded-lg text-center transition-all border relative ${
-                            isBooked ? "bg-destructive/10 border-destructive/20 text-muted-foreground cursor-not-allowed" :
-                            isOnHold ? "bg-amber-500/10 border-amber-500/30 text-amber-400 cursor-not-allowed" :
-                            isLockedByMe ? "bg-primary/20 border-primary text-primary ring-1 ring-primary/50" :
-                            isSelected ? "bg-primary/20 border-primary text-primary" :
-                            "glass-card hover:border-primary/30 cursor-pointer"
+                          className={`w-full min-h-[80px] p-4 rounded-xl text-center transition-all duration-300 border-2 relative group ${
+                            isBooked
+                              ? "bg-destructive/10 border-destructive/20 text-muted-foreground cursor-not-allowed opacity-60"
+                              : isOnHold
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-400 cursor-not-allowed opacity-80"
+                              : isLockedByMe
+                              ? "bg-primary/20 border-primary text-primary shadow-glow-primary animate-glow-pulse"
+                              : isSelected
+                              ? "bg-primary/20 border-primary text-primary shadow-glow-primary animate-glow-pulse scale-105"
+                              : "bg-card/50 border-border/50 backdrop-blur-md hover:border-primary/50 hover:scale-105 hover:shadow-glow-sm cursor-pointer"
+                          }`}
+                        >
+                          {/* Lock Icons */}
+                          {isOnHold && <Lock className="h-4 w-4 absolute top-2 right-2 text-amber-400" />}
+                          {isLockedByMe && <Lock className="h-4 w-4 absolute top-2 right-2 text-primary animate-pulse" />}
+
+                          {/* Time - Large & Bold */}
+                          <div className="text-sm font-display font-black uppercase tracking-wide">{s.start_time}</div>
+                          <div className="text-xs text-muted-foreground font-semibold">{s.end_time}</div>
+
+                          {/* Price - Athletic Typography */}
+                          <div className={`text-base font-display font-black mt-2 ${
+                            isBooked
+                              ? "text-muted-foreground"
+                              : isOnHold
+                              ? "text-amber-400"
+                              : isLockedByMe
+                              ? "text-primary"
+                              : isAvailable
+                              ? "text-primary group-hover:scale-110 transition-transform"
+                              : "text-muted-foreground"
                           }`}>
-                          {isOnHold && <Lock className="h-3 w-3 absolute top-1 right-1 text-amber-400" />}
-                          {isLockedByMe && <Lock className="h-3 w-3 absolute top-1 right-1 text-primary" />}
-                          <div className="text-xs font-bold">{s.start_time}</div>
-                          <div className="text-[10px] text-muted-foreground">{s.end_time}</div>
-                          <div className={`text-xs font-display font-bold mt-1 ${
-                            isBooked ? "text-muted-foreground" :
-                            isOnHold ? "text-amber-400" :
-                            isLockedByMe ? "text-primary" :
-                            isAvailable ? "text-primary" : "text-muted-foreground"
-                          }`}>
-                            {isBooked ? "Booked" : isOnHold ? "On Hold" : `\u20B9${s.price}`}
+                            {isBooked ? "Booked" : isOnHold ? "On Hold" : `₹${s.price}`}
                           </div>
                         </button>
+                        {/* Notify Me Button - Athletic Style */}
                         {showNotify && (
                           <button
                             onClick={(e) => handleNotifyMe(s, e)}
                             disabled={subscribing === slotKey}
                             data-testid={`notify-btn-${s.start_time}-turf-${s.turf_number}`}
-                            className={`w-full mt-1 flex items-center justify-center gap-1 py-1 rounded-md text-[10px] font-semibold transition-all ${
+                            className={`w-full mt-2 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-300 border-2 ${
                               isSubscribed
-                                ? "bg-primary/20 text-primary border border-primary/30 hover:bg-primary/10"
-                                : "bg-secondary/50 text-muted-foreground border border-border hover:text-foreground hover:border-primary/30"
-                            }`}>
+                                ? "bg-primary/20 text-primary border-primary/50 hover:bg-primary/10 hover:scale-105"
+                                : "bg-card/50 text-muted-foreground border-border/50 hover:text-primary hover:border-primary/50 hover:scale-105"
+                            }`}
+                          >
                             {subscribing === slotKey ? (
-                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
                             ) : isSubscribed ? (
-                              <><BellOff className="h-2.5 w-2.5" /> Watching</>
+                              <><BellOff className="h-3.5 w-3.5" /> Watching</>
                             ) : (
-                              <><Bell className="h-2.5 w-2.5" /> Notify Me</>
+                              <><Bell className="h-3.5 w-3.5" /> Notify Me</>
                             )}
                           </button>
                         )}
-                      </div>
+                        {/* Join Waitlist Button */}
+                        {showNotify && (
+                          <button
+                            onClick={(e) => handleWaitlist(s, e)}
+                            disabled={waitlistLoading === slotKey}
+                            className={`w-full mt-1.5 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wide transition-all duration-300 border-2 ${
+                              waitlistedSlots[slotKey]
+                                ? "bg-violet-500/20 text-violet-400 border-violet-500/50 hover:bg-violet-500/10 hover:scale-105"
+                                : "bg-card/50 text-muted-foreground border-border/50 hover:text-violet-400 hover:border-violet-500/50 hover:scale-105"
+                            }`}
+                          >
+                            {waitlistLoading === slotKey ? (
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            ) : waitlistedSlots[slotKey] ? (
+                              <><ListOrdered className="h-3.5 w-3.5" /> #{waitlistedSlots[slotKey].position || "?"} in Queue</>
+                            ) : (
+                              <><ListOrdered className="h-3.5 w-3.5" /> Join Waitlist</>
+                            )}
+                          </button>
+                        )}
+                      </motion.div>
                     );
                   })}
                 </div>
@@ -464,12 +670,27 @@ export default function VenueDetail() {
         </div>
       </div>
 
-      {/* Slot Legend */}
-      <div className="flex flex-wrap gap-4 mt-6 mb-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded glass-card border border-border" /> Available</div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-primary/20 border border-primary" /> Your Lock</div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-amber-500/10 border border-amber-500/30" /> On Hold</div>
-        <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded bg-destructive/10 border border-destructive/20" /> Booked</div>
+        {/* Slot Legend - Athletic Style */}
+        <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8 mb-6">
+          <div className="flex flex-wrap gap-4 md:gap-6 text-sm font-semibold">
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-lg bg-card/50 border-2 border-border/50 backdrop-blur-md" />
+              <span className="text-muted-foreground">Available</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-lg bg-primary/20 border-2 border-primary shadow-glow-sm" />
+              <span className="text-primary">Your Lock</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-lg bg-amber-500/10 border-2 border-amber-500/30" />
+              <span className="text-amber-400">On Hold</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 rounded-lg bg-destructive/10 border-2 border-destructive/20 opacity-60" />
+              <span className="text-muted-foreground">Booked</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Reviews Section */}
@@ -624,92 +845,144 @@ export default function VenueDetail() {
         </div>
       )}
 
-      {/* Booking Dialog */}
+      {/* Booking Dialog - Athletic Style */}
       <Dialog open={bookingDialog} onOpenChange={handleDialogClose}>
-        <DialogContent className="bg-card border-border max-w-md">
+        <DialogContent className="bg-card border-2 border-border/50 max-w-md p-8">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl font-bold">
-              {mockPayStep === "done" || (confirmResult && !mockPayStep) ? "Booking Confirmed!" :
-               mockPayStep === "processing" ? "Processing Payment..." :
-               mockPayStep === "review" ? "Complete Payment" :
+            <DialogTitle className="font-display text-2xl font-black uppercase tracking-wide text-foreground">
+              {payStep === "done" || (confirmResult && !payStep) ? "Booking Confirmed!" :
+               payStep === "processing" ? "Processing Payment..." :
+               payStep === "review" ? "Complete Payment" :
                "Confirm Booking"}
             </DialogTitle>
           </DialogHeader>
 
-          {/* Mock Payment Processing State */}
-          {mockPayStep === "processing" && (
-            <div className="flex flex-col items-center py-8 gap-4" data-testid="mock-payment-processing">
+          {/* Payment Processing State */}
+          {payStep === "processing" && (
+            <div className="flex flex-col items-center py-8 gap-4" data-testid="payment-processing">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-4 border-primary/20 flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground text-center">Verifying payment with gateway...</p>
+              <p className="text-sm text-muted-foreground text-center">Confirming your booking...</p>
               <p className="text-xs text-muted-foreground/60">Please do not close this window</p>
             </div>
           )}
 
-          {/* Mock Payment Review State - user must click to confirm */}
-          {mockPayStep === "review" && confirmResult && (
-            <div className="space-y-4" data-testid="mock-payment-review">
-              <div className="glass-card rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Venue</span><span className="font-bold">{confirmResult.venue_name}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date</span><span className="font-bold">{confirmResult.date}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Time</span><span className="font-bold">{confirmResult.start_time}-{confirmResult.end_time}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-primary text-lg">{"\u20B9"}{confirmResult.total_amount}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status</span><Badge variant="secondary">Awaiting Payment</Badge></div>
+          {/* Payment Review State */}
+          {payStep === "review" && confirmResult && (
+            <div className="space-y-6" data-testid="payment-review">
+              <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Venue</span>
+                  <span className="font-display font-black text-base">{confirmResult.venue_name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Date</span>
+                  <span className="font-display font-black text-base">{confirmResult.date}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Time</span>
+                  <span className="font-display font-black text-base">{confirmResult.start_time}-{confirmResult.end_time}</span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Amount</span>
+                  <span className="font-display font-black text-2xl text-primary">₹{confirmResult.total_amount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Status</span>
+                  <Badge variant="athletic">Awaiting Payment</Badge>
+                </div>
               </div>
-              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
-                This is a simulated payment for demo purposes. In production, you will be redirected to Razorpay.
-              </div>
+
+              {confirmResult.payment_gateway === "test" && (
+                <div className="p-4 rounded-xl bg-sky-500/10 border-2 border-sky-500/20 text-sm text-sky-400 font-semibold">
+                  Test Mode — Payment gateway not yet configured. Confirm to proceed without payment.
+                </div>
+              )}
+
               {confirmResult.split_config && (
-                <div className="glass-card rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold">Split Payment</span>
+                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 backdrop-blur-md p-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="font-display text-base font-black">Split Payment</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Your share: {"\u20B9"}{confirmResult.split_config.per_share} ({confirmResult.split_config.total_shares} players)
+                  <p className="text-sm text-muted-foreground font-semibold">
+                    Your share: <span className="text-primary font-black">₹{confirmResult.split_config.per_share}</span> ({confirmResult.split_config.total_shares} players)
                   </p>
                 </div>
               )}
-              <Button className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11"
-                onClick={handleMockPayment} data-testid="mock-confirm-payment-btn">
-                Confirm Payment {"\u20B9"}{confirmResult.split_config ? confirmResult.split_config.per_share : confirmResult.total_amount}
+
+              <Button
+                className="w-full h-14 bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 active:scale-100 font-black uppercase tracking-wide text-base transition-all duration-300"
+                onClick={handleTestPayment}
+                data-testid="confirm-payment-btn"
+              >
+                Confirm Payment ₹{confirmResult.split_config ? confirmResult.split_config.per_share : confirmResult.total_amount}
               </Button>
             </div>
           )}
 
-          {/* Booking Confirmed State */}
-          {(mockPayStep === "done" || (confirmResult && !mockPayStep)) && confirmResult && (
-            <div className="space-y-4" data-testid="booking-confirmed-view">
-              <div className="glass-card rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Venue</span><span className="font-bold">{confirmResult.venue_name}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Date</span><span className="font-bold">{confirmResult.date}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Time</span><span className="font-bold">{confirmResult.start_time}-{confirmResult.end_time}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Amount</span><span className="font-bold text-primary">{"\u20B9"}{confirmResult.total_amount}</span></div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Status</span><Badge>{confirmResult.status}</Badge></div>
+          {/* Booking Confirmed State - Athletic Style */}
+          {(payStep === "done" || (confirmResult && !payStep)) && confirmResult && (
+            <div className="space-y-6" data-testid="booking-confirmed-view">
+              <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 backdrop-blur-md p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Venue</span>
+                  <span className="font-display font-black text-base">{confirmResult.venue_name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Date</span>
+                  <span className="font-display font-black text-base">{confirmResult.date}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Time</span>
+                  <span className="font-display font-black text-base">{confirmResult.start_time}-{confirmResult.end_time}</span>
+                </div>
+                <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Amount</span>
+                  <span className="font-display font-black text-2xl text-primary">₹{confirmResult.total_amount}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Status</span>
+                  <Badge variant="athletic" className="shadow-glow-sm">{confirmResult.status}</Badge>
+                </div>
               </div>
               {confirmResult.split_config && (
-                <div className="glass-card rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Users className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-bold">Split Payment Link</span>
+                <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="font-display text-base font-black">Split Payment Link</span>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Share this link with {confirmResult.split_config.total_shares - 1} friends. Each pays {"\u20B9"}{confirmResult.split_config.per_share}.
+                  <p className="text-sm text-muted-foreground font-semibold mb-4">
+                    Share this link with {confirmResult.split_config.total_shares - 1} friends. Each pays <span className="text-primary font-black">₹{confirmResult.split_config.per_share}</span>.
                   </p>
                   <div className="flex gap-2">
-                    <Input readOnly value={`${window.location.origin}/split/${confirmResult.split_config.split_token}`}
-                      className="bg-background border-border text-xs" data-testid="split-link-input" />
-                    <Button size="icon" variant="outline" onClick={copyLink} data-testid="copy-split-link-btn">
-                      {copied ? <Check className="h-4 w-4 text-primary" /> : <Copy className="h-4 w-4" />}
+                    <Input
+                      readOnly
+                      value={`${window.location.origin}/split/${confirmResult.split_config.split_token}`}
+                      className="bg-background/50 border-2 border-border/50 text-sm font-mono h-12 rounded-xl"
+                      data-testid="split-link-input"
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      onClick={copyLink}
+                      data-testid="copy-split-link-btn"
+                      className="h-12 w-12 rounded-xl border-2 hover:border-primary/50 hover:bg-primary/10"
+                    >
+                      {copied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
                     </Button>
                   </div>
                 </div>
               )}
               <Button className="w-full bg-primary text-primary-foreground font-bold"
-                onClick={() => { setBookingDialog(false); setConfirmResult(null); setSelectedSlot(null); setMockPayStep(null); loadSlots(); }}
+                onClick={() => { setBookingDialog(false); setConfirmResult(null); setSelectedSlot(null); setPayStep(null); loadSlots(); }}
                 data-testid="booking-done-btn">Done</Button>
             </div>
           )}

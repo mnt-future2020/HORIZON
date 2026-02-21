@@ -37,6 +37,20 @@
     --glass-bg-hover: rgba(15, 23, 42, 0.8);
     --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.4);
     --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+
+    /* Athletic accent gradients */
+    --gradient-primary: linear-gradient(135deg, #10B981 0%, #059669 100%);
+    --gradient-accent: linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%);
+    --gradient-sport: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+
+    /* Energy glow colors */
+    --glow-primary: 0 0 40px rgba(16, 185, 129, 0.4);
+    --glow-accent: 0 0 40px rgba(124, 58, 237, 0.4);
+    --glow-hover: 0 0 60px rgba(16, 185, 129, 0.6);
+
+    /* Overlay colors for sports imagery */
+    --overlay-dark: rgba(2, 6, 23, 0.85);
+    --overlay-gradient: linear-gradient(180deg, rgba(2, 6, 23, 0.3) 0%, rgba(2, 6, 23, 0.9) 100%);
   }
 
   /* ====== LIGHT THEME ====== */
@@ -82,8 +96,34 @@
     font-family: 'Manrope', sans-serif;
     transition: background-color 0.3s ease, color 0.3s ease;
   }
+
+  /* Athletic typography base - bold and impactful */
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Chivo', sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+  }
+
+  h1 {
+    @apply text-display-lg md:text-display-xl;
+  }
+
+  h2 {
+    @apply text-display-md md:text-display-lg;
+  }
+
+  h3 {
+    @apply text-display-sm md:text-display-md;
+  }
+
+  /* Body text optimization */
+  p, span, div {
+    font-family: 'Manrope', sans-serif;
+  }
+
+  /* Athletic label style (for category tags, stats) */
+  .label-caps {
+    @apply text-label-caps uppercase tracking-ultra-wide font-bold;
   }
 }
 

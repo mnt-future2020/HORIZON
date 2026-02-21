@@ -8,8 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2 } from "lucide-react";
+import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock } from "lucide-react";
 import { toast } from "sonner";
+
+// Athlete action imagery
+const DISCOVERY_BANNER = "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1920&q=80";
+const EMPTY_STATE_IMG = "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80";
 
 export default function VenueDiscovery() {
   const navigate = useNavigate();
@@ -34,6 +38,8 @@ export default function VenueDiscovery() {
   const [userLocation, setUserLocation] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [distanceMap, setDistanceMap] = useState({});
+  const [driveTimeMap, setDriveTimeMap] = useState({});
+  const [driveTimeMode, setDriveTimeMode] = useState(false);
 
   // Load initial data
   useEffect(() => {
@@ -96,7 +102,18 @@ export default function VenueDiscovery() {
     setLoading(true);
     try {
       if (nearMeActive && userLocation) {
-        const res = await venueAPI.nearby(userLocation.lat, userLocation.lng, 50);
+        let res;
+        if (driveTimeMode) {
+          res = await venueAPI.nearbyByDriveTime(userLocation.lat, userLocation.lng, 50);
+          const dtm = {};
+          res.data.forEach(v => {
+            if (v.drive_time) dtm[v.id] = v.drive_time;
+          });
+          setDriveTimeMap(dtm);
+        } else {
+          res = await venueAPI.nearby(userLocation.lat, userLocation.lng, 50);
+          setDriveTimeMap({});
+        }
         setVenues(res.data);
         const dm = {};
         res.data.forEach(v => { dm[v.id] = v.distance_km; });
@@ -120,7 +137,7 @@ export default function VenueDiscovery() {
     } catch (err) {
       toast.error("Failed to load venues");
     } finally { setLoading(false); }
-  }, [searchText, selectedCity, selectedArea, selectedSport, sortBy, priceRange, selectedAmenity, nearMeActive, userLocation]);
+  }, [searchText, selectedCity, selectedArea, selectedSport, sortBy, priceRange, selectedAmenity, nearMeActive, userLocation, driveTimeMode]);
 
   useEffect(() => {
     const timer = setTimeout(loadVenues, 300);
@@ -154,7 +171,7 @@ export default function VenueDiscovery() {
   const clearFilters = () => {
     setSearchText(""); setSelectedCity("all"); setSelectedArea("all");
     setSelectedSport("all"); setSortBy("rating"); setPriceRange("all");
-    setSelectedAmenity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({});
+    setSelectedAmenity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false);
   };
 
   const sports = ["football", "cricket", "badminton", "basketball", "tennis", "table_tennis"];
@@ -172,52 +189,59 @@ export default function VenueDiscovery() {
         </nav>
       )}
 
-      {/* Search Hero */}
-      <div className={`border-b border-border bg-card/50 backdrop-blur-sm sticky z-30 ${user ? "top-16" : "top-14"}`}>
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          {/* Main Search Bar */}
-          <div className="flex gap-2 items-center" data-testid="search-bar">
+      {/* Search Hero - Athletic Style */}
+      <div className={`border-b border-border bg-gradient-to-br from-primary/5 via-transparent to-accent/5 backdrop-blur-sm sticky z-30 ${user ? "top-16" : "top-14"}`}>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Main Search Bar - Larger & Bolder */}
+          <div className="flex gap-3 items-center" data-testid="search-bar">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 placeholder="Search venue, area, city..."
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                className="pl-10 bg-secondary/50 border-border h-11 text-sm"
+                className="pl-12 bg-secondary/50 border-border h-14 text-base font-medium"
                 data-testid="search-input"
               />
               {searchText && (
-                <button onClick={() => setSearchText("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground" />
+                <button onClick={() => setSearchText("")} className="absolute right-4 top-1/2 -translate-y-1/2 hover:scale-110 transition-transform">
+                  <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
                 </button>
               )}
             </div>
-            <Button variant="outline" size="icon" className="h-11 w-11 shrink-0 relative"
+            <Button variant="outline" size="icon" className={`h-14 w-14 shrink-0 relative transition-all ${filtersOpen ? "border-primary/50 bg-primary/10" : ""}`}
               onClick={() => setFiltersOpen(!filtersOpen)} data-testid="filters-toggle">
-              <SlidersHorizontal className="h-4 w-4" />
+              <SlidersHorizontal className="h-5 w-5" />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold animate-glow-pulse">
                   {activeFilterCount}
                 </span>
               )}
             </Button>
           </div>
 
-          {/* Quick City Pills + Near Me */}
-          <div className="flex gap-1.5 mt-3 overflow-x-auto pb-1 scrollbar-hide" data-testid="city-pills">
+          {/* Quick City Pills + Near Me - Athletic Style */}
+          <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide" data-testid="city-pills">
             <button onClick={handleNearMe} data-testid="near-me-btn"
               disabled={locatingUser}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${nearMeActive ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground border border-primary/30"}`}>
-              {locatingUser ? <Loader2 className="h-3 w-3 animate-spin" /> : <Navigation className="h-3 w-3" />}
-              {locatingUser ? "Locating..." : nearMeActive ? "Near Me" : "Near Me"}
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all flex items-center gap-2 hover:scale-105 active:scale-100 ${nearMeActive ? "bg-primary text-primary-foreground shadow-glow-primary" : "bg-secondary/50 text-muted-foreground hover:text-foreground border-2 border-primary/30"}`}>
+              {locatingUser ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Navigation className="h-3.5 w-3.5" />}
+              {locatingUser ? "Locating..." : "Near Me"}
             </button>
-            <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid="city-pill-all"
-              className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCity === "all" && !nearMeActive ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+            {nearMeActive && (
+              <button onClick={() => setDriveTimeMode(!driveTimeMode)} data-testid="drive-time-toggle"
+                className={`px-3 py-2 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all flex items-center gap-1.5 hover:scale-105 active:scale-100 ${driveTimeMode ? "bg-sky-500/20 text-sky-400 border-2 border-sky-500/30" : "bg-secondary/50 text-muted-foreground hover:text-foreground border-2 border-transparent"}`}>
+                <Car className="h-3 w-3" />
+                {driveTimeMode ? "Drive Time" : "Drive Time"}
+              </button>
+            )}
+            <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false); }} data-testid="city-pill-all"
+              className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all hover:scale-105 active:scale-100 ${selectedCity === "all" && !nearMeActive ? "bg-primary text-primary-foreground shadow-glow-sm" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
               All Cities
             </button>
             {cities.map(c => (
               <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all ${selectedCity === c.city && !nearMeActive ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                {c.city} <span className="opacity-60 ml-0.5">({c.count})</span>
+                className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap transition-all hover:scale-105 active:scale-100 ${selectedCity === c.city && !nearMeActive ? "bg-primary text-primary-foreground shadow-glow-sm" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                {c.city} <span className="opacity-60 ml-1">({c.count})</span>
               </button>
             ))}
           </div>
@@ -330,95 +354,112 @@ export default function VenueDiscovery() {
             ))}
           </div>
         ) : venues.length === 0 ? (
-          <div className="text-center py-16" data-testid="no-results">
-            <Building2 className="h-12 w-12 mx-auto mb-4 text-muted-foreground/40" />
-            <p className="text-lg font-bold text-muted-foreground">No venues found</p>
-            <p className="text-sm text-muted-foreground/60 mt-1">Try adjusting your filters or search term</p>
-            <Button variant="outline" className="mt-4 text-xs" onClick={clearFilters}>Clear filters</Button>
+          <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden" data-testid="no-results">
+            <div className="grid md:grid-cols-2 gap-0">
+              <div className="p-10 md:p-12 flex flex-col items-center md:items-start justify-center text-center md:text-left">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                  <Trophy className="h-8 w-8 text-primary" />
+                </div>
+                <p className="font-display text-xl font-black mb-2">No Venues Found</p>
+                <p className="text-sm text-muted-foreground font-semibold mb-6">Try adjusting your filters or search a different area.</p>
+                <Button
+                  className="bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-black uppercase tracking-wide h-12 px-8 rounded-xl"
+                  onClick={clearFilters}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+              <div className="hidden md:block relative min-h-[220px]">
+                <img
+                  src={EMPTY_STATE_IMG}
+                  alt="Basketball player"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-card/70 to-transparent" />
+              </div>
+            </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             <AnimatePresence mode="popLayout">
               {venues.map((venue, idx) => (
-                <motion.div key={venue.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.03 }}
+                <motion.div key={venue.id} layout initial={{ opacity: 0, y: 30, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: idx * 0.05, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  whileHover={{ y: -12, scale: 1.02 }}
                   onClick={() => venue.slug ? navigate(`/venue/${venue.slug}`) : navigate(`/venues/${venue.id}`)}
-                  className="glass-card rounded-xl overflow-hidden cursor-pointer group hover:border-primary/30 transition-all"
+                  className="rounded-2xl overflow-hidden cursor-pointer group border-2 border-border/50 bg-card/50 backdrop-blur-md hover:border-primary/50 hover:shadow-glow-primary transition-all duration-300"
                   data-testid={`venue-card-${venue.id}`}>
-                  {/* Image */}
-                  <div className="relative h-40 overflow-hidden bg-secondary/30">
+                  {/* Image - Larger with gradient overlay */}
+                  <div className="relative h-52 overflow-hidden bg-secondary/30">
                     {venue.images?.[0] ? (
-                      <img src={venue.images[0]} alt={venue.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <>
+                        <img src={venue.images[0]} alt={venue.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                        <div className="absolute inset-0 bg-gradient-overlay" />
+                      </>
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Building2 className="h-12 w-12 text-muted-foreground/20" />
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                        <Building2 className="h-16 w-16 text-muted-foreground/30" />
                       </div>
                     )}
-                    {/* Overlay badges */}
-                    <div className="absolute top-2 left-2 flex gap-1.5 flex-wrap">
-                      {venue.sports?.map(s => (
-                        <Badge key={s} className="text-[10px] bg-background/80 backdrop-blur-sm border-none text-foreground capitalize">
-                          {s.replace("_", " ")}
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="absolute top-2 right-2">
-                      <Badge className="bg-background/80 backdrop-blur-sm border-none text-primary text-xs font-display font-black">
-                        {"\u20B9"}{venue.base_price}
-                      </Badge>
-                    </div>
-                    {/* Distance badge */}
+
+                    {/* Distance / Drive-time badge - top left with glow */}
                     {(distanceMap[venue.id] != null || venue.distance_km != null) && (
-                      <div className="absolute bottom-2 left-2" data-testid={`distance-badge-${venue.id}`}>
-                        <Badge className="bg-primary/90 backdrop-blur-sm border-none text-primary-foreground text-[10px] font-bold">
-                          <Navigation className="h-2.5 w-2.5 mr-1" />
-                          {(distanceMap[venue.id] ?? venue.distance_km)} km away
+                      <div className="absolute top-4 left-4 flex gap-1.5" data-testid={`distance-badge-${venue.id}`}>
+                        <Badge variant="athletic" className="shadow-glow-primary">
+                          <Navigation className="h-3 w-3 mr-1" />
+                          {(distanceMap[venue.id] ?? venue.distance_km).toFixed(1)} km
+                        </Badge>
+                        {driveTimeMap[venue.id]?.duration_minutes != null && (
+                          <Badge variant="athletic" className="bg-sky-500/90 shadow-glow-primary">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {driveTimeMap[venue.id].duration_minutes} min
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Sport badge - top right */}
+                    {venue.sports?.[0] && (
+                      <div className="absolute top-4 right-4">
+                        <Badge variant="sport" className="capitalize">
+                          {venue.sports[0].replace("_", " ")}
                         </Badge>
                       </div>
                     )}
                   </div>
 
-                  {/* Info */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-display font-bold text-sm text-foreground truncate group-hover:text-primary transition-colors"
-                          data-testid={`venue-name-${venue.id}`}>
-                          {venue.name}
-                        </h3>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0 bg-primary/10 px-2 py-1 rounded-md">
-                        <Star className="h-3 w-3 text-primary fill-primary" />
-                        <span className="text-xs font-bold text-primary">{venue.rating?.toFixed(1) || "N/A"}</span>
-                      </div>
+                  {/* Info - Athletic Typography */}
+                  <div className="p-6">
+                    {/* Venue name - athletic typography */}
+                    <h3 className="font-display text-xl font-black tracking-athletic text-foreground mb-3 group-hover:text-primary transition-colors duration-300"
+                      data-testid={`venue-name-${venue.id}`}>
+                      {venue.name}
+                    </h3>
+
+                    {/* Location */}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      <span className="font-medium">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
                     </div>
 
-                    <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{venue.description}</p>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                        <span className="flex items-center gap-0.5"><Zap className="h-3 w-3" />{venue.turfs} turf{venue.turfs > 1 ? "s" : ""}</span>
-                        <span className="flex items-center gap-0.5"><Users className="h-3 w-3" />{venue.total_bookings || 0} bookings</span>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </div>
-
-                    {/* Amenity pills */}
-                    {venue.amenities?.length > 0 && (
-                      <div className="flex gap-1 mt-2.5 flex-wrap">
-                        {venue.amenities.slice(0, 3).map(a => (
-                          <span key={a} className="text-[9px] px-1.5 py-0.5 rounded-md bg-secondary/80 text-muted-foreground">{a}</span>
-                        ))}
-                        {venue.amenities.length > 3 && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-secondary/80 text-muted-foreground">+{venue.amenities.length - 3}</span>
+                    {/* Stats row */}
+                    <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                      {/* Rating */}
+                      <div className="flex items-center gap-2">
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-display font-bold text-foreground">{venue.rating?.toFixed(1) || "New"}</span>
+                        {venue.total_reviews > 0 && (
+                          <span className="text-xs text-muted-foreground">({venue.total_reviews})</span>
                         )}
                       </div>
-                    )}
+
+                      {/* Price */}
+                      <div className="font-display font-bold text-lg text-primary">
+                        ₹{venue.base_price || venue.price_per_hour}
+                        <span className="text-xs text-muted-foreground font-normal">/hr</span>
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               ))}

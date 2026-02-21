@@ -83,3 +83,158 @@
 /* Hide scrollbar utility */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ============================================ */
+/* ATHLETIC ENERGY ANIMATIONS */
+/* ============================================ */
+
+@keyframes athleticSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes energyPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(16, 185, 129, 0.6);
+  }
+}
+
+@keyframes slideInScale {
+  from {
+    opacity: 0;
+    transform: translateX(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes shimmerSweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes countUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================ */
+/* ATHLETIC MICRO-INTERACTIONS */
+/* ============================================ */
+
+/* Athletic lift - pronounced hover effect */
+.athletic-lift {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.athletic-lift:hover {
+  transform: translateY(-12px) scale(1.02);
+  box-shadow: 0 20px 60px -10px rgba(16, 185, 129, 0.3);
+}
+
+.athletic-lift:active {
+  transform: translateY(-8px) scale(0.99);
+}
+
+/* Energy glow on hover */
+.energy-glow {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.energy-glow::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(135deg, #10B981, #7C3AED);
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+  filter: blur(10px);
+}
+
+.energy-glow:hover::before {
+  opacity: 0.6;
+}
+
+/* Shimmer effect for CTAs */
+.shimmer-cta {
+  background: linear-gradient(90deg,
+    #10B981 0%,
+    #34D399 25%,
+    #10B981 50%,
+    #34D399 75%,
+    #10B981 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerSweep 3s linear infinite;
+}
+
+/* Scale hover for cards */
+.card-scale-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-scale-hover:hover {
+  transform: scale(1.03);
+}
+
+/* ============================================ */
+/* ACCESSIBILITY - PREFERS REDUCED MOTION */
+/* ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .athletic-lift:hover {
+    transform: none;
+  }
+
+  .shimmer-cta {
+    animation: none;
+  }
+
+  .energy-glow::before {
+    display: none;
+  }
+}

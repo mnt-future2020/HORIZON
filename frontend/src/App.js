@@ -26,6 +26,20 @@ import ContactPage from "@/pages/ContactPage";
 import PrivacyPolicyPage from "@/pages/PrivacyPolicyPage";
 import TermsPage from "@/pages/TermsPage";
 import RefundPolicyPage from "@/pages/RefundPolicyPage";
+import NotificationsPage from "@/pages/NotificationsPage";
+import PrivacySettingsPage from "@/pages/PrivacySettingsPage";
+import SocialFeedPage from "@/pages/SocialFeedPage";
+import PlayerCardPage from "@/pages/PlayerCardPage";
+import TournamentsPage from "@/pages/TournamentsPage";
+import TournamentDetailPage from "@/pages/TournamentDetailPage";
+import CoachListingPage from "@/pages/CoachListingPage";
+import CommunitiesPage from "@/pages/CommunitiesPage";
+import GroupDetailPage from "@/pages/GroupDetailPage";
+import TeamsPage from "@/pages/TeamsPage";
+import ChatPage from "@/pages/ChatPage";
+import ExplorePage from "@/pages/ExplorePage";
+import BookmarksPage from "@/pages/BookmarksPage";
+import ContactSyncPage from "@/pages/ContactSyncPage";
 import Navbar from "@/components/Navbar";
 
 function ProtectedRoute({ children, roles }) {
@@ -55,8 +69,8 @@ function AppRoutes() {
     <div className="min-h-screen bg-background">
       {user && <Navbar />}
       <Routes>
-        <Route path="/" element={user ? <Navigate to="/dashboard" /> : <LandingPage />} />
-        <Route path="/auth" element={user ? <Navigate to="/dashboard" /> : <AuthPage />} />
+        <Route path="/" element={user ? <Navigate to="/feed" /> : <LandingPage />} />
+        <Route path="/auth" element={user ? <Navigate to="/feed" /> : <AuthPage />} />
         <Route path="/dashboard" element={<DashboardRouter />} />
         <Route path="/player" element={<ProtectedRoute><PlayerDashboard /></ProtectedRoute>} />
         <Route path="/venues" element={<VenueDiscovery />} />
@@ -80,6 +94,20 @@ function AppRoutes() {
         <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/refund-policy" element={<RefundPolicyPage />} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
+        <Route path="/privacy" element={<ProtectedRoute><PrivacySettingsPage /></ProtectedRoute>} />
+        <Route path="/feed" element={<ProtectedRoute><SocialFeedPage /></ProtectedRoute>} />
+        <Route path="/player-card/:userId" element={<ProtectedRoute><PlayerCardPage /></ProtectedRoute>} />
+        <Route path="/tournaments" element={<ProtectedRoute><TournamentsPage /></ProtectedRoute>} />
+        <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
+        <Route path="/coaching" element={<ProtectedRoute><CoachListingPage /></ProtectedRoute>} />
+        <Route path="/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
+        <Route path="/communities/:groupId" element={<ProtectedRoute><GroupDetailPage /></ProtectedRoute>} />
+        <Route path="/teams" element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />
+        <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+        <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+        <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
+        <Route path="/contacts" element={<ProtectedRoute><ContactSyncPage /></ProtectedRoute>} />
       </Routes>
       <Toaster position="top-right" richColors />
     </div>

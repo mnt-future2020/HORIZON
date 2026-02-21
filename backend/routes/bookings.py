@@ -25,6 +25,8 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     venue = await db.venues.find_one({"id": input.venue_id}, {"_id": 0})
     if not venue:
         raise HTTPException(404, "Venue not found")
+    if venue.get("status") != "active":
+        raise HTTPException(400, "This venue is not currently active")
 
     redis_client = get_redis()
     if redis_client:
@@ -108,10 +110,10 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
                 booking["razorpay_order_id"] = rzp_order["id"]
                 booking["payment_gateway"] = "razorpay"
             except Exception as e:
-                logger.warning(f"Razorpay order creation failed: {e}, falling back to mock")
-                booking["payment_gateway"] = "mock"
+                logger.error(f"Razorpay order creation failed: {e}")
+                raise HTTPException(502, "Payment gateway error. Please try again or contact support.")
         else:
-            booking["payment_gateway"] = "mock"
+            booking["payment_gateway"] = "test"
         await db.bookings.insert_one(booking)
         booking.pop("_id", None)
     elif rzp_client:
@@ -124,14 +126,13 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             booking["razorpay_order_id"] = rzp_order["id"]
             booking["payment_gateway"] = "razorpay"
         except Exception as e:
-            logger.warning(f"Razorpay order creation failed: {e}, falling back to mock")
-            booking["status"] = "payment_pending"
-            booking["payment_gateway"] = "mock"
+            logger.error(f"Razorpay order creation failed: {e}")
+            raise HTTPException(502, "Payment gateway error. Please try again or contact support.")
         await db.bookings.insert_one(booking)
         booking.pop("_id", None)
     else:
         booking["status"] = "payment_pending"
-        booking["payment_gateway"] = "mock"
+        booking["payment_gateway"] = "test"
         await db.bookings.insert_one(booking)
         booking.pop("_id", None)
 
@@ -158,6 +159,8 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
     booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not booking:
         raise HTTPException(404, "Booking not found")
+    if booking.get("host_id") != user["id"] and user["id"] not in booking.get("players", []):
+        raise HTTPException(403, "Not authorized to verify payment for this booking")
 
     settings = await get_platform_settings()
     gw = settings.get("payment_gateway", {})
@@ -168,6 +171,8 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
         if expected != razorpay_signature:
             raise HTTPException(400, "Payment verification failed")
+    elif booking.get("payment_gateway") == "razorpay":
+        raise HTTPException(500, "Payment gateway not configured properly")
 
     if booking.get("split_config"):
         sp = {
@@ -179,16 +184,20 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
             "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()
         }
         await db.split_payments.insert_one(sp)
-        new_shares_paid = booking["split_config"]["shares_paid"] + 1
-        new_status = "confirmed" if new_shares_paid >= booking["split_config"]["total_shares"] else "pending"
-        await db.bookings.update_one({"id": booking_id}, {
-            "$set": {
-                "split_config.shares_paid": new_shares_paid,
-                "status": new_status,
-                "payment_details.last_payment_id": razorpay_payment_id
+        # Atomic increment to avoid race condition
+        result = await db.bookings.find_one_and_update(
+            {"id": booking_id},
+            {
+                "$inc": {"split_config.shares_paid": 1},
+                "$set": {"payment_details.last_payment_id": razorpay_payment_id},
+                "$addToSet": {"players": user["id"]}
             },
-            "$push": {"players": user["id"]}
-        })
+            return_document=True, projection={"_id": 0, "split_config": 1}
+        )
+        new_shares_paid = result["split_config"]["shares_paid"]
+        new_status = "confirmed" if new_shares_paid >= result["split_config"]["total_shares"] else "pending"
+        if new_status == "confirmed":
+            await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "confirmed"}})
         return {"message": "Share paid", "shares_paid": new_shares_paid, "status": new_status}
     else:
         await db.bookings.update_one({"id": booking_id}, {"$set": {
@@ -203,14 +212,14 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
         return {"message": "Payment verified, booking confirmed", "status": "confirmed"}
 
 
-@router.post("/bookings/{booking_id}/mock-confirm")
-async def mock_confirm_payment(booking_id: str, user=Depends(get_current_user)):
-    """Simulate payment confirmation for mock gateway. Only works for mock bookings."""
+@router.post("/bookings/{booking_id}/test-confirm")
+async def test_confirm_payment(booking_id: str, user=Depends(get_current_user)):
+    """Confirm payment for test-mode bookings (no payment gateway configured)."""
     booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not booking:
         raise HTTPException(404, "Booking not found")
-    if booking.get("payment_gateway") != "mock":
-        raise HTTPException(400, "This endpoint is only for mock payments")
+    if booking.get("payment_gateway") not in ("test", "mock"):
+        raise HTTPException(400, "This endpoint is only for test-mode bookings")
     if booking["status"] not in ("payment_pending", "pending"):
         raise HTTPException(400, f"Booking is already {booking['status']}")
     if booking["host_id"] != user["id"]:
@@ -219,25 +228,29 @@ async def mock_confirm_payment(booking_id: str, user=Depends(get_current_user)):
     await db.bookings.update_one({"id": booking_id}, {"$set": {
         "status": "confirmed",
         "payment_details": {
-            "method": "mock",
-            "mock_payment_id": f"mock_{uuid.uuid4().hex[:12]}",
+            "method": "test",
+            "test_payment_id": f"test_{uuid.uuid4().hex[:12]}",
             "paid_at": datetime.now(timezone.utc).isoformat()
         }
     }})
-    # Send push notification
     asyncio.create_task(notify_booking_confirmed(
         booking["host_id"],
         booking.get("venue_name", "Venue"),
         booking.get("date", ""),
         booking.get("start_time", ""),
     ))
-    return {"message": "Mock payment confirmed", "status": "confirmed"}
+    return {"message": "Test payment confirmed", "status": "confirmed"}
 
 
 @router.post("/bookings/cleanup-expired")
-async def cleanup_expired_bookings():
+async def cleanup_expired_bookings(user=Depends(get_current_user)):
     """Auto-cancel bookings that have been pending beyond the expiry window."""
     now = datetime.now(timezone.utc).isoformat()
+    # Find expired bookings first to decrement counters
+    expired_bookings = await db.bookings.find(
+        {"status": {"$in": ["pending", "payment_pending"]}, "expires_at": {"$lt": now}},
+        {"_id": 0, "id": 1, "venue_id": 1, "host_id": 1}
+    ).to_list(500)
     result = await db.bookings.update_many(
         {
             "status": {"$in": ["pending", "payment_pending"]},
@@ -246,6 +259,10 @@ async def cleanup_expired_bookings():
         {"$set": {"status": "expired"}}
     )
     count = result.modified_count
+    # Decrement counters for expired bookings
+    for eb in expired_bookings:
+        await db.venues.update_one({"id": eb["venue_id"]}, {"$inc": {"total_bookings": -1}})
+        await db.users.update_one({"id": eb["host_id"]}, {"$inc": {"total_games": -1}})
     if count > 0:
         logger.info(f"Cleaned up {count} expired bookings")
     return {"expired_count": count}
@@ -290,6 +307,9 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
     if booking["host_id"] != user["id"]:
         raise HTTPException(403, "Only the host can cancel")
     await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "cancelled"}})
+    # Decrement counters that were incremented at booking creation
+    await db.venues.update_one({"id": booking["venue_id"]}, {"$inc": {"total_bookings": -1}})
+    await db.users.update_one({"id": booking["host_id"]}, {"$inc": {"total_games": -1}})
     if booking.get("split_config"):
         await db.split_payments.update_many(
             {"booking_id": booking_id}, {"$set": {"status": "refunded"}}
@@ -304,6 +324,19 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
         booking["venue_id"], booking["date"],
         booking["start_time"], booking.get("turf_number", 1)
     )
+
+    # Auto-promote first person on waitlist
+    try:
+        from routes.waitlist import promote_next_in_waitlist
+        promoted = await promote_next_in_waitlist(
+            booking["venue_id"], booking["date"],
+            booking["start_time"], booking.get("turf_number", 1)
+        )
+        if promoted:
+            logger.info(f"Waitlist: Auto-promoted {promoted['user_name']} after cancellation")
+    except Exception as e:
+        logger.warning(f"Waitlist promotion failed: {e}")
+
     return {"message": "Booking cancelled"}
 
 
@@ -348,8 +381,10 @@ async def pay_split(token: str, request: Request):
             result["payment_gateway"] = "razorpay"
             return result
         except Exception as e:
-            logger.warning(f"Razorpay order failed for split: {e}")
+            logger.error(f"Razorpay order failed for split: {e}")
+            raise HTTPException(502, "Payment gateway error. Please try again.")
 
+    # Test mode — no payment gateway configured
     payment = {
         "id": str(uuid.uuid4()), "booking_id": booking["id"],
         "split_token": token, "payer_id": "",
@@ -364,8 +399,8 @@ async def pay_split(token: str, request: Request):
     if new_paid >= sc["total_shares"]:
         updates["status"] = "confirmed"
     await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
-    result["payment_gateway"] = "mock"
-    result["message"] = "Payment successful"
+    result["payment_gateway"] = "test"
+    result["message"] = "Payment successful (test mode)"
     result["payment"] = payment
     return result
 

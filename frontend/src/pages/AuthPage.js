@@ -24,15 +24,18 @@ export default function AuthPage() {
     setLoading(true);
     try {
       const res = await login(loginData.email, loginData.password);
-      if (res.user?.account_status === "pending") {
+      const status = res.user?.account_status;
+      if (status === "pending") {
         toast.info("Your account is pending admin approval. You'll be notified once approved.");
-      } else if (res.user?.account_status === "rejected") {
+        return;
+      } else if (status === "rejected") {
         toast.error("Your account registration was not approved. Please contact support.");
-      } else if (res.user?.account_status === "suspended") {
+        return;
+      } else if (status === "suspended") {
         toast.error("Your account has been suspended. Please contact support.");
-      } else {
-        toast.success("Welcome back!");
+        return;
       }
+      toast.success("Welcome back!");
       navigate("/dashboard");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Login failed");
@@ -106,10 +109,15 @@ export default function AuthPage() {
                   className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11">
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
-                <p className="text-xs text-center text-muted-foreground mt-4">
-                  Demo: demo@player.com / demo@owner.com / demo@coach.com (pw: demo123)<br/>
-                  Admin: admin@horizon.com (pw: admin123)
-                </p>
+                <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Demo Credentials</p>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p><span className="font-bold text-foreground">Player:</span> demo@player.com / demo123</p>
+                    <p><span className="font-bold text-foreground">Owner:</span> demo@owner.com / demo123</p>
+                    <p><span className="font-bold text-foreground">Coach:</span> demo@coach.com / demo123</p>
+                    <p><span className="font-bold text-foreground">Admin:</span> admin@horizon.com / admin123</p>
+                  </div>
+                </div>
               </form>
             </TabsContent>
 

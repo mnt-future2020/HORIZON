@@ -46,18 +46,30 @@ async def join_match(match_id: str, user=Depends(get_current_user)):
     match = await db.match_requests.find_one({"id": match_id})
     if not match:
         raise HTTPException(404, "Match not found")
+    if match.get("status") != "open":
+        raise HTTPException(400, f"Cannot join a match with status '{match.get('status')}'")
     if user["id"] in match.get("players_joined", []):
         raise HTTPException(400, "Already joined")
-    joined = match.get("players_joined", [])
-    names = match.get("player_names", [])
-    joined.append(user["id"])
-    names.append(user["name"])
-    ratings = match.get("player_ratings", {})
-    ratings[user["id"]] = user.get("skill_rating", 1500)
-    updates = {"players_joined": joined, "player_names": names, "player_ratings": ratings}
-    if len(joined) >= match.get("players_needed", 10):
-        updates["status"] = "filled"
-    await db.match_requests.update_one({"id": match_id}, {"$set": updates})
+    # Atomic push to avoid race condition
+    result = await db.match_requests.find_one_and_update(
+        {"id": match_id, "status": "open", "players_joined": {"$ne": user["id"]}},
+        {
+            "$push": {
+                "players_joined": user["id"],
+                "player_names": user["name"]
+            },
+            "$set": {f"player_ratings.{user['id']}": user.get("skill_rating", 1500)}
+        },
+        return_document=True
+    )
+    if not result:
+        raise HTTPException(409, "Could not join - match may be full or already joined")
+    # Check if match should be marked as filled
+    if len(result.get("players_joined", [])) >= result.get("players_needed", 10):
+        await db.match_requests.update_one(
+            {"id": match_id, "status": "open"},
+            {"$set": {"status": "filled"}}
+        )
     return {"message": "Joined match"}
 
 
@@ -169,6 +181,13 @@ async def submit_match_result(match_id: str, input: MatchResultSubmit, user=Depe
         raise HTTPException(400, "Result already confirmed")
     if input.winner not in ("team_a", "team_b", "draw"):
         raise HTTPException(400, "Winner must be team_a, team_b, or draw")
+
+    # Validate team IDs against match roster
+    joined_set = set(match.get("players_joined", []))
+    invalid_a = set(input.team_a) - joined_set
+    invalid_b = set(input.team_b) - joined_set
+    if invalid_a or invalid_b:
+        raise HTTPException(400, "Team contains players not in this match")
 
     result = {
         "submitted_by": user["id"],
@@ -294,9 +313,9 @@ async def _apply_rating_updates(match_id: str, result: dict):
     match_date = match.get("date", "") if match else ""
 
     # Calculate team averages for opponents
-    team_a_ratings = [(players[p]["skill_rating"], players[p].get("skill_deviation", 350))
+    team_a_ratings = [(players[p].get("skill_rating", 1500), players[p].get("skill_deviation", 350))
                       for p in team_a_ids if p in players]
-    team_b_ratings = [(players[p]["skill_rating"], players[p].get("skill_deviation", 350))
+    team_b_ratings = [(players[p].get("skill_rating", 1500), players[p].get("skill_deviation", 350))
                       for p in team_b_ids if p in players]
 
     if not team_a_ratings or not team_b_ratings:
@@ -327,7 +346,8 @@ async def _apply_rating_updates(match_id: str, result: dict):
         prev_vol = p.get("volatility", 0.06)
         new_r, new_rd, new_vol = update_rating(prev_r, prev_rd, prev_vol, [(avg_b, avg_rd_b, score_a)])
         res_label = "win" if winner == "team_a" else ("loss" if winner == "team_b" else "draw")
-        update_fields = {"skill_rating": new_r, "skill_deviation": new_rd, "volatility": new_vol}
+        update_fields = {"skill_rating": new_r, "skill_deviation": new_rd, "volatility": new_vol,
+                         "total_games": p.get("total_games", 0) + 1}
         if res_label == "win":
             update_fields["wins"] = p.get("wins", 0) + 1
         elif res_label == "loss":
@@ -348,7 +368,8 @@ async def _apply_rating_updates(match_id: str, result: dict):
         prev_vol = p.get("volatility", 0.06)
         new_r, new_rd, new_vol = update_rating(prev_r, prev_rd, prev_vol, [(avg_a, avg_rd_a, score_b)])
         res_label = "win" if winner == "team_b" else ("loss" if winner == "team_a" else "draw")
-        update_fields = {"skill_rating": new_r, "skill_deviation": new_rd, "volatility": new_vol}
+        update_fields = {"skill_rating": new_r, "skill_deviation": new_rd, "volatility": new_vol,
+                         "total_games": p.get("total_games", 0) + 1}
         if res_label == "win":
             update_fields["wins"] = p.get("wins", 0) + 1
         elif res_label == "loss":
@@ -582,6 +603,11 @@ async def verify_mercenary_payment(post_id: str, request: Request, user=Depends(
     post = await db.mercenary_posts.find_one({"id": post_id})
     if not post:
         raise HTTPException(404, "Post not found")
+    accepted_ids = [a["id"] for a in post.get("accepted", [])]
+    if user["id"] not in accepted_ids:
+        raise HTTPException(403, "You must be accepted before paying")
+    if user["id"] in [p["id"] for p in post.get("paid_players", [])]:
+        raise HTTPException(400, "Already paid")
 
     paid_player = {"id": user["id"], "name": user["name"], "paid_at": datetime.now(timezone.utc).isoformat()}
     new_filled = post.get("spots_filled", 0) + 1
