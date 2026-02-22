@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { tournamentAPI } from '../../api';
+import { tournamentAPI, liveAPI } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
@@ -241,6 +241,7 @@ export default function TournamentDetailScreen() {
   const [score1, setScore1] = useState('');
   const [score2, setScore2] = useState('');
   const [submitLoading, setSubmitLoading] = useState(false);
+  const [liveMatches, setLiveMatches] = useState([]);
 
   const isOrganizer = tournament?.organizer_id === user?.id;
   const isRegistered = tournament?.participants?.some((p) => p.id === user?.id);
@@ -249,13 +250,17 @@ export default function TournamentDetailScreen() {
 
   const getTabs = useCallback(() => {
     if (!tournament) return [];
+    const liveTab = tournament.status === 'in_progress'
+      ? [{ key: 'live', label: '🔴 Live' }] : [];
     if (tournament.format === 'knockout') {
       return [
+        ...liveTab,
         { key: 'bracket', label: 'Bracket' },
         { key: 'players', label: 'Players' },
       ];
     }
     return [
+      ...liveTab,
       { key: 'standings', label: 'Standings' },
       { key: 'matches', label: 'Matches' },
       { key: 'players', label: 'Players' },
@@ -266,11 +271,22 @@ export default function TournamentDetailScreen() {
     try {
       const res = await tournamentAPI.get(tournamentId);
       setTournament(res.data);
-      const tabs = res.data?.format === 'knockout'
+      const baseTabs = res.data?.format === 'knockout'
         ? ['bracket', 'players']
         : ['standings', 'matches', 'players'];
+      // Add Live tab if tournament is in progress
+      const tabs = res.data?.status === 'in_progress'
+        ? ['live', ...baseTabs]
+        : baseTabs;
       if (!activeTab || !tabs.includes(activeTab)) {
         setActiveTab(tabs[0]);
+      }
+      // Load live matches if in progress
+      if (res.data?.status === 'in_progress') {
+        try {
+          const liveRes = await liveAPI.getActive();
+          setLiveMatches((liveRes.data || []).filter(m => m.tournament_id === tournamentId));
+        } catch {}
       }
     } catch (err) {
       Alert.alert('Error', 'Failed to load tournament details');
@@ -284,6 +300,17 @@ export default function TournamentDetailScreen() {
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (tournament?.status !== 'in_progress') return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await liveAPI.getActive();
+        setLiveMatches((res.data || []).filter(m => m.tournament_id === tournamentId));
+      } catch {}
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [tournament?.status, tournamentId]);
+
   const onRefresh = () => {
     setRefreshing(true);
     loadData();
@@ -291,9 +318,28 @@ export default function TournamentDetailScreen() {
 
   const handleRegister = async () => {
     try {
-      await tournamentAPI.register(tournamentId);
-      Alert.alert('Success', 'You have registered for this tournament!');
-      loadData();
+      const res = await tournamentAPI.register(tournamentId);
+      const data = res.data;
+
+      if (data.payment_gateway === "test" && data.payment_status === "pending") {
+        // Test mode — auto-confirm entry fee
+        try {
+          await tournamentAPI.testConfirmEntry(tournamentId);
+          Alert.alert('Success', 'Entry fee confirmed (Test mode). You are registered!');
+        } catch { Alert.alert('Error', 'Failed to confirm entry'); }
+        loadData();
+      } else if (data.payment_status === "pending") {
+        // Real payment required — prompt user
+        Alert.alert(
+          'Payment Required',
+          `Entry fee of \u20B9${data.entry_fee} is required. Please complete payment on the web app to confirm registration.`,
+          [{ text: 'OK' }]
+        );
+        loadData();
+      } else {
+        Alert.alert('Success', 'You have registered for this tournament!');
+        loadData();
+      }
     } catch (err) {
       Alert.alert('Error', err?.response?.data?.detail || 'Failed to register');
     }
@@ -430,13 +476,15 @@ export default function TournamentDetailScreen() {
 
           {/* Action Buttons */}
           <View style={styles.actionRow}>
-            {tournament.status === 'registration_open' && !isRegistered && !isOrganizer && (
-              <Button onPress={handleRegister} style={{ flex: 1 }}>Register</Button>
+            {['registration_open', 'registration'].includes(tournament.status) && !isRegistered && !isOrganizer && (
+              <Button onPress={handleRegister} style={{ flex: 1 }}>
+                {tournament.entry_fee > 0 ? `Pay \u20B9${tournament.entry_fee} & Register` : 'Register'}
+              </Button>
             )}
-            {tournament.status === 'registration_open' && isRegistered && (
+            {['registration_open', 'registration'].includes(tournament.status) && isRegistered && (
               <Button variant="destructive" onPress={handleWithdraw} style={{ flex: 1 }}>Withdraw</Button>
             )}
-            {isOrganizer && tournament.status === 'registration_open' && (
+            {isOrganizer && ['registration_open', 'registration'].includes(tournament.status) && (
               <Button variant="secondary" onPress={handleStart} style={{ flex: 1 }}>Start Tournament</Button>
             )}
             {isRegistered && (
@@ -462,6 +510,69 @@ export default function TournamentDetailScreen() {
             />
           )}
           {activeTab === 'players' && <PlayersTab participants={tournament.participants} />}
+          {activeTab === 'live' && (
+            <View style={{ gap: Spacing.md }}>
+              {/* Active live matches */}
+              {liveMatches.length > 0 ? liveMatches.map(lm => (
+                <TouchableOpacity key={lm.id} activeOpacity={0.75}
+                  onPress={() => navigation.navigate('LiveScoring', { liveMatchId: lm.id, tournamentId, organizerId: tournament.organizer_id })}
+                  style={styles.liveMatchCard}>
+                  <View style={styles.liveMatchHeader}>
+                    <Text style={styles.liveMatchLabel}>{lm.match_label}</Text>
+                    <View style={styles.liveBadge}>
+                      <View style={styles.liveDot} />
+                      <Text style={styles.liveBadgeText}>LIVE</Text>
+                    </View>
+                  </View>
+                  <View style={styles.liveScoreRow}>
+                    <Text style={styles.livePlayerName} numberOfLines={1}>{lm.home?.name}</Text>
+                    <Text style={styles.liveScore}>{lm.home?.score} — {lm.away?.score}</Text>
+                    <Text style={styles.livePlayerName} numberOfLines={1}>{lm.away?.name}</Text>
+                  </View>
+                  <View style={styles.liveMatchFooter}>
+                    <Text style={styles.liveMetaText}>{lm.period_label}</Text>
+                    <Text style={styles.liveMetaText}>👁 {lm.spectator_count || 0}</Text>
+                  </View>
+                </TouchableOpacity>
+              )) : (
+                <View style={{ alignItems: 'center', paddingVertical: Spacing.xl }}>
+                  <Text style={{ fontSize: 32, marginBottom: Spacing.sm }}>📡</Text>
+                  <Text style={{ color: Colors.mutedForeground, fontSize: 14 }}>No live matches right now</Text>
+                </View>
+              )}
+
+              {/* Go Live buttons for organizer */}
+              {isOrganizer && tournament.matches?.filter(m => m.status === 'pending' && m.player_a && m.player_b && !liveMatches.some(lm => lm.match_id === m.id)).length > 0 && (
+                <View style={{ gap: Spacing.sm }}>
+                  <Text style={{ color: Colors.mutedForeground, fontSize: 11, fontFamily: Typography.fontBodyBold, textTransform: 'uppercase', letterSpacing: 1 }}>Start Live Scoring</Text>
+                  {tournament.matches.filter(m => m.status === 'pending' && m.player_a && m.player_b && !liveMatches.some(lm => lm.match_id === m.id)).map(m => {
+                    const pA = tournament.participants?.find(p => p.user_id === m.player_a || p.id === m.player_a);
+                    const pB = tournament.participants?.find(p => p.user_id === m.player_b || p.id === m.player_b);
+                    return (
+                      <Card key={m.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: Spacing.md }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: Colors.foreground, fontSize: 14, fontFamily: Typography.fontBodyBold }}>{pA?.name || 'TBD'} vs {pB?.name || 'TBD'}</Text>
+                          <Text style={{ color: Colors.mutedForeground, fontSize: 11 }}>Round {m.round} — Match #{m.match_number}</Text>
+                        </View>
+                        <TouchableOpacity
+                          onPress={async () => {
+                            try {
+                              const res = await liveAPI.start({ tournament_id: tournamentId, match_id: m.id });
+                              navigation.navigate('LiveScoring', { liveMatchId: res.data.id, tournamentId, organizerId: tournament.organizer_id });
+                            } catch (e) {
+                              Alert.alert('Error', e?.response?.data?.detail || 'Failed to start live scoring');
+                            }
+                          }}
+                          style={styles.goLiveBtn}>
+                          <Text style={styles.goLiveBtnText}>🔴 Go Live</Text>
+                        </TouchableOpacity>
+                      </Card>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -748,5 +859,84 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontBodyBold,
     color: Colors.mutedForeground,
     textTransform: 'uppercase',
+  },
+  // Live match styles
+  liveMatchCard: {
+    backgroundColor: Colors.card,
+    borderRadius: Spacing.radiusLg,
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.25)',
+    padding: Spacing.md,
+  },
+  liveMatchHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  liveMatchLabel: {
+    fontSize: Typography.xs,
+    color: Colors.mutedForeground,
+  },
+  liveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 20,
+    gap: 4,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.rose,
+  },
+  liveBadgeText: {
+    fontSize: 10,
+    fontFamily: Typography.fontBodyBold,
+    color: Colors.rose,
+    letterSpacing: 1,
+  },
+  liveScoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  livePlayerName: {
+    fontSize: Typography.sm,
+    fontFamily: Typography.fontBodyBold,
+    color: Colors.foreground,
+    flex: 1,
+  },
+  liveScore: {
+    fontSize: 28,
+    fontFamily: Typography.fontDisplayBlack,
+    color: Colors.primary,
+    marginHorizontal: Spacing.md,
+  },
+  liveMatchFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  liveMetaText: {
+    fontSize: Typography.xs,
+    color: Colors.mutedForeground,
+  },
+  goLiveBtn: {
+    backgroundColor: 'rgba(244, 63, 94, 0.15)',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: Spacing.radiusMd,
+    borderWidth: 1,
+    borderColor: 'rgba(244, 63, 94, 0.3)',
+  },
+  goLiveBtnText: {
+    fontSize: 12,
+    fontFamily: Typography.fontBodyBold,
+    color: Colors.rose,
   },
 });

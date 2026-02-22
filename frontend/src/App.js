@@ -41,6 +41,8 @@ import ExplorePage from "@/pages/ExplorePage";
 import BookmarksPage from "@/pages/BookmarksPage";
 import ContactSyncPage from "@/pages/ContactSyncPage";
 import Navbar from "@/components/Navbar";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import NotFoundPage from "@/pages/NotFoundPage";
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -108,6 +110,7 @@ function AppRoutes() {
         <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
         <Route path="/bookmarks" element={<ProtectedRoute><BookmarksPage /></ProtectedRoute>} />
         <Route path="/contacts" element={<ProtectedRoute><ContactSyncPage /></ProtectedRoute>} />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Toaster position="top-right" richColors />
     </div>
@@ -116,13 +119,15 @@ function AppRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ThemeProvider>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </ThemeProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </ThemeProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

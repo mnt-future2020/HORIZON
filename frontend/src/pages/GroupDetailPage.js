@@ -132,7 +132,7 @@ export default function GroupDetailPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col" style={{ height: "calc(100vh - 56px)" }}>
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-xl border-b border-border px-4 py-3">
+      <div className="sticky top-0 z-10 bg-card backdrop-blur-xl border-b border-border px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
           <button onClick={() => navigate("/communities")} className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
@@ -276,7 +276,7 @@ export default function GroupDetailPage() {
               </div>
 
               {/* Message Input */}
-              <div className="sticky bottom-0 bg-card/95 backdrop-blur-xl border-t border-border px-4 py-3">
+              <div className="sticky bottom-0 bg-card backdrop-blur-xl border-t border-border px-4 py-3">
                 <div className="max-w-3xl mx-auto flex gap-2">
                   <Input
                     value={msgText}

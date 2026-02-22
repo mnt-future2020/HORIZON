@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
-import { bookingAPI, analyticsAPI, waitlistAPI, recommendationAPI, coachingAPI } from '../api';
+import { bookingAPI, analyticsAPI, waitlistAPI, recommendationAPI, coachingAPI, liveAPI } from '../api';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
@@ -99,6 +99,7 @@ export default function HomeScreen() {
   const [engagementScore, setEngagementScore] = useState(null);
   const [qrData, setQrData] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
+  const [liveMatches, setLiveMatches] = useState([]);
 
   const loadData = async () => {
     try {
@@ -121,6 +122,15 @@ export default function HomeScreen() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    const loadLive = async () => {
+      try { const res = await liveAPI.getActive(); setLiveMatches(res.data || []); } catch {}
+    };
+    loadLive();
+    const interval = setInterval(loadLive, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -212,6 +222,44 @@ export default function HomeScreen() {
             textIcon="📅"
           />
         </View>
+
+        {/* Live Now */}
+        {liveMatches.length > 0 && (
+          <View style={{ marginBottom: Spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm }}>
+              <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.rose }} />
+              <Text style={{ fontSize: 11, fontFamily: Typography.fontBodyBold, color: Colors.rose, textTransform: 'uppercase', letterSpacing: 1 }}>Live Now</Text>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: Spacing.sm }}>
+              {liveMatches.map(lm => (
+                <TouchableOpacity key={lm.id} activeOpacity={0.75}
+                  onPress={() => navigation.navigate('LiveScoring', { liveMatchId: lm.id, tournamentId: lm.tournament_id, organizerId: lm.scorer_id })}
+                  style={{
+                    backgroundColor: Colors.card,
+                    borderRadius: Spacing.radiusLg,
+                    borderWidth: 1,
+                    borderColor: 'rgba(244, 63, 94, 0.2)',
+                    padding: Spacing.md,
+                    width: 220,
+                  }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <Text style={{ fontSize: 10, color: Colors.mutedForeground }} numberOfLines={1}>{lm.tournament_name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(244, 63, 94, 0.15)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 }}>
+                      <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: Colors.rose }} />
+                      <Text style={{ fontSize: 9, fontFamily: Typography.fontBodyBold, color: Colors.rose }}>LIVE</Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={{ fontSize: 12, fontFamily: Typography.fontBodyBold, color: Colors.foreground, flex: 1 }} numberOfLines={1}>{lm.home?.name}</Text>
+                    <Text style={{ fontSize: 20, fontFamily: Typography.fontDisplayBlack, color: Colors.primary, marginHorizontal: 8 }}>{lm.home?.score} — {lm.away?.score}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: Typography.fontBodyBold, color: Colors.foreground, flex: 1, textAlign: 'right' }} numberOfLines={1}>{lm.away?.name}</Text>
+                  </View>
+                  <Text style={{ fontSize: 10, color: Colors.mutedForeground, marginTop: 4 }}>{lm.sport} • {lm.period_label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Search Bar */}
         <TouchableOpacity

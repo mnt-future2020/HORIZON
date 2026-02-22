@@ -12,14 +12,17 @@ import {
   Search, MapPin, Star, ChevronRight, Zap, Shield, Users, BarChart3,
   Smartphone, Building2, Navigation, Sun, Moon, ArrowRight, Play, Quote,
   MessageCircle, Swords, Trophy, Medal, Dumbbell, Heart, Bookmark,
-  UserPlus, Share2, Bell, Lock, Copy, Check, LogIn, Monitor,
+  UserPlus, Share2, Bell, Lock, Check, Monitor,
   Lightbulb, ShoppingCart, TrendingUp, Calendar, ClipboardList,
   Video, Layers, Target, Flame, GraduationCap, ContactRound
 } from "lucide-react";
-import { toast } from "sonner";
-
-// Hero images
-const HERO_ATHLETE = "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=900&q=80";
+// Hero background images — Ken Burns crossfade cycle (video-like)
+const HERO_SLIDES = [
+  "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=1920&q=80",
+  "https://images.unsplash.com/photo-1461896836934-bd45ba8d7459?auto=format&fit=crop&w=1920&q=80",
+];
 const ATHLETE_IMAGES = [
   { src: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=800&q=80", name: "Football", sport: "Football" },
   { src: "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80", name: "Basketball", sport: "Basketball" },
@@ -34,13 +37,6 @@ const AMBASSADORS = [
 ];
 const CTA_ATHLETE = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80";
 
-// Demo credentials
-const DEMO_ACCOUNTS = [
-  { role: "Player", email: "demo@player.com", password: "demo123", icon: Swords, color: "text-emerald-400", bg: "bg-emerald-500/10" },
-  { role: "Venue Owner", email: "demo@owner.com", password: "demo123", icon: Building2, color: "text-violet-400", bg: "bg-violet-500/10" },
-  { role: "Coach", email: "demo@coach.com", password: "demo123", icon: GraduationCap, color: "text-amber-400", bg: "bg-amber-500/10" },
-  { role: "Admin", email: "admin@horizon.com", password: "admin123", icon: Shield, color: "text-rose-400", bg: "bg-rose-500/10" },
-];
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -49,11 +45,17 @@ export default function LandingPage() {
   const [searchText, setSearchText] = useState("");
   const [cities, setCities] = useState([]);
   const [featuredVenues, setFeaturedVenues] = useState([]);
-  const [copiedEmail, setCopiedEmail] = useState("");
+  const [heroSlide, setHeroSlide] = useState(0);
 
   useEffect(() => {
     venueAPI.cities().then(res => setCities(res.data)).catch(() => {});
     venueAPI.list({ sort_by: "rating" }).then(res => setFeaturedVenues(res.data.slice(0, 6))).catch(() => {});
+  }, []);
+
+  // Ken Burns crossfade cycle
+  useEffect(() => {
+    const timer = setInterval(() => setHeroSlide(p => (p + 1) % HERO_SLIDES.length), 5000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleSearch = (e) => {
@@ -66,13 +68,6 @@ export default function LandingPage() {
   const goToCity = (city) => navigate(`/venues?city=${encodeURIComponent(city)}`);
   const totalVenues = cities.reduce((sum, c) => sum + c.count, 0);
 
-  const handleCopyCredential = (email, password) => {
-    navigator.clipboard.writeText(`${email} / ${password}`);
-    setCopiedEmail(email);
-    toast.success("Credentials copied!");
-    setTimeout(() => setCopiedEmail(""), 2000);
-  };
-
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
@@ -80,7 +75,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background" data-testid="landing-page">
       {/* ═══ ATHLETIC NAVBAR ═══ */}
-      <nav className="fixed top-0 w-full z-50 h-16 flex items-center justify-between px-6 md:px-10 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      <nav className="fixed top-0 w-full z-50 h-16 flex items-center justify-between px-6 md:px-10 bg-background/95 backdrop-blur-xl border-b border-border/50">
         <span className="font-display font-black text-xl tracking-tighter uppercase text-primary">Horizon</span>
         <div className="hidden md:flex items-center gap-6">
           {[
@@ -100,10 +95,6 @@ export default function LandingPage() {
             className="h-10 w-10 rounded-xl flex items-center justify-center bg-card/50 border-2 border-border/50 hover:border-primary/50 hover:scale-110 transition-all duration-300">
             {resolvedTheme === "dark" ? <Sun className="h-4 w-4 text-amber-400" /> : <Moon className="h-4 w-4 text-indigo-500" />}
           </button>
-          <Button variant="ghost" size="sm" onClick={() => scrollTo("demo-login")}
-            className="text-sm font-bold hidden sm:flex" data-testid="nav-demo">
-            <LogIn className="h-4 w-4 mr-1.5" /> Demo
-          </Button>
           <Button size="sm" onClick={() => navigate("/auth")}
             className="bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-bold rounded-xl h-10 px-6 transition-all duration-300"
             data-testid="nav-get-started">
@@ -112,169 +103,96 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* ═══ HERO SECTION ═══ */}
-      <section className="relative overflow-hidden min-h-[95vh] flex items-center">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
-        {/* Animated floating orbs — premium background effect */}
-        <div className="absolute top-10 right-[10%] w-[700px] h-[700px] rounded-full bg-primary/8 blur-[100px] animate-float" />
-        <div className="absolute bottom-[10%] left-[5%] w-[500px] h-[500px] rounded-full bg-accent/8 blur-[100px] animate-float-delayed" />
-        <div className="absolute top-[40%] left-[50%] w-[400px] h-[400px] rounded-full bg-sky-500/5 blur-[80px] animate-float-slow" />
+      {/* ═══ HERO SECTION — Cinematic fullscreen (always dark for both themes) ═══ */}
+      <section className="relative overflow-hidden h-screen min-h-[700px] max-h-[1100px] flex items-center">
+        {/* Ken Burns crossfade background — video-like */}
+        {HERO_SLIDES.map((src, i) => (
+          <div key={i} className={`absolute inset-0 transition-opacity duration-[2000ms] ${i === heroSlide ? "opacity-100" : "opacity-0"}`}>
+            <img src={src} alt="" className={`w-full h-full object-cover ${i === heroSlide ? "hero-kenburns" : ""}`}
+              style={{ willChange: "transform" }} />
+          </div>
+        ))}
+        {/* Cinematic overlays — fixed dark for both themes */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(5,10,21,0.95) 0%, rgba(5,10,21,0.8) 50%, rgba(5,10,21,0.4) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(5,10,21,1) 0%, transparent 50%, rgba(5,10,21,0.5) 100%)" }} />
 
-        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-24 pb-16 relative w-full">
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-            <div>
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-                className="flex items-center gap-3 mb-8 flex-wrap">
-                <Badge variant="athletic" className="text-xs px-5 py-2">
-                  SPORTS FACILITY OPERATING SYSTEM
-                </Badge>
-                <Badge variant="live" className="text-[10px] px-3 py-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 mr-1.5 animate-pulse" />
-                  1,200+ GAMES THIS WEEK
-                </Badge>
-              </motion.div>
+        <div className="max-w-7xl mx-auto px-4 md:px-8 relative w-full z-10">
+          <div className="max-w-2xl">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+              className="flex items-center gap-3 mb-6 flex-wrap">
+              <Badge variant="live" className="text-[10px] px-3 py-1.5">
+                <span className="w-2 h-2 rounded-full bg-rose-500 mr-1.5 animate-pulse" />
+                LIVE — 1,200+ GAMES THIS WEEK
+              </Badge>
+            </motion.div>
 
-              <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
-                className="font-display text-display-xl md:text-[6rem] lg:text-[7rem] font-black leading-[0.9] tracking-athletic">
-                THE<br />
-                <span className="bg-gradient-athletic bg-clip-text text-transparent">HORIZON</span>
-              </motion.h1>
+            <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
+              className="font-display text-[4rem] md:text-[6rem] lg:text-[7.5rem] font-black leading-[0.88] tracking-tighter text-white">
+              FIND YOUR<br />
+              <span className="bg-gradient-athletic bg-clip-text text-transparent">GAME</span>
+            </motion.h1>
 
-              <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
-                className="text-muted-foreground mt-8 max-w-xl text-lg md:text-xl leading-relaxed font-semibold">
-                Book turfs. Split costs. Find opponents. Chat with friends. Join tournaments. One platform that runs the entire amateur sports ecosystem.
-              </motion.p>
+            <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-white/60 mt-6 max-w-lg text-lg leading-relaxed font-medium">
+              Book turfs. Split costs. Find opponents. Join tournaments. The operating system for amateur sports.
+            </motion.p>
 
-              {/* Search Bar */}
-              <motion.form onSubmit={handleSearch} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.5 }} className="mt-10 max-w-xl" data-testid="hero-search-form">
-                <div className="flex gap-3 p-3 rounded-2xl bg-card/50 border-2 border-border/50 backdrop-blur-md shadow-2xl hover:border-primary/30 transition-all duration-300">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                    <Input placeholder="Search venues, areas, cities..."
-                      value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                      className="pl-12 border-0 bg-transparent h-14 text-base font-semibold focus-visible:ring-0"
-                      data-testid="hero-search-input" />
-                  </div>
-                  <Button type="submit"
-                    className="h-14 px-8 bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-black uppercase tracking-wide text-sm rounded-xl transition-all duration-300"
-                    data-testid="hero-search-btn">
-                    <Search className="h-4 w-4 mr-2" />SEARCH
-                  </Button>
+            {/* Search */}
+            <motion.form onSubmit={handleSearch} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }} className="mt-8 max-w-lg" data-testid="hero-search-form">
+              <div className="flex gap-2 p-2 rounded-2xl bg-white/10 border border-white/10 backdrop-blur-xl">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                  <Input placeholder="Search venues, areas, cities..."
+                    value={searchText} onChange={(e) => setSearchText(e.target.value)}
+                    className="pl-12 border-0 bg-transparent h-13 text-base font-semibold focus-visible:ring-0 !text-white placeholder:!text-white/30"
+                    data-testid="hero-search-input" />
                 </div>
-                <div className="flex items-center gap-3 mt-4 flex-wrap">
-                  <span className="text-sm text-muted-foreground font-bold">Popular:</span>
+                <Button type="submit"
+                  className="h-13 px-6 bg-gradient-athletic text-white font-black uppercase tracking-wide text-sm rounded-xl transition-all duration-300 hover:scale-105 shadow-glow-primary"
+                  data-testid="hero-search-btn">
+                  <Search className="h-4 w-4 mr-2" />SEARCH
+                </Button>
+              </div>
+              {cities.length > 0 && (
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  <span className="text-xs text-white/30 font-bold uppercase tracking-wider">Popular:</span>
                   {cities.slice(0, 4).map(c => (
                     <button key={c.city} type="button" onClick={() => goToCity(c.city)}
-                      className="text-sm text-primary/80 hover:text-primary font-bold hover:scale-110 transition-all duration-300">
+                      className="text-xs text-white/50 hover:text-white font-bold transition-colors">
                       {c.city}
                     </button>
                   ))}
                 </div>
-              </motion.form>
+              )}
+            </motion.form>
 
-              {/* Stats Row — animated counter feel */}
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-                className="flex gap-6 sm:gap-10 mt-12 p-4 sm:p-6 rounded-2xl bg-card/30 backdrop-blur-md border border-border/30 max-w-xl">
-                {[
-                  { value: `${totalVenues}+`, label: "VENUES", color: "text-primary" },
-                  { value: "50K+", label: "PLAYERS", color: "text-accent" },
-                  { value: "4.8★", label: "RATING", color: "text-amber-400" },
-                  { value: "10+", label: "SPORTS", color: "text-sky-400" },
-                ].map((s, idx) => (
-                  <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 + idx * 0.1 }} className="text-center flex-1">
-                    <div className={`font-display text-2xl sm:text-3xl font-black tracking-athletic ${s.color}`}>{s.value}</div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{s.label}</div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            </div>
-
-            {/* Hero Athlete Image */}
-            <motion.div initial={{ opacity: 0, scale: 0.9, x: 40 }} animate={{ opacity: 1, scale: 1, x: 0 }}
-              transition={{ duration: 0.9, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-              className="relative hidden lg:block">
-              <div className="relative rounded-3xl overflow-hidden aspect-[3/4] max-h-[650px] shadow-2xl">
-                <img src={HERO_ATHLETE} alt="Athlete in action" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-background/40 to-transparent" />
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, duration: 0.6 }}
-                  className="absolute bottom-8 left-6 right-6">
-                  <div className="bg-background/80 backdrop-blur-xl rounded-2xl p-5 border-2 border-border/50">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                        <Play className="h-5 w-5 text-primary fill-primary" />
-                      </div>
-                      <div>
-                        <div className="font-display font-black text-sm uppercase tracking-wide text-foreground">Game On</div>
-                        <div className="text-xs text-muted-foreground font-semibold mt-0.5">2,400+ matches this week</div>
-                      </div>
-                    </div>
-                  </div>
+            {/* Stats strip */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
+              className="flex gap-8 mt-10">
+              {[
+                { value: `${totalVenues}+`, label: "VENUES" },
+                { value: "50K+", label: "PLAYERS" },
+                { value: "4.8★", label: "RATING" },
+                { value: "10+", label: "SPORTS" },
+              ].map((s, idx) => (
+                <motion.div key={s.label} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  transition={{ delay: 0.8 + idx * 0.1 }}>
+                  <div className="font-display text-2xl md:text-3xl font-black tracking-tight text-white">{s.value}</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mt-0.5">{s.label}</div>
                 </motion.div>
-              </div>
-              <div className="absolute -inset-4 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-2xl -z-10" />
+              ))}
             </motion.div>
           </div>
         </div>
-      </section>
 
-      {/* ═══ DEMO LOGIN CREDENTIALS ═══ */}
-      <section id="demo-login" className="max-w-7xl mx-auto px-4 md:px-6 py-16 md:py-20">
-        <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          className="relative rounded-3xl border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-card/50 to-accent/5 backdrop-blur-md overflow-hidden">
-          <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full bg-primary/10 blur-3xl" />
-          <div className="relative p-8 md:p-12">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                <LogIn className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl md:text-3xl font-black tracking-athletic">Try It Now</h2>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground font-semibold mb-8 ml-[52px]">
-              Use these demo accounts to explore all features instantly
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {DEMO_ACCOUNTS.map((acc) => (
-                <motion.div key={acc.email}
-                  initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-                  className="rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-md p-5 hover:border-primary/50 hover:shadow-glow-sm transition-all duration-300 group">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className={`h-10 w-10 rounded-xl ${acc.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <acc.icon className={`h-5 w-5 ${acc.color}`} />
-                    </div>
-                    <span className="font-display font-black text-sm uppercase tracking-wide">{acc.role}</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email</div>
-                      <div className="text-sm font-bold text-foreground mt-0.5 font-mono">{acc.email}</div>
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Password</div>
-                      <div className="text-sm font-bold text-foreground mt-0.5 font-mono">{acc.password}</div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <Button variant="outline" size="sm" className="flex-1 text-[11px] h-8"
-                      onClick={() => handleCopyCredential(acc.email, acc.password)}>
-                      {copiedEmail === acc.email ? <Check className="h-3 w-3 mr-1 text-green-500" /> : <Copy className="h-3 w-3 mr-1" />}
-                      {copiedEmail === acc.email ? "Copied" : "Copy"}
-                    </Button>
-                    <Button size="sm" className="flex-1 text-[11px] h-8 bg-gradient-athletic text-white"
-                      onClick={() => navigate("/auth")}>
-                      Login <ArrowRight className="h-3 w-3 ml-1" />
-                    </Button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </motion.div>
+        {/* Slide indicators */}
+        <div className="absolute bottom-8 right-8 z-10 flex gap-2">
+          {HERO_SLIDES.map((_, i) => (
+            <button key={i} onClick={() => setHeroSlide(i)}
+              className={`h-1 rounded-full transition-all duration-500 ${i === heroSlide ? "w-8 bg-white" : "w-3 bg-white/30"}`} />
+          ))}
+        </div>
       </section>
 
       {/* ═══ SPORTS ACTION BANNER ═══ */}
@@ -285,13 +203,13 @@ export default function LandingPage() {
               viewport={{ once: true }} transition={{ delay: idx * 0.15, duration: 0.8 }}
               className="relative overflow-hidden group">
               <img src={img.src} alt={img.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-              <div className="absolute inset-0 bg-background/60 group-hover:bg-background/40 transition-colors duration-500" />
+              <div className="absolute inset-0 transition-opacity duration-500" style={{ background: "rgba(5,10,21,0.6)" }} />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="font-display text-2xl md:text-4xl lg:text-5xl font-black text-white/90 uppercase tracking-athletic group-hover:scale-110 transition-transform duration-300">
                   {img.sport}
                 </span>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-background to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-20" style={{ background: "linear-gradient(to top, rgba(5,10,21,0.8), transparent)" }} />
             </motion.div>
           ))}
         </div>
@@ -313,38 +231,44 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {[
             {
-              icon: Swords, title: "For Players", color: "bg-emerald-500/10 text-emerald-400",
+              icon: Swords, title: "For Players",
+              iconBg: "bg-gradient-to-br from-emerald-500/15 to-emerald-600/5 ring-1 ring-emerald-500/20 dark:ring-emerald-400/10",
+              iconColor: "text-emerald-600 dark:text-emerald-400",
               border: "hover:border-emerald-500/50", glow: "hover:shadow-[0_0_40px_rgba(16,185,129,0.15)]",
               gradient: "from-emerald-500/20 to-emerald-500/0",
               features: ["Social Feed & Stories", "AI Matchmaking", "Tournaments & Leagues", "WhatsApp-style Chat", "Communities & Teams", "Leaderboards & Ratings", "Split Payments", "Contact Sync"],
-              cta: "for-players", checkColor: "text-emerald-400",
-              btnClass: "hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:text-emerald-400"
+              cta: "for-players", checkColor: "text-emerald-600 dark:text-emerald-400",
+              btnClass: "hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:text-emerald-600 dark:hover:text-emerald-400"
             },
             {
-              icon: Building2, title: "For Venue Owners", color: "bg-violet-500/10 text-violet-400",
+              icon: Building2, title: "For Venue Owners",
+              iconBg: "bg-gradient-to-br from-violet-500/15 to-violet-600/5 ring-1 ring-violet-500/20 dark:ring-violet-400/10",
+              iconColor: "text-violet-600 dark:text-violet-400",
               border: "hover:border-violet-500/50", glow: "hover:shadow-[0_0_40px_rgba(139,92,246,0.15)]",
               gradient: "from-violet-500/20 to-violet-500/0",
               features: ["Revenue Dashboard", "Booking Management", "POS System", "IoT Smart Lighting", "Review Management", "Analytics & Reports", "Public Venue Page", "Multi-court Support"],
-              cta: "for-owners", checkColor: "text-violet-400",
-              btnClass: "hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-violet-400"
+              cta: "for-owners", checkColor: "text-violet-600 dark:text-violet-400",
+              btnClass: "hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-violet-600 dark:hover:text-violet-400"
             },
             {
-              icon: GraduationCap, title: "For Coaches", color: "bg-amber-500/10 text-amber-400",
+              icon: GraduationCap, title: "For Coaches",
+              iconBg: "bg-gradient-to-br from-amber-500/15 to-amber-600/5 ring-1 ring-amber-500/20 dark:ring-amber-400/10",
+              iconColor: "text-amber-600 dark:text-amber-400",
               border: "hover:border-amber-500/50", glow: "hover:shadow-[0_0_40px_rgba(245,158,11,0.15)]",
               gradient: "from-amber-500/20 to-amber-500/0",
               features: ["Academy Dashboard", "Student Management", "Session Scheduling", "Coach Marketplace", "Performance Tracking", "Community Groups", "Direct Messaging", "Profile & Ratings"],
-              cta: "for-coaches", checkColor: "text-amber-400",
-              btnClass: "hover:border-amber-500/50 hover:bg-amber-500/5 hover:text-amber-400"
+              cta: "for-coaches", checkColor: "text-amber-600 dark:text-amber-400",
+              btnClass: "hover:border-amber-500/50 hover:bg-amber-500/5 hover:text-amber-600 dark:hover:text-amber-400"
             },
           ].map((role, idx) => (
             <motion.div key={role.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
-              className={`relative rounded-3xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-8 group ${role.border} ${role.glow} transition-all duration-500`}>
+              className={`relative rounded-3xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md p-8 group shadow-sm dark:shadow-none ${role.border} ${role.glow} transition-all duration-500`}>
               {/* Gradient glow on top */}
               <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-b ${role.gradient} rounded-t-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
               <div className="relative">
-                <div className={`w-16 h-16 rounded-2xl ${role.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <role.icon className="h-8 w-8" />
+                <div className={`w-16 h-16 rounded-2xl ${role.iconBg} ${role.iconColor} flex items-center justify-center mb-6 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300`}>
+                  <role.icon className="h-7 w-7" strokeWidth={1.8} />
                 </div>
                 <h3 className="font-display text-xl font-black mb-4">{role.title}</h3>
                 <ul className="space-y-2.5 mb-6">
@@ -381,24 +305,24 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {[
-              { icon: Flame, title: "Social Feed", desc: "Instagram-style feed with posts, stories, reactions, and explore page", color: "bg-rose-500/10 text-rose-400" },
-              { icon: Swords, title: "AI Matchmaking", desc: "Glicko-2 skill rating system finds you perfectly matched opponents", color: "bg-emerald-500/10 text-emerald-400" },
-              { icon: Medal, title: "Tournaments", desc: "Create and join tournaments with brackets, pools, and live scoring", color: "bg-amber-500/10 text-amber-400" },
-              { icon: MessageCircle, title: "1-on-1 Chat", desc: "WhatsApp-style messaging with read receipts, typing indicators, replies", color: "bg-sky-500/10 text-sky-400" },
-              { icon: Users, title: "Communities", desc: "Create groups, join communities, and chat with like-minded players", color: "bg-violet-500/10 text-violet-400" },
-              { icon: Shield, title: "Teams", desc: "Build your squad, manage rosters, and challenge other teams", color: "bg-indigo-500/10 text-indigo-400" },
-              { icon: Trophy, title: "Leaderboard", desc: "City, sport, and global rankings based on verified match results", color: "bg-orange-500/10 text-orange-400" },
-              { icon: Dumbbell, title: "Coach Booking", desc: "Browse certified coaches, book sessions, and track progress", color: "bg-pink-500/10 text-pink-400" },
-              { icon: Zap, title: "Instant Booking", desc: "Book turfs in seconds with real-time slot availability", color: "bg-teal-500/10 text-teal-400" },
-              { icon: Share2, title: "Split Payments", desc: "Split booking costs with friends. Everyone pays their share via UPI", color: "bg-cyan-500/10 text-cyan-400" },
-              { icon: ContactRound, title: "Contact Sync", desc: "Find friends on Horizon by syncing your phone contacts", color: "bg-lime-500/10 text-lime-400" },
-              { icon: Video, title: "Highlights", desc: "Upload and share your best sports moments with the community", color: "bg-fuchsia-500/10 text-fuchsia-400" },
+              { icon: Flame, title: "Social Feed", desc: "Instagram-style feed with posts, stories, reactions, and explore page", bg: "from-rose-500/15 to-rose-600/5 ring-rose-500/20 dark:ring-rose-400/10", tc: "text-rose-600 dark:text-rose-400" },
+              { icon: Swords, title: "AI Matchmaking", desc: "Glicko-2 skill rating system finds you perfectly matched opponents", bg: "from-emerald-500/15 to-emerald-600/5 ring-emerald-500/20 dark:ring-emerald-400/10", tc: "text-emerald-600 dark:text-emerald-400" },
+              { icon: Medal, title: "Tournaments", desc: "Create and join tournaments with brackets, pools, and live scoring", bg: "from-amber-500/15 to-amber-600/5 ring-amber-500/20 dark:ring-amber-400/10", tc: "text-amber-600 dark:text-amber-400" },
+              { icon: MessageCircle, title: "1-on-1 Chat", desc: "WhatsApp-style messaging with read receipts, typing indicators, replies", bg: "from-sky-500/15 to-sky-600/5 ring-sky-500/20 dark:ring-sky-400/10", tc: "text-sky-600 dark:text-sky-400" },
+              { icon: Users, title: "Communities", desc: "Create groups, join communities, and chat with like-minded players", bg: "from-violet-500/15 to-violet-600/5 ring-violet-500/20 dark:ring-violet-400/10", tc: "text-violet-600 dark:text-violet-400" },
+              { icon: Shield, title: "Teams", desc: "Build your squad, manage rosters, and challenge other teams", bg: "from-indigo-500/15 to-indigo-600/5 ring-indigo-500/20 dark:ring-indigo-400/10", tc: "text-indigo-600 dark:text-indigo-400" },
+              { icon: Trophy, title: "Leaderboard", desc: "City, sport, and global rankings based on verified match results", bg: "from-orange-500/15 to-orange-600/5 ring-orange-500/20 dark:ring-orange-400/10", tc: "text-orange-600 dark:text-orange-400" },
+              { icon: Dumbbell, title: "Coach Booking", desc: "Browse certified coaches, book sessions, and track progress", bg: "from-pink-500/15 to-pink-600/5 ring-pink-500/20 dark:ring-pink-400/10", tc: "text-pink-600 dark:text-pink-400" },
+              { icon: Zap, title: "Instant Booking", desc: "Book turfs in seconds with real-time slot availability", bg: "from-teal-500/15 to-teal-600/5 ring-teal-500/20 dark:ring-teal-400/10", tc: "text-teal-600 dark:text-teal-400" },
+              { icon: Share2, title: "Split Payments", desc: "Split booking costs with friends. Everyone pays their share via UPI", bg: "from-cyan-500/15 to-cyan-600/5 ring-cyan-500/20 dark:ring-cyan-400/10", tc: "text-cyan-600 dark:text-cyan-400" },
+              { icon: ContactRound, title: "Contact Sync", desc: "Find friends on Horizon by syncing your phone contacts", bg: "from-lime-500/15 to-lime-600/5 ring-lime-500/20 dark:ring-lime-400/10", tc: "text-lime-600 dark:text-lime-400" },
+              { icon: Video, title: "Highlights", desc: "Upload and share your best sports moments with the community", bg: "from-fuchsia-500/15 to-fuchsia-600/5 ring-fuchsia-500/20 dark:ring-fuchsia-400/10", tc: "text-fuchsia-600 dark:text-fuchsia-400" },
             ].map((f, idx) => (
               <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: idx * 0.05 }}
-                className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 group hover:border-primary/50 hover:scale-[1.03] hover:shadow-glow-sm transition-all duration-300">
-                <div className={`w-12 h-12 rounded-xl ${f.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="h-6 w-6" />
+                className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md p-6 group hover:border-primary/50 hover:scale-[1.03] hover:shadow-glow-sm shadow-sm dark:shadow-none transition-all duration-300">
+                <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${f.bg} ring-1 ${f.tc} flex items-center justify-center mb-4 group-hover:scale-110 group-hover:shadow-md transition-all duration-300`}>
+                  <f.icon className="h-5 w-5" strokeWidth={1.8} />
                 </div>
                 <h3 className="font-display text-base font-black group-hover:text-primary transition-colors">{f.title}</h3>
                 <p className="text-xs text-muted-foreground font-semibold mt-1.5 leading-relaxed">{f.desc}</p>
@@ -412,7 +336,7 @@ export default function LandingPage() {
       <section id="for-owners" className="max-w-7xl mx-auto px-4 md:px-6 py-20 md:py-28">
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="mb-14">
-          <Badge className="text-xs px-5 py-2 mb-6 bg-violet-500/20 text-violet-400 border-violet-500/30">FOR VENUE OWNERS</Badge>
+          <Badge className="text-xs px-5 py-2 mb-6 bg-violet-500/20 text-violet-600 dark:text-violet-400 border-violet-500/30">FOR VENUE OWNERS</Badge>
           <h2 className="font-display text-display-sm md:text-display-md font-black tracking-athletic">
             Run Your Venue <span className="bg-gradient-accent bg-clip-text text-transparent">Smarter</span>
           </h2>
@@ -423,20 +347,20 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { icon: BarChart3, title: "Revenue Dashboard", desc: "Real-time analytics with daily, weekly, monthly revenue tracking, booking trends, and occupancy rates", color: "bg-violet-500/10 text-violet-400" },
-            { icon: Calendar, title: "Booking Management", desc: "Manage all court bookings, handle walk-ins, set pricing rules, and manage time slots", color: "bg-sky-500/10 text-sky-400" },
-            { icon: ShoppingCart, title: "POS System", desc: "Full point-of-sale for walk-in bookings, equipment rental, and food counter with receipt generation", color: "bg-emerald-500/10 text-emerald-400" },
-            { icon: Lightbulb, title: "IoT Smart Lighting", desc: "Control court floodlights remotely, set auto-schedules, and monitor energy consumption", color: "bg-amber-500/10 text-amber-400" },
-            { icon: Star, title: "Review Management", desc: "Monitor and respond to player reviews, track satisfaction scores, and build reputation", color: "bg-rose-500/10 text-rose-400" },
-            { icon: Monitor, title: "Public Venue Page", desc: "Custom branded page with photos, amenities, pricing, and direct booking for players", color: "bg-indigo-500/10 text-indigo-400" },
+            { icon: BarChart3, title: "Revenue Dashboard", desc: "Real-time analytics with daily, weekly, monthly revenue tracking, booking trends, and occupancy rates", bg: "from-violet-500/15 to-violet-600/5 ring-violet-500/20 dark:ring-violet-400/10", tc: "text-violet-600 dark:text-violet-400" },
+            { icon: Calendar, title: "Booking Management", desc: "Manage all court bookings, handle walk-ins, set pricing rules, and manage time slots", bg: "from-sky-500/15 to-sky-600/5 ring-sky-500/20 dark:ring-sky-400/10", tc: "text-sky-600 dark:text-sky-400" },
+            { icon: ShoppingCart, title: "POS System", desc: "Full point-of-sale for walk-in bookings, equipment rental, and food counter with receipt generation", bg: "from-emerald-500/15 to-emerald-600/5 ring-emerald-500/20 dark:ring-emerald-400/10", tc: "text-emerald-600 dark:text-emerald-400" },
+            { icon: Lightbulb, title: "IoT Smart Lighting", desc: "Control court floodlights remotely, set auto-schedules, and monitor energy consumption", bg: "from-amber-500/15 to-amber-600/5 ring-amber-500/20 dark:ring-amber-400/10", tc: "text-amber-600 dark:text-amber-400" },
+            { icon: Star, title: "Review Management", desc: "Monitor and respond to player reviews, track satisfaction scores, and build reputation", bg: "from-rose-500/15 to-rose-600/5 ring-rose-500/20 dark:ring-rose-400/10", tc: "text-rose-600 dark:text-rose-400" },
+            { icon: Monitor, title: "Public Venue Page", desc: "Custom branded page with photos, amenities, pricing, and direct booking for players", bg: "from-indigo-500/15 to-indigo-600/5 ring-indigo-500/20 dark:ring-indigo-400/10", tc: "text-indigo-600 dark:text-indigo-400" },
           ].map((f, idx) => (
             <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: idx * 0.08 }}
-              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-8 group hover:border-violet-500/50 hover:scale-[1.03] hover:shadow-glow-accent transition-all duration-300">
-              <div className={`w-14 h-14 rounded-xl ${f.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                <f.icon className="h-7 w-7" />
+              className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md p-8 group hover:border-violet-500/50 hover:scale-[1.03] hover:shadow-glow-accent shadow-sm dark:shadow-none transition-all duration-300">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.bg} ring-1 ${f.tc} flex items-center justify-center mb-5 group-hover:scale-110 group-hover:shadow-md transition-all duration-300`}>
+                <f.icon className="h-6 w-6" strokeWidth={1.8} />
               </div>
-              <h3 className="font-display text-lg font-black group-hover:text-violet-400 transition-colors">{f.title}</h3>
+              <h3 className="font-display text-lg font-black group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors">{f.title}</h3>
               <p className="text-sm text-muted-foreground font-semibold mt-2 leading-relaxed">{f.desc}</p>
             </motion.div>
           ))}
@@ -448,7 +372,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 md:px-6 py-20 md:py-28">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="mb-14">
-            <Badge className="text-xs px-5 py-2 mb-6 bg-amber-500/20 text-amber-400 border-amber-500/30">FOR COACHES</Badge>
+            <Badge className="text-xs px-5 py-2 mb-6 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30">FOR COACHES</Badge>
             <h2 className="font-display text-display-sm md:text-display-md font-black tracking-athletic">
               Grow Your <span className="bg-gradient-sport bg-clip-text text-transparent">Academy</span>
             </h2>
@@ -459,20 +383,20 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-              { icon: GraduationCap, title: "Academy Dashboard", desc: "Overview of your academy with student count, upcoming sessions, and earnings at a glance", color: "bg-amber-500/10 text-amber-400" },
-              { icon: Users, title: "Student Management", desc: "Track student progress, manage batches, and send updates to parents", color: "bg-orange-500/10 text-orange-400" },
-              { icon: Target, title: "Coach Marketplace", desc: "Get listed in the coach directory. Players can discover, compare, and book you directly", color: "bg-emerald-500/10 text-emerald-400" },
-              { icon: Calendar, title: "Session Scheduling", desc: "Set your availability, manage bookings, and handle cancellations seamlessly", color: "bg-sky-500/10 text-sky-400" },
-              { icon: MessageCircle, title: "Direct Messaging", desc: "Chat with students and parents directly through the app", color: "bg-violet-500/10 text-violet-400" },
-              { icon: TrendingUp, title: "Performance Analytics", desc: "Track student improvement over time with detailed performance reports", color: "bg-rose-500/10 text-rose-400" },
+              { icon: GraduationCap, title: "Academy Dashboard", desc: "Overview of your academy with student count, upcoming sessions, and earnings at a glance", bg: "from-amber-500/15 to-amber-600/5 ring-amber-500/20 dark:ring-amber-400/10", tc: "text-amber-600 dark:text-amber-400" },
+              { icon: Users, title: "Student Management", desc: "Track student progress, manage batches, and send updates to parents", bg: "from-orange-500/15 to-orange-600/5 ring-orange-500/20 dark:ring-orange-400/10", tc: "text-orange-600 dark:text-orange-400" },
+              { icon: Target, title: "Coach Marketplace", desc: "Get listed in the coach directory. Players can discover, compare, and book you directly", bg: "from-emerald-500/15 to-emerald-600/5 ring-emerald-500/20 dark:ring-emerald-400/10", tc: "text-emerald-600 dark:text-emerald-400" },
+              { icon: Calendar, title: "Session Scheduling", desc: "Set your availability, manage bookings, and handle cancellations seamlessly", bg: "from-sky-500/15 to-sky-600/5 ring-sky-500/20 dark:ring-sky-400/10", tc: "text-sky-600 dark:text-sky-400" },
+              { icon: MessageCircle, title: "Direct Messaging", desc: "Chat with students and parents directly through the app", bg: "from-violet-500/15 to-violet-600/5 ring-violet-500/20 dark:ring-violet-400/10", tc: "text-violet-600 dark:text-violet-400" },
+              { icon: TrendingUp, title: "Performance Analytics", desc: "Track student improvement over time with detailed performance reports", bg: "from-rose-500/15 to-rose-600/5 ring-rose-500/20 dark:ring-rose-400/10", tc: "text-rose-600 dark:text-rose-400" },
             ].map((f, idx) => (
               <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: idx * 0.08 }}
-                className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-8 group hover:border-amber-500/50 hover:scale-[1.03] transition-all duration-300">
-                <div className={`w-14 h-14 rounded-xl ${f.color} flex items-center justify-center mb-5 group-hover:scale-110 transition-transform`}>
-                  <f.icon className="h-7 w-7" />
+                className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md p-8 group hover:border-amber-500/50 hover:scale-[1.03] shadow-sm dark:shadow-none transition-all duration-300">
+                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${f.bg} ring-1 ${f.tc} flex items-center justify-center mb-5 group-hover:scale-110 group-hover:shadow-md transition-all duration-300`}>
+                  <f.icon className="h-6 w-6" strokeWidth={1.8} />
                 </div>
-                <h3 className="font-display text-lg font-black group-hover:text-amber-400 transition-colors">{f.title}</h3>
+                <h3 className="font-display text-lg font-black group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{f.title}</h3>
                 <p className="text-sm text-muted-foreground font-semibold mt-2 leading-relaxed">{f.desc}</p>
               </motion.div>
             ))}
@@ -501,10 +425,10 @@ export default function LandingPage() {
               viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
               className="text-center group">
               <div className="relative inline-flex items-center justify-center mb-6">
-                <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
-                  <s.icon className="h-9 w-9 text-primary" />
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 dark:ring-primary/10 flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                  <s.icon className="h-7 w-7 text-primary" strokeWidth={1.8} />
                 </div>
-                <span className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-gradient-athletic text-white font-display font-black text-sm flex items-center justify-center shadow-glow-sm">
+                <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-gradient-athletic text-white font-display font-black text-[11px] flex items-center justify-center shadow-glow-sm ring-2 ring-background">
                   {s.step}
                 </span>
               </div>
@@ -535,7 +459,7 @@ export default function LandingPage() {
           {AMBASSADORS.map((a, idx) => (
             <motion.div key={a.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
-              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden group hover:border-primary/50 hover:shadow-glow-sm hover:scale-[1.03] transition-all duration-500">
+              className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md overflow-hidden group hover:border-primary/50 hover:shadow-glow-sm hover:scale-[1.03] shadow-sm dark:shadow-none transition-all duration-500">
               <div className="relative h-60 overflow-hidden">
                 <img src={a.src} alt={a.name} className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -565,9 +489,9 @@ export default function LandingPage() {
       {/* ═══ FULL-WIDTH BANNER ═══ */}
       <section className="relative h-[350px] md:h-[450px] overflow-hidden">
         <img src={BANNER_IMAGE} alt="Athletes celebrating" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/75" />
+        <div className="absolute inset-0" style={{ background: "rgba(5,10,21,0.78)" }} />
         <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-transparent to-accent/15" />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(5,10,21,0.9) 0%, transparent 50%, rgba(5,10,21,0.4) 100%)" }} />
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
             className="text-center max-w-3xl px-6">
@@ -599,9 +523,9 @@ export default function LandingPage() {
               <motion.div key={c.city} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: idx * 0.05 }}
                 onClick={() => goToCity(c.city)}
-                className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 cursor-pointer group hover:border-primary/50 hover:scale-105 hover:shadow-glow-sm transition-all duration-300 text-center">
-                <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:bg-primary/20 transition-all duration-300">
-                  <MapPin className="h-7 w-7 text-primary" />
+                className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md p-6 cursor-pointer group hover:border-primary/50 hover:scale-105 hover:shadow-glow-sm shadow-sm dark:shadow-none transition-all duration-300 text-center">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 ring-1 ring-primary/20 dark:ring-primary/10 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 group-hover:shadow-md transition-all duration-300">
+                  <MapPin className="h-6 w-6 text-primary" strokeWidth={1.8} />
                 </div>
                 <h3 className="font-display text-base font-black text-foreground group-hover:text-primary transition-colors">{c.city}</h3>
                 <p className="text-sm text-muted-foreground font-semibold mt-1">{c.count} venue{c.count > 1 ? "s" : ""}</p>
@@ -610,9 +534,9 @@ export default function LandingPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: cities.length * 0.05 }}
               onClick={() => navigate("/venues")}
-              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 cursor-pointer group hover:border-primary/50 hover:scale-105 hover:shadow-glow-sm transition-all duration-300 text-center flex flex-col items-center justify-center">
-              <div className="w-14 h-14 rounded-xl bg-muted/50 flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/10 transition-all duration-300">
-                <Building2 className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
+              className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md p-6 cursor-pointer group hover:border-primary/50 hover:scale-105 hover:shadow-glow-sm shadow-sm dark:shadow-none transition-all duration-300 text-center flex flex-col items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-muted/80 to-muted/30 ring-1 ring-border/50 flex items-center justify-center mx-auto mb-4 group-hover:from-primary/15 group-hover:to-primary/5 group-hover:ring-primary/20 transition-all duration-300">
+                <Building2 className="h-6 w-6 text-muted-foreground group-hover:text-primary transition-colors" strokeWidth={1.8} />
               </div>
               <h3 className="font-display text-base font-black text-foreground group-hover:text-primary transition-colors">All Cities</h3>
               <p className="text-sm text-muted-foreground font-semibold mt-1">View all</p>
@@ -640,7 +564,7 @@ export default function LandingPage() {
               <motion.div key={v.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }} transition={{ delay: idx * 0.05 }}
                 onClick={() => navigate(v.slug ? `/venue/${v.slug}` : "/venues")}
-                className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden cursor-pointer group hover:border-primary/50 hover:shadow-glow-sm hover:scale-[1.02] transition-all duration-300">
+                className="rounded-2xl border-2 border-border/50 bg-card/80 dark:bg-card/50 backdrop-blur-md overflow-hidden cursor-pointer group hover:border-primary/50 hover:shadow-glow-sm hover:scale-[1.02] shadow-sm dark:shadow-none transition-all duration-300">
                 <div className="relative h-48 overflow-hidden bg-secondary/30">
                   {v.images?.[0] ? (
                     <img src={v.images[0]} alt={v.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
@@ -683,28 +607,21 @@ export default function LandingPage() {
         <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           className="relative rounded-3xl border-2 border-border/50 overflow-hidden">
           <img src={CTA_ATHLETE} alt="Athletic training" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-background/80" />
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background/60 to-accent/15" />
+          <div className="absolute inset-0" style={{ background: "rgba(5,10,21,0.82)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(5,10,21,0.5) 50%, rgba(16,185,129,0.1) 100%)" }} />
           <div className="relative p-12 md:p-20 text-center">
-            <h2 className="font-display text-display-sm md:text-display-lg font-black tracking-athletic">Ready to play?</h2>
-            <p className="text-base md:text-lg text-muted-foreground font-semibold mt-4 mb-6">
+            <h2 className="font-display text-display-sm md:text-display-lg font-black tracking-athletic text-white">Ready to play?</h2>
+            <p className="text-base md:text-lg text-white/60 font-semibold mt-4 mb-6">
               Join thousands of players already on Horizon
             </p>
-            {/* Quick demo reminder */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-card/60 backdrop-blur-md border border-border/50 mb-8">
-              <LogIn className="h-4 w-4 text-primary" />
-              <span className="text-sm font-bold text-muted-foreground">
-                Demo: <span className="text-foreground font-mono">demo@player.com</span> / <span className="text-foreground font-mono">demo123</span>
-              </span>
-            </div>
-            <div className="flex gap-4 justify-center flex-wrap">
+            <div className="flex gap-4 justify-center flex-wrap mt-8">
               <Button onClick={() => navigate(user ? "/dashboard" : "/auth")}
                 className="bg-gradient-athletic bg-gradient-animated text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-110 active:scale-105 font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl transition-all duration-300"
                 data-testid="cta-get-started">
                 Get Started Free <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
               <Button variant="outline" onClick={() => navigate("/venues")}
-                className="font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl border-2 hover:border-primary/50 hover:scale-110 active:scale-105 transition-all duration-300 bg-background/50 backdrop-blur-md hover:shadow-glow-sm"
+                className="font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl border-2 border-white/20 text-white hover:border-white/50 hover:scale-110 active:scale-105 transition-all duration-300 bg-white/5 backdrop-blur-md hover:bg-white/10"
                 data-testid="cta-browse-venues">
                 Browse Venues
               </Button>

@@ -11,7 +11,7 @@ export default function Avatar({ uri, name = '', size = 40, showOnline, online, 
     .toUpperCase()
     .slice(0, 2);
 
-  const bgColors = ['#0fb872', '#8b5cf6', '#f59e0b', '#38bdf8', '#f04444', '#ec4899'];
+  const bgColors = ['#3b82f6', '#8b5cf6', '#f59e0b', '#38bdf8', '#f04444', '#ec4899'];
   const colorIdx = name.length % bgColors.length;
 
   return (

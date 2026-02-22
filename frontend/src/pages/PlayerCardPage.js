@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { playerCardAPI, recommendationAPI, socialAPI } from "@/lib/api";
+import { playerCardAPI, recommendationAPI, socialAPI, careerAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AthleticStatCard } from "@/components/ui/stat-card";
@@ -9,7 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy, Target, Shield, Zap, Star, Crown, Award, Medal,
   Gamepad2, Calendar, TrendingUp, Loader2, ArrowLeft, User,
-  Heart, MessageCircle, UserPlus, Users, Grid3X3, Flame
+  Heart, MessageCircle, UserPlus, Users, Grid3X3, Flame,
+  Dumbbell, Building2, BadgeCheck
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +22,7 @@ const BADGE_ICONS = {
   award: Award,
   shield: Shield,
   medal: Medal,
+  "badge-check": BadgeCheck,
 };
 
 const BADGE_COLORS = {
@@ -31,6 +33,7 @@ const BADGE_COLORS = {
   Pro: "text-green-400 bg-green-400/10 border-green-400/30",
   Reliable: "text-sky-400 bg-sky-400/10 border-sky-400/30",
   Champion: "text-red-400 bg-red-400/10 border-red-400/30",
+  Verified: "text-blue-400 bg-blue-400/10 border-blue-400/30",
 };
 
 export default function PlayerCardPage() {
@@ -44,6 +47,7 @@ export default function PlayerCardPage() {
   const [userPosts, setUserPosts] = useState([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [career, setCareer] = useState(null);
 
   useEffect(() => {
     const isMe = !userId || userId === "me" || userId === currentUser?.id;
@@ -70,6 +74,14 @@ export default function PlayerCardPage() {
         .then(res => setUserPosts(res.data?.posts || []))
         .catch(() => {})
         .finally(() => setPostsLoading(false));
+    }
+
+    // Load career & performance data
+    const careerTargetId = isMe ? currentUser?.id : userId;
+    if (careerTargetId) {
+      careerAPI.getCareer(careerTargetId)
+        .then(res => setCareer(res.data))
+        .catch(() => {});
     }
 
     Promise.all([loadCard, loadEngagement]).finally(() => setLoading(false));
@@ -102,6 +114,16 @@ export default function PlayerCardPage() {
     if (rating >= 1700) return { name: "Pro", color: "text-green-400" };
     if (rating >= 1400) return { name: "Intermediate", color: "text-blue-400" };
     return { name: "Beginner", color: "text-muted-foreground" };
+  };
+
+  const getPerformanceTypeColor = (type) => {
+    const t = (type || "").toLowerCase();
+    if (t === "win" || t === "victory") return "bg-green-500/10 text-green-400 border-green-500/20";
+    if (t === "loss" || t === "defeat") return "bg-red-500/10 text-red-400 border-red-500/20";
+    if (t === "draw") return "bg-muted/50 text-muted-foreground border-border/30";
+    if (t === "tournament") return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    if (t === "training") return "bg-violet-500/10 text-violet-400 border-violet-500/20";
+    return "bg-primary/10 text-primary border-primary/20";
   };
 
   if (loading) {
@@ -175,8 +197,11 @@ export default function PlayerCardPage() {
               )}
             </motion.div>
 
-            <h1 className="font-display text-2xl font-black tracking-athletic">
+            <h1 className="font-display text-2xl font-black tracking-athletic flex items-center justify-center gap-1.5">
               {card.name}
+              {card.is_verified && (
+                <BadgeCheck className="h-5 w-5 text-blue-400 shrink-0" />
+              )}
             </h1>
 
             {/* Rating */}
@@ -239,6 +264,55 @@ export default function PlayerCardPage() {
               </div>
             )}
           </div>
+
+          {/* Overall Skill Score */}
+          {card.overall_score !== undefined && (
+            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+              className="rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-md p-6 mb-6">
+              <div className="flex items-center gap-6">
+                <div className="relative w-24 h-24 shrink-0">
+                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-border/30" />
+                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
+                      strokeDasharray={`${card.overall_score * 2.64} 264`} strokeLinecap="round"
+                      className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-violet-400" : card.overall_score >= 51 ? "text-emerald-400" : card.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-display text-2xl font-black">{card.overall_score}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Score</span>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-3">
+                    <h3 className="font-display text-lg font-black">Overall Rating</h3>
+                    <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : card.overall_score >= 51 ? "bg-emerald-400/20 text-emerald-400" : card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                      {card.overall_tier}
+                    </Badge>
+                  </div>
+                  {card.score_breakdown && (
+                    <div className="space-y-1.5">
+                      {[
+                        { label: "Skill", value: card.score_breakdown.skill, color: "bg-primary" },
+                        { label: "Win Rate", value: card.score_breakdown.win_rate, color: "bg-emerald-500" },
+                        { label: "Tournament", value: card.score_breakdown.tournament, color: "bg-amber-500" },
+                        { label: "Training", value: card.score_breakdown.training, color: "bg-violet-500" },
+                        { label: "Reliability", value: card.score_breakdown.reliability, color: "bg-sky-500" },
+                        { label: "Experience", value: card.score_breakdown.experience, color: "bg-rose-500" },
+                      ].map(b => (
+                        <div key={b.label} className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-muted-foreground w-16 shrink-0">{b.label}</span>
+                          <div className="flex-1 h-1.5 rounded-full bg-border/30 overflow-hidden">
+                            <div className={`h-full rounded-full ${b.color} transition-all duration-500`} style={{ width: `${b.value}%` }} />
+                          </div>
+                          <span className="text-[10px] font-bold w-6 text-right">{b.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pb-6">
@@ -422,6 +496,140 @@ export default function PlayerCardPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* ═══ CAREER & PERFORMANCE ═══ */}
+        {career && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="mt-8"
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-display font-bold text-sm">Career & Performance</h3>
+            </div>
+
+            {/* Career Stats Row */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <div className="p-2 rounded-xl bg-violet-500/10">
+                    <Dumbbell className="h-4 w-4 text-violet-400" />
+                  </div>
+                </div>
+                <div className="font-display text-xl font-black">
+                  {career.training_hours ?? 0}
+                </div>
+                <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                  Training Hrs
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <div className="p-2 rounded-xl bg-amber-500/10">
+                    <Trophy className="h-4 w-4 text-amber-400" />
+                  </div>
+                </div>
+                <div className="font-display text-xl font-black">
+                  {career.tournaments_played ?? 0}
+                </div>
+                <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                  Tournaments
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+                <div className="flex items-center justify-center mb-2">
+                  <div className="p-2 rounded-xl bg-sky-500/10">
+                    <Building2 className="h-4 w-4 text-sky-400" />
+                  </div>
+                </div>
+                <div className="font-display text-xl font-black">
+                  {career.organizations?.length ?? 0}
+                </div>
+                <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                  Organizations
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Performance */}
+            {career.recent_performance && career.recent_performance.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
+                  Recent Performance
+                </h4>
+                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
+                  {career.recent_performance.slice(0, 5).map((record, idx) => (
+                    <motion.div
+                      key={record.id || idx}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.5 + idx * 0.05 }}
+                      className="flex items-center gap-3 px-4 py-3"
+                    >
+                      <div className="text-[10px] text-muted-foreground font-mono w-14 flex-shrink-0">
+                        {record.date
+                          ? new Date(record.date).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                            })
+                          : "--"}
+                      </div>
+                      <Badge
+                        className={`text-[10px] font-bold px-2 py-0.5 border ${getPerformanceTypeColor(record.type)}`}
+                      >
+                        {record.type || "Match"}
+                      </Badge>
+                      <span className="text-sm font-semibold truncate flex-1">
+                        {record.title || "Untitled"}
+                      </span>
+                      {record.sport && (
+                        <Badge variant="sport" className="text-[10px] font-bold uppercase ml-auto flex-shrink-0">
+                          {record.sport}
+                        </Badge>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Organizations List */}
+            {career.organizations && career.organizations.length > 0 && (
+              <div>
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
+                  Organizations
+                </h4>
+                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
+                  {career.organizations.map((org, idx) => (
+                    <motion.div
+                      key={org.id || idx}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.55 + idx * 0.05 }}
+                      className="flex items-center gap-3 px-4 py-3"
+                    >
+                      <div className="p-1.5 rounded-lg bg-sky-500/10">
+                        <Building2 className="h-3.5 w-3.5 text-sky-400" />
+                      </div>
+                      <span className="text-sm font-semibold flex-1 truncate">
+                        {org.name}
+                      </span>
+                      {org.type && (
+                        <Badge className="text-[10px] font-bold px-2 py-0.5 bg-muted/50 text-muted-foreground border border-border/30">
+                          {org.type}
+                        </Badge>
+                      )}
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
 
         {/* ═══ USER'S POSTS ═══ */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}

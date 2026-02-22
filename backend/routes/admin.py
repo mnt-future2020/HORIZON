@@ -17,6 +17,7 @@ async def admin_dashboard(user=Depends(get_current_user)):
     total_venues = await db.venues.count_documents({})
     total_bookings = await db.bookings.count_documents({})
     pending_owners = await db.users.count_documents({"role": "venue_owner", "account_status": "pending"})
+    pending_coaches = await db.users.count_documents({"role": "coach", "account_status": "pending"})
     active_venues = await db.venues.count_documents({"status": "active"})
     confirmed_bookings = await db.bookings.find(
         {"status": {"$in": ["confirmed", "completed"]}}, {"_id": 0, "total_amount": 1}
@@ -27,15 +28,51 @@ async def admin_dashboard(user=Depends(get_current_user)):
     commission_pct = settings.get("booking_commission_pct", 0) if settings else 0
     platform_earnings = int(total_revenue * commission_pct / 100)
 
+    # Coaching revenue (per-session + packages)
+    coaching_commission_pct = settings.get("coaching_commission_pct", 10) if settings else 10
+    completed_coaching = await db.coaching_sessions.find(
+        {"status": "completed"}, {"_id": 0, "price": 1}
+    ).to_list(10000)
+    coaching_session_revenue = sum(s.get("price", 0) for s in completed_coaching)
+
+    # Package subscription revenue
+    paid_subs = await db.coaching_subscriptions.find(
+        {"status": {"$in": ["active", "expired", "cancelled"]},
+         "payment_details": {"$exists": True}},
+        {"_id": 0, "price": 1}
+    ).to_list(10000)
+    coaching_package_revenue = sum(s.get("price", 0) for s in paid_subs)
+
+    coaching_revenue = coaching_session_revenue + coaching_package_revenue
+    coaching_earnings = int(coaching_revenue * coaching_commission_pct / 100)
+
+    # Tournament revenue
+    tournament_commission_pct = settings.get("tournament_commission_pct", 10) if settings else 10
+    all_tournaments = await db.tournaments.find(
+        {"entry_fee": {"$gt": 0}}, {"_id": 0, "entry_fee": 1, "participants": 1}
+    ).to_list(10000)
+    tournament_revenue = 0
+    for t in all_tournaments:
+        paid_count = sum(1 for p in t.get("participants", []) if p.get("payment_status") == "paid")
+        tournament_revenue += t.get("entry_fee", 0) * paid_count
+    tournament_earnings = int(tournament_revenue * tournament_commission_pct / 100)
+
+    total_platform_earnings = platform_earnings + coaching_earnings + tournament_earnings
+
     recent_users = await db.users.find(
         {"role": {"$ne": "super_admin"}}, {"_id": 0, "password_hash": 0}
     ).sort("created_at", -1).to_list(5)
 
     return {
         "total_users": total_users, "total_venues": total_venues,
-        "total_bookings": total_bookings, "pending_owners": pending_owners,
+        "total_bookings": total_bookings, "pending_owners": pending_owners, "pending_coaches": pending_coaches,
         "active_venues": active_venues, "total_revenue": total_revenue,
         "commission_pct": commission_pct, "platform_earnings": platform_earnings,
+        "coaching_revenue": coaching_revenue, "coaching_earnings": coaching_earnings,
+        "coaching_commission_pct": coaching_commission_pct,
+        "tournament_revenue": tournament_revenue, "tournament_earnings": tournament_earnings,
+        "tournament_commission_pct": tournament_commission_pct,
+        "total_platform_earnings": total_platform_earnings,
         "recent_users": recent_users
     }
 
@@ -58,11 +95,17 @@ async def admin_approve_user(user_id: str, user=Depends(get_current_user)):
     target = await db.users.find_one({"id": user_id})
     if not target:
         raise HTTPException(404, "User not found")
-    await db.users.update_one({"id": user_id}, {"$set": {"account_status": "active"}})
+    updates = {"account_status": "active"}
+    if target.get("role") == "coach":
+        updates["is_verified"] = True
+        msg = "Your coach account has been approved and verified. You can now manage sessions and academies."
+    else:
+        msg = "Your venue owner account has been approved. You can now create and manage venues."
+    await db.users.update_one({"id": user_id}, {"$set": updates})
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": user_id,
         "type": "account_approved", "title": "Account Approved!",
-        "message": "Your venue owner account has been approved. You can now create and manage venues.",
+        "message": msg,
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
     return {"message": "User approved"}
@@ -75,10 +118,11 @@ async def admin_reject_user(user_id: str, user=Depends(get_current_user)):
     if not target:
         raise HTTPException(404, "User not found")
     await db.users.update_one({"id": user_id}, {"$set": {"account_status": "rejected"}})
+    role_label = "coach" if target.get("role") == "coach" else "venue owner"
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": user_id,
         "type": "account_rejected", "title": "Registration Update",
-        "message": "Your venue owner registration was not approved. Please contact support for details.",
+        "message": f"Your {role_label} registration was not approved. Please contact support for details.",
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
     return {"message": "User rejected"}
@@ -139,6 +183,8 @@ async def admin_get_settings(user=Depends(get_current_user)):
             "key": "platform",
             "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "is_live": False},
             "booking_commission_pct": 10,
+            "coaching_commission_pct": 10,
+            "tournament_commission_pct": 10,
             "s3_storage": {"access_key_id": "", "secret_access_key": "", "bucket_name": "", "region": "ap-south-1", "enabled": False},
             "subscription_plans": [
                 {"id": "free", "name": "Free", "price": 0, "features": ["1 venue", "Basic analytics"], "max_venues": 1},
@@ -158,7 +204,7 @@ async def admin_get_settings(user=Depends(get_current_user)):
 async def admin_update_settings(request: Request, user=Depends(get_current_user)):
     await require_admin(user)
     data = await request.json()
-    allowed = ["payment_gateway", "booking_commission_pct", "subscription_plans", "s3_storage"]
+    allowed = ["payment_gateway", "booking_commission_pct", "coaching_commission_pct", "tournament_commission_pct", "subscription_plans", "s3_storage"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         raise HTTPException(400, "No valid fields to update")
@@ -235,3 +281,21 @@ async def admin_set_user_plan(user_id: str, request: Request, user=Depends(get_c
     plan_id = data.get("plan_id", "free")
     await db.users.update_one({"id": user_id}, {"$set": {"subscription_plan": plan_id}})
     return {"message": f"Plan set to {plan_id}"}
+
+
+@router.put("/admin/users/{user_id}/toggle-verified")
+async def admin_toggle_verified(user_id: str, user=Depends(get_current_user)):
+    await require_admin(user)
+    target = await db.users.find_one({"id": user_id})
+    if not target:
+        raise HTTPException(404, "User not found")
+    new_state = not target.get("is_verified", False)
+    await db.users.update_one({"id": user_id}, {"$set": {"is_verified": new_state}})
+    label = "verified" if new_state else "unverified"
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()), "user_id": user_id,
+        "type": "verification_update", "title": f"Account {label.title()}",
+        "message": f"Your account has been {label} by Horizon.",
+        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    return {"message": f"User {label}", "is_verified": new_state}

@@ -22,6 +22,7 @@ import Spacing from '../../styles/spacing';
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'sessions', label: 'Sessions' },
+  { key: 'packages', label: 'Packages' },
   { key: 'availability', label: 'Availability' },
   { key: 'profile', label: 'Profile' },
 ];
@@ -152,6 +153,12 @@ export default function CoachDashboardScreen() {
   const [academyDetailOpen, setAcademyDetailOpen] = useState(false);
   const [addStudentEmail, setAddStudentEmail] = useState('');
 
+  // Packages
+  const [packages, setPackages] = useState([]);
+  const [pkgModalVisible, setPkgModalVisible] = useState(false);
+  const [pkgForm, setPkgForm] = useState({ name: '', sessions_per_month: '4', price: '2000', duration_minutes: '60', sports: '', description: '' });
+  const [pkgSaving, setPkgSaving] = useState(false);
+
   const loadStats = async () => {
     try {
       const res = await coachingAPI.stats();
@@ -188,6 +195,15 @@ export default function CoachDashboardScreen() {
     }
   };
 
+  const loadPackages = async () => {
+    try {
+      const res = await coachingAPI.listPackages();
+      setPackages(res.data || []);
+    } catch {
+      setPackages([]);
+    }
+  };
+
   const loadProfileData = () => {
     setProfileForm({
       bio: user?.bio || '',
@@ -206,6 +222,7 @@ export default function CoachDashboardScreen() {
         loadSessions(),
         loadAvailability(),
         loadAcademies(),
+        loadPackages(),
       ]);
       loadProfileData();
     } finally {
@@ -319,6 +336,50 @@ export default function CoachDashboardScreen() {
     }
   };
 
+  // Package actions
+  const handleCreatePackage = async () => {
+    if (!pkgForm.name.trim()) {
+      Alert.alert('Validation', 'Package name is required.');
+      return;
+    }
+    setPkgSaving(true);
+    try {
+      await coachingAPI.createPackage({
+        name: pkgForm.name,
+        sessions_per_month: parseInt(pkgForm.sessions_per_month) || 4,
+        price: parseInt(pkgForm.price) || 2000,
+        duration_minutes: parseInt(pkgForm.duration_minutes) || 60,
+        sports: pkgForm.sports.split(',').map(s => s.trim()).filter(Boolean),
+        description: pkgForm.description,
+      });
+      setPkgModalVisible(false);
+      setPkgForm({ name: '', sessions_per_month: '4', price: '2000', duration_minutes: '60', sports: '', description: '' });
+      loadPackages();
+      Alert.alert('Success', 'Package created!');
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.detail || 'Failed to create package');
+    } finally {
+      setPkgSaving(false);
+    }
+  };
+
+  const handleDeletePackage = (pkgId) => {
+    Alert.alert('Deactivate Package', 'This will deactivate the package. Existing subscribers keep their access.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Deactivate', style: 'destructive',
+        onPress: async () => {
+          try {
+            await coachingAPI.deletePackage(pkgId);
+            loadPackages();
+          } catch (err) {
+            Alert.alert('Error', err?.response?.data?.detail || 'Failed to deactivate package');
+          }
+        },
+      },
+    ]);
+  };
+
   // Academy actions
   const handleCreateAcademy = async () => {
     if (!academyForm.name) {
@@ -416,6 +477,8 @@ export default function CoachDashboardScreen() {
         <StatCard label="COMPLETED" value={stats?.completed_sessions || 0} textIcon={'\u2705'} bg={Colors.primaryLight} valueColor={Colors.primary} />
         <StatCard label="REVENUE" value={`\u20B9${(stats?.total_revenue || 0).toLocaleString('en-IN')}`} textIcon={'\uD83D\uDCB0'} bg={Colors.amberLight} valueColor={Colors.amber} />
         <StatCard label="AVG RATING" value={stats?.avg_rating ? stats.avg_rating.toFixed(1) : '0'} textIcon={'\u2B50'} bg={Colors.violetLight} valueColor={Colors.violet} />
+        <StatCard label="SUBSCRIBERS" value={stats?.active_subscribers || 0} textIcon={'\uD83D\uDC65'} bg={Colors.skyLight} valueColor={Colors.sky} />
+        <StatCard label="PKG REVENUE" value={`\u20B9${(stats?.package_revenue || 0).toLocaleString('en-IN')}`} textIcon={'\uD83D\uDCE6'} bg={Colors.amberLight} valueColor={Colors.amber} />
       </View>
 
       {/* Recent sessions */}
@@ -453,6 +516,29 @@ export default function CoachDashboardScreen() {
             ))}
           </View>
         )}
+      </View>
+
+      {/* Quick Links to new coach tools */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Coach Tools</Text>
+        <View style={{ gap: Spacing.sm }}>
+          {[
+            { icon: '🏢', label: 'Organizations', desc: 'Manage orgs, players & staff', screen: 'Organizations' },
+            { icon: '📊', label: 'Performance Records', desc: 'Submit & track player records', screen: 'PerformanceRecords' },
+            { icon: '📋', label: 'Training Logs', desc: 'Log sessions & attendance', screen: 'TrainingLogs' },
+          ].map((item, i) => (
+            <TouchableOpacity key={i} style={styles.quickLink} onPress={() => navigation.navigate(item.screen)} activeOpacity={0.75}>
+              <View style={styles.quickLinkIcon}>
+                <Text style={{ fontSize: 18 }}>{item.icon}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.quickLinkLabel}>{item.label}</Text>
+                <Text style={styles.quickLinkDesc}>{item.desc}</Text>
+              </View>
+              <Text style={{ color: Colors.mutedForeground }}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -503,6 +589,45 @@ export default function CoachDashboardScreen() {
           )}
         </View>
       ))}
+    </View>
+  );
+
+  const renderPackages = () => (
+    <View>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Monthly Packages</Text>
+        <Button size="sm" onPress={() => setPkgModalVisible(true)}>Create</Button>
+      </View>
+      {packages.length === 0 ? (
+        <EmptyState icon={'\uD83D\uDCE6'} title="No packages" subtitle="Create a monthly package to offer subscription-based coaching." actionLabel="Create Package" onAction={() => setPkgModalVisible(true)} />
+      ) : (
+        <View style={{ gap: Spacing.sm }}>
+          {packages.map((pkg) => (
+            <Card key={pkg.id} style={{ padding: Spacing.md }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.sessionStudent}>{pkg.name}</Text>
+                  <Text style={styles.sessionMeta}>
+                    {pkg.sessions_per_month} sessions/mo · {pkg.duration_minutes} min · {'\u20B9'}{pkg.price}/mo
+                  </Text>
+                  {pkg.sports?.length > 0 && (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                      {pkg.sports.map((s) => <Badge key={s} variant="secondary">{s}</Badge>)}
+                    </View>
+                  )}
+                  {pkg.description ? <Text style={styles.sessionMeta}>{pkg.description}</Text> : null}
+                  <Text style={[styles.sessionMeta, { color: Colors.primary, marginTop: 4 }]}>
+                    {pkg.subscriber_count || 0} subscribers
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => handleDeletePackage(pkg.id)}>
+                  <Text style={{ color: Colors.destructive, fontSize: Typography.xs, fontFamily: Typography.fontBodyBold }}>DELETE</Text>
+                </TouchableOpacity>
+              </View>
+            </Card>
+          ))}
+        </View>
+      )}
     </View>
   );
 
@@ -580,6 +705,7 @@ export default function CoachDashboardScreen() {
         <View style={styles.tabContent}>
           {activeTab === 'overview' && renderOverview()}
           {activeTab === 'sessions' && renderSessions()}
+          {activeTab === 'packages' && renderPackages()}
           {activeTab === 'availability' && renderAvailability()}
           {activeTab === 'profile' && renderProfile()}
         </View>
@@ -641,6 +767,53 @@ export default function CoachDashboardScreen() {
         />
         <Button onPress={handleCreateAcademy} loading={academySaving} style={{ marginTop: Spacing.md }}>
           Create Academy
+        </Button>
+      </ModalSheet>
+
+      {/* Create Package Modal */}
+      <ModalSheet visible={pkgModalVisible} onClose={() => setPkgModalVisible(false)} title="Create Package">
+        <Input
+          label="Package Name"
+          value={pkgForm.name}
+          onChangeText={(v) => setPkgForm(prev => ({ ...prev, name: v }))}
+          placeholder="e.g. Basic, Premium"
+        />
+        <Input
+          label="Sessions per Month"
+          value={pkgForm.sessions_per_month}
+          onChangeText={(v) => setPkgForm(prev => ({ ...prev, sessions_per_month: v }))}
+          keyboardType="numeric"
+          placeholder="e.g. 4"
+        />
+        <Input
+          label="Price (INR/month)"
+          value={pkgForm.price}
+          onChangeText={(v) => setPkgForm(prev => ({ ...prev, price: v }))}
+          keyboardType="numeric"
+          placeholder="e.g. 2000"
+        />
+        <Input
+          label="Session Duration (minutes)"
+          value={pkgForm.duration_minutes}
+          onChangeText={(v) => setPkgForm(prev => ({ ...prev, duration_minutes: v }))}
+          keyboardType="numeric"
+          placeholder="e.g. 60"
+        />
+        <Input
+          label="Sports (comma-separated)"
+          value={pkgForm.sports}
+          onChangeText={(v) => setPkgForm(prev => ({ ...prev, sports: v }))}
+          placeholder="e.g. Badminton, Tennis"
+        />
+        <Input
+          label="Description (optional)"
+          value={pkgForm.description}
+          onChangeText={(v) => setPkgForm(prev => ({ ...prev, description: v }))}
+          placeholder="Package details..."
+          multiline
+        />
+        <Button onPress={handleCreatePackage} loading={pkgSaving} style={{ marginTop: Spacing.md }}>
+          Create Package
         </Button>
       </ModalSheet>
 
@@ -747,4 +920,8 @@ const styles = StyleSheet.create({
   dayChipActive: { backgroundColor: Colors.primaryLight, borderColor: Colors.primary },
   dayChipText: { fontSize: Typography.xs, fontFamily: Typography.fontBodyBold, color: Colors.mutedForeground },
   dayChipTextActive: { color: Colors.primary },
+  quickLink: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, backgroundColor: Colors.card, borderRadius: Spacing.radiusLg, borderWidth: 1, borderColor: Colors.border, gap: Spacing.md },
+  quickLinkIcon: { width: 40, height: 40, borderRadius: Spacing.radiusMd, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
+  quickLinkLabel: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground },
+  quickLinkDesc: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, marginTop: 2 },
 });

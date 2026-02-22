@@ -7,11 +7,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { analyticsAPI, bookingAPI, authAPI, uploadAPI } from '../api';
+import { analyticsAPI, bookingAPI, authAPI, uploadAPI, careerAPI } from '../api';
 import Card from '../components/common/Card';
 import Badge from '../components/common/Badge';
 import Button from '../components/common/Button';
 import Input from '../components/common/Input';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../styles/colors';
 import Typography from '../styles/typography';
 import Spacing from '../styles/spacing';
@@ -23,7 +24,7 @@ function getRatingTier(r) {
   return { label: 'Bronze', color: Colors.tierBronze, bg: Colors.orangeLight };
 }
 
-const TABS = ['overview', 'edit'];
+const TABS = ['overview', 'career', 'edit'];
 
 export default function ProfileScreen() {
   const { user, logout, updateUser } = useAuth();
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [refreshing, setRefreshing] = useState(false);
+  const [career, setCareer] = useState(null);
   const [form, setForm] = useState({ name: '', phone: '', preferred_position: '' });
 
   const loadData = async () => {
@@ -45,6 +47,9 @@ export default function ProfileScreen() {
       ]);
       setStats(sRes.data);
       setBookings(bRes.data || []);
+      if (user?.id) {
+        careerAPI.getCareer(user.id).then(r => setCareer(r.data)).catch(() => {});
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -166,7 +171,12 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.profileName}>{user?.name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.profileName}>{user?.name}</Text>
+            {user?.is_verified && (
+              <Ionicons name="checkmark-circle" size={20} color="#60A5FA" style={{ marginLeft: 6 }} />
+            )}
+          </View>
           <Text style={styles.profileEmail}>{user?.email}</Text>
 
           <View style={[styles.tierBadge, { backgroundColor: tier.bg }]}>
@@ -174,6 +184,14 @@ export default function ProfileScreen() {
               {tier.label} • {user?.skill_rating || 1500}
             </Text>
           </View>
+
+          {(stats?.overall_score !== undefined || user?.overall_score !== undefined) && (
+            <View style={styles.scoreBadge}>
+              <Text style={styles.scoreBadgeText}>
+                Score: {Math.round(stats?.overall_score ?? user?.overall_score)}
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Stats Row */}
@@ -199,13 +217,97 @@ export default function ProfileScreen() {
               onPress={() => setActiveTab(t)}
             >
               <Text style={[styles.tabText, activeTab === t && styles.tabTextActive]}>
-                {t === 'overview' ? 'Overview' : 'Edit Profile'}
+                {t === 'overview' ? 'Overview' : t === 'career' ? 'Career' : 'Edit Profile'}
               </Text>
             </TouchableOpacity>
           ))}
         </View>
 
-        {activeTab === 'overview' ? (
+        {activeTab === 'career' ? (
+          <View style={styles.tabContent}>
+            {/* Career Stats Cards */}
+            <View style={styles.careerStatsRow}>
+              {[
+                { icon: '📊', label: 'Records', value: career?.total_records || 0, color: Colors.primary },
+                { icon: '⏱️', label: 'Train Hrs', value: career?.training_hours || 0, color: Colors.violet },
+                { icon: '🏆', label: 'Tournaments', value: career?.tournaments_played || 0, color: Colors.amber },
+                { icon: '🏢', label: 'Orgs', value: career?.organizations?.length || 0, color: Colors.sky },
+              ].map((s, i) => (
+                <View key={i} style={styles.careerStatCard}>
+                  <View style={[styles.careerStatIcon, { backgroundColor: `${s.color}18` }]}>
+                    <Text style={{ fontSize: 14 }}>{s.icon}</Text>
+                  </View>
+                  <Text style={[styles.careerStatValue, { color: s.color }]}>{s.value}</Text>
+                  <Text style={styles.careerStatLabel}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Recent Records */}
+            <Card>
+              <Text style={styles.cardTitle}>Recent Records</Text>
+              {career?.recent_records?.length > 0 ? career.recent_records.slice(0, 8).map((record, idx) => {
+                const typeColors = { training: Colors.violet, match_result: Colors.emerald, assessment: Colors.sky, tournament_result: Colors.amber, achievement: Colors.orange };
+                const tc = typeColors[record.record_type] || Colors.primary;
+                return (
+                  <View key={record.id || idx} style={[styles.recordRow, idx < (career.recent_records.length - 1) && { borderBottomWidth: 1, borderBottomColor: Colors.border }]}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: 4 }}>
+                        <Badge variant="secondary" style={{ backgroundColor: `${tc}18` }}>
+                          <Text style={{ color: tc, fontSize: Typography.xs, fontFamily: Typography.fontBodyBold }}>
+                            {(record.record_type || 'other').replace('_', ' ')}
+                          </Text>
+                        </Badge>
+                        {record.sport && <Badge variant="outline">{record.sport}</Badge>}
+                      </View>
+                      <Text style={styles.recordTitle}>{record.title || 'Untitled'}</Text>
+                      {record.source_name && <Text style={styles.recordSource}>via {record.source_name}</Text>}
+                    </View>
+                    <Text style={styles.recordDate}>
+                      {record.date ? new Date(record.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : ''}
+                    </Text>
+                  </View>
+                );
+              }) : (
+                <Text style={{ color: Colors.mutedForeground, fontSize: Typography.sm, textAlign: 'center', paddingVertical: Spacing.xl }}>
+                  No performance records yet
+                </Text>
+              )}
+            </Card>
+
+            {/* Sport Breakdown */}
+            {career?.records_by_sport && Object.keys(career.records_by_sport).length > 0 && (
+              <Card>
+                <Text style={styles.cardTitle}>Sports Breakdown</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm }}>
+                  {Object.entries(career.records_by_sport).map(([sport, count]) => (
+                    <Badge key={sport} variant="secondary">
+                      {sport} ({count})
+                    </Badge>
+                  ))}
+                </View>
+              </Card>
+            )}
+
+            {/* Organizations */}
+            {career?.organizations?.length > 0 && (
+              <Card>
+                <Text style={styles.cardTitle}>Organizations</Text>
+                {career.organizations.map((org, idx) => (
+                  <View key={org.id || idx} style={[styles.orgRow, idx < career.organizations.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.border }]}>
+                    <View style={[styles.orgIcon, { backgroundColor: Colors.skyLight }]}>
+                      <Text style={{ fontSize: 14 }}>🏢</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.orgName}>{org.name}</Text>
+                      {org.org_type && <Text style={styles.orgType}>{org.org_type.replace('_', ' ')}</Text>}
+                    </View>
+                  </View>
+                ))}
+              </Card>
+            )}
+          </View>
+        ) : activeTab === 'overview' ? (
           <View style={styles.tabContent}>
             {/* Quick Links */}
             <View style={{ gap: Spacing.sm }}>
@@ -329,6 +431,8 @@ const styles = StyleSheet.create({
   profileEmail: { fontSize: Typography.sm, fontFamily: Typography.fontBody, color: Colors.mutedForeground, marginTop: 4 },
   tierBadge: { marginTop: Spacing.sm, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Spacing.radiusFull },
   tierText: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold },
+  scoreBadge: { marginTop: Spacing.xs, paddingHorizontal: Spacing.md, paddingVertical: Spacing.xs, borderRadius: Spacing.radiusFull, backgroundColor: 'rgba(59, 130, 246, 0.12)' },
+  scoreBadgeText: { fontSize: Typography.xs, fontFamily: Typography.fontBodyBold, color: '#60A5FA' },
   statsRow: { flexDirection: 'row', marginHorizontal: Spacing.base, backgroundColor: Colors.card, borderRadius: Spacing.radiusLg, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.base },
   statBox: { flex: 1, alignItems: 'center', paddingVertical: Spacing.md, borderRightWidth: 1, borderRightColor: Colors.border },
   statValue: { fontSize: Typography.xl2, fontFamily: Typography.fontDisplayBlack },
@@ -353,4 +457,17 @@ const styles = StyleSheet.create({
   quickLinkIcon: { width: 40, height: 40, borderRadius: Spacing.radiusMd, backgroundColor: Colors.secondary, justifyContent: 'center', alignItems: 'center' },
   quickLinkLabel: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground },
   quickLinkDesc: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, marginTop: 2 },
+  careerStatsRow: { flexDirection: 'row', gap: Spacing.sm, marginBottom: Spacing.md },
+  careerStatCard: { flex: 1, backgroundColor: Colors.card, borderRadius: Spacing.radiusLg, borderWidth: 1, borderColor: Colors.border, padding: Spacing.md, alignItems: 'center' },
+  careerStatIcon: { width: 32, height: 32, borderRadius: Spacing.radiusMd, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.xs },
+  careerStatValue: { fontSize: Typography.xl, fontFamily: Typography.fontDisplayBlack },
+  careerStatLabel: { fontSize: 9, fontFamily: Typography.fontBody, color: Colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, marginTop: 2 },
+  recordRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm, gap: Spacing.sm },
+  recordTitle: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground },
+  recordSource: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, marginTop: 2 },
+  recordDate: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground },
+  orgRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm, gap: Spacing.md },
+  orgIcon: { width: 36, height: 36, borderRadius: Spacing.radiusMd, justifyContent: 'center', alignItems: 'center' },
+  orgName: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground },
+  orgType: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, textTransform: 'capitalize', marginTop: 2 },
 });

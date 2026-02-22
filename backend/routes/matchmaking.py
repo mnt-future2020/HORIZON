@@ -406,6 +406,37 @@ async def _apply_rating_updates(match_id: str, result: dict):
             "is_read": False, "created_at": now
         })
 
+    # Auto-create performance records for all players
+    for pid, fields, delta, prev_r, prev_rd, prev_vol, new_r, new_rd, new_vol, res_label, team, opp_snap in updates:
+        p = players.get(pid, {})
+        perf_record = {
+            "id": str(uuid.uuid4()),
+            "player_id": pid,
+            "player_name": p.get("name", ""),
+            "record_type": "match_result",
+            "sport": match_sport,
+            "title": f"Match — {match_sport.replace('_', ' ').title()}",
+            "stats": {
+                "result": res_label,
+                "rating_change": delta,
+                "new_rating": new_r,
+                "score_a": result.get("score_a"),
+                "score_b": result.get("score_b"),
+                "team": team
+            },
+            "notes": "",
+            "source_type": "system",
+            "source_id": match_id,
+            "source_name": "Matchmaking",
+            "organization_id": None,
+            "tournament_id": None,
+            "session_id": None,
+            "date": match_date or now[:10],
+            "verified": True,
+            "created_at": now
+        }
+        await db.performance_records.insert_one(perf_record)
+
     logger.info(f"Glicko-2 ratings + chain history updated for match {match_id}: {len(updates)} players")
 
 

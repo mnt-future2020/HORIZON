@@ -12,7 +12,7 @@ import {
   Users, Building2, CalendarCheck, IndianRupee, Clock, Shield,
   CheckCircle, XCircle, Ban, RotateCcw, Settings, CreditCard,
   Percent, Crown, Eye, EyeOff, Save, KeyRound,
-  Cloud, Wifi, AlertCircle, CheckCircle2
+  Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy
 } from "lucide-react";
 
 function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
@@ -42,10 +42,12 @@ function OverviewTab() {
         <StatCard icon={Users} label="Total Users" value={data.total_users} />
         <StatCard icon={Building2} label="Active Venues" value={data.active_venues} />
         <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} />
-        <StatCard icon={IndianRupee} label="Total Revenue" value={`\u20B9${data.total_revenue.toLocaleString()}`} />
-        <StatCard icon={Percent} label="Commission" value={`${data.commission_pct}%`} sub="Platform fee" />
-        <StatCard icon={Crown} label="Platform Earnings" value={`\u20B9${data.platform_earnings.toLocaleString()}`} />
-        <StatCard icon={Clock} label="Pending Approvals" value={data.pending_owners} color={data.pending_owners > 0 ? "text-amber-400" : "text-primary"} />
+        <StatCard icon={IndianRupee} label="Booking Revenue" value={`\u20B9${data.total_revenue.toLocaleString()}`} />
+        <StatCard icon={Percent} label="Booking Commission" value={`${data.commission_pct}%`} sub={`\u20B9${(data.platform_earnings || 0).toLocaleString()}`} />
+        <StatCard icon={GraduationCap} label="Coaching Revenue" value={`\u20B9${(data.coaching_revenue || 0).toLocaleString()}`} sub={`${data.coaching_commission_pct || 10}% = \u20B9${(data.coaching_earnings || 0).toLocaleString()}`} />
+        <StatCard icon={Trophy} label="Tournament Revenue" value={`\u20B9${(data.tournament_revenue || 0).toLocaleString()}`} sub={`${data.tournament_commission_pct || 10}% = \u20B9${(data.tournament_earnings || 0).toLocaleString()}`} />
+        <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} />
+        <StatCard icon={Clock} label="Pending Approvals" value={(data.pending_owners || 0) + (data.pending_coaches || 0)} color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-400" : "text-primary"} />
       </div>
       <div>
         <h3 className="text-sm font-bold mb-3">Recent Registrations</h3>
@@ -99,6 +101,14 @@ function UsersTab() {
     } catch { toast.error(`Failed to ${action} user`); }
   };
 
+  const handleVerify = async (userId) => {
+    try {
+      await adminAPI.toggleVerified(userId);
+      toast.success("Verification toggled");
+      load();
+    } catch { toast.error("Failed to toggle verification"); }
+  };
+
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
       <div className="flex flex-wrap gap-2">
@@ -150,6 +160,13 @@ function UsersTab() {
                     <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:bg-amber-500/10"
                       onClick={() => handleAction(u.id, "suspend")} data-testid={`suspend-${u.id}`}>
                       <Ban className="h-3.5 w-3.5 mr-1" /> Suspend
+                    </Button>
+                  )}
+                  {u.role === "coach" && u.account_status === "active" && (
+                    <Button size="sm" variant="ghost" className={`h-7 px-2 ${u.is_verified ? "text-blue-400 hover:bg-blue-500/10" : "text-muted-foreground hover:bg-primary/10"}`}
+                      onClick={() => handleVerify(u.id)} data-testid={`verify-${u.id}`}>
+                      <CheckCircle2 className={`h-3.5 w-3.5 mr-1 ${u.is_verified ? "" : "opacity-40"}`} />
+                      {u.is_verified ? "Verified" : "Verify"}
                     </Button>
                   )}
                   {(u.account_status === "suspended" || u.account_status === "rejected") && (
@@ -231,6 +248,8 @@ function SettingsTab() {
       const res = await adminAPI.updateSettings({
         payment_gateway: settings.payment_gateway,
         booking_commission_pct: settings.booking_commission_pct,
+        coaching_commission_pct: settings.coaching_commission_pct,
+        tournament_commission_pct: settings.tournament_commission_pct,
         subscription_plans: settings.subscription_plans,
         s3_storage: settings.s3_storage,
       });
@@ -305,7 +324,7 @@ function SettingsTab() {
           <div>
             <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Key ID</Label>
             <Input value={settings.payment_gateway.key_id} onChange={e => updateGateway("key_id", e.target.value)}
-              className="mt-1.5 bg-background border-border h-10 text-sm" placeholder="rzp_live_xxxx or rzp_test_xxxx"
+              className="mt-1.5 bg-background border-border h-10 text-sm" placeholder="Enter Razorpay Key ID"
               data-testid="gateway-key-id" />
           </div>
           <div>
@@ -351,7 +370,7 @@ function SettingsTab() {
               <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Access Key ID</Label>
               <Input value={s3.access_key_id || ""} onChange={e => updateS3("access_key_id", e.target.value)}
                 className="mt-1.5 bg-background border-border h-10 text-sm font-mono"
-                placeholder="AKIAIOSFODNN7EXAMPLE" />
+                placeholder="Enter AWS Access Key ID" />
             </div>
             <div>
               <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Secret Access Key</Label>
@@ -361,7 +380,7 @@ function SettingsTab() {
                   value={s3.secret_access_key || ""}
                   onChange={e => updateS3("secret_access_key", e.target.value)}
                   className="bg-background border-border h-10 text-sm font-mono pr-10"
-                  placeholder="wJalrXUtnFEMI/K7MDENG" />
+                  placeholder="Enter AWS Secret Access Key" />
                 <button onClick={() => setShowS3Secret(!showS3Secret)}
                   className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showS3Secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -414,19 +433,39 @@ function SettingsTab() {
         </div>
       </section>
 
-      {/* Booking Commission */}
+      {/* Platform Commissions */}
       <section>
         <div className="flex items-center gap-2 mb-4">
           <Percent className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">Booking Commission</h3>
+          <h3 className="text-base font-bold">Platform Commissions</h3>
         </div>
-        <div className="glass-card rounded-lg p-4">
-          <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Commission Percentage</Label>
-          <div className="flex items-center gap-3 mt-1.5">
-            <Input type="number" min={0} max={50} value={settings.booking_commission_pct}
-              onChange={e => setSettings(s => ({ ...s, booking_commission_pct: Number(e.target.value) }))}
-              className="bg-background border-border h-10 text-sm w-24" data-testid="commission-input" />
-            <span className="text-sm text-muted-foreground">% of each booking goes to the platform</span>
+        <div className="glass-card rounded-lg p-4 space-y-4">
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Booking Commission</Label>
+            <div className="flex items-center gap-3 mt-1.5">
+              <Input type="number" min={0} max={50} value={settings.booking_commission_pct}
+                onChange={e => setSettings(s => ({ ...s, booking_commission_pct: Number(e.target.value) }))}
+                className="bg-background border-border h-10 text-sm w-24" data-testid="commission-input" />
+              <span className="text-sm text-muted-foreground">% of each venue booking</span>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Coaching Commission</Label>
+            <div className="flex items-center gap-3 mt-1.5">
+              <Input type="number" min={0} max={50} value={settings.coaching_commission_pct ?? 10}
+                onChange={e => setSettings(s => ({ ...s, coaching_commission_pct: Number(e.target.value) }))}
+                className="bg-background border-border h-10 text-sm w-24" />
+              <span className="text-sm text-muted-foreground">% of each coaching session</span>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Tournament Commission</Label>
+            <div className="flex items-center gap-3 mt-1.5">
+              <Input type="number" min={0} max={50} value={settings.tournament_commission_pct ?? 10}
+                onChange={e => setSettings(s => ({ ...s, tournament_commission_pct: Number(e.target.value) }))}
+                className="bg-background border-border h-10 text-sm w-24" />
+              <span className="text-sm text-muted-foreground">% of each tournament entry fee</span>
+            </div>
           </div>
         </div>
       </section>

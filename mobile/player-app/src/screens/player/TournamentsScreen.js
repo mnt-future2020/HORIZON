@@ -157,7 +157,7 @@ export default function TournamentsScreen() {
     rules: '',
   });
 
-  const isVenueOwner = user?.role === 'venue_owner';
+  const isVenueOwner = user?.role === 'venue_owner' || user?.role === 'coach' || user?.role === 'super_admin';
 
   const loadData = useCallback(async () => {
     try {

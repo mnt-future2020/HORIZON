@@ -6,10 +6,12 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
-from auth import get_current_user
+from auth import get_current_user, get_razorpay_client, get_platform_settings
 import uuid
 import math
 import random
+import hmac
+import hashlib
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
@@ -112,8 +114,8 @@ def _generate_round_robin(participants: list) -> list:
 @router.post("")
 async def create_tournament(request: Request, user=Depends(get_current_user)):
     """Create a new tournament. Venue owners and admins only."""
-    if user["role"] not in ("venue_owner", "super_admin"):
-        raise HTTPException(403, "Only venue owners and admins can create tournaments")
+    if user["role"] not in ("venue_owner", "super_admin", "coach"):
+        raise HTTPException(403, "Only venue owners, coaches, and admins can create tournaments")
 
     data = await request.json()
     name = data.get("name", "").strip()
@@ -270,6 +272,8 @@ async def register_for_tournament(tournament_id: str, user=Depends(get_current_u
     if existing:
         raise HTTPException(409, "Already registered")
 
+    entry_fee = tournament.get("entry_fee", 0)
+
     participant = {
         "user_id": user["id"],
         "name": user.get("name", ""),
@@ -277,12 +281,50 @@ async def register_for_tournament(tournament_id: str, user=Depends(get_current_u
         "registered_at": datetime.now(timezone.utc).isoformat(),
     }
 
+    result_data = {"message": "Registered successfully", "participant": participant}
+
+    if entry_fee > 0:
+        # Payment required — create Razorpay order
+        platform = await get_platform_settings()
+        commission_pct = platform.get("tournament_commission_pct", 10)
+        commission_amount = int(entry_fee * commission_pct / 100)
+
+        participant["payment_status"] = "pending"
+        participant["commission_amount"] = commission_amount
+
+        rzp_client = await get_razorpay_client()
+        if rzp_client:
+            try:
+                rzp_order = rzp_client.order.create({
+                    "amount": entry_fee * 100,
+                    "currency": "INR",
+                    "payment_capture": 1,
+                    "notes": {"tournament_id": tournament_id, "user_id": user["id"], "type": "tournament_entry"}
+                })
+                participant["razorpay_order_id"] = rzp_order["id"]
+                participant["payment_gateway"] = "razorpay"
+                result_data["razorpay_order_id"] = rzp_order["id"]
+                gw = platform.get("payment_gateway", {})
+                result_data["razorpay_key_id"] = gw.get("key_id", "")
+            except Exception:
+                raise HTTPException(502, "Payment gateway error. Please try again.")
+        else:
+            participant["payment_gateway"] = "test"
+
+        result_data["payment_gateway"] = participant.get("payment_gateway", "test")
+        result_data["payment_status"] = "pending"
+        result_data["entry_fee"] = entry_fee
+        result_data["message"] = "Registration pending payment"
+    else:
+        # Free tournament — instant registration
+        participant["payment_status"] = "free"
+
     await db.tournaments.update_one(
         {"id": tournament_id},
         {"$push": {"participants": participant}}
     )
 
-    return {"message": "Registered successfully", "participant": participant}
+    return result_data
 
 
 @router.delete("/{tournament_id}/register")
@@ -306,6 +348,89 @@ async def withdraw_from_tournament(tournament_id: str, user=Depends(get_current_
     return {"message": "Withdrawn from tournament"}
 
 
+# ─── Entry Fee Payment Verification ──────────────────────────────────────────
+
+@router.post("/{tournament_id}/verify-entry-payment")
+async def verify_entry_payment(tournament_id: str, request: Request, user=Depends(get_current_user)):
+    """Verify Razorpay payment for tournament entry fee."""
+    data = await request.json()
+    razorpay_payment_id = data.get("razorpay_payment_id", "")
+    razorpay_order_id = data.get("razorpay_order_id", "")
+    razorpay_signature = data.get("razorpay_signature", "")
+
+    tournament = await db.tournaments.find_one({"id": tournament_id})
+    if not tournament:
+        raise HTTPException(404, "Tournament not found")
+
+    # Find participant
+    participant = next(
+        (p for p in tournament.get("participants", []) if p["user_id"] == user["id"]),
+        None
+    )
+    if not participant:
+        raise HTTPException(404, "Not registered in this tournament")
+    if participant.get("payment_status") == "paid":
+        raise HTTPException(400, "Entry fee already paid")
+
+    settings = await get_platform_settings()
+    gw = settings.get("payment_gateway", {})
+    key_secret = gw.get("key_secret", "")
+
+    if key_secret:
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if expected != razorpay_signature:
+            raise HTTPException(400, "Payment verification failed")
+    elif participant.get("payment_gateway") == "razorpay":
+        raise HTTPException(500, "Payment gateway not configured properly")
+
+    await db.tournaments.update_one(
+        {"id": tournament_id, "participants.user_id": user["id"]},
+        {"$set": {
+            "participants.$.payment_status": "paid",
+            "participants.$.payment_details": {
+                "razorpay_payment_id": razorpay_payment_id,
+                "razorpay_order_id": razorpay_order_id,
+                "razorpay_signature": razorpay_signature,
+                "paid_at": datetime.now(timezone.utc).isoformat()
+            }
+        }}
+    )
+    return {"message": "Entry fee paid, registration confirmed", "payment_status": "paid"}
+
+
+@router.post("/{tournament_id}/test-confirm-entry")
+async def test_confirm_entry(tournament_id: str, user=Depends(get_current_user)):
+    """Confirm entry fee for test-mode tournaments (no payment gateway configured)."""
+    tournament = await db.tournaments.find_one({"id": tournament_id})
+    if not tournament:
+        raise HTTPException(404, "Tournament not found")
+
+    participant = next(
+        (p for p in tournament.get("participants", []) if p["user_id"] == user["id"]),
+        None
+    )
+    if not participant:
+        raise HTTPException(404, "Not registered in this tournament")
+    if participant.get("payment_gateway") not in ("test", "mock"):
+        raise HTTPException(400, "This endpoint is only for test-mode registrations")
+    if participant.get("payment_status") == "paid":
+        raise HTTPException(400, "Entry fee already paid")
+
+    await db.tournaments.update_one(
+        {"id": tournament_id, "participants.user_id": user["id"]},
+        {"$set": {
+            "participants.$.payment_status": "paid",
+            "participants.$.payment_details": {
+                "method": "test",
+                "test_payment_id": f"test_{uuid.uuid4().hex[:12]}",
+                "paid_at": datetime.now(timezone.utc).isoformat()
+            }
+        }}
+    )
+    return {"message": "Test entry fee confirmed", "payment_status": "paid"}
+
+
 # ─── Start Tournament (Generate Bracket) ─────────────────────────────────────
 
 @router.post("/{tournament_id}/start")
@@ -320,8 +445,13 @@ async def start_tournament(tournament_id: str, user=Depends(get_current_user)):
         raise HTTPException(400, "Tournament already started or completed")
 
     participants = tournament.get("participants", [])
+
+    # For paid tournaments, only include participants who have paid
+    if tournament.get("entry_fee", 0) > 0:
+        participants = [p for p in participants if p.get("payment_status") in ("paid", "free")]
+
     if len(participants) < 2:
-        raise HTTPException(400, "Need at least 2 participants to start")
+        raise HTTPException(400, "Need at least 2 paid participants to start")
 
     # Build participant ID list
     player_ids = [p["user_id"] for p in participants]
@@ -486,6 +616,37 @@ async def submit_match_result(
         update_set["completed_at"] = datetime.now(timezone.utc).isoformat()
 
     await db.tournaments.update_one({"id": tournament_id}, {"$set": update_set})
+
+    # ── Auto-create performance records for both players ──
+    now = datetime.now(timezone.utc).isoformat()
+    for pid in [match.get("player_a"), match.get("player_b")]:
+        if not pid:
+            continue
+        p = await db.users.find_one({"id": pid}, {"_id": 0, "name": 1})
+        p_name = p.get("name", "") if p else ""
+        result = "draw"
+        if winner and winner != "draw":
+            result = "win" if winner == pid else "loss"
+        perf_record = {
+            "id": str(uuid.uuid4()),
+            "player_id": pid,
+            "player_name": p_name,
+            "record_type": "tournament_result",
+            "sport": tournament.get("sport", ""),
+            "title": f"{tournament['name']} — Round {match.get('round', 1)}",
+            "stats": {"score_a": score_a, "score_b": score_b, "result": result},
+            "notes": "",
+            "source_type": "tournament",
+            "source_id": tournament_id,
+            "source_name": tournament["name"],
+            "organization_id": None,
+            "tournament_id": tournament_id,
+            "session_id": None,
+            "date": match.get("completed_at", now)[:10],
+            "verified": True,
+            "created_at": now
+        }
+        await db.performance_records.insert_one(perf_record)
 
     updated = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
     return updated

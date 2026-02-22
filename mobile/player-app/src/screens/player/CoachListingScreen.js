@@ -160,6 +160,11 @@ export default function CoachListingScreen() {
   const [bookNotes, setBookNotes] = useState('');
   const [bookLoading, setBookLoading] = useState(false);
 
+  // Packages & subscriptions
+  const [coachPackages, setCoachPackages] = useState([]);
+  const [mySubscriptions, setMySubscriptions] = useState([]);
+  const [subscribing, setSubscribing] = useState(false);
+
   // Review modal state
   const [reviewVisible, setReviewVisible] = useState(false);
   const [reviewSession, setReviewSessionData] = useState(null);
@@ -180,6 +185,13 @@ export default function CoachListingScreen() {
     }
   }, [search, selectedSport]);
 
+  const loadMySubscriptions = useCallback(async () => {
+    try {
+      const res = await coachingAPI.mySubscriptions();
+      setMySubscriptions(res.data || []);
+    } catch { setMySubscriptions([]); }
+  }, []);
+
   const loadSessions = useCallback(async () => {
     try {
       const res = await coachingAPI.listSessions().catch(() => ({ data: [] }));
@@ -197,6 +209,7 @@ export default function CoachListingScreen() {
     } else {
       loadSessions();
     }
+    loadMySubscriptions();
   }, [activeTab, selectedSport]);
 
   const onRefresh = () => {
@@ -222,6 +235,7 @@ export default function CoachListingScreen() {
     setBookSport(coach.sports?.[0] || '');
     setBookNotes('');
     setBookVisible(true);
+    coachingAPI.getCoachPackages(coach.id).then(r => setCoachPackages(r.data || [])).catch(() => setCoachPackages([]));
   };
 
   const loadSlots = async () => {
@@ -253,14 +267,40 @@ export default function CoachListingScreen() {
     }
     setBookLoading(true);
     try {
-      await coachingAPI.bookSession({
+      const res = await coachingAPI.bookSession({
         coach_id: selectedCoach.id,
         date: bookDate,
         slot: selectedSlot,
         sport: bookSport,
         notes: bookNotes.trim(),
       });
-      Alert.alert('Success', 'Session booked successfully!');
+      const session = res.data;
+
+      // Booked from package — no payment needed
+      if (session.booked_from_package) {
+        Alert.alert('Success', `Session booked from package! ${session.sessions_remaining} sessions remaining.`);
+        setBookVisible(false);
+        if (activeTab === 'sessions') loadSessions();
+        loadMySubscriptions();
+        setBookLoading(false);
+        return;
+      }
+
+      if (session.payment_gateway === 'test') {
+        // Test mode — auto-confirm
+        try {
+          await coachingAPI.testConfirm(session.id);
+          Alert.alert('Success', 'Session booked & confirmed! (Test mode)');
+        } catch { Alert.alert('Error', 'Failed to confirm session'); }
+      } else if (session.payment_gateway === 'razorpay') {
+        Alert.alert(
+          'Payment Required',
+          `Session fee of \u20B9${session.price} is required. Please complete payment on the web app to confirm your session.`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Success', 'Session booked successfully!');
+      }
       setBookVisible(false);
       if (activeTab === 'sessions') loadSessions();
     } catch (err) {
@@ -268,6 +308,49 @@ export default function CoachListingScreen() {
     } finally {
       setBookLoading(false);
     }
+  };
+
+  // -- Subscribe to Package --
+  const handleSubscribe = async (pkg) => {
+    setSubscribing(true);
+    try {
+      const res = await coachingAPI.subscribe(pkg.id);
+      const sub = res.data;
+      if (sub.payment_gateway === 'test') {
+        await coachingAPI.testConfirmSub(sub.id);
+        Alert.alert('Success', `Subscribed to ${pkg.name}! (Test mode)`);
+        loadMySubscriptions();
+        coachingAPI.getCoachPackages(selectedCoach.id).then(r => setCoachPackages(r.data || [])).catch(() => {});
+      } else if (sub.payment_gateway === 'razorpay') {
+        Alert.alert(
+          'Payment Required',
+          `Package subscription of \u20B9${pkg.price}/month requires payment. Please complete payment on the web app.`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (err) {
+      Alert.alert('Error', err?.response?.data?.detail || 'Failed to subscribe');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  const handleCancelSub = (subId) => {
+    Alert.alert('Cancel Subscription', 'Are you sure? Remaining sessions are still usable until period ends.', [
+      { text: 'No', style: 'cancel' },
+      {
+        text: 'Yes, Cancel', style: 'destructive',
+        onPress: async () => {
+          try {
+            await coachingAPI.cancelSubscription(subId);
+            Alert.alert('Done', 'Subscription cancelled.');
+            loadMySubscriptions();
+          } catch (err) {
+            Alert.alert('Error', err?.response?.data?.detail || 'Failed to cancel');
+          }
+        },
+      },
+    ]);
   };
 
   // -- Cancel Session --
@@ -379,7 +462,31 @@ export default function CoachListingScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />
           }
         >
-          {sessions.length === 0 ? (
+          {/* Active Subscriptions */}
+          {mySubscriptions.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Active Subscriptions</Text>
+              {mySubscriptions.map((sub) => (
+                <Card key={sub.id} style={[styles.sessionCard, { borderLeftWidth: 3, borderLeftColor: Colors.primary }]}>
+                  <View style={styles.sessionHeader}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.sessionCoach}>{sub.package_name}</Text>
+                      <Text style={styles.sessionSport}>Coach: {sub.coach_name}</Text>
+                      <Text style={styles.metaItem}>
+                        {sub.sessions_remaining || (sub.sessions_per_month - (sub.sessions_used || 0))}/{sub.sessions_per_month} sessions left
+                      </Text>
+                      <Text style={styles.metaItem}>
+                        Expires: {new Date(sub.current_period_end).toLocaleDateString('en-IN')}
+                      </Text>
+                    </View>
+                    <Button size="sm" variant="outline" onPress={() => handleCancelSub(sub.id)}>Cancel</Button>
+                  </View>
+                </Card>
+              ))}
+            </>
+          )}
+
+          {sessions.length === 0 && mySubscriptions.length === 0 ? (
             <EmptyState
               icon="📅"
               title="No sessions yet"
@@ -435,6 +542,36 @@ export default function CoachListingScreen() {
                 </Text>
               </View>
             </View>
+
+            {/* Monthly Packages */}
+            {coachPackages.length > 0 && (
+              <>
+                <Text style={styles.label}>Monthly Packages</Text>
+                {coachPackages.map((pkg) => (
+                  <Card key={pkg.id} style={{ padding: Spacing.md, marginBottom: Spacing.sm }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.bookCoachName}>{pkg.name}</Text>
+                        <Text style={styles.metaItem}>
+                          {pkg.sessions_per_month} sessions/mo · {pkg.duration_minutes} min
+                        </Text>
+                        {pkg.description ? <Text style={styles.metaItem}>{pkg.description}</Text> : null}
+                      </View>
+                      <View style={{ alignItems: 'flex-end' }}>
+                        <Text style={[styles.priceAmount, { fontSize: Typography.sm }]}>{'\u20B9'}{pkg.price}/mo</Text>
+                        {pkg.subscribed ? (
+                          <Badge variant="default" style={{ marginTop: 4 }}>{pkg.sessions_remaining} left</Badge>
+                        ) : (
+                          <Button size="sm" onPress={() => handleSubscribe(pkg)} loading={subscribing} style={{ marginTop: 4 }}>
+                            Subscribe
+                          </Button>
+                        )}
+                      </View>
+                    </View>
+                  </Card>
+                ))}
+              </>
+            )}
 
             {/* Date */}
             <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'flex-end' }}>

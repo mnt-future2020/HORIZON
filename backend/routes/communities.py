@@ -2,8 +2,8 @@
 Communities, Groups & Teams — Sports social platform.
 Supports: community creation, membership, group chat, team management.
 """
-from fastapi import APIRouter, HTTPException, Depends, Query, Request
-from typing import Optional
+from fastapi import APIRouter, HTTPException, Depends, Query, Request, WebSocket, WebSocketDisconnect, UploadFile, File as FileParam
+from typing import Optional, Dict
 from datetime import datetime, timezone
 from database import db
 from auth import get_current_user
@@ -11,9 +11,50 @@ from models import GroupCreate, TeamCreate, MessageCreate
 import uuid
 import math
 import logging
+import json
+import os
+from pathlib import Path
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
+
+JWT_SECRET = os.environ.get("JWT_SECRET")
+
+
+# ---------------------------------------------------------------------------
+# Chat WebSocket Connection Manager
+# ---------------------------------------------------------------------------
+class ChatConnectionManager:
+    def __init__(self):
+        self._clients: Dict[str, WebSocket] = {}  # user_id -> WebSocket
+
+    async def connect(self, user_id: str, ws: WebSocket):
+        await ws.accept()
+        old = self._clients.get(user_id)
+        if old:
+            try:
+                await old.close(code=4001, reason="New connection opened")
+            except Exception:
+                pass
+        self._clients[user_id] = ws
+
+    def disconnect(self, user_id: str, ws: WebSocket):
+        if self._clients.get(user_id) is ws:
+            self._clients.pop(user_id, None)
+
+    async def send_to_user(self, user_id: str, message: dict):
+        ws = self._clients.get(user_id)
+        if ws:
+            try:
+                await ws.send_text(json.dumps(message, default=str))
+            except Exception:
+                self.disconnect(user_id, ws)
+
+    def is_online(self, user_id: str) -> bool:
+        return user_id in self._clients
+
+
+chat_manager = ChatConnectionManager()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -451,10 +492,19 @@ async def get_dm_messages(
     messages.reverse()
 
     # Mark as read
-    await db.direct_messages.update_many(
+    result = await db.direct_messages.update_many(
         {"conversation_id": conversation_id, "sender_id": {"$ne": user["id"]}, "read": False},
         {"$set": {"read": True}}
     )
+    # Broadcast read receipt via WebSocket
+    if result.modified_count > 0:
+        other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
+        if other_id:
+            await chat_manager.send_to_user(other_id, {
+                "type": "messages_read",
+                "conversation_id": conversation_id,
+                "reader_id": user["id"],
+            })
     return messages
 
 
@@ -470,8 +520,11 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
         "sender_id": user["id"],
         "sender_name": user.get("name", "Unknown"),
         "sender_avatar": user.get("avatar", ""),
-        "content": inp.content,
+        "content": inp.content or "",
         "media_url": inp.media_url or "",
+        "media_type": inp.media_type or "",
+        "file_name": inp.file_name or "",
+        "duration": inp.duration,
         "reply_to": inp.reply_to or "",
         "read": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -479,11 +532,24 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
     await db.direct_messages.insert_one(msg)
     msg.pop("_id", None)
 
+    preview = inp.content[:100] if inp.content else (
+        "🎤 Voice message" if inp.media_type == "voice" else
+        f"📎 {inp.file_name or 'File'}" if inp.media_type else ""
+    )
     await db.conversations.update_one({"id": conversation_id}, {"$set": {
-        "last_message": inp.content[:100],
+        "last_message": preview,
         "last_message_at": msg["created_at"],
         "last_message_by": user.get("name", "")
     }})
+
+    # Broadcast via WebSocket
+    other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
+    if other_id:
+        await chat_manager.send_to_user(other_id, {
+            "type": "new_message",
+            "conversation_id": conversation_id,
+            "message": msg,
+        })
 
     return msg
 
@@ -519,6 +585,16 @@ async def delete_message(conversation_id: str, message_id: str, user=Depends(get
         {"id": message_id},
         {"$set": {"content": "", "deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat()}}
     )
+    # Broadcast deletion via WebSocket
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if convo:
+        other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
+        if other_id:
+            await chat_manager.send_to_user(other_id, {
+                "type": "message_deleted",
+                "conversation_id": conversation_id,
+                "message_id": message_id,
+            })
     return {"deleted": True}
 
 
@@ -603,3 +679,206 @@ async def search_users(
         {"_id": 0, "id": 1, "name": 1, "avatar": 1, "role": 1, "skill_rating": 1}
     ).limit(limit).to_list(limit)
     return users
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MESSAGE REACTIONS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CHAT_REACTIONS = {"thumbsup", "heart", "laugh", "wow", "fire", "clap"}
+
+
+@router.post("/chat/{conversation_id}/messages/{message_id}/react")
+async def react_to_message(conversation_id: str, message_id: str, request: Request, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+
+    msg = await db.direct_messages.find_one({"id": message_id, "conversation_id": conversation_id})
+    if not msg:
+        raise HTTPException(404, "Message not found")
+
+    data = await request.json()
+    emoji = data.get("emoji", "")
+    if emoji not in CHAT_REACTIONS:
+        raise HTTPException(400, f"Invalid reaction")
+
+    reactions = msg.get("reactions", [])
+    existing = next((r for r in reactions if r["user_id"] == user["id"] and r["emoji"] == emoji), None)
+
+    if existing:
+        await db.direct_messages.update_one(
+            {"id": message_id},
+            {"$pull": {"reactions": {"user_id": user["id"], "emoji": emoji}}}
+        )
+        action = "removed"
+    else:
+        # Remove any previous reaction from this user, then add new
+        await db.direct_messages.update_one(
+            {"id": message_id},
+            {"$pull": {"reactions": {"user_id": user["id"]}}}
+        )
+        await db.direct_messages.update_one(
+            {"id": message_id},
+            {"$push": {"reactions": {"user_id": user["id"], "user_name": user.get("name", ""), "emoji": emoji}}}
+        )
+        action = "added"
+
+    # Broadcast via WebSocket
+    other_id = next((p for p in convo["participants"] if p != user["id"]), None)
+    if other_id:
+        await chat_manager.send_to_user(other_id, {
+            "type": "message_reaction",
+            "conversation_id": conversation_id,
+            "message_id": message_id,
+            "user_id": user["id"],
+            "emoji": emoji,
+            "action": action,
+        })
+
+    return {"action": action, "emoji": emoji}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MESSAGE SEARCH
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/chat/{conversation_id}/search")
+async def search_messages(
+    conversation_id: str,
+    q: str = Query("", min_length=1),
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=50),
+    user=Depends(get_current_user)
+):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+
+    query = {
+        "conversation_id": conversation_id,
+        "content": {"$regex": q, "$options": "i"},
+        "deleted": {"$ne": True},
+    }
+    skip_n = (page - 1) * limit
+    total = await db.direct_messages.count_documents(query)
+    results = await db.direct_messages.find(query, {"_id": 0}).sort(
+        "created_at", -1
+    ).skip(skip_n).limit(limit).to_list(limit)
+
+    return {"results": results, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1)), "query": q}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHAT FILE UPLOAD
+# ═══════════════════════════════════════════════════════════════════════════════
+
+CHAT_UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "chat"
+CHAT_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+ALLOWED_DOC_TYPES = {"application/pdf", "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}
+ALLOWED_AUDIO_TYPES = {"audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg", "audio/m4a", "audio/wav"}
+
+
+@router.post("/chat/upload")
+async def upload_chat_file(file: UploadFile = FileParam(...), user=Depends(get_current_user)):
+    import s3_service
+
+    mime = file.content_type or ""
+    if mime in ALLOWED_IMAGE_TYPES:
+        max_size, file_type = 10 * 1024 * 1024, "image"
+    elif mime in ALLOWED_DOC_TYPES:
+        max_size, file_type = 25 * 1024 * 1024, "document"
+    elif mime in ALLOWED_AUDIO_TYPES:
+        max_size, file_type = 10 * 1024 * 1024, "audio"
+    else:
+        raise HTTPException(400, "Unsupported file type")
+
+    file_id = str(uuid.uuid4())
+    ext = Path(file.filename or "file").suffix or ".bin"
+    filename = f"{file_id}{ext}"
+    filepath = CHAT_UPLOAD_DIR / filename
+
+    size = 0
+    with open(filepath, "wb") as f:
+        while chunk := await file.read(512 * 1024):
+            size += len(chunk)
+            if size > max_size:
+                filepath.unlink(missing_ok=True)
+                raise HTTPException(413, f"File too large. Max {max_size // (1024 * 1024)}MB")
+            f.write(chunk)
+
+    url = f"/api/uploads/chat/{filename}"
+    try:
+        data = filepath.read_bytes()
+        s3_url = await s3_service.upload_bytes(data, "chat", filename, mime)
+        if s3_url:
+            url = s3_url
+    except Exception:
+        pass
+
+    return {"url": url, "filename": file.filename, "file_type": file_type, "file_size": size, "mime_type": mime}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHAT WEBSOCKET
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.websocket("/chat/ws")
+async def chat_websocket(ws: WebSocket):
+    """WebSocket for real-time chat — auth via ?token= query param."""
+    token = ws.query_params.get("token", "")
+    if not token:
+        await ws.close(code=4001, reason="No token")
+        return
+    try:
+        from jose import jwt as jose_jwt
+        payload = jose_jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0, "id": 1, "name": 1})
+        if not user:
+            await ws.close(code=4001, reason="User not found")
+            return
+    except Exception:
+        await ws.close(code=4001, reason="Invalid token")
+        return
+
+    user_id = user["id"]
+    await chat_manager.connect(user_id, ws)
+
+    # Notify conversation partners that user is online
+    convos = await db.conversations.find({"participants": user_id}, {"participants": 1}).to_list(100)
+    for c in convos:
+        for pid in c.get("participants", []):
+            if pid != user_id:
+                await chat_manager.send_to_user(pid, {"type": "online_status", "user_id": user_id, "online": True})
+
+    try:
+        while True:
+            data = await ws.receive_text()
+            try:
+                msg = json.loads(data)
+            except Exception:
+                continue
+            if msg.get("type") == "typing":
+                convo_id = msg.get("conversation_id")
+                convo = await db.conversations.find_one({"id": convo_id})
+                if convo and user_id in convo.get("participants", []):
+                    for pid in convo["participants"]:
+                        if pid != user_id:
+                            await chat_manager.send_to_user(pid, {
+                                "type": "typing", "conversation_id": convo_id, "user_id": user_id
+                            })
+            elif msg.get("type") == "ping":
+                await ws.send_text(json.dumps({"type": "pong"}))
+    except WebSocketDisconnect:
+        pass
+    finally:
+        chat_manager.disconnect(user_id, ws)
+        for c in convos:
+            for pid in c.get("participants", []):
+                if pid != user_id:
+                    await chat_manager.send_to_user(pid, {"type": "online_status", "user_id": user_id, "online": False})

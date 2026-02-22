@@ -222,7 +222,7 @@ async def test_confirm_payment(booking_id: str, user=Depends(get_current_user)):
         raise HTTPException(400, "This endpoint is only for test-mode bookings")
     if booking["status"] not in ("payment_pending", "pending"):
         raise HTTPException(400, f"Booking is already {booking['status']}")
-    if booking["host_id"] != user["id"]:
+    if booking["host_id"] != user["id"] and user["role"] != "super_admin":
         raise HTTPException(403, "Only the booking host can confirm payment")
 
     await db.bookings.update_one({"id": booking_id}, {"$set": {

@@ -398,4 +398,204 @@ async def seed_demo_data():
     ]
     await db.iot_devices.insert_many(iot_devices)
 
+    # ─── Organizations, Performance Records & Training Logs ─────────────────────
+    await db.organizations.delete_many({})
+    await db.performance_records.delete_many({})
+    await db.training_logs.delete_many({})
+
+    org_academy_id = str(uuid.uuid4())
+    org_school_id = str(uuid.uuid4())
+
+    organizations = [
+        {
+            "id": org_academy_id,
+            "name": "Chennai Cricket Academy",
+            "org_type": "academy",
+            "owner_id": coach_id,
+            "owner_name": "Coach Sarah",
+            "sports": ["cricket"],
+            "description": "Premier cricket coaching academy in Chennai. Professional coaching for all age groups.",
+            "location": "Nungambakkam, Chennai",
+            "city": "Chennai",
+            "logo_url": "",
+            "contact_email": "demo@coach.com",
+            "contact_phone": "9000000003",
+            "staff": [{"user_id": coach_id, "name": "Coach Sarah", "role": "head_coach", "joined_at": now}],
+            "players": [
+                {"user_id": player_id, "name": "Arjun Kumar", "enrolled_at": now, "status": "active"},
+            ],
+            "player_count": 1,
+            "staff_count": 1,
+            "stats": {"total_records": 8, "total_training_sessions": 3, "tournaments_organized": 1},
+            "status": "active",
+            "created_at": now
+        },
+        {
+            "id": org_school_id,
+            "name": "St. Mary's School Sports",
+            "org_type": "school",
+            "owner_id": coach_id,
+            "owner_name": "Coach Sarah",
+            "sports": ["football", "cricket", "badminton"],
+            "description": "School sports department managing inter-school competitions and daily training.",
+            "location": "Anna Nagar, Chennai",
+            "city": "Chennai",
+            "logo_url": "",
+            "contact_email": "sports@stmarys.edu",
+            "contact_phone": "9000000010",
+            "staff": [{"user_id": coach_id, "name": "Coach Sarah", "role": "head_coach", "joined_at": now}],
+            "players": [
+                {"user_id": player_id, "name": "Arjun Kumar", "enrolled_at": now, "status": "active"},
+            ],
+            "player_count": 1,
+            "staff_count": 1,
+            "stats": {"total_records": 4, "total_training_sessions": 2, "tournaments_organized": 0},
+            "status": "active",
+            "created_at": now
+        }
+    ]
+    await db.organizations.insert_many(organizations)
+
+    # Performance records for demo player
+    perf_records = [
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "training", "sport": "cricket", "title": "Net Practice — Batting Drills",
+         "stats": {"duration_minutes": 90, "drills": ["front foot drive", "pull shot", "cut shot"]},
+         "notes": "Excellent improvement in front foot play", "source_type": "organization",
+         "source_id": coach_id, "source_name": "Chennai Cricket Academy",
+         "organization_id": org_academy_id, "tournament_id": None, "session_id": None,
+         "date": "2026-02-18", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "assessment", "sport": "cricket", "title": "Monthly Skill Assessment",
+         "stats": {"batting": 78, "bowling": 65, "fielding": 82, "fitness": 75, "overall": 75},
+         "notes": "Strong fielding, needs work on bowling variations", "source_type": "organization",
+         "source_id": coach_id, "source_name": "Chennai Cricket Academy",
+         "organization_id": org_academy_id, "tournament_id": None, "session_id": None,
+         "date": "2026-02-15", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "tournament_result", "sport": "cricket", "title": "Inter-Academy Cup — Semi Final",
+         "stats": {"result": "win", "score_a": 145, "score_b": 120, "runs_scored": 52, "wickets": 1},
+         "notes": "Top scorer of the match", "source_type": "tournament",
+         "source_id": str(uuid.uuid4()), "source_name": "Inter-Academy Cricket Cup 2026",
+         "organization_id": org_academy_id, "tournament_id": None, "session_id": None,
+         "date": "2026-02-10", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "match_result", "sport": "football", "title": "Match — Football",
+         "stats": {"result": "win", "rating_change": 25, "goals": 1, "assists": 2},
+         "notes": "", "source_type": "system", "source_id": str(uuid.uuid4()),
+         "source_name": "Matchmaking", "organization_id": None, "tournament_id": None, "session_id": None,
+         "date": "2026-02-08", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "training", "sport": "football", "title": "School Football Practice",
+         "stats": {"duration_minutes": 60, "drills": ["passing", "shooting", "set pieces"]},
+         "notes": "Good movement off the ball", "source_type": "organization",
+         "source_id": coach_id, "source_name": "St. Mary's School Sports",
+         "organization_id": org_school_id, "tournament_id": None, "session_id": None,
+         "date": "2026-02-05", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "achievement", "sport": "cricket", "title": "Player of the Month — January 2026",
+         "stats": {"award": "Player of the Month", "month": "January 2026"},
+         "notes": "Consistent performer across all academy matches", "source_type": "organization",
+         "source_id": coach_id, "source_name": "Chennai Cricket Academy",
+         "organization_id": org_academy_id, "tournament_id": None, "session_id": None,
+         "date": "2026-02-01", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "training", "sport": "cricket", "title": "Coaching Session with Coach Sarah",
+         "stats": {"duration_minutes": 60}, "notes": "Worked on bowling action",
+         "source_type": "coach", "source_id": coach_id, "source_name": "Coach Sarah",
+         "organization_id": None, "tournament_id": None, "session_id": None,
+         "date": "2026-01-28", "verified": True, "created_at": now},
+        {"id": str(uuid.uuid4()), "player_id": player_id, "player_name": "Arjun Kumar",
+         "record_type": "match_result", "sport": "cricket", "title": "Match — Cricket",
+         "stats": {"result": "loss", "rating_change": -12, "runs_scored": 15},
+         "notes": "", "source_type": "system", "source_id": str(uuid.uuid4()),
+         "source_name": "Matchmaking", "organization_id": None, "tournament_id": None, "session_id": None,
+         "date": "2026-01-25", "verified": True, "created_at": now},
+    ]
+    await db.performance_records.insert_many(perf_records)
+
+    # Training logs
+    training_logs = [
+        {"id": str(uuid.uuid4()), "coach_id": coach_id, "coach_name": "Coach Sarah",
+         "organization_id": org_academy_id, "organization_name": "Chennai Cricket Academy",
+         "title": "Net Practice — Batting Drills", "sport": "cricket", "date": "2026-02-18",
+         "duration_minutes": 90, "drills": ["front foot drive", "pull shot", "cut shot"],
+         "attendance": [{"player_id": player_id, "player_name": "Arjun Kumar", "present": True, "performance_note": "Excellent form"}],
+         "notes": "Focused on attacking shots", "total_players": 1, "present_count": 1, "created_at": now},
+        {"id": str(uuid.uuid4()), "coach_id": coach_id, "coach_name": "Coach Sarah",
+         "organization_id": org_school_id, "organization_name": "St. Mary's School Sports",
+         "title": "School Football Practice", "sport": "football", "date": "2026-02-05",
+         "duration_minutes": 60, "drills": ["passing", "shooting", "set pieces"],
+         "attendance": [{"player_id": player_id, "player_name": "Arjun Kumar", "present": True, "performance_note": "Good movement"}],
+         "notes": "Pre-match warm-up session", "total_players": 1, "present_count": 1, "created_at": now},
+    ]
+    await db.training_logs.insert_many(training_logs)
+
+    # ─── Live Matches (demo live scoring) ─────────────────────────────────────────
+    await db.live_matches.delete_many({})
+
+    live_matches = [
+        {
+            "id": str(uuid.uuid4()),
+            "tournament_id": "demo-tournament",
+            "tournament_name": "Chennai Open Football Cup",
+            "match_id": "demo-match-1",
+            "sport": "football",
+            "match_label": "Semi-Final — Match #3",
+            "status": "live",
+            "home": {"id": player_id, "name": "Arjun Kumar", "score": 2},
+            "away": {"id": str(uuid.uuid4()), "name": "Rahul Sharma", "score": 1},
+            "sets": [],
+            "period": 2,
+            "period_label": "2nd Half",
+            "events": [
+                {"id": str(uuid.uuid4()), "type": "goal", "team": "home",
+                 "player_name": "Arjun Kumar", "minute": 12,
+                 "description": "Goal! Left foot strike", "timestamp": now},
+                {"id": str(uuid.uuid4()), "type": "card", "team": "away",
+                 "player_name": "Rahul Sharma", "minute": 25,
+                 "description": "Yellow Card — Foul", "timestamp": now},
+                {"id": str(uuid.uuid4()), "type": "goal", "team": "away",
+                 "player_name": "Rahul Sharma", "minute": 38,
+                 "description": "Goal! Header from corner", "timestamp": now},
+                {"id": str(uuid.uuid4()), "type": "goal", "team": "home",
+                 "player_name": "Arjun Kumar", "minute": 55,
+                 "description": "Goal! Counter attack finish", "timestamp": now},
+            ],
+            "scorer_id": coach_id,
+            "scorer_name": "Coach Sarah",
+            "spectator_count": 0,
+            "started_at": now,
+            "updated_at": now,
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "tournament_id": "demo-tournament-2",
+            "tournament_name": "Badminton Masters League",
+            "match_id": "demo-match-2",
+            "sport": "badminton",
+            "match_label": "Quarter-Final — Match #1",
+            "status": "live",
+            "home": {"id": str(uuid.uuid4()), "name": "Priya Nair", "score": 21},
+            "away": {"id": str(uuid.uuid4()), "name": "Sneha Reddy", "score": 18},
+            "sets": [{"period": 1, "home": 21, "away": 18}],
+            "period": 2,
+            "period_label": "Set 2",
+            "events": [
+                {"id": str(uuid.uuid4()), "type": "point", "team": "home",
+                 "player_name": "Priya Nair", "minute": 0,
+                 "description": "Ace! Smash winner", "timestamp": now},
+                {"id": str(uuid.uuid4()), "type": "point", "team": "away",
+                 "player_name": "Sneha Reddy", "minute": 0,
+                 "description": "Drop shot winner", "timestamp": now},
+            ],
+            "scorer_id": coach_id,
+            "scorer_name": "Coach Sarah",
+            "spectator_count": 0,
+            "started_at": now,
+            "updated_at": now,
+        },
+    ]
+    await db.live_matches.insert_many(live_matches)
+
     logger.info("Demo data seeded successfully!")

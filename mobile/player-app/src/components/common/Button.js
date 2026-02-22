@@ -32,7 +32,7 @@ export default function Button({
     return (
       <TouchableOpacity onPress={onPress} disabled={disabled || loading} activeOpacity={0.75} style={style}>
         <LinearGradient
-          colors={['#10b981', '#06d6a0']}
+          colors={['#3b82f6', '#60a5fa']}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[s.button, { backgroundColor: undefined }]}

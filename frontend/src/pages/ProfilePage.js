@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { authAPI, analyticsAPI, bookingAPI, uploadAPI } from "@/lib/api";
+import { authAPI, analyticsAPI, bookingAPI, uploadAPI, careerAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2 } from "lucide-react";
+import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck } from "lucide-react";
+import { playerCardAPI } from "@/lib/api";
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
@@ -18,6 +19,9 @@ export default function ProfilePage() {
   const [form, setForm] = useState({ name: "", phone: "", preferred_position: "" });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [career, setCareer] = useState(null);
+  const [careerLoading, setCareerLoading] = useState(false);
+  const [playerCard, setPlayerCard] = useState(null);
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
@@ -31,6 +35,16 @@ export default function ProfilePage() {
       setStats(sRes.data);
       setBookings(bRes.data || []);
     });
+    if (user?.id) {
+      setCareerLoading(true);
+      careerAPI.getCareer(user.id)
+        .then((res) => setCareer(res.data))
+        .catch(() => setCareer(null))
+        .finally(() => setCareerLoading(false));
+      playerCardAPI.get(user.id)
+        .then((res) => setPlayerCard(res.data))
+        .catch(() => {});
+    }
   }, [user]);
 
   const handleSave = async () => {
@@ -113,7 +127,12 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <h1 className="font-display text-xl font-bold text-foreground">{user?.name}</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="font-display text-xl font-bold text-foreground">{user?.name}</h1>
+                {(user?.is_verified || playerCard?.is_verified) && (
+                  <BadgeCheck className="h-5 w-5 text-blue-400 shrink-0" />
+                )}
+              </div>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
               <Badge variant="secondary" className="mt-1 text-[10px]">{user?.role?.replace("_", " ").toUpperCase()}</Badge>
             </div>
@@ -145,12 +164,35 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
+
+          {playerCard?.overall_score !== undefined && (
+            <div className="flex items-center gap-4 mt-4 p-4 rounded-xl bg-background/50">
+              <div className="relative w-16 h-16 shrink-0">
+                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="7" className="text-border/30" />
+                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="7"
+                    strokeDasharray={`${playerCard.overall_score * 2.64} 264`} strokeLinecap="round"
+                    className={playerCard.overall_score >= 86 ? "text-amber-400" : playerCard.overall_score >= 71 ? "text-violet-400" : playerCard.overall_score >= 51 ? "text-emerald-400" : playerCard.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-display text-xl font-black">{playerCard.overall_score}</span>
+                </div>
+              </div>
+              <div>
+                <div className="font-display text-sm font-black">Overall Score</div>
+                <Badge className={`text-[10px] mt-1 ${playerCard.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : playerCard.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : playerCard.overall_score >= 51 ? "bg-emerald-400/20 text-emerald-400" : playerCard.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                  {playerCard.overall_tier}
+                </Badge>
+              </div>
+            </div>
+          )}
         </div>
 
         <Tabs defaultValue="info" data-testid="profile-tabs">
           <TabsList className="bg-secondary/50 mb-6">
             <TabsTrigger value="info" className="font-bold">Info</TabsTrigger>
             <TabsTrigger value="history" className="font-bold">History</TabsTrigger>
+            <TabsTrigger value="performance" className="font-bold">Performance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="info">
@@ -239,6 +281,137 @@ export default function ProfilePage() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="performance">
+            {careerLoading ? (
+              <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+                <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin" />
+                <p className="text-sm">Loading performance data...</p>
+              </div>
+            ) : !career ? (
+              <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+                <BarChart3 className="h-8 w-8 mx-auto mb-3" />
+                <p className="text-sm">No performance data available</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Career Overview Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <BarChart3 className="h-5 w-5 mx-auto mb-2 text-primary" />
+                    <div className="text-2xl font-display font-black text-foreground">{career.total_records || 0}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Total Records</div>
+                  </div>
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <Clock className="h-5 w-5 mx-auto mb-2 text-blue-400" />
+                    <div className="text-2xl font-display font-black text-foreground">{career.training_hours || 0}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Training Hours</div>
+                  </div>
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <Award className="h-5 w-5 mx-auto mb-2 text-amber-400" />
+                    <div className="text-2xl font-display font-black text-foreground">{career.tournaments_played || 0}</div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Tournaments</div>
+                  </div>
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <Building2 className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
+                    <div className="text-2xl font-display font-black text-foreground">
+                      {career.organizations ? (Array.isArray(career.organizations) ? career.organizations.length : career.organizations) : 0}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Organizations</div>
+                  </div>
+                </div>
+
+                {/* Records Timeline */}
+                <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-5">
+                  <h3 className="font-display font-bold text-foreground mb-4">Records Timeline</h3>
+                  {career.recent_records && career.recent_records.length > 0 ? (
+                    <div className="space-y-3">
+                      {career.recent_records.map((record, idx) => {
+                        const typeColors = {
+                          training: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+                          match_result: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+                          assessment: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+                          tournament_result: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+                          achievement: "bg-rose-500/15 text-rose-400 border-rose-500/30",
+                        };
+                        const badgeClass = typeColors[record.type] || "bg-secondary text-muted-foreground border-border";
+                        const statsObj = record.stats || record.data || {};
+                        const statEntries = Object.entries(statsObj).slice(0, 4);
+
+                        return (
+                          <div
+                            key={record.id || idx}
+                            className="flex flex-col gap-2 p-3 rounded-lg bg-background/50 border border-border/50"
+                            data-testid={`perf-record-${record.id || idx}`}
+                          >
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs text-muted-foreground font-mono">
+                                  {record.date ? new Date(record.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "N/A"}
+                                </span>
+                                <Badge className={`text-[10px] border ${badgeClass}`}>
+                                  {(record.type || "unknown").replace("_", " ")}
+                                </Badge>
+                              </div>
+                              {record.sport && (
+                                <Badge variant="outline" className="text-[10px]">{record.sport}</Badge>
+                              )}
+                            </div>
+                            <div className="font-semibold text-sm text-foreground">{record.title || record.type || "Untitled"}</div>
+                            {record.source_name && (
+                              <div className="text-xs text-muted-foreground">
+                                Source: <span className="text-foreground/80">{record.source_name}</span>
+                              </div>
+                            )}
+                            {statEntries.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {statEntries.map(([key, value]) => (
+                                  <span key={key} className="text-[11px] px-2 py-0.5 rounded-md bg-secondary/60 text-muted-foreground">
+                                    <span className="font-medium text-foreground/70">{key.replace(/_/g, " ")}:</span> {String(value)}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-6">No records yet</p>
+                  )}
+                </div>
+
+                {/* Sport Breakdown */}
+                {career.records_by_sport && Object.keys(career.records_by_sport).length > 0 && (
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-5">
+                    <h3 className="font-display font-bold text-foreground mb-4">Sport Breakdown</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(career.records_by_sport).map(([sport, count]) => (
+                        <Badge key={sport} variant="secondary" className="text-xs px-3 py-1.5 font-mono">
+                          {sport} <span className="ml-1.5 font-black text-primary">{count}</span>
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Source Breakdown */}
+                {career.records_by_source && Object.keys(career.records_by_source).length > 0 && (
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-5">
+                    <h3 className="font-display font-bold text-foreground mb-4">Source Breakdown</h3>
+                    <div className="space-y-2">
+                      {Object.entries(career.records_by_source).map(([source, count]) => (
+                        <div key={source} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                          <span className="text-sm text-foreground">{source}</span>
+                          <span className="text-sm font-display font-bold text-muted-foreground">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>

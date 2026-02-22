@@ -109,15 +109,6 @@ export default function AuthPage() {
                   className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11">
                   {loading ? "Signing in..." : "Sign In"}
                 </Button>
-                <div className="mt-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Demo Credentials</p>
-                  <div className="space-y-1 text-xs text-muted-foreground">
-                    <p><span className="font-bold text-foreground">Player:</span> demo@player.com / demo123</p>
-                    <p><span className="font-bold text-foreground">Owner:</span> demo@owner.com / demo123</p>
-                    <p><span className="font-bold text-foreground">Coach:</span> demo@coach.com / demo123</p>
-                    <p><span className="font-bold text-foreground">Admin:</span> admin@horizon.com / admin123</p>
-                  </div>
-                </div>
               </form>
             </TabsContent>
 
@@ -184,6 +175,11 @@ export default function AuthPage() {
                       Venue owner accounts require admin approval. You'll be notified once approved.
                     </div>
                   </>
+                )}
+                {regData.role === "coach" && (
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300" data-testid="coach-pending-notice">
+                    Coach accounts require admin verification. You'll be notified once approved.
+                  </div>
                 )}
                 <Button type="submit" disabled={loading} data-testid="register-submit-btn"
                   className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11">

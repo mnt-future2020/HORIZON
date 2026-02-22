@@ -130,6 +130,7 @@ export const adminAPI = {
   getSettings: () => api.get("/admin/settings"),
   updateSettings: (data) => api.put("/admin/settings", data),
   changePassword: (data) => api.put("/admin/change-password", data),
+  toggleVerified: (id) => api.put(`/admin/users/${id}/toggle-verified`),
 };
 
 export const paymentAPI = {
@@ -204,10 +205,6 @@ export const uploadAPI = {
       onUploadProgress: onProgress,
     });
   },
-};
-
-export const seedAPI = {
-  seed: () => api.post("/seed"),
 };
 
 export const contactAPI = {
@@ -287,6 +284,8 @@ export const tournamentAPI = {
   update: (id, data) => api.put(`/tournaments/${id}`, data),
   cancel: (id) => api.delete(`/tournaments/${id}`),
   register: (id) => api.post(`/tournaments/${id}/register`),
+  verifyEntryPayment: (id, data) => api.post(`/tournaments/${id}/verify-entry-payment`, data),
+  testConfirmEntry: (id) => api.post(`/tournaments/${id}/test-confirm-entry`),
   withdraw: (id) => api.delete(`/tournaments/${id}/register`),
   start: (id) => api.post(`/tournaments/${id}/start`),
   submitResult: (tournamentId, matchId, data) =>
@@ -303,6 +302,8 @@ export const coachingAPI = {
   removeAvailability: (id) => api.delete(`/coaching/availability/${id}`),
   getCoachSlots: (coachId, date) => api.get(`/coaching/coaches/${coachId}/slots`, { params: { date } }),
   bookSession: (data) => api.post("/coaching/sessions/book", data),
+  verifyPayment: (id, data) => api.post(`/coaching/sessions/${id}/verify-payment`, data),
+  testConfirm: (id) => api.post(`/coaching/sessions/${id}/test-confirm`),
   listSessions: (params) => api.get("/coaching/sessions", { params }),
   cancelSession: (id) => api.post(`/coaching/sessions/${id}/cancel`),
   completeSession: (id) => api.post(`/coaching/sessions/${id}/complete`),
@@ -310,6 +311,20 @@ export const coachingAPI = {
   stats: () => api.get("/coaching/stats"),
   getCheckinQR: (bookingId) => api.get(`/coaching/checkin/qr/${bookingId}`),
   verifyCheckin: (data) => api.post("/coaching/checkin/verify", data),
+  // Monthly packages
+  createPackage: (data) => api.post("/coaching/packages", data),
+  listPackages: () => api.get("/coaching/packages"),
+  updatePackage: (id, data) => api.put(`/coaching/packages/${id}`, data),
+  deletePackage: (id) => api.delete(`/coaching/packages/${id}`),
+  getCoachPackages: (coachId) => api.get(`/coaching/coaches/${coachId}/packages`),
+  // Subscriptions
+  subscribe: (packageId) => api.post(`/coaching/packages/${packageId}/subscribe`),
+  verifySubPayment: (subId, data) => api.post(`/coaching/subscriptions/${subId}/verify-payment`, data),
+  testConfirmSub: (subId) => api.post(`/coaching/subscriptions/${subId}/test-confirm`),
+  mySubscriptions: () => api.get("/coaching/my-subscriptions"),
+  cancelSubscription: (subId) => api.post(`/coaching/subscriptions/${subId}/cancel`),
+  renewSubscription: (subId) => api.post(`/coaching/subscriptions/${subId}/renew`),
+  verifyRenewal: (subId, data) => api.post(`/coaching/subscriptions/${subId}/verify-renewal`, data),
 };
 
 export const groupAPI = {
@@ -346,6 +361,9 @@ export const chatAPI = {
   onlineStatus: (userId) => api.get(`/chat/online/${userId}`),
   setTyping: (convoId) => api.post(`/chat/${convoId}/typing`),
   getTyping: (convoId) => api.get(`/chat/${convoId}/typing`),
+  reactToMessage: (convoId, msgId, emoji) => api.post(`/chat/${convoId}/messages/${msgId}/react`, { emoji }),
+  searchMessages: (convoId, q, page) => api.get(`/chat/${convoId}/search`, { params: { q, page } }),
+  uploadFile: (file) => { const fd = new FormData(); fd.append("file", file); return api.post("/chat/upload", fd, { headers: { "Content-Type": "multipart/form-data" } }); },
 };
 
 export const userSearchAPI = {
@@ -360,6 +378,56 @@ export const recommendationAPI = {
   engagementScore: () => api.get("/engagement/score"),
   userEngagement: (userId) => api.get(`/engagement/score/${userId}`),
   churnRisk: () => api.get("/engagement/churn-risk"),
+};
+
+// ─── Organization, Performance Records & Training ────────────────────────────
+
+export const organizationAPI = {
+  create: (data) => api.post("/organizations", data),
+  list: (params) => api.get("/organizations", { params }),
+  my: () => api.get("/organizations/my"),
+  get: (id) => api.get(`/organizations/${id}`),
+  update: (id, data) => api.put(`/organizations/${id}`, data),
+  addStaff: (id, data) => api.post(`/organizations/${id}/staff`, data),
+  removeStaff: (id, userId) => api.delete(`/organizations/${id}/staff/${userId}`),
+  addPlayer: (id, data) => api.post(`/organizations/${id}/players`, data),
+  removePlayer: (id, userId) => api.delete(`/organizations/${id}/players/${userId}`),
+  dashboard: (id) => api.get(`/organizations/${id}/dashboard`),
+};
+
+export const performanceAPI = {
+  createRecord: (data) => api.post("/performance/records", data),
+  createBulk: (data) => api.post("/performance/records/bulk", data),
+  getPlayerRecords: (playerId, params) => api.get(`/performance/records/${playerId}`, { params }),
+  getPlayerSummary: (playerId) => api.get(`/performance/records/${playerId}/summary`),
+  myRecords: (params) => api.get("/performance/my-records", { params }),
+  deleteRecord: (id) => api.delete(`/performance/records/${id}`),
+};
+
+export const trainingAPI = {
+  log: (data, orgId) => api.post("/training/log", data, { params: orgId ? { org_id: orgId } : {} }),
+  list: (params) => api.get("/training/logs", { params }),
+  get: (id) => api.get(`/training/logs/${id}`),
+  update: (id, data) => api.put(`/training/logs/${id}`, data),
+  playerHistory: (playerId, limit) => api.get(`/training/player/${playerId}`, { params: { limit } }),
+  stats: (orgId) => api.get("/training/stats", { params: orgId ? { org_id: orgId } : {} }),
+};
+
+export const careerAPI = {
+  getCareer: (playerId) => api.get(`/analytics/player/${playerId}/career`),
+};
+
+// ─── Live Scoring ────────────────────────────────────────────────────────────
+
+export const liveAPI = {
+  start: (data) => api.post("/live/start", data),
+  getActive: () => api.get("/live/active"),
+  get: (id) => api.get(`/live/${id}`),
+  updateScore: (id, data) => api.post(`/live/${id}/score`, data),
+  addEvent: (id, data) => api.post(`/live/${id}/event`, data),
+  changePeriod: (id, data) => api.post(`/live/${id}/period`, data),
+  pause: (id) => api.post(`/live/${id}/pause`),
+  end: (id) => api.post(`/live/${id}/end`),
 };
 
 export default api;

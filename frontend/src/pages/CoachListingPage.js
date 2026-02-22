@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { coachingAPI } from "@/lib/api";
+import { coachingAPI, paymentAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -94,10 +94,15 @@ export default function CoachListingPage() {
   const [showSessions, setShowSessions] = useState(false);
   const [qrData, setQrData] = useState(null);
   const [qrLoading, setQrLoading] = useState(false);
+  // Packages & subscriptions
+  const [coachPackages, setCoachPackages] = useState([]);
+  const [mySubscriptions, setMySubscriptions] = useState([]);
+  const [subscribing, setSubscribing] = useState(false);
 
   useEffect(() => {
     coachingAPI.listCoaches({}).then(res => setCoaches(res.data || [])).catch(() => {}).finally(() => setLoading(false));
     coachingAPI.listSessions({ role: "player" }).then(res => setMySessions(res.data || [])).catch(() => {});
+    coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
   }, []);
 
   const loadSlots = async (coachId, date) => {
@@ -115,6 +120,7 @@ export default function CoachListingPage() {
     setBookingNotes("");
     setBookingSport(coach.coaching_sports?.[0] || "badminton");
     loadSlots(coach.id, selectedDate);
+    coachingAPI.getCoachPackages(coach.id).then(r => setCoachPackages(r.data || [])).catch(() => setCoachPackages([]));
   };
 
   const handleDateChange = (date) => {
@@ -123,23 +129,140 @@ export default function CoachListingPage() {
     if (selectedCoach) loadSlots(selectedCoach.id, date);
   };
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (document.getElementById("razorpay-script")) { resolve(true); return; }
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleSubscribe = async (pkg) => {
+    setSubscribing(true);
+    try {
+      const res = await coachingAPI.subscribe(pkg.id);
+      const sub = res.data;
+
+      if (sub.payment_gateway === "razorpay" && sub.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed to load"); setSubscribing(false); return; }
+        const options = {
+          key: sub.razorpay_key_id,
+          amount: sub.price * 100,
+          currency: "INR",
+          order_id: sub.razorpay_order_id,
+          name: pkg.coach_name || "Coaching Package",
+          description: `${pkg.name} - ${pkg.sessions_per_month} sessions/month`,
+          handler: async (response) => {
+            try {
+              await coachingAPI.verifySubPayment(sub.id, {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              toast.success("Subscribed successfully!");
+              coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
+              if (selectedCoach) coachingAPI.getCoachPackages(selectedCoach.id).then(r => setCoachPackages(r.data || [])).catch(() => {});
+            } catch { toast.error("Payment verification failed"); }
+          },
+          modal: { ondismiss: () => toast.info("Payment cancelled") },
+          theme: { color: "#6366f1" },
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else if (sub.payment_gateway === "test") {
+        await coachingAPI.testConfirmSub(sub.id);
+        toast.success("Subscribed! (Test mode)");
+        coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
+        if (selectedCoach) coachingAPI.getCoachPackages(selectedCoach.id).then(r => setCoachPackages(r.data || [])).catch(() => {});
+      }
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to subscribe"); }
+    setSubscribing(false);
+  };
+
+  const handleCancelSub = async (subId) => {
+    try {
+      await coachingAPI.cancelSubscription(subId);
+      toast.success("Subscription cancelled");
+      coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+  };
+
   const handleBook = async () => {
     if (!selectedCoach || !selectedSlot) return;
     setBooking(true);
     try {
-      await coachingAPI.bookSession({
+      const res = await coachingAPI.bookSession({
         coach_id: selectedCoach.id,
         date: selectedDate,
         start_time: selectedSlot.start_time,
         sport: bookingSport,
         notes: bookingNotes,
       });
-      toast.success("Session booked! The coach has been notified.");
-      setSelectedCoach(null);
-      setSelectedSlot(null);
-      // Refresh sessions
-      const res = await coachingAPI.listSessions({ role: "player" });
-      setMySessions(res.data || []);
+      const session = res.data;
+
+      // Booked from package — no payment needed
+      if (session.booked_from_package) {
+        toast.success(`Session booked from package! ${session.sessions_remaining} sessions remaining.`);
+        setSelectedCoach(null);
+        setSelectedSlot(null);
+        const r = await coachingAPI.listSessions({ role: "player" });
+        setMySessions(r.data || []);
+        setBooking(false);
+        return;
+      }
+
+      // Payment flow
+      if (session.payment_gateway === "razorpay" && session.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed to load"); setBooking(false); return; }
+        const options = {
+          key: session.razorpay_key_id,
+          amount: session.price * 100,
+          currency: "INR",
+          order_id: session.razorpay_order_id,
+          name: selectedCoach.name || "Coaching Session",
+          description: `${session.sport} session on ${session.date} at ${session.start_time}`,
+          handler: async (response) => {
+            try {
+              await coachingAPI.verifyPayment(session.id, {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              toast.success("Payment successful! Session confirmed.");
+              setSelectedCoach(null);
+              setSelectedSlot(null);
+              const r = await coachingAPI.listSessions({ role: "player" });
+              setMySessions(r.data || []);
+            } catch { toast.error("Payment verification failed"); }
+          },
+          modal: { ondismiss: () => toast.info("Payment cancelled. Session is pending.") },
+          theme: { color: "#6366f1" },
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else if (session.payment_gateway === "test") {
+        // Test mode — auto-confirm
+        try {
+          await coachingAPI.testConfirm(session.id);
+          toast.success("Session booked & confirmed! (Test mode)");
+          setSelectedCoach(null);
+          setSelectedSlot(null);
+          const r = await coachingAPI.listSessions({ role: "player" });
+          setMySessions(r.data || []);
+        } catch { toast.error("Failed to confirm session"); }
+      } else {
+        toast.success("Session booked! The coach has been notified.");
+        setSelectedCoach(null);
+        setSelectedSlot(null);
+        const r = await coachingAPI.listSessions({ role: "player" });
+        setMySessions(r.data || []);
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to book session");
     }
@@ -217,7 +340,32 @@ export default function CoachListingPage() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
           className="mb-8 space-y-3">
           <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Your Coaching Sessions</h3>
-          {upcomingSessions.length === 0 && pastSessions.length === 0 && (
+          {/* Active Subscriptions */}
+          {mySubscriptions.length > 0 && (
+            <div className="mb-4">
+              <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Active Subscriptions</h4>
+              <div className="space-y-2">
+                {mySubscriptions.map(sub => (
+                  <motion.div key={sub.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="glass-card rounded-lg p-3 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold">{sub.package_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Coach: {sub.coach_name} · {sub.sessions_remaining}/{sub.sessions_per_month} sessions left
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Expires: {new Date(sub.current_period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleCancelSub(sub.id)}>
+                      Cancel
+                    </Button>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          )}
+          {upcomingSessions.length === 0 && pastSessions.length === 0 && mySubscriptions.length === 0 && (
             <div className="text-center py-8 glass-card rounded-xl text-muted-foreground text-sm">
               No sessions yet. Book a coach below!
             </div>
@@ -317,6 +465,38 @@ export default function CoachListingPage() {
                   <div className="text-[10px] text-muted-foreground">{selectedCoach.session_duration_minutes || 60} min</div>
                 </div>
               </div>
+
+              {/* Monthly Packages */}
+              {coachPackages.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-bold mb-2">Monthly Packages</h4>
+                  <div className="space-y-2">
+                    {coachPackages.map(pkg => (
+                      <div key={pkg.id} className="glass-card rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold">{pkg.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {pkg.sessions_per_month} sessions/month · {pkg.duration_minutes} min each
+                          </p>
+                          {pkg.description && <p className="text-xs text-muted-foreground mt-0.5">{pkg.description}</p>}
+                        </div>
+                        <div className="text-right shrink-0 ml-3">
+                          <p className="text-sm font-bold text-primary">₹{pkg.price}/mo</p>
+                          {pkg.subscribed ? (
+                            <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px] mt-1">
+                              {pkg.sessions_remaining} left
+                            </Badge>
+                          ) : (
+                            <Button size="sm" className="mt-1 h-7 text-xs" onClick={() => handleSubscribe(pkg)} disabled={subscribing}>
+                              Subscribe
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Date Picker */}
               <div>

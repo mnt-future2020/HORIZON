@@ -216,7 +216,7 @@ export default function PublicVenuePage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
+      <div className="sticky top-0 z-50 bg-background backdrop-blur-xl border-b">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="gap-2">

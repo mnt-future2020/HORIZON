@@ -572,6 +572,8 @@ async def _build_player_card(user_id: str, viewer_id: str = None):
     primary_sport = max(sport_freq, key=sport_freq.get) if sport_freq else "none"
 
     badges = []
+    if user.get("is_verified"):
+        badges.append({"name": "Verified", "icon": "badge-check", "description": "Verified by Horizon"})
     if bookings_count >= 100:
         badges.append({"name": "Century", "icon": "trophy", "description": "100+ games played"})
     elif bookings_count >= 50:
@@ -607,16 +609,72 @@ async def _build_player_card(user_id: str, viewer_id: str = None):
             {"follower_id": viewer_id, "following_id": user_id}
         ) is not None
 
+    # Overall Skill Score (0-100)
+    sr = user.get("skill_rating", 1500)
+    skill_score = max(0, min(100, (sr - 1000) / 15))  # 1000→0, 1500→33, 2500→100
+    total_g = user.get("total_games", 0) or bookings_count
+    wins_count = user.get("wins", 0)
+    losses_count = user.get("losses", 0)
+    draws_count = user.get("draws", 0)
+    played = wins_count + losses_count + draws_count
+    win_rate_score = (wins_count / played * 100) if played > 0 else 0
+
+    # Fetch career stats for tournament & training scores
+    perf_records = await db.performance_records.find(
+        {"player_id": user_id}, {"_id": 0, "record_type": 1, "tournament_id": 1, "stats": 1}
+    ).to_list(500)
+    t_ids = set()
+    t_wins = 0
+    train_mins = 0
+    for pr in perf_records:
+        if pr.get("record_type") == "tournament_result":
+            tid = pr.get("tournament_id")
+            if tid:
+                t_ids.add(tid)
+            if pr.get("stats", {}).get("result") == "win":
+                t_wins += 1
+        if pr.get("record_type") == "training":
+            train_mins += pr.get("stats", {}).get("duration_minutes", 0)
+    tournaments_played = len(t_ids)
+    training_hours = round(train_mins / 60, 1)
+
+    tournament_score = min(100, tournaments_played * 8 + t_wins * 12)
+    training_score = min(100, training_hours * 4)
+    reliability = user.get("reliability_score", 100)
+    experience_score = min(100, total_g * 2)
+
+    overall_score = round(
+        skill_score * 0.40 +
+        win_rate_score * 0.20 +
+        tournament_score * 0.15 +
+        training_score * 0.10 +
+        reliability * 0.10 +
+        experience_score * 0.05
+    )
+    overall_score = max(0, min(100, overall_score))
+
+    if overall_score >= 86:
+        overall_tier = "Elite"
+    elif overall_score >= 71:
+        overall_tier = "Pro"
+    elif overall_score >= 51:
+        overall_tier = "Advanced"
+    elif overall_score >= 31:
+        overall_tier = "Intermediate"
+    else:
+        overall_tier = "Beginner"
+
     return {
         "user_id": user_id,
         "name": user.get("name", "Unknown"),
         "avatar": user.get("avatar", ""),
         "role": user.get("role", "player"),
-        "skill_rating": user.get("skill_rating", 1500),
-        "reliability_score": user.get("reliability_score", 100),
-        "wins": user.get("wins", 0),
-        "losses": user.get("losses", 0),
-        "draws": user.get("draws", 0),
+        "is_verified": user.get("is_verified", False),
+        "skill_rating": sr,
+        "reliability_score": reliability,
+        "wins": wins_count,
+        "losses": losses_count,
+        "draws": draws_count,
         "total_games": bookings_count,
         "avg_review_rating": round(avg_rating, 1),
         "primary_sport": primary_sport,
@@ -628,6 +686,16 @@ async def _build_player_card(user_id: str, viewer_id: str = None):
         "post_count": post_count,
         "is_following": is_following,
         "current_streak": streak.get("current_streak", 0) if streak else 0,
+        "overall_score": overall_score,
+        "overall_tier": overall_tier,
+        "score_breakdown": {
+            "skill": round(skill_score),
+            "win_rate": round(win_rate_score),
+            "tournament": round(tournament_score),
+            "training": round(training_score),
+            "reliability": round(reliability),
+            "experience": round(experience_score),
+        },
     }
 
 

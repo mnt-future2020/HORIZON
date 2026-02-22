@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { tournamentAPI, venueAPI } from "@/lib/api";
+import { tournamentAPI, venueAPI, liveAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy, Plus, Users, Calendar, MapPin, Search,
-  Filter, ChevronRight, Swords, Target, Medal, Crown
+  Filter, ChevronRight, Swords, Target, Medal, Crown, Eye, Radio
 } from "lucide-react";
 
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball", "volleyball", "table_tennis"];
@@ -47,6 +47,7 @@ export default function TournamentsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [venues, setVenues] = useState([]);
+  const [liveMatches, setLiveMatches] = useState([]);
   const [form, setForm] = useState({
     name: "", description: "", sport: "football", format: "knockout",
     venue_id: "", max_participants: "16", entry_fee: "0",
@@ -56,6 +57,18 @@ export default function TournamentsPage() {
   useEffect(() => {
     loadTournaments();
   }, [filterSport, filterStatus, showMyOnly]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const loadLive = async () => {
+      try {
+        const res = await liveAPI.getActive();
+        setLiveMatches(res.data || []);
+      } catch {}
+    };
+    loadLive();
+    const interval = setInterval(loadLive, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadTournaments = async () => {
     setLoading(true);
@@ -123,7 +136,7 @@ export default function TournamentsPage() {
     !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const canCreate = user?.role === "venue_owner" || user?.role === "super_admin";
+  const canCreate = user?.role === "venue_owner" || user?.role === "super_admin" || user?.role === "coach";
 
   return (
     <div className="max-w-5xl mx-auto px-4 md:px-6 py-6 pb-24 md:pb-8" data-testid="tournaments-page">
@@ -176,6 +189,44 @@ export default function TournamentsPage() {
           My Tournaments
         </button>
       </div>
+
+      {/* Live Now */}
+      {liveMatches.length > 0 && (
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+            <h2 className="text-sm font-bold text-red-400 uppercase tracking-wider">Live Now</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {liveMatches.map(lm => (
+              <div key={lm.id}
+                onClick={() => navigate(`/tournaments/${lm.tournament_id}`)}
+                className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 cursor-pointer hover:border-red-500/40 transition-all">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">{lm.tournament_name}</span>
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Eye className="w-3 h-3" /> {lm.spectator_count || 0}
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium truncate flex-1">{lm.home?.name}</span>
+                  <span className="text-xl font-bold text-primary mx-3 tabular-nums">{lm.home?.score} — {lm.away?.score}</span>
+                  <span className="text-sm font-medium truncate flex-1 text-right">{lm.away?.name}</span>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-[10px] text-muted-foreground">{lm.match_label}</span>
+                  <Badge className="text-[10px] bg-red-500/15 text-red-400 border-red-500/30">
+                    <Radio className="w-2.5 h-2.5 mr-1" /> {lm.period_label || lm.sport}
+                  </Badge>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Tournament Cards */}
       {loading ? (

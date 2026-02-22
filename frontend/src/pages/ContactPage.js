@@ -30,7 +30,7 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-40 h-14 flex items-center justify-between px-6 bg-background/90 backdrop-blur-xl border-b border-border">
+      <nav className="sticky top-0 z-40 h-14 flex items-center justify-between px-6 bg-background/95 backdrop-blur-xl border-b border-border">
         <Link to="/" className="font-display font-black text-lg tracking-tighter uppercase text-primary">HORIZON</Link>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <Link to="/about" className="hover:text-primary transition-colors">About</Link>

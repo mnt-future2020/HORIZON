@@ -6,12 +6,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
-import { playerCardAPI, socialAPI, recommendationAPI } from '../../api';
+import { playerCardAPI, socialAPI, recommendationAPI, careerAPI } from '../../api';
 import Card from '../../components/common/Card';
 import Badge from '../../components/common/Badge';
 import Button from '../../components/common/Button';
 import Avatar from '../../components/common/Avatar';
 import PostCard from '../../components/common/PostCard';
+import { Ionicons } from '@expo/vector-icons';
 import Colors from '../../styles/colors';
 import Typography from '../../styles/typography';
 import Spacing from '../../styles/spacing';
@@ -43,6 +44,13 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('en-IN', { year: 'numeric', month: 'short' });
 }
 
+function getOverallScoreTier(score) {
+  if (score >= 90) return { label: 'Elite', color: Colors.tierDiamond };
+  if (score >= 75) return { label: 'Pro', color: Colors.tierGold };
+  if (score >= 50) return { label: 'Intermediate', color: Colors.tierSilver };
+  return { label: 'Beginner', color: Colors.tierBronze };
+}
+
 function getGradeColor(grade) {
   if (grade === 'A') return Colors.primary;
   if (grade === 'B') return Colors.sky;
@@ -64,6 +72,7 @@ export default function PlayerCardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [following, setFollowing] = useState(false);
   const [followLoading, setFollowLoading] = useState(false);
+  const [career, setCareer] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -87,6 +96,7 @@ export default function PlayerCardScreen() {
         const postsRes = await socialAPI.getUserPosts(targetId, 1).catch(() => ({ data: [] }));
         const posts = Array.isArray(postsRes.data) ? postsRes.data : postsRes.data?.posts || [];
         setRecentPosts(posts.slice(0, 3));
+        careerAPI.getCareer(targetId).then(r => setCareer(r.data)).catch(() => {});
       }
     } finally {
       setLoading(false);
@@ -193,7 +203,12 @@ export default function PlayerCardScreen() {
           <View style={[styles.avatarBorder, { borderColor: tier.color }]}>
             <Avatar uri={avatarUri} name={name} size={96} />
           </View>
-          <Text style={styles.playerName}>{name}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: Spacing.md }}>
+            <Text style={[styles.playerName, { marginTop: 0 }]}>{name}</Text>
+            {card.is_verified && (
+              <Ionicons name="checkmark-circle" size={22} color="#60A5FA" style={{ marginLeft: 6 }} />
+            )}
+          </View>
 
           {/* Skill Rating */}
           <View style={styles.ratingRow}>
@@ -254,6 +269,50 @@ export default function PlayerCardScreen() {
             </Button>
           </View>
         )}
+
+        {/* Overall Score */}
+        {card.overall_score !== undefined && (() => {
+          const scoreTier = getOverallScoreTier(card.overall_score);
+          const scoreComponents = [
+            { label: 'Skill', value: card.score_skill, color: Colors.primary },
+            { label: 'Wins', value: card.score_wins, color: Colors.emerald },
+            { label: 'Activity', value: card.score_activity, color: Colors.violet },
+            { label: 'Reliability', value: card.score_reliability, color: Colors.sky },
+            { label: 'Social', value: card.score_social, color: Colors.amber },
+            { label: 'Sportsmanship', value: card.score_sportsmanship, color: Colors.cyan },
+          ].filter(c => c.value !== undefined);
+          return (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Overall Score</Text>
+              <Card style={styles.overallScoreCard}>
+                <View style={styles.overallScoreHeader}>
+                  <Text style={[styles.overallScoreNumber, { color: scoreTier.color }]}>
+                    {Math.round(card.overall_score)}
+                  </Text>
+                  <Badge
+                    variant={scoreTier.label === 'Elite' ? 'sky' : scoreTier.label === 'Pro' ? 'amber' : 'secondary'}
+                    style={{ marginLeft: Spacing.sm }}
+                  >
+                    {scoreTier.label}
+                  </Badge>
+                </View>
+                {scoreComponents.length > 0 && (
+                  <View style={styles.scoreBreakdown}>
+                    {scoreComponents.map((comp) => (
+                      <View key={comp.label} style={styles.scoreBarRow}>
+                        <Text style={styles.scoreBarLabel}>{comp.label}</Text>
+                        <View style={styles.scoreBarTrack}>
+                          <View style={[styles.scoreBarFill, { width: `${Math.min(comp.value, 100)}%`, backgroundColor: comp.color }]} />
+                        </View>
+                        <Text style={styles.scoreBarValue}>{Math.round(comp.value)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </Card>
+            </View>
+          );
+        })()}
 
         {/* Stats Grid 2x2 */}
         <View style={styles.section}>
@@ -387,6 +446,63 @@ export default function PlayerCardScreen() {
           </Card>
         </View>
 
+        {/* Career & Performance */}
+        {career && career.total_records > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Career & Performance</Text>
+            <View style={styles.careerGrid}>
+              {[
+                { icon: '🏋️', label: 'Train Hrs', value: career.training_hours ?? 0, color: Colors.violet },
+                { icon: '🏆', label: 'Tournaments', value: career.tournaments_played ?? 0, color: Colors.amber },
+                { icon: '🏢', label: 'Orgs', value: career.organizations?.length ?? 0, color: Colors.sky },
+              ].map((s, i) => (
+                <Card key={i} style={styles.careerCard}>
+                  <View style={[styles.statIconBox, { backgroundColor: `${s.color}18` }]}>
+                    <Text style={{ fontSize: 14 }}>{s.icon}</Text>
+                  </View>
+                  <Text style={[styles.statValue, { color: s.color }]}>{s.value}</Text>
+                  <Text style={styles.statLabel}>{s.label}</Text>
+                </Card>
+              ))}
+            </View>
+
+            {/* Recent Performance Records */}
+            {career.recent_records?.length > 0 && (
+              <Card style={{ marginTop: Spacing.sm }}>
+                <Text style={styles.careerSubTitle}>Recent Records</Text>
+                {career.recent_records.slice(0, 5).map((rec, idx) => {
+                  const typeColors = { training: Colors.violet, match_result: Colors.emerald, assessment: Colors.sky, tournament_result: Colors.amber, achievement: Colors.orange };
+                  const tc = typeColors[rec.record_type] || Colors.primary;
+                  return (
+                    <View key={rec.id || idx} style={[styles.careerRecordRow, idx < Math.min(career.recent_records.length, 5) - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.border }]}>
+                      <Text style={styles.careerRecordDate}>
+                        {rec.date ? new Date(rec.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '--'}
+                      </Text>
+                      <View style={[styles.careerTypeDot, { backgroundColor: tc }]} />
+                      <Text style={styles.careerRecordTitle} numberOfLines={1}>{rec.title || rec.record_type}</Text>
+                      {rec.sport && <Badge variant="outline" style={{ marginLeft: 'auto' }}>{rec.sport}</Badge>}
+                    </View>
+                  );
+                })}
+              </Card>
+            )}
+
+            {/* Organizations */}
+            {career.organizations?.length > 0 && (
+              <Card style={{ marginTop: Spacing.sm }}>
+                <Text style={styles.careerSubTitle}>Organizations</Text>
+                {career.organizations.map((org, idx) => (
+                  <View key={org.id || idx} style={[styles.careerOrgRow, idx < career.organizations.length - 1 && { borderBottomWidth: 1, borderBottomColor: Colors.border }]}>
+                    <Text style={{ fontSize: 16 }}>🏢</Text>
+                    <Text style={styles.careerOrgName}>{org.name}</Text>
+                    {org.org_type && <Badge variant="secondary">{org.org_type.replace('_', ' ')}</Badge>}
+                  </View>
+                ))}
+              </Card>
+            )}
+          </View>
+        )}
+
         {/* Recent Posts */}
         {recentPosts.length > 0 && (
           <View style={styles.section}>
@@ -446,6 +562,16 @@ const styles = StyleSheet.create({
   section: { marginBottom: Spacing.xl },
   sectionTitle: { fontSize: Typography.lg, fontFamily: Typography.fontDisplayBlack, color: Colors.foreground, marginBottom: Spacing.md },
 
+  overallScoreCard: {},
+  overallScoreHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.md },
+  overallScoreNumber: { fontSize: Typography.xl5, fontFamily: Typography.fontDisplayBlack },
+  scoreBreakdown: { gap: Spacing.sm },
+  scoreBarRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm },
+  scoreBarLabel: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, width: 80 },
+  scoreBarTrack: { flex: 1, height: 6, backgroundColor: Colors.secondary, borderRadius: 3, overflow: 'hidden' },
+  scoreBarFill: { height: 6, borderRadius: 3 },
+  scoreBarValue: { fontSize: Typography.xs, fontFamily: Typography.fontBodyBold, color: Colors.foreground, width: 24, textAlign: 'right' },
+
   statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   statCard: { width: '47.5%', padding: Spacing.md },
   statIconBox: { width: 36, height: 36, borderRadius: Spacing.radiusMd, justifyContent: 'center', alignItems: 'center', marginBottom: Spacing.sm },
@@ -479,4 +605,13 @@ const styles = StyleSheet.create({
   memberIcon: { fontSize: 24 },
   memberLabel: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1 },
   memberDate: { fontSize: Typography.base, fontFamily: Typography.fontBodyBold, color: Colors.foreground, marginTop: 2 },
+  careerGrid: { flexDirection: 'row', gap: Spacing.sm },
+  careerCard: { flex: 1, padding: Spacing.md, alignItems: 'center' },
+  careerSubTitle: { fontSize: Typography.xs, fontFamily: Typography.fontBodyBold, color: Colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: Spacing.sm },
+  careerRecordRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm, gap: Spacing.sm },
+  careerRecordDate: { fontSize: Typography.xs, fontFamily: Typography.fontBody, color: Colors.mutedForeground, width: 44 },
+  careerTypeDot: { width: 8, height: 8, borderRadius: 4 },
+  careerRecordTitle: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground, flex: 1 },
+  careerOrgRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: Spacing.sm, gap: Spacing.sm },
+  careerOrgName: { fontSize: Typography.sm, fontFamily: Typography.fontBodyBold, color: Colors.foreground, flex: 1 },
 });

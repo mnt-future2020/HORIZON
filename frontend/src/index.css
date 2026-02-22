@@ -5,50 +5,50 @@
 @tailwind utilities;
 
 @layer base {
-  /* ====== DARK THEME (default) — Premium Athletic Dark ====== */
+  /* ====== DARK THEME (default) — Electric Blue Premium ====== */
   :root, .dark {
-    --background: 225 86% 3.8%;
+    --background: 222 47% 4.5%;
     --foreground: 210 40% 98%;
-    --card: 224 52% 9.5%;
+    --card: 222 44% 8.5%;
     --card-foreground: 210 40% 98%;
-    --popover: 224 52% 9.5%;
+    --popover: 222 44% 8.5%;
     --popover-foreground: 210 40% 98%;
-    --primary: 160 84% 39.4%;
-    --primary-foreground: 225 86% 3.8%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 220 38% 13%;
     --secondary-foreground: 210 40% 98%;
     --muted: 220 38% 13%;
     --muted-foreground: 215 18% 56%;
-    --accent: 263 70% 62%;
+    --accent: 160 84% 39%;
     --accent-foreground: 210 40% 98%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
-    --border: 220 30% 14%;
-    --input: 220 30% 14%;
-    --ring: 160 84% 39.4%;
-    --chart-1: 160 84% 39%;
-    --chart-2: 263 70% 62%;
+    --border: 222 30% 14%;
+    --input: 222 30% 14%;
+    --ring: 217 91% 60%;
+    --chart-1: 217 91% 60%;
+    --chart-2: 160 84% 39%;
     --chart-3: 30 80% 55%;
-    --chart-4: 200 70% 50%;
+    --chart-4: 263 70% 62%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
-    --glass-bg: rgba(10, 18, 35, 0.7);
+    --glass-bg: rgba(8, 15, 35, 0.7);
     --glass-border: rgba(255, 255, 255, 0.06);
-    --glass-bg-hover: rgba(10, 18, 35, 0.85);
+    --glass-bg-hover: rgba(8, 15, 35, 0.85);
     --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
     --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.6);
 
-    /* Athletic accent gradients — richer, more vibrant */
-    --gradient-primary: linear-gradient(135deg, #10B981 0%, #06d6a0 100%);
-    --gradient-accent: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
+    /* Electric Blue accent gradients */
+    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    --gradient-accent: linear-gradient(135deg, #10b981 0%, #34d399 100%);
     --gradient-sport: linear-gradient(135deg, #F59E0B 0%, #fbbf24 100%);
     --gradient-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
-    --gradient-sky: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+    --gradient-sky: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
 
-    /* Energy glow colors — brighter, deeper */
-    --glow-primary: 0 0 50px rgba(16, 185, 129, 0.45);
-    --glow-accent: 0 0 50px rgba(139, 92, 246, 0.45);
-    --glow-hover: 0 0 70px rgba(16, 185, 129, 0.65);
+    /* Energy glow colors — electric blue */
+    --glow-primary: 0 0 50px rgba(59, 130, 246, 0.45);
+    --glow-accent: 0 0 50px rgba(16, 185, 129, 0.4);
+    --glow-hover: 0 0 70px rgba(59, 130, 246, 0.65);
     --glow-rose: 0 0 40px rgba(244, 63, 94, 0.35);
 
     /* Overlay colors for sports imagery */
@@ -56,50 +56,54 @@
     --overlay-gradient: linear-gradient(180deg, rgba(2, 6, 23, 0.2) 0%, rgba(2, 6, 23, 0.92) 100%);
   }
 
-  /* ====== LIGHT THEME — Clean Athletic Light ====== */
+  /* ====== LIGHT THEME — Premium Athletic Light ====== */
   .light {
-    --background: 210 20% 98%;
-    --foreground: 225 86% 8%;
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 225 86% 8%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 225 86% 8%;
-    --primary: 160 84% 36%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 217 91% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 18% 93%;
-    --secondary-foreground: 225 47% 15%;
-    --muted: 210 18% 93%;
-    --muted-foreground: 215 16% 43%;
-    --accent: 263 70% 58%;
+    --secondary: 214 25% 93%;
+    --secondary-foreground: 222 47% 15%;
+    --muted: 216 18% 93%;
+    --muted-foreground: 215 18% 40%;
+    --accent: 160 84% 36%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 84.2% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 22% 90%;
-    --input: 214 22% 90%;
-    --ring: 160 84% 36%;
-    --chart-1: 160 84% 36%;
-    --chart-2: 263 70% 58%;
-    --chart-3: 30 80% 50%;
-    --chart-4: 200 70% 45%;
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 217 91% 50%;
+    --chart-1: 217 91% 50%;
+    --chart-2: 160 84% 36%;
+    --chart-3: 30 80% 48%;
+    --chart-4: 263 70% 55%;
     --chart-5: 340 75% 50%;
-    --glass-bg: rgba(255, 255, 255, 0.8);
-    --glass-border: rgba(0, 0, 0, 0.05);
-    --glass-bg-hover: rgba(255, 255, 255, 0.92);
-    --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.05);
-    --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.08);
 
-    /* Light theme gradients */
-    --gradient-primary: linear-gradient(135deg, #10B981 0%, #34d399 100%);
-    --gradient-accent: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
-    --gradient-sport: linear-gradient(135deg, #F59E0B 0%, #fbbf24 100%);
-    --gradient-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
-    --gradient-sky: linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%);
+    /* Light glass — frosted white with visible depth */
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --glass-bg-hover: rgba(255, 255, 255, 0.9);
 
-    /* Light glow (subtler) */
-    --glow-primary: 0 0 30px rgba(16, 185, 129, 0.2);
-    --glow-accent: 0 0 30px rgba(139, 92, 246, 0.2);
-    --glow-hover: 0 0 40px rgba(16, 185, 129, 0.3);
-    --glow-rose: 0 0 25px rgba(244, 63, 94, 0.15);
+    /* Stronger shadows for light mode — cards need visible lift */
+    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.08);
+    --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 40px -8px rgba(0, 0, 0, 0.12);
+
+    /* Light theme gradients — same vibrant colors */
+    --gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --gradient-accent: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    --gradient-sport: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    --gradient-rose: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
+    --gradient-sky: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
+
+    /* Light glow — soft colored shadows */
+    --glow-primary: 0 4px 24px rgba(37, 99, 235, 0.18);
+    --glow-accent: 0 4px 24px rgba(5, 150, 105, 0.15);
+    --glow-hover: 0 8px 32px rgba(37, 99, 235, 0.25);
+    --glow-rose: 0 4px 20px rgba(225, 29, 72, 0.12);
 
     --overlay-dark: rgba(255, 255, 255, 0.6);
     --overlay-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.85) 100%);

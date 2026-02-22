@@ -70,7 +70,7 @@ export default function SplitPaymentPage() {
             setPaying(false);
           },
           modal: { ondismiss: () => { toast.info("Payment cancelled"); setPaying(false); } },
-          theme: { color: "#10B981" }
+          theme: { color: "#3b82f6" }
         };
         const rzp = new window.Razorpay(options);
         rzp.open();

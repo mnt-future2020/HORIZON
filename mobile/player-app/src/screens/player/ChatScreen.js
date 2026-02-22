@@ -2,12 +2,14 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, FlatList, StyleSheet, TouchableOpacity,
   Alert, ActivityIndicator, RefreshControl, TextInput,
-  KeyboardAvoidingView, Platform,
+  KeyboardAvoidingView, Platform, Image, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { chatAPI, socialAPI, userSearchAPI } from '../../api';
 import { useAuth } from '../../contexts/AuthContext';
+import { useChatWebSocket } from '../../hooks/useChatWebSocket';
 import Avatar from '../../components/common/Avatar';
 import Badge from '../../components/common/Badge';
 import SearchBar from '../../components/common/SearchBar';
@@ -19,12 +21,30 @@ import Colors from '../../styles/colors';
 import Typography from '../../styles/typography';
 import Spacing from '../../styles/spacing';
 
+// ─── Optional native modules (graceful fallback) ────────────────────────────
+let ImagePicker = null;
+let DocumentPicker = null;
+let Audio = null;
+try { ImagePicker = require('expo-image-picker'); } catch { /* not installed */ }
+try { DocumentPicker = require('expo-document-picker'); } catch { /* not installed */ }
+try { Audio = require('expo-av').Audio; } catch { /* not installed */ }
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 const NEW_MSG_TABS = [
   { key: 'all', label: 'All' },
   { key: 'followers', label: 'Followers' },
   { key: 'following', label: 'Following' },
   { key: 'contacts', label: 'Contacts' },
 ];
+
+const EMOJI_MAP = {
+  thumbsup: '\u{1F44D}',
+  heart: '\u2764\uFE0F',
+  laugh: '\u{1F602}',
+  wow: '\u{1F62E}',
+  fire: '\u{1F525}',
+  clap: '\u{1F44F}',
+};
 
 function formatTimeAgo(dateStr) {
   if (!dateStr) return '';
@@ -40,6 +60,12 @@ function formatTimeAgo(dateStr) {
   if (diffDay < 7) return `${diffDay}d`;
   const diffWeek = Math.floor(diffDay / 7);
   return `${diffWeek}w`;
+}
+
+function formatDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
 // ─── Conversation List Item ─────────────────────────────────────────────────
@@ -77,22 +103,147 @@ function ConversationRow({ convo, userId, onPress }) {
   );
 }
 
+// ─── Voice Message Bubble ───────────────────────────────────────────────────
+function VoiceMessageBubble({ mediaUrl, duration, isOwn }) {
+  const [playing, setPlaying] = useState(false);
+  const soundRef = useRef(null);
+
+  const handlePlayPause = async () => {
+    if (!Audio) return;
+    try {
+      if (playing && soundRef.current) {
+        await soundRef.current.pauseAsync();
+        setPlaying(false);
+      } else if (soundRef.current) {
+        await soundRef.current.playAsync();
+        setPlaying(true);
+      } else {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri: mediaUrl },
+          { shouldPlay: true },
+        );
+        soundRef.current = sound;
+        setPlaying(true);
+        sound.setOnPlaybackStatusUpdate((status) => {
+          if (status.didJustFinish) {
+            setPlaying(false);
+            soundRef.current = null;
+          }
+        });
+      }
+    } catch {
+      /* playback error */
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (soundRef.current) {
+        soundRef.current.unloadAsync().catch(() => {});
+        soundRef.current = null;
+      }
+    };
+  }, []);
+
+  return (
+    <TouchableOpacity style={styles.voiceBubble} onPress={handlePlayPause} activeOpacity={0.7}>
+      <Ionicons
+        name={playing ? 'pause' : 'play'}
+        size={20}
+        color={isOwn ? Colors.primaryForeground : Colors.primary}
+      />
+      <View style={[styles.voiceBar, isOwn ? styles.voiceBarOwn : styles.voiceBarOther]} />
+      <Text style={[styles.voiceDuration, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>
+        {formatDuration(duration || 0)}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
 // ─── Message Bubble ─────────────────────────────────────────────────────────
-function MessageBubble({ message, isOwn, onLongPress }) {
+function MessageBubble({ message, isOwn, onLongPress, onReact, highlightId }) {
+  const reactions = message.reactions || {};
+  const reactionEntries = Object.entries(reactions).filter(([, count]) => count > 0);
+  const isHighlighted = highlightId && message.id === highlightId;
+  const isVoice = message.media_type === 'audio';
+  const isImage = message.media_type === 'image';
+  const isDocument = message.media_type === 'document' || message.media_type === 'file';
+
   return (
     <TouchableOpacity
       activeOpacity={0.8}
-      onLongPress={isOwn ? onLongPress : undefined}
-      style={[styles.bubbleWrapper, isOwn ? styles.bubbleWrapperOwn : styles.bubbleWrapperOther]}
+      onLongPress={() => onLongPress(message)}
+      style={[
+        styles.bubbleWrapper,
+        isOwn ? styles.bubbleWrapperOwn : styles.bubbleWrapperOther,
+        isHighlighted && styles.bubbleHighlight,
+      ]}
     >
       <View style={[styles.bubble, isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
-        <Text style={[styles.bubbleText, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>
-          {message.content}
-        </Text>
+        {/* Voice message */}
+        {isVoice && message.media_url ? (
+          <VoiceMessageBubble
+            mediaUrl={message.media_url}
+            duration={message.duration}
+            isOwn={isOwn}
+          />
+        ) : null}
+
+        {/* Image attachment */}
+        {isImage && message.media_url ? (
+          <Image
+            source={{ uri: message.media_url }}
+            style={styles.mediaImage}
+            resizeMode="cover"
+          />
+        ) : null}
+
+        {/* Document attachment */}
+        {isDocument && message.media_url ? (
+          <TouchableOpacity
+            style={styles.docCard}
+            onPress={() => Linking.openURL(message.media_url).catch(() => {})}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="document-text" size={24} color={Colors.primary} />
+            <Text
+              style={[styles.docName, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}
+              numberOfLines={1}
+            >
+              {message.file_name || 'Document'}
+            </Text>
+            <Ionicons name="download-outline" size={18} color={isOwn ? Colors.primaryForeground : Colors.mutedForeground} />
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Text content */}
+        {message.content ? (
+          <Text style={[styles.bubbleText, isOwn ? styles.bubbleTextOwn : styles.bubbleTextOther]}>
+            {message.content}
+          </Text>
+        ) : null}
+
         <Text style={[styles.bubbleTime, isOwn ? styles.bubbleTimeOwn : styles.bubbleTimeOther]}>
           {formatTimeAgo(message.created_at)}
         </Text>
       </View>
+
+      {/* Reaction pills */}
+      {reactionEntries.length > 0 ? (
+        <View style={styles.reactionRow}>
+          {reactionEntries.map(([key, count]) => (
+            <TouchableOpacity
+              key={key}
+              style={styles.reactionPill}
+              onPress={() => onReact(message, key)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reactionEmoji}>{EMOJI_MAP[key] || key}</Text>
+              <Text style={styles.reactionCount}>{count}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
     </TouchableOpacity>
   );
 }
@@ -201,11 +352,11 @@ function NewMessageContent({ onSelectUser, userId }) {
 }
 
 // ─── Active Chat Header ─────────────────────────────────────────────────────
-function ChatHeader({ otherUser, onlineStatus, onBack }) {
+function ChatHeader({ otherUser, onlineStatus, onBack, onSearchToggle, wsConnected }) {
   return (
     <View style={styles.chatHeader}>
       <TouchableOpacity onPress={onBack} style={styles.backButton} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-        <Text style={styles.backArrow}>{'<'}</Text>
+        <Ionicons name="chevron-back" size={20} color={Colors.foreground} />
       </TouchableOpacity>
       <Avatar uri={otherUser.avatar} name={otherUser.name || ''} size={36} />
       <View style={styles.chatHeaderInfo}>
@@ -213,8 +364,16 @@ function ChatHeader({ otherUser, onlineStatus, onBack }) {
         <View style={styles.onlineRow}>
           <View style={[styles.onlineDot, { backgroundColor: onlineStatus ? '#22c55e' : Colors.mutedForeground }]} />
           <Text style={styles.onlineText}>{onlineStatus ? 'Online' : 'Offline'}</Text>
+          {wsConnected ? (
+            <View style={styles.wsIndicator}>
+              <Ionicons name="flash" size={10} color={Colors.emerald} />
+            </View>
+          ) : null}
         </View>
       </View>
+      <TouchableOpacity onPress={onSearchToggle} style={styles.headerIconBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Ionicons name="search" size={20} color={Colors.foreground} />
+      </TouchableOpacity>
     </View>
   );
 }
@@ -233,10 +392,119 @@ function TypingIndicator() {
   );
 }
 
+// ─── Reaction Picker Row ────────────────────────────────────────────────────
+function ReactionPicker({ onSelect }) {
+  return (
+    <View style={styles.reactionPicker}>
+      {Object.entries(EMOJI_MAP).map(([key, emoji]) => (
+        <TouchableOpacity key={key} onPress={() => onSelect(key)} style={styles.reactionPickerItem} activeOpacity={0.6}>
+          <Text style={styles.reactionPickerEmoji}>{emoji}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+// ─── File Preview Bar ───────────────────────────────────────────────────────
+function FilePreviewBar({ file, onClear }) {
+  if (!file) return null;
+  const isImage = file.type?.startsWith('image');
+  return (
+    <View style={styles.filePreviewBar}>
+      {isImage && file.uri ? (
+        <Image source={{ uri: file.uri }} style={styles.filePreviewThumb} />
+      ) : (
+        <Ionicons name="document-text" size={24} color={Colors.primary} />
+      )}
+      <Text style={styles.filePreviewName} numberOfLines={1}>{file.name || 'File'}</Text>
+      <TouchableOpacity onPress={onClear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <Ionicons name="close-circle" size={20} color={Colors.mutedForeground} />
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+// ─── Recording Indicator ────────────────────────────────────────────────────
+function RecordingIndicator({ duration }) {
+  return (
+    <View style={styles.recordingBar}>
+      <View style={styles.recordingDot} />
+      <Text style={styles.recordingText}>Recording {formatDuration(duration)}</Text>
+      <Text style={styles.recordingHint}>Release to send</Text>
+    </View>
+  );
+}
+
+// ─── Message Search Bar ─────────────────────────────────────────────────────
+function MessageSearchBar({ convoId, onSelectResult, onClose }) {
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    if (!query || query.length < 2) {
+      setResults([]);
+      return;
+    }
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      setSearching(true);
+      chatAPI.searchMessages(convoId, query, 1)
+        .then((res) => setResults(res.data?.results || res.data || []))
+        .catch(() => setResults([]))
+        .finally(() => setSearching(false));
+    }, 400);
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [query, convoId]);
+
+  return (
+    <View style={styles.msgSearchContainer}>
+      <View style={styles.msgSearchInputRow}>
+        <Ionicons name="search" size={16} color={Colors.mutedForeground} />
+        <TextInput
+          style={styles.msgSearchInput}
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search messages..."
+          placeholderTextColor={Colors.mutedForeground}
+          autoFocus
+          returnKeyType="search"
+        />
+        {searching ? <ActivityIndicator size="small" color={Colors.primary} /> : null}
+        <TouchableOpacity onPress={onClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="close" size={18} color={Colors.mutedForeground} />
+        </TouchableOpacity>
+      </View>
+      {results.length > 0 ? (
+        <FlatList
+          data={results}
+          keyExtractor={(item, idx) => item.id?.toString() || idx.toString()}
+          style={styles.msgSearchResults}
+          keyboardShouldPersistTaps="handled"
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.msgSearchResultRow}
+              onPress={() => onSelectResult(item)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.msgSearchResultText} numberOfLines={2}>{item.content}</Text>
+              <Text style={styles.msgSearchResultTime}>{formatTimeAgo(item.created_at)}</Text>
+            </TouchableOpacity>
+          )}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 // ─── Main ChatScreen ────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const { user } = useAuth();
   const navigation = useNavigation();
+  const { connected: wsConnected, sendTyping: wsSendTyping, on: wsOn, off: wsOff } = useChatWebSocket();
 
   // Conversation list state
   const [conversations, setConversations] = useState([]);
@@ -256,8 +524,103 @@ export default function ChatScreen() {
   const [isOtherTyping, setIsOtherTyping] = useState(false);
   const [otherOnline, setOtherOnline] = useState(false);
 
+  // Reaction action sheet state
+  const [actionMessage, setActionMessage] = useState(null);
+
+  // File upload state
+  const [pendingFile, setPendingFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+
+  // Voice recording state
+  const [recording, setRecording] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingTimerRef = useRef(null);
+
+  // Message search state
+  const [showMsgSearch, setShowMsgSearch] = useState(false);
+  const [highlightMsgId, setHighlightMsgId] = useState(null);
+
   const flatListRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const activeConvoRef = useRef(null);
+
+  // Keep a ref in sync for WS handlers
+  useEffect(() => {
+    activeConvoRef.current = activeConvo;
+  }, [activeConvo]);
+
+  // ── WebSocket event handlers ──────────────────────────────────────────────
+  useEffect(() => {
+    wsOn('new_message', (msg) => {
+      const data = msg.message || msg;
+      if (activeConvoRef.current && data.conversation_id === activeConvoRef.current.id) {
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.id)) return prev;
+          return [data, ...prev];
+        });
+      }
+      // Also refresh conversation list preview
+      chatAPI.conversations()
+        .then((res) => {
+          const convos = res.data || [];
+          setConversations(convos);
+          setFilteredConvos(convos);
+        })
+        .catch(() => {});
+    });
+
+    wsOn('typing', (msg) => {
+      if (
+        activeConvoRef.current &&
+        msg.conversation_id === activeConvoRef.current.id &&
+        msg.user_id !== user?.id
+      ) {
+        setIsOtherTyping(true);
+        setTimeout(() => setIsOtherTyping(false), 3000);
+      }
+    });
+
+    wsOn('online_status', (msg) => {
+      if (msg.user_id === otherUser?.id) {
+        setOtherOnline(msg.online);
+      }
+    });
+
+    wsOn('message_deleted', (msg) => {
+      if (activeConvoRef.current && msg.conversation_id === activeConvoRef.current.id) {
+        setMessages((prev) => prev.filter((m) => m.id !== msg.message_id));
+      }
+    });
+
+    wsOn('messages_read', (msg) => {
+      if (activeConvoRef.current && msg.conversation_id === activeConvoRef.current.id) {
+        setMessages((prev) =>
+          prev.map((m) => (m.sender_id === user?.id ? { ...m, read: true } : m)),
+        );
+      }
+    });
+
+    wsOn('message_reaction', (msg) => {
+      if (activeConvoRef.current && msg.conversation_id === activeConvoRef.current.id) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === msg.message_id
+              ? { ...m, reactions: msg.reactions || m.reactions }
+              : m,
+          ),
+        );
+      }
+    });
+
+    return () => {
+      wsOff('new_message');
+      wsOff('typing');
+      wsOff('online_status');
+      wsOff('message_deleted');
+      wsOff('messages_read');
+      wsOff('message_reaction');
+    };
+  }, [wsOn, wsOff, user?.id, otherUser?.id]);
 
   // ── Load conversations ──────────────────────────────────────────────────
   const loadConversations = useCallback(async () => {
@@ -282,9 +645,10 @@ export default function ChatScreen() {
     loadConversations();
   }, []);
 
-  // Poll conversations every 5 seconds
+  // Poll conversations every 5 seconds — only when WS is disconnected
   useEffect(() => {
     if (activeConvo) return;
+    if (wsConnected) return;
     const interval = setInterval(() => {
       chatAPI.conversations()
         .then((res) => {
@@ -295,7 +659,7 @@ export default function ChatScreen() {
         .catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeConvo, searchQuery]);
+  }, [activeConvo, searchQuery, wsConnected]);
 
   // Filter conversations by search
   useEffect(() => {
@@ -324,20 +688,22 @@ export default function ChatScreen() {
     }
   }, []);
 
-  // Poll messages every 3 seconds when in active chat
+  // Poll messages every 3 seconds when in active chat — only when WS is disconnected
   useEffect(() => {
     if (!activeConvo) return;
+    if (wsConnected) return;
     const interval = setInterval(() => {
       chatAPI.getMessages(activeConvo.id)
         .then((res) => setMessages(res.data || []))
         .catch(() => {});
     }, 3000);
     return () => clearInterval(interval);
-  }, [activeConvo]);
+  }, [activeConvo, wsConnected]);
 
-  // Poll typing status every 3 seconds
+  // Poll typing status every 3 seconds — only when WS is disconnected
   useEffect(() => {
     if (!activeConvo) return;
+    if (wsConnected) return;
     const interval = setInterval(() => {
       chatAPI.getTyping(activeConvo.id)
         .then((res) => {
@@ -348,7 +714,7 @@ export default function ChatScreen() {
         .catch(() => {});
     }, 3000);
     return () => clearInterval(interval);
-  }, [activeConvo, user?.id]);
+  }, [activeConvo, user?.id, wsConnected]);
 
   // Online heartbeat every 15 seconds
   useEffect(() => {
@@ -359,9 +725,10 @@ export default function ChatScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // Check other user online status
+  // Check other user online status — only when WS is disconnected
   useEffect(() => {
     if (!otherUser) return;
+    if (wsConnected) return;
     const checkOnline = () => {
       chatAPI.onlineStatus(otherUser.id)
         .then((res) => setOtherOnline(res.data?.online || false))
@@ -370,7 +737,7 @@ export default function ChatScreen() {
     checkOnline();
     const interval = setInterval(checkOnline, 10000);
     return () => clearInterval(interval);
-  }, [otherUser]);
+  }, [otherUser, wsConnected]);
 
   // ── Enter a conversation ────────────────────────────────────────────────
   const enterConvo = (convo, other) => {
@@ -395,14 +762,46 @@ export default function ChatScreen() {
 
   // ── Send message ────────────────────────────────────────────────────────
   const handleSend = async () => {
-    if (!msgText.trim() || !activeConvo || sending) return;
+    if ((!msgText.trim() && !pendingFile) || !activeConvo || sending) return;
     const text = msgText.trim();
     setMsgText('');
     setSending(true);
+
     try {
-      await chatAPI.sendMessage(activeConvo.id, { content: text });
-      const res = await chatAPI.getMessages(activeConvo.id);
-      setMessages(res.data || []);
+      let mediaPayload = {};
+
+      // Upload pending file first if present
+      if (pendingFile) {
+        setUploading(true);
+        try {
+          const fileObj = {
+            uri: pendingFile.uri,
+            name: pendingFile.name || 'file',
+            type: pendingFile.mimeType || pendingFile.type || 'application/octet-stream',
+          };
+          const uploadRes = await chatAPI.uploadFile(fileObj);
+          const uploadData = uploadRes.data || {};
+          mediaPayload = {
+            media_url: uploadData.url || uploadData.media_url,
+            media_type: pendingFile.mediaType || (pendingFile.type?.startsWith('image') ? 'image' : 'document'),
+            file_name: pendingFile.name || 'file',
+          };
+        } catch {
+          Alert.alert('Error', 'Failed to upload file');
+          setSending(false);
+          setUploading(false);
+          return;
+        }
+        setUploading(false);
+        setPendingFile(null);
+      }
+
+      await chatAPI.sendMessage(activeConvo.id, { content: text || undefined, ...mediaPayload });
+      // If WS is connected the message will arrive via WS, otherwise refresh
+      if (!wsConnected) {
+        const res = await chatAPI.getMessages(activeConvo.id);
+        setMessages(res.data || []);
+      }
     } catch (err) {
       Alert.alert('Error', 'Failed to send message');
       setMsgText(text);
@@ -416,14 +815,43 @@ export default function ChatScreen() {
     setMsgText(text);
     if (!activeConvo) return;
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    chatAPI.setTyping(activeConvo.id).catch(() => {});
+    if (wsConnected) {
+      wsSendTyping(activeConvo.id);
+    } else {
+      chatAPI.setTyping(activeConvo.id).catch(() => {});
+    }
     typingTimeoutRef.current = setTimeout(() => {
       typingTimeoutRef.current = null;
     }, 2000);
   };
 
-  // ── Delete message ──────────────────────────────────────────────────────
+  // ── Long-press message (reaction + delete) ────────────────────────────
+  const handleMessageLongPress = (message) => {
+    setActionMessage(message);
+  };
+
+  const handleReaction = async (message, emojiKey) => {
+    setActionMessage(null);
+    if (!activeConvo) return;
+    try {
+      await chatAPI.reactToMessage(activeConvo.id, message.id, emojiKey);
+      // Optimistic update
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.id !== message.id) return m;
+          const reactions = { ...(m.reactions || {}) };
+          reactions[emojiKey] = (reactions[emojiKey] || 0) + 1;
+          return { ...m, reactions };
+        }),
+      );
+    } catch {
+      /* ignore */
+    }
+  };
+
   const handleDeleteMessage = (message) => {
+    setActionMessage(null);
+    if (message.sender_id !== user?.id) return;
     Alert.alert('Delete Message', 'Are you sure you want to delete this message?', [
       { text: 'Cancel', style: 'cancel' },
       {
@@ -441,6 +869,148 @@ export default function ChatScreen() {
     ]);
   };
 
+  // ── File attachment ───────────────────────────────────────────────────────
+  const handleAttach = () => {
+    const options = [];
+    if (ImagePicker) options.push({ text: 'Photo', onPress: pickImage });
+    if (DocumentPicker) options.push({ text: 'Document', onPress: pickDocument });
+    if (options.length === 0) {
+      Alert.alert('Unavailable', 'File picker is not available on this device.');
+      return;
+    }
+    options.push({ text: 'Cancel', style: 'cancel' });
+    Alert.alert('Attach File', 'Choose a source', options);
+  };
+
+  const pickImage = async () => {
+    if (!ImagePicker) return;
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions?.Images || 'images',
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        setPendingFile({
+          uri: asset.uri,
+          name: asset.fileName || 'photo.jpg',
+          type: asset.mimeType || 'image/jpeg',
+          mimeType: asset.mimeType || 'image/jpeg',
+          mediaType: 'image',
+        });
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to pick image');
+    }
+  };
+
+  const pickDocument = async () => {
+    if (!DocumentPicker) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+      if (!result.canceled && result.assets?.[0]) {
+        const asset = result.assets[0];
+        setPendingFile({
+          uri: asset.uri,
+          name: asset.name || 'document',
+          type: asset.mimeType || 'application/octet-stream',
+          mimeType: asset.mimeType || 'application/octet-stream',
+          mediaType: 'document',
+        });
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to pick document');
+    }
+  };
+
+  // ── Voice recording ───────────────────────────────────────────────────────
+  const startRecording = async () => {
+    if (!Audio) {
+      Alert.alert('Unavailable', 'Audio recording is not available on this device.');
+      return;
+    }
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Microphone permission is needed to record.');
+        return;
+      }
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+      const rec = new Audio.Recording();
+      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets?.HIGH_QUALITY || {
+        android: { extension: '.m4a', outputFormat: 2, audioEncoder: 3, sampleRate: 44100, numberOfChannels: 2, bitRate: 128000 },
+        ios: { extension: '.m4a', outputFormat: 'aac', audioQuality: 127, sampleRate: 44100, numberOfChannels: 2, bitRate: 128000, linearPCMBitDepth: 16, linearPCMIsBigEndian: false, linearPCMIsFloat: false },
+        web: { mimeType: 'audio/webm', bitsPerSecond: 128000 },
+      });
+      await rec.startAsync();
+      setRecording(rec);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingDuration((d) => d + 1);
+      }, 1000);
+    } catch {
+      Alert.alert('Error', 'Failed to start recording');
+    }
+  };
+
+  const stopRecordingAndSend = async () => {
+    if (!recording) return;
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+    const duration = recordingDuration;
+    try {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+      setRecordingDuration(0);
+
+      if (!uri || duration < 1) return; // too short, discard
+
+      setSending(true);
+      const fileObj = {
+        uri,
+        name: 'voice.m4a',
+        type: 'audio/m4a',
+      };
+      const uploadRes = await chatAPI.uploadFile(fileObj);
+      const uploadData = uploadRes.data || {};
+      await chatAPI.sendMessage(activeConvo.id, {
+        media_url: uploadData.url || uploadData.media_url,
+        media_type: 'audio',
+        file_name: 'voice.m4a',
+        duration,
+      });
+      if (!wsConnected) {
+        const res = await chatAPI.getMessages(activeConvo.id);
+        setMessages(res.data || []);
+      }
+    } catch {
+      Alert.alert('Error', 'Failed to send voice message');
+    } finally {
+      setSending(false);
+      setRecording(null);
+      setRecordingDuration(0);
+    }
+  };
+
+  // ── Message search scroll-to ──────────────────────────────────────────────
+  const handleSearchResult = (msg) => {
+    setHighlightMsgId(msg.id);
+    setShowMsgSearch(false);
+    // Try to scroll to the message in the list
+    const idx = messages.findIndex((m) => m.id === msg.id);
+    if (idx >= 0 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index: idx, animated: true, viewPosition: 0.5 });
+    }
+    // Clear highlight after a few seconds
+    setTimeout(() => setHighlightMsgId(null), 3000);
+  };
+
   // ── Go back to conversation list ────────────────────────────────────────
   const handleBack = () => {
     setActiveConvo(null);
@@ -448,6 +1018,10 @@ export default function ChatScreen() {
     setMessages([]);
     setMsgText('');
     setIsOtherTyping(false);
+    setActionMessage(null);
+    setPendingFile(null);
+    setShowMsgSearch(false);
+    setHighlightMsgId(null);
     loadConversations();
   };
 
@@ -460,9 +1034,28 @@ export default function ChatScreen() {
   // ACTIVE CHAT VIEW
   // ════════════════════════════════════════════════════════════════════════
   if (activeConvo && otherUser) {
+    const hasText = msgText.trim().length > 0;
+    const hasPendingFile = !!pendingFile;
+    const isRecording = !!recording;
+
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
-        <ChatHeader otherUser={otherUser} onlineStatus={otherOnline} onBack={handleBack} />
+        <ChatHeader
+          otherUser={otherUser}
+          onlineStatus={otherOnline}
+          onBack={handleBack}
+          onSearchToggle={() => setShowMsgSearch((v) => !v)}
+          wsConnected={wsConnected}
+        />
+
+        {/* Message search bar */}
+        {showMsgSearch ? (
+          <MessageSearchBar
+            convoId={activeConvo.id}
+            onSelectResult={handleSearchResult}
+            onClose={() => setShowMsgSearch(false)}
+          />
+        ) : null}
 
         <KeyboardAvoidingView
           style={{ flex: 1 }}
@@ -482,7 +1075,9 @@ export default function ChatScreen() {
                 <MessageBubble
                   message={item}
                   isOwn={item.sender_id === user?.id}
-                  onLongPress={() => handleDeleteMessage(item)}
+                  onLongPress={handleMessageLongPress}
+                  onReact={handleReaction}
+                  highlightId={highlightMsgId}
                 />
               )}
               inverted
@@ -491,17 +1086,56 @@ export default function ChatScreen() {
               ListHeaderComponent={isOtherTyping ? <TypingIndicator /> : null}
               ListEmptyComponent={
                 <View style={styles.emptyChatContainer}>
-                  <Text style={styles.emptyChatIcon}>💬</Text>
+                  <Text style={styles.emptyChatIcon}>{'\u{1F4AC}'}</Text>
                   <Text style={styles.emptyChatText}>No messages yet</Text>
                   <Text style={styles.emptyChatSubtext}>
                     Say hello to {otherUser.name || 'your friend'}!
                   </Text>
                 </View>
               }
+              onScrollToIndexFailed={() => {}}
             />
           )}
 
+          {/* Reaction / Delete action sheet */}
+          {actionMessage ? (
+            <View style={styles.actionSheet}>
+              <ReactionPicker onSelect={(key) => handleReaction(actionMessage, key)} />
+              {actionMessage.sender_id === user?.id ? (
+                <TouchableOpacity
+                  style={styles.actionDeleteBtn}
+                  onPress={() => handleDeleteMessage(actionMessage)}
+                >
+                  <Ionicons name="trash-outline" size={18} color={Colors.destructive} />
+                  <Text style={styles.actionDeleteText}>Delete</Text>
+                </TouchableOpacity>
+              ) : null}
+              <TouchableOpacity
+                style={styles.actionCancelBtn}
+                onPress={() => setActionMessage(null)}
+              >
+                <Text style={styles.actionCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+
+          {/* Recording indicator */}
+          {isRecording ? <RecordingIndicator duration={recordingDuration} /> : null}
+
+          {/* File preview */}
+          <FilePreviewBar file={pendingFile} onClear={() => setPendingFile(null)} />
+
+          {/* Input bar */}
           <View style={styles.inputBar}>
+            {/* Attachment button */}
+            <TouchableOpacity
+              onPress={handleAttach}
+              style={styles.inputIconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="attach" size={22} color={Colors.mutedForeground} />
+            </TouchableOpacity>
+
             <TextInput
               style={styles.msgInput}
               value={msgText}
@@ -511,17 +1145,37 @@ export default function ChatScreen() {
               multiline
               maxLength={2000}
             />
-            <TouchableOpacity
-              style={[styles.sendButton, (!msgText.trim() || sending) && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!msgText.trim() || sending}
-            >
-              {sending ? (
-                <ActivityIndicator size="small" color={Colors.primaryForeground} />
-              ) : (
-                <Text style={styles.sendButtonText}>Send</Text>
-              )}
-            </TouchableOpacity>
+
+            {/* Send or Mic button */}
+            {hasText || hasPendingFile ? (
+              <TouchableOpacity
+                style={[styles.sendButton, ((!hasText && !hasPendingFile) || sending || uploading) && styles.sendButtonDisabled]}
+                onPress={handleSend}
+                disabled={(!hasText && !hasPendingFile) || sending || uploading}
+              >
+                {sending || uploading ? (
+                  <ActivityIndicator size="small" color={Colors.primaryForeground} />
+                ) : (
+                  <Ionicons name="send" size={18} color={Colors.primaryForeground} />
+                )}
+              </TouchableOpacity>
+            ) : Audio ? (
+              <TouchableOpacity
+                style={[styles.micButton, isRecording && styles.micButtonRecording]}
+                onPressIn={startRecording}
+                onPressOut={stopRecordingAndSend}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="mic" size={20} color={isRecording ? Colors.destructive : Colors.primaryForeground} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.sendButton, styles.sendButtonDisabled]}
+                disabled
+              >
+                <Ionicons name="send" size={18} color={Colors.primaryForeground} />
+              </TouchableOpacity>
+            )}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -568,7 +1222,7 @@ export default function ChatScreen() {
           showsVerticalScrollIndicator={false}
           ListEmptyComponent={
             <EmptyState
-              icon="💬"
+              icon={'\u{1F4AC}'}
               title="No conversations yet"
               subtitle="Start a new message to connect with other players"
               actionLabel="New Message"
@@ -744,11 +1398,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  backArrow: {
-    fontSize: Typography.lg,
-    fontFamily: Typography.fontBodyBold,
-    color: Colors.foreground,
-  },
   chatHeaderInfo: {
     flex: 1,
     gap: 2,
@@ -773,6 +1422,17 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fontBody,
     color: Colors.mutedForeground,
   },
+  wsIndicator: {
+    marginLeft: 2,
+  },
+  headerIconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: Spacing.radiusSm,
+    backgroundColor: Colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
   // ── Messages ────────────────────────────────────────────────────────────
   messagesContent: {
@@ -788,6 +1448,11 @@ const styles = StyleSheet.create({
   },
   bubbleWrapperOther: {
     alignSelf: 'flex-start',
+  },
+  bubbleHighlight: {
+    borderWidth: 1,
+    borderColor: Colors.amber,
+    borderRadius: Spacing.radiusLg + 2,
   },
   bubble: {
     paddingHorizontal: Spacing.md,
@@ -848,6 +1513,226 @@ const styles = StyleSheet.create({
     marginTop: Spacing.xs,
   },
 
+  // ── Media in bubbles ──────────────────────────────────────────────────
+  mediaImage: {
+    width: 200,
+    height: 150,
+    borderRadius: Spacing.radiusMd,
+    marginBottom: Spacing.xs,
+  },
+  docCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  docName: {
+    flex: 1,
+    fontSize: Typography.xs,
+    fontFamily: Typography.fontBodyMedium,
+  },
+
+  // ── Voice message ─────────────────────────────────────────────────────
+  voiceBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  voiceBar: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
+  },
+  voiceBarOwn: {
+    backgroundColor: 'rgba(255,255,255,0.4)',
+  },
+  voiceBarOther: {
+    backgroundColor: Colors.border,
+  },
+  voiceDuration: {
+    fontSize: Typography.xs,
+    fontFamily: Typography.fontBody,
+  },
+
+  // ── Reaction pills ────────────────────────────────────────────────────
+  reactionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginTop: 4,
+  },
+  reactionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.secondary,
+    borderRadius: Spacing.radiusFull,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 2,
+  },
+  reactionEmoji: {
+    fontSize: 12,
+  },
+  reactionCount: {
+    fontSize: 10,
+    fontFamily: Typography.fontBodyBold,
+    color: Colors.mutedForeground,
+  },
+
+  // ── Reaction picker ───────────────────────────────────────────────────
+  reactionPicker: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.md,
+    paddingVertical: Spacing.md,
+  },
+  reactionPickerItem: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  reactionPickerEmoji: {
+    fontSize: 20,
+  },
+
+  // ── Action sheet ──────────────────────────────────────────────────────
+  actionSheet: {
+    backgroundColor: Colors.card,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.md,
+  },
+  actionDeleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    justifyContent: 'center',
+  },
+  actionDeleteText: {
+    fontSize: Typography.sm,
+    fontFamily: Typography.fontBodyBold,
+    color: Colors.destructive,
+  },
+  actionCancelBtn: {
+    paddingVertical: Spacing.sm,
+    alignItems: 'center',
+  },
+  actionCancelText: {
+    fontSize: Typography.sm,
+    fontFamily: Typography.fontBody,
+    color: Colors.mutedForeground,
+  },
+
+  // ── File preview bar ──────────────────────────────────────────────────
+  filePreviewBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.card,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  filePreviewThumb: {
+    width: 36,
+    height: 36,
+    borderRadius: Spacing.radiusSm,
+  },
+  filePreviewName: {
+    flex: 1,
+    fontSize: Typography.xs,
+    fontFamily: Typography.fontBody,
+    color: Colors.foreground,
+  },
+
+  // ── Recording indicator ───────────────────────────────────────────────
+  recordingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    backgroundColor: Colors.roseLight,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: Colors.destructive,
+  },
+  recordingText: {
+    fontSize: Typography.sm,
+    fontFamily: Typography.fontBodyBold,
+    color: Colors.destructive,
+  },
+  recordingHint: {
+    fontSize: Typography.xs,
+    fontFamily: Typography.fontBody,
+    color: Colors.mutedForeground,
+    marginLeft: 'auto',
+  },
+
+  // ── Message search ────────────────────────────────────────────────────
+  msgSearchContainer: {
+    backgroundColor: Colors.card,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  msgSearchInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+  },
+  msgSearchInput: {
+    flex: 1,
+    fontSize: Typography.sm,
+    fontFamily: Typography.fontBody,
+    color: Colors.foreground,
+    paddingVertical: Spacing.xs,
+  },
+  msgSearchResults: {
+    maxHeight: 180,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  msgSearchResultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  msgSearchResultText: {
+    flex: 1,
+    fontSize: Typography.xs,
+    fontFamily: Typography.fontBody,
+    color: Colors.foreground,
+  },
+  msgSearchResultTime: {
+    fontSize: 9,
+    fontFamily: Typography.fontBody,
+    color: Colors.mutedForeground,
+  },
+
   // ── Typing Indicator ────────────────────────────────────────────────────
   typingRow: {
     flexDirection: 'row',
@@ -888,6 +1773,12 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     gap: Spacing.sm,
   },
+  inputIconBtn: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   msgInput: {
     flex: 1,
     backgroundColor: Colors.secondary,
@@ -907,18 +1798,22 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     borderRadius: Spacing.radiusMd,
     height: 40,
-    paddingHorizontal: Spacing.base,
+    width: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
     opacity: 0.5,
   },
-  sendButtonText: {
-    fontSize: Typography.sm,
-    fontFamily: Typography.fontBodyBold,
-    color: Colors.primaryForeground,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  micButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: Spacing.radiusMd,
+    height: 40,
+    width: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  micButtonRecording: {
+    backgroundColor: Colors.roseLight,
   },
 });

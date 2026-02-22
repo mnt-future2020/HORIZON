@@ -15,7 +15,7 @@ async def register(input: RegisterInput):
     existing = await db.users.find_one({"email": input.email})
     if existing:
         raise HTTPException(400, "Email already registered")
-    account_status = "pending" if input.role == "venue_owner" else "active"
+    account_status = "pending" if input.role in ("venue_owner", "coach") else "active"
     user = {
         "id": str(uuid.uuid4()),
         "name": input.name,
@@ -37,6 +37,7 @@ async def register(input: RegisterInput):
         "no_shows": 0,
         "business_name": input.business_name or "",
         "gst_number": input.gst_number or "",
+        "is_verified": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(user)

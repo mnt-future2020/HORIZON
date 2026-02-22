@@ -43,6 +43,10 @@ import IoTDashboardScreen from '../screens/owner/IoTDashboardScreen';
 
 // Coach screens
 import CoachDashboardScreen from '../screens/coach/CoachDashboardScreen';
+import OrganizationScreen from '../screens/coach/OrganizationScreen';
+import PerformanceRecordsScreen from '../screens/coach/PerformanceRecordsScreen';
+import TrainingLogScreen from '../screens/coach/TrainingLogScreen';
+import LiveScoringScreen from '../screens/player/LiveScoringScreen';
 
 // Admin screens
 import AdminScreen from '../screens/admin/AdminScreen';
@@ -223,6 +227,10 @@ export default function AppNavigator() {
             <Stack.Screen name="Matchmaking" component={MatchmakingScreen} options={{ ...modalScreenOptions, title: 'Matchmaking' }} />
             <Stack.Screen name="Bookings" component={BookingsScreen} options={{ ...modalScreenOptions, title: 'Bookings' }} />
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} options={{ ...modalScreenOptions, title: 'Leaderboard' }} />
+            <Stack.Screen name="Organizations" component={OrganizationScreen} options={{ ...modalScreenOptions, title: 'Organizations' }} />
+            <Stack.Screen name="PerformanceRecords" component={PerformanceRecordsScreen} options={{ ...modalScreenOptions, title: 'Records' }} />
+            <Stack.Screen name="TrainingLogs" component={TrainingLogScreen} options={{ ...modalScreenOptions, title: 'Training' }} />
+            <Stack.Screen name="LiveScoring" component={LiveScoringScreen} options={{ ...modalScreenOptions, title: 'Live Score' }} />
           </>
         )}
       </Stack.Navigator>

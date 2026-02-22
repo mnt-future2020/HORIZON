@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { tournamentAPI } from "@/lib/api";
+import { tournamentAPI, liveAPI } from "@/lib/api";
+import { useLiveScore } from "@/hooks/useLiveScore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -12,8 +13,10 @@ import { motion } from "framer-motion";
 import {
   Trophy, Users, Calendar, MapPin, ArrowLeft, Play,
   Swords, Target, Medal, Crown, UserPlus, UserMinus,
-  ChevronRight, Award, Hash, CheckCircle
+  ChevronRight, Award, Hash, CheckCircle,
+  Radio, Plus, Minus, Pause, Square, Eye, Clock
 } from "lucide-react";
+const PlayIcon = Play;
 
 const STATUS_COLORS = {
   registration: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -39,6 +42,11 @@ export default function TournamentDetailPage() {
   const [resultForm, setResultForm] = useState({ winner: "", score_a: "", score_b: "" });
   const [submitting, setSubmitting] = useState(false);
   const [nameMap, setNameMap] = useState({});
+  const [liveMatches, setLiveMatches] = useState([]);
+  const [activeLiveId, setActiveLiveId] = useState(null);
+  const [startingLive, setStartingLive] = useState(false);
+  const [eventForm, setEventForm] = useState({ type: "goal", team: "home", player_name: "", minute: 0, description: "" });
+  const [showEventDialog, setShowEventDialog] = useState(false);
 
   const loadTournament = useCallback(async () => {
     try {
@@ -62,6 +70,25 @@ export default function TournamentDetailPage() {
 
   useEffect(() => { loadTournament(); }, [loadTournament]);
 
+  const loadLiveMatches = useCallback(async () => {
+    try {
+      const res = await liveAPI.getActive();
+      const forThis = (res.data || []).filter(m => m.tournament_id === tournamentId);
+      setLiveMatches(forThis);
+      if (forThis.length > 0 && !activeLiveId) {
+        setActiveLiveId(forThis[0].id);
+      }
+    } catch {}
+  }, [tournamentId, activeLiveId]);
+
+  useEffect(() => {
+    if (tournament?.status === "in_progress") {
+      loadLiveMatches();
+      const interval = setInterval(loadLiveMatches, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [tournament?.status, loadLiveMatches]);
+
   if (loading || !tournament) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -76,11 +103,61 @@ export default function TournamentDetailPage() {
   const matches = tournament.matches || [];
   const standings = tournament.standings || [];
 
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      if (document.getElementById("razorpay-script")) { resolve(true); return; }
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleRegister = async () => {
     try {
-      await tournamentAPI.register(tournamentId);
-      toast.success("Registered!");
-      loadTournament();
+      const res = await tournamentAPI.register(tournamentId);
+      const data = res.data;
+
+      // Payment required for paid tournaments
+      if (data.payment_gateway === "razorpay" && data.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed to load"); return; }
+        const options = {
+          key: data.razorpay_key_id,
+          amount: data.entry_fee * 100,
+          currency: "INR",
+          order_id: data.razorpay_order_id,
+          name: tournament.name || "Tournament Entry",
+          description: `Entry fee for ${tournament.name}`,
+          handler: async (response) => {
+            try {
+              await tournamentAPI.verifyEntryPayment(tournamentId, {
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              toast.success("Payment successful! You're registered.");
+              loadTournament();
+            } catch { toast.error("Payment verification failed"); }
+          },
+          modal: { ondismiss: () => toast.info("Payment cancelled. Registration pending.") },
+          theme: { color: "#6366f1" },
+        };
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else if (data.payment_gateway === "test") {
+        // Test mode — auto-confirm
+        try {
+          await tournamentAPI.testConfirmEntry(tournamentId);
+          toast.success("Registered & entry confirmed! (Test mode)");
+          loadTournament();
+        } catch { toast.error("Failed to confirm entry"); }
+      } else {
+        toast.success("Registered!");
+        loadTournament();
+      }
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed");
     }
@@ -224,7 +301,7 @@ export default function TournamentDetailPage() {
             {tournament.status === "registration" && !isRegistered && !isOrganizer && (
               <Button onClick={handleRegister} className="bg-primary text-primary-foreground font-bold text-xs h-9"
                 data-testid="detail-register-btn">
-                <UserPlus className="h-4 w-4 mr-1" /> Register
+                <UserPlus className="h-4 w-4 mr-1" /> {tournament.entry_fee > 0 ? `Pay ₹${tournament.entry_fee} & Register` : "Register"}
               </Button>
             )}
             {tournament.status === "registration" && isRegistered && (
@@ -257,6 +334,22 @@ export default function TournamentDetailPage() {
             <Icon className="h-3.5 w-3.5" />{label}
           </button>
         ))}
+        {tournament.status === "in_progress" && (
+          <button
+            onClick={() => setActiveTab("live")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+              activeTab === "live"
+                ? "bg-red-500/20 text-red-400 border border-red-500/30"
+                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            }`}
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            Live
+          </button>
+        )}
       </div>
 
       {/* ─── Knockout Bracket View ─── */}
@@ -384,6 +477,11 @@ export default function TournamentDetailPage() {
                     Rating: {p.rating || 1500} · Joined {new Date(p.registered_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
                   </p>
                 </div>
+                {tournament.entry_fee > 0 && p.payment_status && (
+                  <Badge className={p.payment_status === "paid" ? "bg-emerald-500/15 text-emerald-400 text-[10px]" : "bg-amber-500/15 text-amber-400 text-[10px]"}>
+                    {p.payment_status === "paid" ? <><CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Paid</> : <><Clock className="h-2.5 w-2.5 mr-0.5" /> Pending</>}
+                  </Badge>
+                )}
                 {p.user_id === tournament.organizer_id && (
                   <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">
                     <Crown className="h-2.5 w-2.5 mr-0.5" /> Organizer
@@ -445,6 +543,25 @@ export default function TournamentDetailPage() {
           </div>
         </div>
       )}
+
+      {/* ─── Live Tab ─── */}
+      {activeTab === "live" && <LiveTabContent
+        tournament={tournament}
+        liveMatches={liveMatches}
+        activeLiveId={activeLiveId}
+        setActiveLiveId={setActiveLiveId}
+        isOrganizer={isOrganizer}
+        matches={matches}
+        nameMap={nameMap}
+        loadLiveMatches={loadLiveMatches}
+        startingLive={startingLive}
+        setStartingLive={setStartingLive}
+        eventForm={eventForm}
+        setEventForm={setEventForm}
+        showEventDialog={showEventDialog}
+        setShowEventDialog={setShowEventDialog}
+        loadTournament={loadTournament}
+      />}
 
       {/* ─── Result Submission Dialog ─── */}
       <Dialog open={!!resultDialog} onOpenChange={() => setResultDialog(null)}>
@@ -508,6 +625,347 @@ export default function TournamentDetailPage() {
           )}
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ─── Live Tab Content Component ──────────────────────────────────────────────
+
+function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId, isOrganizer, matches, nameMap, loadLiveMatches, startingLive, setStartingLive, eventForm, setEventForm, showEventDialog, setShowEventDialog, loadTournament }) {
+  const { matchData, events, connected, spectatorCount } = useLiveScore(activeLiveId);
+  const activeLive = liveMatches.find(m => m.id === activeLiveId);
+
+  const handleStartLive = async (matchId) => {
+    setStartingLive(true);
+    try {
+      const res = await liveAPI.start({ tournament_id: tournament.id, match_id: matchId });
+      setActiveLiveId(res.data.id);
+      await loadLiveMatches();
+      toast.success("Live scoring started!");
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to start live scoring");
+    } finally {
+      setStartingLive(false);
+    }
+  };
+
+  const handleScore = async (team, delta) => {
+    if (!activeLiveId) return;
+    try {
+      await liveAPI.updateScore(activeLiveId, { team, delta });
+    } catch (e) {
+      toast.error("Failed to update score");
+    }
+  };
+
+  const handleAddEvent = async () => {
+    if (!activeLiveId) return;
+    try {
+      await liveAPI.addEvent(activeLiveId, eventForm);
+      setShowEventDialog(false);
+      setEventForm({ type: "goal", team: "home", player_name: "", minute: 0, description: "" });
+      toast.success("Event added!");
+    } catch (e) {
+      toast.error("Failed to add event");
+    }
+  };
+
+  const handlePause = async () => {
+    if (!activeLiveId) return;
+    try {
+      await liveAPI.pause(activeLiveId);
+    } catch (e) {
+      toast.error("Failed to pause/resume");
+    }
+  };
+
+  const handleEndMatch = async () => {
+    if (!activeLiveId || !window.confirm("End this match? Final scores will be submitted to the tournament.")) return;
+    try {
+      await liveAPI.end(activeLiveId);
+      toast.success("Match ended! Scores synced to tournament.");
+      setActiveLiveId(null);
+      await loadLiveMatches();
+      await loadTournament();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to end match");
+    }
+  };
+
+  const handlePeriod = async (period, label) => {
+    if (!activeLiveId) return;
+    try {
+      await liveAPI.changePeriod(activeLiveId, { period, period_label: label });
+    } catch {
+      toast.error("Failed to change period");
+    }
+  };
+
+  const EVENT_TYPES = [
+    { value: "goal", label: "Goal", icon: "\u26bd" },
+    { value: "card", label: "Card", icon: "\ud83d\udfe8" },
+    { value: "foul", label: "Foul", icon: "\u274c" },
+    { value: "point", label: "Point", icon: "\ud83c\udfaf" },
+    { value: "ace", label: "Ace", icon: "\ud83c\udff8" },
+    { value: "timeout", label: "Timeout", icon: "\u23f8\ufe0f" },
+    { value: "substitution", label: "Sub", icon: "\ud83d\udd04" },
+  ];
+
+  // Pending matches that can go live
+  const pendingMatches = matches.filter(
+    m => m.status === "pending" && m.player_a && m.player_b && !liveMatches.some(lm => lm.match_id === m.id)
+  );
+
+  const displayData = matchData || activeLive;
+  const displayEvents = matchData ? events : (activeLive?.events || []);
+
+  return (
+    <div className="space-y-6">
+      {/* Active Live Matches */}
+      {liveMatches.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Active Live Matches</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {liveMatches.map(lm => (
+              <button
+                key={lm.id}
+                onClick={() => setActiveLiveId(lm.id)}
+                className={`p-4 rounded-xl border text-left transition-all ${
+                  activeLiveId === lm.id
+                    ? "border-red-500/50 bg-red-500/10"
+                    : "border-border bg-card hover:border-red-500/30"
+                }`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-muted-foreground">{lm.match_label}</span>
+                  <span className="flex items-center gap-1 text-xs text-red-400">
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    LIVE
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-medium">{lm.home?.name}</span>
+                  <span className="text-2xl font-bold text-primary">{lm.home?.score} — {lm.away?.score}</span>
+                  <span className="font-medium">{lm.away?.name}</span>
+                </div>
+                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                  <span>{lm.period_label}</span>
+                  <span className="flex items-center gap-1"><Eye className="w-3 h-3" /> {lm.spectator_count}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Scorecard */}
+      {displayData && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          {/* Header */}
+          <div className="p-4 border-b border-border bg-red-500/5 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+              <span className="text-sm font-semibold text-red-400">
+                {displayData.status === "paused" ? "PAUSED" : "LIVE"}
+              </span>
+              <span className="text-xs text-muted-foreground ml-2">{displayData.period_label || displayData.match_label}</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {connected && <span className="text-emerald-400">{"\u25cf"} Connected</span>}
+              <Eye className="w-3.5 h-3.5" />
+              <span>{spectatorCount || displayData.spectator_count || 0}</span>
+            </div>
+          </div>
+
+          {/* Score Display */}
+          <div className="p-6">
+            <div className="flex items-center justify-center gap-8">
+              <div className="text-center flex-1">
+                <p className="text-sm text-muted-foreground mb-1">{displayData.home?.name || "Home"}</p>
+                <div className="flex items-center justify-center gap-3">
+                  {isOrganizer && displayData.status !== "completed" && (
+                    <button onClick={() => handleScore("home", -1)} className="w-8 h-8 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 flex items-center justify-center transition-colors">
+                      <Minus className="w-4 h-4" />
+                    </button>
+                  )}
+                  <span className="text-5xl font-bold text-foreground tabular-nums">{displayData.home?.score ?? 0}</span>
+                  {isOrganizer && displayData.status !== "completed" && (
+                    <button onClick={() => handleScore("home", 1)} className="w-8 h-8 rounded-full bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center transition-colors">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="text-2xl font-light text-muted-foreground">vs</div>
+
+              <div className="text-center flex-1">
+                <p className="text-sm text-muted-foreground mb-1">{displayData.away?.name || "Away"}</p>
+                <div className="flex items-center justify-center gap-3">
+                  {isOrganizer && displayData.status !== "completed" && (
+                    <button onClick={() => handleScore("away", -1)} className="w-8 h-8 rounded-full bg-destructive/20 text-destructive hover:bg-destructive/30 flex items-center justify-center transition-colors">
+                      <Minus className="w-4 h-4" />
+                    </button>
+                  )}
+                  <span className="text-5xl font-bold text-foreground tabular-nums">{displayData.away?.score ?? 0}</span>
+                  {isOrganizer && displayData.status !== "completed" && (
+                    <button onClick={() => handleScore("away", 1)} className="w-8 h-8 rounded-full bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center transition-colors">
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sets display (for set-based sports) */}
+            {displayData.sets?.length > 0 && (
+              <div className="flex justify-center gap-4 mt-4">
+                {displayData.sets.map((s, i) => (
+                  <div key={i} className="text-center">
+                    <p className="text-[10px] text-muted-foreground">Set {i + 1}</p>
+                    <p className="text-sm font-medium">{s.home} - {s.away}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Scorer Controls */}
+          {isOrganizer && displayData.status !== "completed" && (
+            <div className="p-4 border-t border-border space-y-3">
+              <div className="flex flex-wrap gap-2">
+                {EVENT_TYPES.map(et => (
+                  <button key={et.value} onClick={() => { setEventForm(f => ({ ...f, type: et.value })); setShowEventDialog(true); }}
+                    className="px-3 py-1.5 rounded-lg bg-secondary text-xs font-medium hover:bg-secondary/80 transition-colors">
+                    {et.icon} {et.label}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handlePause}
+                  className="flex-1 py-2 rounded-lg bg-amber-500/15 text-amber-400 text-sm font-medium hover:bg-amber-500/25 transition-colors flex items-center justify-center gap-2">
+                  {displayData.status === "paused" ? <><PlayIcon className="w-4 h-4" /> Resume</> : <><Pause className="w-4 h-4" /> Pause</>}
+                </button>
+                <button onClick={() => handlePeriod((displayData.period || 1) + 1, `Period ${(displayData.period || 1) + 1}`)}
+                  className="flex-1 py-2 rounded-lg bg-sky-500/15 text-sky-400 text-sm font-medium hover:bg-sky-500/25 transition-colors flex items-center justify-center gap-2">
+                  <Clock className="w-4 h-4" /> Next Period
+                </button>
+                <button onClick={handleEndMatch}
+                  className="flex-1 py-2 rounded-lg bg-destructive/15 text-destructive text-sm font-medium hover:bg-destructive/25 transition-colors flex items-center justify-center gap-2">
+                  <Square className="w-4 h-4" /> End Match
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Event Timeline */}
+          {displayEvents.length > 0 && (
+            <div className="p-4 border-t border-border">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">Match Timeline</h4>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {[...displayEvents].reverse().map(ev => (
+                  <div key={ev.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 text-sm">
+                    <span className="text-muted-foreground text-xs w-8 shrink-0">{ev.minute > 0 ? `${ev.minute}'` : ""}</span>
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.team === "home" ? "bg-primary" : "bg-emerald-500"}`} />
+                    <span className="font-medium">{ev.player_name || ev.team}</span>
+                    <span className="text-muted-foreground">{ev.description || ev.type}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Event Dialog */}
+      {showEventDialog && (
+        <Dialog open={showEventDialog} onOpenChange={setShowEventDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add Match Event</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Event Type</Label>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {EVENT_TYPES.map(et => (
+                    <button key={et.value} onClick={() => setEventForm(f => ({ ...f, type: et.value }))}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        eventForm.type === et.value ? "bg-primary/20 text-primary border border-primary/30" : "bg-secondary"
+                      }`}>
+                      {et.icon} {et.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <Label>Team</Label>
+                <div className="flex gap-2 mt-1">
+                  <button onClick={() => setEventForm(f => ({ ...f, team: "home" }))}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${eventForm.team === "home" ? "bg-primary/20 text-primary border border-primary/30" : "bg-secondary"}`}>
+                    {displayData?.home?.name || "Home"}
+                  </button>
+                  <button onClick={() => setEventForm(f => ({ ...f, team: "away" }))}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${eventForm.team === "away" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-secondary"}`}>
+                    {displayData?.away?.name || "Away"}
+                  </button>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Player Name</Label>
+                  <Input value={eventForm.player_name} onChange={e => setEventForm(f => ({ ...f, player_name: e.target.value }))} placeholder="Player name" />
+                </div>
+                <div>
+                  <Label>Minute</Label>
+                  <Input type="number" value={eventForm.minute} onChange={e => setEventForm(f => ({ ...f, minute: parseInt(e.target.value) || 0 }))} />
+                </div>
+              </div>
+              <div>
+                <Label>Description</Label>
+                <Input value={eventForm.description} onChange={e => setEventForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional description" />
+              </div>
+              <Button onClick={handleAddEvent} className="w-full">Add Event</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Organizer: Start Live for Pending Matches */}
+      {isOrganizer && pendingMatches.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Start Live Scoring</h3>
+          <div className="space-y-2">
+            {pendingMatches.map(m => (
+              <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+                <div>
+                  <p className="text-sm font-medium">{nameMap[m.player_a] || "TBD"} vs {nameMap[m.player_b] || "TBD"}</p>
+                  <p className="text-xs text-muted-foreground">Round {m.round} — Match #{m.match_number}</p>
+                </div>
+                <Button size="sm" variant="outline" disabled={startingLive} onClick={() => handleStartLive(m.id)}
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10">
+                  <Radio className="w-3.5 h-3.5 mr-1.5" /> Go Live
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No live matches */}
+      {liveMatches.length === 0 && !isOrganizer && (
+        <div className="text-center py-12">
+          <Radio className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">No live matches at the moment</p>
+          <p className="text-xs text-muted-foreground mt-1">Check back when the organizer starts live scoring</p>
+        </div>
+      )}
     </div>
   );
 }

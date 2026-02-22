@@ -12,7 +12,7 @@ const Sec = ({ title, children }) => (
 export default function RefundPolicyPage() {
   return (
     <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-40 h-14 flex items-center justify-between px-6 bg-background/90 backdrop-blur-xl border-b border-border">
+      <nav className="sticky top-0 z-40 h-14 flex items-center justify-between px-6 bg-background/95 backdrop-blur-xl border-b border-border">
         <Link to="/" className="font-display font-black text-lg tracking-tighter uppercase text-primary">HORIZON</Link>
         <Link to="/contact" className="text-xs text-muted-foreground hover:text-primary transition-colors">Contact Us</Link>
       </nav>

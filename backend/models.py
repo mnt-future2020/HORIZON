@@ -136,6 +136,78 @@ class TeamCreate(BaseModel):
 
 
 class MessageCreate(BaseModel):
-    content: str
+    content: str = ""
     media_url: Optional[str] = ""
+    media_type: Optional[str] = ""  # image, document, audio, voice
+    file_name: Optional[str] = ""
+    duration: Optional[int] = None  # seconds, for voice/audio
     reply_to: Optional[str] = ""
+
+
+# ─── Organization & Performance Models ────────────────────────────────────────
+
+class OrganizationCreate(BaseModel):
+    name: str
+    org_type: str  # individual_coach, academy, school, college
+    sports: List[str]
+    description: str = ""
+    location: str = ""
+    city: str = ""
+    logo_url: str = ""
+    contact_email: str = ""
+    contact_phone: str = ""
+
+
+class PerformanceRecordCreate(BaseModel):
+    player_id: str
+    record_type: str  # match_result, training, assessment, tournament_result, achievement
+    sport: str
+    title: str
+    stats: dict = {}
+    notes: str = ""
+    date: str  # YYYY-MM-DD
+
+
+class TrainingLogCreate(BaseModel):
+    title: str
+    sport: str
+    date: str
+    duration_minutes: int = 60
+    drills: List[str] = []
+    player_ids: List[str] = []
+    notes: str = ""
+    performance_notes: dict = {}  # {player_id: "note"}
+
+
+class BulkRecordCreate(BaseModel):
+    player_ids: List[str]
+    record_type: str
+    sport: str
+    title: str
+    stats: dict = {}
+    date: str
+
+
+# ─── Live Scoring Models ─────────────────────────────────────────────────────
+
+class LiveScoreStart(BaseModel):
+    tournament_id: str
+    match_id: str
+
+
+class LiveScoreUpdate(BaseModel):
+    team: str  # "home" or "away"
+    delta: int = 1  # +1 or -1
+
+
+class LiveScoreEvent(BaseModel):
+    type: str  # goal, card, point, foul, timeout, ace, wicket, etc.
+    team: str  # home or away
+    player_name: str = ""
+    minute: int = 0
+    description: str = ""
+
+
+class LivePeriodChange(BaseModel):
+    period: int
+    period_label: str = ""  # "2nd Half", "Set 3", etc.

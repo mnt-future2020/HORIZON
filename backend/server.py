@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pathlib import Path
@@ -9,6 +9,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 from database import db, init_redis, close_connections
+from auth import get_current_user
 from seed import seed_demo_data
 from routes.auth import router as auth_router
 from routes.venues import router as venues_router
@@ -32,8 +33,19 @@ from routes.tournaments import router as tournaments_router
 from routes.coaching import router as coaching_router
 from routes.communities import router as communities_router
 from routes.recommendations import router as recommendations_router
+from routes.organizations import router as organizations_router
+from routes.performance import router as performance_router
+from routes.training import router as training_router
+from routes.live_scoring import router as live_scoring_router
+
+from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Horizon Sports API")
+
+# Serve uploaded files (chat media, etc.)
+uploads_dir = ROOT_DIR / "uploads"
+uploads_dir.mkdir(exist_ok=True)
+app.mount("/api/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 # Include all routers with /api prefix
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
@@ -41,13 +53,16 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           ratings_router, highlights_router, iot_router, reviews_router, pos_router,
           waitlist_router, compliance_router, subscriptions_router, pricing_ml_router,
           social_router, tournaments_router, coaching_router, communities_router,
-          recommendations_router]:
+          recommendations_router, organizations_router, performance_router,
+          training_router, live_scoring_router]:
     app.include_router(r, prefix="/api")
 
 
-# Seed endpoint
+# Seed endpoint (admin only)
 @app.post("/api/seed")
-async def seed():
+async def seed(user=Depends(get_current_user)):
+    if user["role"] != "super_admin":
+        raise HTTPException(403, "Admin only")
     await seed_demo_data()
     return {"message": "Demo data seeded"}
 
@@ -84,22 +99,22 @@ async def submit_contact(request: FastAPIRequest):
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 import mqtt_service
 
 
 @app.on_event("startup")
 async def startup():
+    if os.environ.get('JWT_SECRET', 'supersecretkey') == 'supersecretkey':
+        logger.warning("Using default JWT_SECRET - change this for production!")
     await init_redis()
-    count = await db.users.count_documents({})
-    if count == 0:
-        await seed_demo_data()
     # Migrate existing venues without slugs
     import re
     venues_without_slug = await db.venues.find({"slug": {"$exists": False}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)

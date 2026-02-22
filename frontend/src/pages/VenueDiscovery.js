@@ -51,7 +51,7 @@ export default function VenueDiscovery() {
         setCities(citiesRes.data);
         setAreas(areasRes.data);
         setAllAmenities(amenitiesRes.data);
-      } catch (err) { console.error(err); }
+      } catch { /* ignore */ }
     };
     loadMeta();
   }, []);
@@ -180,7 +180,7 @@ export default function VenueDiscovery() {
     <div className="min-h-screen bg-background" data-testid="venue-discovery-page">
       {/* Top bar for non-logged-in users */}
       {!user && (
-        <nav className="fixed top-0 w-full z-40 h-14 flex items-center justify-between px-4 sm:px-6 bg-background/90 backdrop-blur-xl border-b border-border">
+        <nav className="fixed top-0 w-full z-40 h-14 flex items-center justify-between px-4 sm:px-6 bg-background/95 backdrop-blur-xl border-b border-border">
           <Link to="/" className="font-display font-black text-base tracking-tighter uppercase text-primary">Horizon</Link>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => navigate("/auth")} className="text-xs font-bold">Log in</Button>
@@ -190,7 +190,7 @@ export default function VenueDiscovery() {
       )}
 
       {/* Search Hero - Athletic Style */}
-      <div className={`border-b border-border bg-gradient-to-br from-primary/5 via-transparent to-accent/5 backdrop-blur-sm sticky z-30 ${user ? "top-16" : "top-14"}`}>
+      <div className={`border-b border-border bg-background/95 backdrop-blur-xl sticky z-30 ${user ? "top-16" : "top-14"}`}>
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Main Search Bar - Larger & Bolder */}
           <div className="flex gap-3 items-center" data-testid="search-bar">

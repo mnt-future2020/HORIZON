@@ -241,7 +241,7 @@ export default function VenueDetail() {
             setBookingLoading(false);
           },
           modal: { ondismiss: () => { toast.info("Payment cancelled"); setBookingLoading(false); } },
-          theme: { color: "#10B981" }
+          theme: { color: "#3b82f6" }
         };
         const rzp = new window.Razorpay(options);
         rzp.open();
@@ -898,7 +898,7 @@ export default function VenueDetail() {
 
               {confirmResult.payment_gateway === "test" && (
                 <div className="p-4 rounded-xl bg-sky-500/10 border-2 border-sky-500/20 text-sm text-sky-400 font-semibold">
-                  Test Mode — Payment gateway not yet configured. Confirm to proceed without payment.
+                  Payment gateway is being configured. Please confirm to proceed.
                 </div>
               )}
 
@@ -1045,7 +1045,6 @@ export default function VenueDetail() {
                   ? `Pay ${"\u20B9"}${Math.floor(selectedSlot.price / splitCount)} (Your Share)`
                   : `Pay ${"\u20B9"}${selectedSlot.price}`}
               </Button>
-              <p className="text-[10px] text-center text-muted-foreground">Payment is MOCKED for demo purposes</p>
             </div>
           )}
         </DialogContent>

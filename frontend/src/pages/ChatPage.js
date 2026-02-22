@@ -2,15 +2,20 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { chatAPI, userSearchAPI, socialAPI } from "@/lib/api";
+import { useChatWebSocket } from "@/hooks/useChatWebSocket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Send, Loader2, Search, MessageCircle,
   User, Plus, Check, CheckCheck, X, Trash2, Reply,
-  MoreVertical, Phone, Video, Users, UserPlus, ContactRound, Share2
+  MoreVertical, Phone, Video, Users, UserPlus, ContactRound, Share2,
+  Paperclip, FileText, Mic, Play, Pause, Square
 } from "lucide-react";
 import { toast } from "sonner";
+
+const EMOJI_MAP = { thumbsup: "\uD83D\uDC4D", heart: "\u2764\uFE0F", laugh: "\uD83D\uDE02", wow: "\uD83D\uDE2E", fire: "\uD83D\uDD25", clap: "\uD83D\uDC4F" };
+const EMOJI_LIST = Object.entries(EMOJI_MAP);
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -45,9 +50,28 @@ export default function ChatPage() {
   const [replyTo, setReplyTo] = useState(null);
   const [longPressMsg, setLongPressMsg] = useState(null);
 
+  // File upload + voice + search + reactions
+  const [pendingFile, setPendingFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [playingAudio, setPlayingAudio] = useState(null);
+  const [showMsgSearch, setShowMsgSearch] = useState(false);
+  const [msgSearchQuery, setMsgSearchQuery] = useState("");
+  const [msgSearchResults, setMsgSearchResults] = useState([]);
+  const [hoverReaction, setHoverReaction] = useState(null);
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimeout = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const recordingTimerRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const audioRef = useRef(null);
+  const fileInputRef = useRef(null);
+
+  // WebSocket
+  const { connected: wsConnected, sendTyping: wsSendTyping, on: wsOn, off: wsOff } = useChatWebSocket();
 
   // ─── Data Loading ──────────────────────────────────────────────────────────
 
@@ -80,47 +104,88 @@ export default function ChatPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startWithUser, loading]);
 
-  // Poll messages in active chat
+  // WebSocket event handlers
   useEffect(() => {
-    if (!activeConvo) return;
+    wsOn("new_message", (data) => {
+      if (activeConvo && data.conversation_id === activeConvo.id) {
+        setMessages(prev => {
+          if (prev.some(m => m.id === data.message.id)) return prev;
+          return [...prev, data.message];
+        });
+      }
+      loadConversations();
+    });
+    wsOn("typing", (data) => {
+      if (activeConvo && data.conversation_id === activeConvo.id) {
+        setIsTyping(true);
+        setTimeout(() => setIsTyping(false), 3000);
+      }
+    });
+    wsOn("online_status", (data) => {
+      if (activeConvo?.other_user?.id === data.user_id) {
+        setOnlineStatus(prev => ({ ...prev, online: data.online }));
+      }
+    });
+    wsOn("message_deleted", (data) => {
+      if (activeConvo && data.conversation_id === activeConvo.id) {
+        setMessages(prev => prev.map(m => m.id === data.message_id ? { ...m, content: "", deleted: true } : m));
+      }
+    });
+    wsOn("messages_read", (data) => {
+      if (activeConvo && data.conversation_id === activeConvo.id) {
+        setMessages(prev => prev.map(m => ({ ...m, read: true })));
+      }
+    });
+    wsOn("message_reaction", (data) => {
+      if (activeConvo && data.conversation_id === activeConvo.id) {
+        loadMessages(activeConvo.id);
+      }
+    });
+    return () => { ["new_message","typing","online_status","message_deleted","messages_read","message_reaction"].forEach(t => wsOff(t)); };
+  }, [activeConvo, wsOn, wsOff, loadConversations, loadMessages]);
+
+  // Poll messages (fallback when WS disconnected)
+  useEffect(() => {
+    if (!activeConvo || wsConnected) return;
     const interval = setInterval(() => loadMessages(activeConvo.id), 3000);
     return () => clearInterval(interval);
-  }, [activeConvo, loadMessages]);
+  }, [activeConvo, loadMessages, wsConnected]);
 
-  // Poll conversation list
+  // Poll conversation list (fallback)
   useEffect(() => {
-    if (activeConvo) return;
+    if (activeConvo || wsConnected) return;
     const interval = setInterval(loadConversations, 5000);
     return () => clearInterval(interval);
-  }, [activeConvo, loadConversations]);
+  }, [activeConvo, loadConversations, wsConnected]);
 
-  // Online heartbeat
+  // Online heartbeat (keep for DB presence even with WS)
   useEffect(() => {
     chatAPI.heartbeat().catch(() => {});
     const interval = setInterval(() => chatAPI.heartbeat().catch(() => {}), 15000);
     return () => clearInterval(interval);
   }, []);
 
-  // Check other user's online status
+  // Check other user's online status (fallback)
   useEffect(() => {
     if (!activeConvo?.other_user?.id) { setOnlineStatus(null); return; }
+    if (wsConnected) return; // WS handles this
     const check = () => chatAPI.onlineStatus(activeConvo.other_user.id)
       .then(res => setOnlineStatus(res.data))
       .catch(() => {});
     check();
     const interval = setInterval(check, 10000);
     return () => clearInterval(interval);
-  }, [activeConvo]);
+  }, [activeConvo, wsConnected]);
 
-  // Check typing status
+  // Check typing status (fallback)
   useEffect(() => {
-    if (!activeConvo?.id) return;
+    if (!activeConvo?.id || wsConnected) return;
     const check = () => chatAPI.getTyping(activeConvo.id)
       .then(res => setIsTyping(res.data?.typing || false))
       .catch(() => {});
     const interval = setInterval(check, 2000);
     return () => clearInterval(interval);
-  }, [activeConvo]);
+  }, [activeConvo, wsConnected]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -155,12 +220,27 @@ export default function ChatPage() {
   };
 
   const handleSend = async () => {
-    if (!msgText.trim() || sending || !activeConvo) return;
+    if ((!msgText.trim() && !pendingFile) || sending || !activeConvo) return;
     const text = msgText.trim();
     setMsgText("");
     setSending(true);
     const reply = replyTo;
     setReplyTo(null);
+    const file = pendingFile;
+    setPendingFile(null);
+
+    // Upload file first if present
+    let mediaUrl = "", mediaType = "", fileName = "";
+    if (file) {
+      setUploading(true);
+      try {
+        const uploadRes = await chatAPI.uploadFile(file);
+        mediaUrl = uploadRes.data.url;
+        mediaType = uploadRes.data.file_type;
+        fileName = uploadRes.data.filename;
+      } catch { toast.error("Upload failed"); setSending(false); setUploading(false); return; }
+      setUploading(false);
+    }
 
     const tempMsg = {
       id: "temp-" + Date.now(),
@@ -168,6 +248,9 @@ export default function ChatPage() {
       sender_id: user?.id,
       sender_name: user?.name,
       content: text,
+      media_url: mediaUrl,
+      media_type: mediaType,
+      file_name: fileName,
       reply_to: reply?.id,
       reply_preview: reply?.content?.slice(0, 80),
       reply_sender: reply?.sender_name,
@@ -179,6 +262,7 @@ export default function ChatPage() {
     try {
       const payload = { content: text };
       if (reply?.id) payload.reply_to = reply.id;
+      if (mediaUrl) { payload.media_url = mediaUrl; payload.media_type = mediaType; payload.file_name = fileName; }
       const res = await chatAPI.sendMessage(activeConvo.id, payload);
       setMessages(prev => prev.map(m => m.id === tempMsg.id ? { ...res.data, reply_preview: tempMsg.reply_preview, reply_sender: tempMsg.reply_sender } : m));
       loadConversations();
@@ -192,7 +276,11 @@ export default function ChatPage() {
   const handleTyping = () => {
     if (!activeConvo?.id) return;
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
-    chatAPI.setTyping(activeConvo.id).catch(() => {});
+    if (wsConnected) {
+      wsSendTyping(activeConvo.id);
+    } else {
+      chatAPI.setTyping(activeConvo.id).catch(() => {});
+    }
     typingTimeout.current = setTimeout(() => {}, 3000);
   };
 
@@ -206,6 +294,120 @@ export default function ChatPage() {
       await loadMessages(activeConvo.id);
       toast.error("Failed to delete");
     }
+  };
+
+  // Reactions
+  const handleReaction = async (msg, emoji) => {
+    try {
+      await chatAPI.reactToMessage(activeConvo.id, msg.id, emoji);
+      await loadMessages(activeConvo.id);
+    } catch { toast.error("Failed to react"); }
+    setHoverReaction(null);
+  };
+
+  // File select
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const maxMB = file.type.startsWith("image/") ? 10 : 25;
+    if (file.size > maxMB * 1024 * 1024) { toast.error(`Max file size is ${maxMB}MB`); return; }
+    setPendingFile(file);
+    e.target.value = "";
+  };
+
+  // Voice recording
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "" });
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setIsRecording(true);
+      setRecordingDuration(0);
+      recordingTimerRef.current = setInterval(() => setRecordingDuration(prev => prev + 1), 1000);
+    } catch { toast.error("Microphone access denied"); }
+  };
+
+  const stopRecording = async () => {
+    if (!mediaRecorderRef.current || mediaRecorderRef.current.state === "inactive") return;
+    const recorder = mediaRecorderRef.current;
+    const duration = recordingDuration;
+    clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+    setRecordingDuration(0);
+
+    recorder.onstop = async () => {
+      const mime = recorder.mimeType || "audio/webm";
+      const blob = new Blob(audioChunksRef.current, { type: mime });
+      const ext = mime.includes("webm") ? ".webm" : ".ogg";
+      const file = new File([blob], `voice_${Date.now()}${ext}`, { type: mime });
+      recorder.stream.getTracks().forEach(t => t.stop());
+      if (blob.size < 1000) return; // too short
+
+      setSending(true);
+      try {
+        const uploadRes = await chatAPI.uploadFile(file);
+        await chatAPI.sendMessage(activeConvo.id, {
+          content: "", media_url: uploadRes.data.url, media_type: "voice", file_name: "Voice message", duration,
+        });
+        await loadMessages(activeConvo.id);
+        loadConversations();
+      } catch { toast.error("Failed to send voice message"); }
+      finally { setSending(false); }
+    };
+    recorder.stop();
+  };
+
+  const cancelRecording = () => {
+    if (!isRecording) return;
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = () => {};
+      try { mediaRecorderRef.current.stop(); } catch {}
+      mediaRecorderRef.current.stream?.getTracks().forEach(t => t.stop());
+    }
+    clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+    setRecordingDuration(0);
+    audioChunksRef.current = [];
+  };
+
+  // Audio playback
+  const togglePlayAudio = (msgId, url) => {
+    if (playingAudio === msgId) {
+      audioRef.current?.pause();
+      setPlayingAudio(null);
+      return;
+    }
+    if (audioRef.current) audioRef.current.pause();
+    const audio = new Audio(url);
+    audio.onended = () => setPlayingAudio(null);
+    audio.play().catch(() => {});
+    audioRef.current = audio;
+    setPlayingAudio(msgId);
+  };
+
+  // Message search
+  const handleMsgSearch = async (q) => {
+    setMsgSearchQuery(q);
+    if (q.length < 2) { setMsgSearchResults([]); return; }
+    try {
+      const res = await chatAPI.searchMessages(activeConvo.id, q);
+      setMsgSearchResults(res.data?.results || []);
+    } catch {}
+  };
+
+  const scrollToMessage = (msgId) => {
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary/50");
+      setTimeout(() => el.classList.remove("ring-2", "ring-primary/50"), 2000);
+    }
+    setShowMsgSearch(false);
+    setMsgSearchQuery("");
+    setMsgSearchResults([]);
   };
 
   const handleSearch = async (q) => {
@@ -421,8 +623,36 @@ export default function ChatPage() {
                 )}
               </p>
             </div>
+            <button onClick={() => { setShowMsgSearch(!showMsgSearch); setMsgSearchQuery(""); setMsgSearchResults([]); }}
+              className="p-2 rounded-full hover:bg-secondary/50">
+              <Search className="h-4 w-4 text-muted-foreground" />
+            </button>
           </div>
         </div>
+
+        {/* Message Search Bar */}
+        <AnimatePresence>
+          {showMsgSearch && (
+            <motion.div initial={{ height: 0 }} animate={{ height: "auto" }} exit={{ height: 0 }}
+              className="bg-card border-b border-border overflow-hidden">
+              <div className="max-w-3xl mx-auto px-4 py-2">
+                <Input value={msgSearchQuery} onChange={e => handleMsgSearch(e.target.value)}
+                  placeholder="Search messages..." autoFocus className="h-9 bg-secondary/30 border-border/50 rounded-xl text-sm" />
+              </div>
+              {msgSearchResults.length > 0 && (
+                <div className="max-w-3xl mx-auto px-4 pb-2 max-h-48 overflow-y-auto space-y-0.5">
+                  {msgSearchResults.map(r => (
+                    <button key={r.id} className="w-full text-left p-2 hover:bg-secondary/30 rounded-lg"
+                      onClick={() => scrollToMessage(r.id)}>
+                      <span className="text-[10px] text-muted-foreground">{r.sender_name} · {formatTime(r.created_at)}</span>
+                      <p className="text-xs truncate">{r.content}</p>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Messages Area */}
         <div className="flex-1 overflow-y-auto px-3 py-3 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary-rgb,59,130,246),0.02),transparent_70%)]">
@@ -441,9 +671,9 @@ export default function ChatPage() {
                   const isDeleted = msg.deleted;
 
                   return (
-                    <div key={msg.id}
-                      className={`flex ${isMe ? "justify-end" : "justify-start"} ${showTail ? "mt-2" : "mt-0.5"}`}
-                      onContextMenu={(e) => { e.preventDefault(); if (isMe && !isDeleted) setLongPressMsg(msg); }}
+                    <div key={msg.id} id={`msg-${msg.id}`}
+                      className={`flex ${isMe ? "justify-end" : "justify-start"} ${showTail ? "mt-2" : "mt-0.5"} transition-all`}
+                      onContextMenu={(e) => { e.preventDefault(); if (!isDeleted) setLongPressMsg(msg); }}
                       onClick={() => { if (longPressMsg && longPressMsg.id !== msg.id) setLongPressMsg(null); }}>
                       <div className={`max-w-[78%] relative group ${isMe ? "items-end" : "items-start"}`}>
                         {/* Reply preview */}
@@ -463,14 +693,52 @@ export default function ChatPage() {
                             : `bg-card border border-border/50 shadow-sm text-foreground ${showTail && !msg.reply_preview ? "rounded-2xl rounded-bl-sm" : "rounded-2xl rounded-l-sm"}`
                         } ${isDeleted ? "italic opacity-60" : ""}`}>
                           {isDeleted ? (
-                            <span className="text-xs">🚫 This message was deleted</span>
+                            <span className="text-xs">{"\uD83D\uDEAB"} This message was deleted</span>
                           ) : (
                             <>
-                              {msg.content}
-                              {msg.media_url && <img src={msg.media_url} alt="" className="rounded-lg mt-1.5 max-h-48 object-cover" />}
+                              {msg.content && <span>{msg.content}</span>}
+                              {/* Image */}
+                              {msg.media_url && (!msg.media_type || msg.media_type === "image") && !msg.media_type?.startsWith("voice") && !msg.media_type?.startsWith("audio") && !msg.media_type?.startsWith("document") && (
+                                <img src={msg.media_url} alt="" className="rounded-lg mt-1 max-h-52 object-cover cursor-pointer" onClick={() => window.open(msg.media_url, "_blank")} />
+                              )}
+                              {/* Document */}
+                              {msg.media_url && msg.media_type === "document" && (
+                                <a href={msg.media_url} target="_blank" rel="noopener noreferrer"
+                                  className={`flex items-center gap-2 mt-1 p-2 rounded-lg ${isMe ? "bg-white/10" : "bg-secondary/30"}`}>
+                                  <FileText className="h-5 w-5 flex-shrink-0" />
+                                  <span className="text-xs truncate">{msg.file_name || "Document"}</span>
+                                </a>
+                              )}
+                              {/* Voice message */}
+                              {msg.media_url && (msg.media_type === "voice" || msg.media_type === "audio") && (
+                                <div className="flex items-center gap-2 mt-1 min-w-[180px]">
+                                  <button onClick={() => togglePlayAudio(msg.id, msg.media_url)}
+                                    className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-secondary/50"}`}>
+                                    {playingAudio === msg.id ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
+                                  </button>
+                                  <div className={`flex-1 h-1 rounded-full ${isMe ? "bg-white/20" : "bg-secondary/50"}`}>
+                                    <div className={`h-1 rounded-full ${isMe ? "bg-white/60" : "bg-primary/60"}`} style={{ width: playingAudio === msg.id ? "60%" : "0%" }} />
+                                  </div>
+                                  <span className="text-[10px] opacity-70">
+                                    {msg.duration ? `${Math.floor(msg.duration / 60)}:${(msg.duration % 60).toString().padStart(2, "0")}` : "0:00"}
+                                  </span>
+                                </div>
+                              )}
                             </>
                           )}
                         </div>
+
+                        {/* Reaction pills */}
+                        {msg.reactions?.length > 0 && (
+                          <div className={`flex flex-wrap gap-0.5 mt-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
+                            {Object.entries(msg.reactions.reduce((acc, r) => { acc[r.emoji] = (acc[r.emoji] || 0) + 1; return acc; }, {})).map(([emoji, count]) => (
+                              <button key={emoji} onClick={() => handleReaction(msg, emoji)}
+                                className="px-1.5 py-0.5 rounded-full bg-secondary/60 text-[10px] hover:bg-secondary border border-border/30">
+                                {EMOJI_MAP[emoji]} {count > 1 ? count : ""}
+                              </button>
+                            ))}
+                          </div>
+                        )}
 
                         {/* Time + read receipt */}
                         <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
@@ -482,14 +750,33 @@ export default function ChatPage() {
                           )}
                         </div>
 
-                        {/* Quick action on hover (reply) */}
+                        {/* Quick actions on hover (reply + react) */}
                         {!isDeleted && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setReplyTo(msg); inputRef.current?.focus(); }}
-                            className="absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 rounded-full bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground"
-                            style={isMe ? { left: -28 } : { right: -28 }}>
-                            <Reply className="h-3 w-3" />
-                          </button>
+                          <div className="absolute top-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5"
+                            style={isMe ? { left: -60 } : { right: -60 }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setHoverReaction(hoverReaction === msg.id ? null : msg.id); }}
+                              className="h-6 w-6 rounded-full bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground text-[10px]">
+                              {"\uD83D\uDE00"}
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setReplyTo(msg); inputRef.current?.focus(); }}
+                              className="h-6 w-6 rounded-full bg-secondary/80 flex items-center justify-center text-muted-foreground hover:text-foreground">
+                              <Reply className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Emoji reaction picker popup */}
+                        {hoverReaction === msg.id && (
+                          <div className={`absolute -top-8 z-10 flex gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg ${isMe ? "right-0" : "left-0"}`}>
+                            {EMOJI_LIST.map(([key, emoji]) => (
+                              <button key={key} onClick={() => handleReaction(msg, key)}
+                                className="h-6 w-6 rounded-full hover:bg-secondary/50 flex items-center justify-center text-sm hover:scale-125 transition-transform">
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -543,10 +830,58 @@ export default function ChatPage() {
           )}
         </AnimatePresence>
 
+        {/* Recording indicator */}
+        {isRecording && (
+          <div className="bg-red-500/10 border-t border-red-500/20 px-4 py-2 flex items-center gap-3 flex-shrink-0">
+            <div className="max-w-3xl mx-auto flex items-center gap-3 w-full">
+              <div className="h-3 w-3 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-sm font-medium text-red-500">
+                Recording {Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, "0")}
+              </span>
+              <button onClick={cancelRecording} className="ml-auto text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* File preview */}
+        <AnimatePresence>
+          {pendingFile && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+              className="bg-card border-t border-border overflow-hidden">
+              <div className="max-w-3xl mx-auto flex items-center gap-2 px-4 py-2">
+                <Paperclip className="h-4 w-4 text-primary flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  {pendingFile.type.startsWith("image/") ? (
+                    <img src={URL.createObjectURL(pendingFile)} alt="" className="h-12 rounded-lg object-cover" />
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      <span className="text-xs truncate">{pendingFile.name}</span>
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setPendingFile(null)} className="text-muted-foreground hover:text-foreground p-1">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Message Input — WhatsApp style */}
         <div className="bg-background border-t border-border px-3 py-2 flex-shrink-0"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom, 8px), 8px)" }}>
           <div className="max-w-3xl mx-auto flex items-end gap-2">
+            {/* Attachment button */}
+            <input ref={fileInputRef} type="file" className="hidden"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" onChange={handleFileSelect} />
+            <button onClick={() => fileInputRef.current?.click()}
+              className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground">
+              <Paperclip className="h-5 w-5" />
+            </button>
+
             <div className="flex-1 bg-card rounded-2xl border border-border/50 px-4 py-2 min-h-[44px] flex items-center">
               <textarea
                 ref={inputRef}
@@ -560,12 +895,26 @@ export default function ChatPage() {
                 onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
               />
             </div>
-            <button onClick={handleSend} disabled={!msgText.trim() || sending}
-              className={`h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
-                msgText.trim() ? "bg-primary text-primary-foreground shadow-lg scale-100" : "bg-secondary text-muted-foreground scale-95"
-              }`}>
-              {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            </button>
+
+            {/* Send or Mic button */}
+            {msgText.trim() || pendingFile ? (
+              <button onClick={handleSend} disabled={sending || uploading}
+                className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground shadow-lg transition-all">
+                {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              </button>
+            ) : (
+              <button
+                onMouseDown={startRecording}
+                onMouseUp={stopRecording}
+                onMouseLeave={() => { if (isRecording) stopRecording(); }}
+                onTouchStart={startRecording}
+                onTouchEnd={stopRecording}
+                className={`h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                  isRecording ? "bg-red-500 text-white animate-pulse scale-110" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                }`}>
+                <Mic className="h-4 w-4" />
+              </button>
+            )}
           </div>
         </div>
 
@@ -579,8 +928,17 @@ export default function ChatPage() {
                 className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8"
                 onClick={e => e.stopPropagation()}>
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-4" />
+                {/* Quick reactions */}
+                <div className="flex justify-center gap-2 mb-4">
+                  {EMOJI_LIST.map(([key, emoji]) => (
+                    <button key={key} onClick={() => { handleReaction(longPressMsg, key); setLongPressMsg(null); }}
+                      className="h-10 w-10 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center text-lg hover:scale-110 transition-transform">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
                 <div className="p-3 rounded-xl bg-secondary/30 mb-4 text-sm line-clamp-2">
-                  {longPressMsg.content}
+                  {longPressMsg.content || (longPressMsg.media_type === "voice" ? "Voice message" : longPressMsg.file_name || "Media")}
                 </div>
                 <div className="space-y-1">
                   <button onClick={() => { setReplyTo(longPressMsg); setLongPressMsg(null); inputRef.current?.focus(); }}
@@ -588,16 +946,20 @@ export default function ChatPage() {
                     <Reply className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">Reply</span>
                   </button>
-                  <button onClick={() => { navigator.clipboard.writeText(longPressMsg.content); setLongPressMsg(null); toast.success("Copied!"); }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
-                    <MessageCircle className="h-5 w-5 text-muted-foreground" />
-                    <span className="text-sm font-medium">Copy Text</span>
-                  </button>
-                  <button onClick={() => handleDeleteMessage(longPressMsg)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-destructive/10 transition-colors text-left text-destructive">
-                    <Trash2 className="h-5 w-5" />
-                    <span className="text-sm font-medium">Delete Message</span>
-                  </button>
+                  {longPressMsg.content && (
+                    <button onClick={() => { navigator.clipboard.writeText(longPressMsg.content); setLongPressMsg(null); toast.success("Copied!"); }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
+                      <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                      <span className="text-sm font-medium">Copy Text</span>
+                    </button>
+                  )}
+                  {longPressMsg.sender_id === user?.id && (
+                    <button onClick={() => handleDeleteMessage(longPressMsg)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-destructive/10 transition-colors text-left text-destructive">
+                      <Trash2 className="h-5 w-5" />
+                      <span className="text-sm font-medium">Delete Message</span>
+                    </button>
+                  )}
                 </div>
               </motion.div>
             </motion.div>

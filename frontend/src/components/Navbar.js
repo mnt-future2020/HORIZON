@@ -135,7 +135,7 @@ export default function Navbar() {
   return (
     <>
       {/* Desktop top nav */}
-      <nav className="hidden md:flex fixed top-0 w-full z-50 h-14 items-center justify-between px-6 bg-background/80 backdrop-blur-xl border-b border-border"
+      <nav className="hidden md:flex fixed top-0 w-full z-50 h-14 items-center justify-between px-6 bg-background/95 backdrop-blur-xl border-b border-border"
         data-testid="desktop-navbar">
         <div className="flex items-center gap-10">
           <Link to="/feed" className="font-display font-black text-lg tracking-tighter uppercase text-primary">
@@ -238,7 +238,7 @@ export default function Navbar() {
       </nav>
 
       {/* Mobile bottom nav — Instagram-style 5 tabs */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[64px] flex items-center justify-around bg-background/95 backdrop-blur-xl border-t border-border"
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[64px] flex items-center justify-around bg-background backdrop-blur-xl border-t border-border"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 4px)" }}
         data-testid="mobile-navbar">
         {mobileNavLinks.map(l => (

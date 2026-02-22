@@ -1,3 +1,20 @@
+/* ============================================ */
+/* HERO KEN BURNS — cinematic video-like effect */
+/* ============================================ */
+
+@keyframes kenBurns {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    transform: scale(1.15) translate(-2%, -1%);
+  }
+}
+
+.hero-kenburns {
+  animation: kenBurns 8s ease-out forwards;
+}
+
 /* Glass morphism cards — adaptive */
 .glass-card {
   backdrop-filter: blur(12px);
@@ -17,15 +34,15 @@
 
 /* Hero glow — adaptive */
 .dark .hero-glow {
-  background: radial-gradient(circle at 30% 50%, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+  background: radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
 }
 .light .hero-glow {
-  background: radial-gradient(circle at 30% 50%, rgba(16, 185, 129, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle at 30% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 70%);
 }
 
 /* Stat card glow */
 .stat-glow {
-  box-shadow: 0 0 20px -5px rgba(16, 185, 129, 0.25);
+  box-shadow: 0 0 20px -5px rgba(59, 130, 246, 0.25);
 }
 
 /* Animations */
@@ -112,10 +129,10 @@
 
 @keyframes glowPulse {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
   }
   50% {
-    box-shadow: 0 0 40px rgba(16, 185, 129, 0.6);
+    box-shadow: 0 0 40px rgba(59, 130, 246, 0.6);
   }
 }
 
@@ -162,7 +179,7 @@
 
 .athletic-lift:hover {
   transform: translateY(-12px) scale(1.02);
-  box-shadow: 0 20px 60px -10px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 20px 60px -10px rgba(59, 130, 246, 0.3);
 }
 
 .athletic-lift:active {
@@ -179,7 +196,7 @@
   content: '';
   position: absolute;
   inset: -2px;
-  background: linear-gradient(135deg, #10B981, #7C3AED);
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
   border-radius: inherit;
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -194,11 +211,11 @@
 /* Shimmer effect for CTAs */
 .shimmer-cta {
   background: linear-gradient(90deg,
-    #10B981 0%,
-    #34D399 25%,
-    #10B981 50%,
-    #34D399 75%,
-    #10B981 100%
+    #3b82f6 0%,
+    #60a5fa 25%,
+    #3b82f6 50%,
+    #60a5fa 75%,
+    #3b82f6 100%
   );
   background-size: 200% 100%;
   animation: shimmerSweep 3s linear infinite;
@@ -237,4 +254,67 @@
   .energy-glow::before {
     display: none;
   }
+}
+
+/* ============================================ */
+/* LIGHT THEME — Premium styling overrides     */
+/* ============================================ */
+
+/* Cards in light mode get crisp borders + shadow lift */
+.light .glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 16px -2px rgba(0, 0, 0, 0.06);
+}
+.light .glass-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 12px 40px -8px rgba(0, 0, 0, 0.1);
+}
+
+.light .glass {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* Navbar in light mode — cleaner glass */
+.light nav {
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(1.3);
+  border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Athletic lift in light mode — softer shadow */
+.light .athletic-lift:hover {
+  box-shadow: 0 12px 40px -8px rgba(37, 99, 235, 0.15);
+}
+
+/* Energy glow in light mode — refined */
+.light .energy-glow::before {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  filter: blur(14px);
+  opacity: 0;
+}
+.light .energy-glow:hover::before {
+  opacity: 0.2;
+}
+
+/* Hero section stays dark in light mode — gradient bar transition */
+.light .hero-kenburns {
+  filter: brightness(0.95) contrast(1.05);
+}
+
+/* Stat glow in light mode */
+.light .stat-glow {
+  box-shadow: 0 2px 12px -2px rgba(37, 99, 235, 0.12);
+}
+
+/* Shimmer in light mode — subtler */
+.light .shimmer-cta {
+  background: linear-gradient(90deg,
+    #2563eb 0%,
+    #3b82f6 25%,
+    #2563eb 50%,
+    #3b82f6 75%,
+    #2563eb 100%
+  );
+  background-size: 200% 100%;
 }

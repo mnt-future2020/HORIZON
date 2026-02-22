@@ -86,9 +86,9 @@ export const hoverLift = {
 };
 
 export const hoverGlow = {
-  rest: { boxShadow: '0 0 0 rgba(16, 185, 129, 0)' },
+  rest: { boxShadow: '0 0 0 rgba(59, 130, 246, 0)' },
   hover: {
-    boxShadow: '0 0 40px rgba(16, 185, 129, 0.4)',
+    boxShadow: '0 0 40px rgba(59, 130, 246, 0.4)',
     transition: { duration: 0.3 }
   }
 };
@@ -103,7 +103,7 @@ export const cardHover = {
   hover: {
     y: -12,
     scale: 1.03,
-    boxShadow: '0 20px 60px -10px rgba(16, 185, 129, 0.3)',
+    boxShadow: '0 20px 60px -10px rgba(59, 130, 246, 0.3)',
     transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] }
   },
   tap: { scale: 0.98 }
@@ -140,9 +140,9 @@ export const buttonTap = {
 export const pulseGlow = {
   animate: {
     boxShadow: [
-      '0 0 20px rgba(16, 185, 129, 0.3)',
-      '0 0 40px rgba(16, 185, 129, 0.6)',
-      '0 0 20px rgba(16, 185, 129, 0.3)',
+      '0 0 20px rgba(59, 130, 246, 0.3)',
+      '0 0 40px rgba(59, 130, 246, 0.6)',
+      '0 0 20px rgba(59, 130, 246, 0.3)',
     ],
     transition: {
       duration: 2,
