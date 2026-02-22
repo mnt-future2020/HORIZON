@@ -4,15 +4,15 @@ import redis.asyncio as aioredis
 import os
 import logging
 
-logger = logging.getLogger("horizon")
+logger = logging.getLogger("lobbi")
 
-mongo_url = os.environ.get('MONGO_URL', 'mongodb://mongo:27017')
-db_name = os.environ.get('DB_NAME', 'horizon')
+mongo_url = os.environ.get('MONGO_URL') or os.environ.get('DATABASE_URL', 'mongodb://mongodb:27017')
+db_name = os.environ.get('DB_NAME', 'lobbi_db')
 client = AsyncIOMotorClient(mongo_url)
 db = client[db_name]
 
 # Redis
-redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379')
+redis_url = os.environ.get('REDIS_URL') or os.environ.get('REDIS_PRIVATE_URL', 'redis://redis:6379')
 redis_client: aioredis.Redis = None
 
 SOFT_LOCK_TTL = 600

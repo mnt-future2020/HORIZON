@@ -4,6 +4,9 @@ from dotenv import load_dotenv
 from pathlib import Path
 import os
 import logging
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
+import secrets
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -40,7 +43,23 @@ from routes.live_scoring import router as live_scoring_router
 
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(title="Horizon Sports API")
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
+app = FastAPI(title="Lobbi API")
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Serve uploaded files (chat media, etc.)
 uploads_dir = ROOT_DIR / "uploads"
@@ -63,8 +82,21 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
 async def seed(user=Depends(get_current_user)):
     if user["role"] != "super_admin":
         raise HTTPException(403, "Admin only")
+    if os.environ.get("ENVIRONMENT", "development") == "production":
+        raise HTTPException(403, "Seed endpoint is disabled in production")
     await seed_demo_data()
     return {"message": "Demo data seeded"}
+
+
+# Health check endpoint (for Docker + monitoring)
+@app.get("/api/health")
+async def health_check():
+    try:
+        await db.command("ping")
+        db_status = "ok"
+    except Exception:
+        db_status = "error"
+    return {"status": "ok", "database": db_status, "environment": os.environ.get("ENVIRONMENT", "development")}
 
 
 # Contact form endpoint
@@ -82,6 +114,11 @@ async def submit_contact(request: FastAPIRequest):
     if not name or not email or not message:
         from fastapi import HTTPException
         raise HTTPException(400, "Name, email, and message are required")
+    if len(name) > 100 or len(email) > 254 or len(subject) > 200 or len(message) > 5000:
+        raise HTTPException(400, "Input exceeds maximum length")
+    import re as _re
+    if not _re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        raise HTTPException(400, "Invalid email format")
     entry = {
         "id": str(_uuid.uuid4()),
         "name": name,
@@ -96,12 +133,13 @@ async def submit_contact(request: FastAPIRequest):
     return {"message": "Message received. We'll get back to you within 24 hours.", "id": entry["id"]}
 
 
+cors_origins = [o.strip() for o in os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(',') if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', 'http://localhost:3000').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
 )
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -112,8 +150,11 @@ import mqtt_service
 
 @app.on_event("startup")
 async def startup():
-    if os.environ.get('JWT_SECRET', 'supersecretkey') == 'supersecretkey':
-        logger.warning("Using default JWT_SECRET - change this for production!")
+    jwt_secret = os.environ.get('JWT_SECRET', '')
+    if not jwt_secret or jwt_secret == 'supersecretkey':
+        if os.environ.get("ENVIRONMENT") == "production":
+            raise RuntimeError("CRITICAL: JWT_SECRET must be set to a strong secret in production!")
+        logger.warning("⚠️  Using default JWT_SECRET - change this before deploying to production!")
     await init_redis()
     # Migrate existing venues without slugs
     import re

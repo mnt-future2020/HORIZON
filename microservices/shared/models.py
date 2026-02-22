@@ -107,14 +107,14 @@ class MatchResultSubmit(BaseModel):
     score_b: Optional[int] = None
 
 
-# --- New PRD v2.0 Models ---
+# --- Social Models ---
 
 class SocialPostCreate(BaseModel):
     content: str = ""
     media_url: Optional[str] = ""
     venue_id: Optional[str] = ""
     match_id: Optional[str] = ""
-    post_type: str = "text"  # text, highlight, photo, match_result
+    post_type: str = "text"
 
 
 class ClubCreate(BaseModel):
@@ -129,9 +129,111 @@ class TournamentCreate(BaseModel):
     name: str
     sport: str
     venue_id: Optional[str] = ""
-    format: str = "single_elimination"  # single_elimination, double_elimination, round_robin
+    format: str = "single_elimination"
     max_teams: int = 8
     team_size: int = 5
     entry_fee: int = 0
     start_date: str = ""
     description: str = ""
+
+
+# --- Chat Models ---
+
+class MessageCreate(BaseModel):
+    content: Optional[str] = ""
+    media_url: Optional[str] = ""
+    media_type: Optional[str] = ""
+    file_name: Optional[str] = ""
+    duration: Optional[float] = None
+    reply_to: Optional[str] = ""
+
+
+class GroupCreate(BaseModel):
+    name: str
+    description: str = ""
+    group_type: str = "community"
+    sport: Optional[str] = ""
+    avatar_url: Optional[str] = ""
+    cover_url: Optional[str] = ""
+    is_private: bool = False
+    max_members: int = 500
+
+
+class TeamCreate(BaseModel):
+    name: str
+    sport: str
+    description: str = ""
+    avatar_url: Optional[str] = ""
+    max_players: int = 20
+    skill_range_min: int = 0
+    skill_range_max: int = 3000
+
+
+# --- Live Scoring Models ---
+
+class LiveScoreStart(BaseModel):
+    tournament_id: str
+    match_id: str
+
+
+class LiveScoreUpdate(BaseModel):
+    team: str  # "home" or "away"
+    delta: int = 1  # +1 or -1
+
+
+class LiveScoreEvent(BaseModel):
+    type: str  # goal, card, point, foul, timeout, ace, wicket, etc.
+    team: str  # home or away
+    player_name: str = ""
+    minute: int = 0
+    description: str = ""
+
+
+class LivePeriodChange(BaseModel):
+    period: int
+    period_label: str = ""  # "2nd Half", "Set 3", etc.
+
+
+# --- Coaching Models ---
+
+class CoachingSessionBook(BaseModel):
+    coach_id: str
+    date: str
+    start_time: str
+    duration_minutes: int = 60
+    sport: str = ""
+    notes: str = ""
+
+
+class CoachingPackageCreate(BaseModel):
+    name: str
+    sessions_per_month: int
+    price: int
+    duration_minutes: int = 60
+    sports: List[str] = []
+    description: str = ""
+
+
+# --- Training Models ---
+
+class TrainingPlanCreate(BaseModel):
+    name: str
+    sport: str
+    difficulty: str = "intermediate"
+    duration_weeks: int = 4
+    description: str = ""
+    exercises: List[dict] = []
+
+
+# --- Organization Models ---
+
+class OrganizationCreate(BaseModel):
+    name: str
+    org_type: str = "academy"
+    sports: List[str] = []
+    description: str = ""
+    location: str = ""
+    city: str = ""
+    logo_url: str = ""
+    contact_email: Optional[str] = ""
+    contact_phone: Optional[str] = ""

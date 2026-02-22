@@ -12,6 +12,7 @@ import math
 import random
 import hmac
 import hashlib
+import os
 
 router = APIRouter(prefix="/tournaments", tags=["tournaments"])
 
@@ -309,6 +310,8 @@ async def register_for_tournament(tournament_id: str, user=Depends(get_current_u
             except Exception:
                 raise HTTPException(502, "Payment gateway error. Please try again.")
         else:
+            if os.environ.get("ENVIRONMENT") == "production":
+                raise HTTPException(502, "Payment gateway not available. Please try again later.")
             participant["payment_gateway"] = "test"
 
         result_data["payment_gateway"] = participant.get("payment_gateway", "test")
@@ -376,13 +379,12 @@ async def verify_entry_payment(tournament_id: str, request: Request, user=Depend
     gw = settings.get("payment_gateway", {})
     key_secret = gw.get("key_secret", "")
 
-    if key_secret:
-        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
-        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
-        if expected != razorpay_signature:
-            raise HTTPException(400, "Payment verification failed")
-    elif participant.get("payment_gateway") == "razorpay":
-        raise HTTPException(500, "Payment gateway not configured properly")
+    if not key_secret:
+        raise HTTPException(500, "Payment gateway not configured. Contact support.")
+    msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+    expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, razorpay_signature):
+        raise HTTPException(400, "Payment verification failed")
 
     await db.tournaments.update_one(
         {"id": tournament_id, "participants.user_id": user["id"]},
@@ -391,7 +393,6 @@ async def verify_entry_payment(tournament_id: str, request: Request, user=Depend
             "participants.$.payment_details": {
                 "razorpay_payment_id": razorpay_payment_id,
                 "razorpay_order_id": razorpay_order_id,
-                "razorpay_signature": razorpay_signature,
                 "paid_at": datetime.now(timezone.utc).isoformat()
             }
         }}
@@ -402,6 +403,8 @@ async def verify_entry_payment(tournament_id: str, request: Request, user=Depend
 @router.post("/{tournament_id}/test-confirm-entry")
 async def test_confirm_entry(tournament_id: str, user=Depends(get_current_user)):
     """Confirm entry fee for test-mode tournaments (no payment gateway configured)."""
+    if os.environ.get("ENVIRONMENT") == "production":
+        raise HTTPException(403, "Test payment endpoints are disabled in production")
     tournament = await db.tournaments.find_one({"id": tournament_id})
     if not tournament:
         raise HTTPException(404, "Tournament not found")

@@ -50,9 +50,13 @@ async def upload_video(
     if not file.content_type or not file.content_type.startswith("video/"):
         raise HTTPException(400, "Only video files are accepted")
 
+    ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv", ".webm"}
+    ext = Path(file.filename or "video.mp4").suffix.lower() or ".mp4"
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(400, f"File extension '{ext}' not allowed. Accepted: {', '.join(ALLOWED_EXTENSIONS)}")
+
     max_size = 100 * 1024 * 1024  # 100MB
     highlight_id = str(uuid.uuid4())
-    ext = Path(file.filename or "video.mp4").suffix or ".mp4"
     filename = f"{highlight_id}{ext}"
     filepath = UPLOAD_DIR / filename
 

@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Horizon",
-    "slug": "horizon-player-app",
+    "name": "Lobbi",
+    "slug": "lobbi-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,6 +19,9 @@
     },
     "web": {
       "backgroundColor": "#080e1d"
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }

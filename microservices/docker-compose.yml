@@ -7,13 +7,13 @@ services:
 
   mongodb:
     image: mongo:7
-    container_name: horizon-mongo
+    container_name: lobbi-mongo
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_DATABASE: horizon
+      MONGO_INITDB_DATABASE: lobbi
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -22,7 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: horizon-redis
+    container_name: lobbi-redis
     ports:
       - "6379:6379"
     healthcheck:
@@ -38,10 +38,11 @@ services:
   gateway:
     build:
       context: ./gateway
-    container_name: horizon-gateway
+    container_name: lobbi-gateway
     ports:
       - "8000:8000"
     environment:
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       AUTH_SERVICE_URL: http://auth-service:8001
       VENUE_SERVICE_URL: http://venue-service:8002
       BOOKING_SERVICE_URL: http://booking-service:8003
@@ -50,6 +51,7 @@ services:
       IOT_SERVICE_URL: http://iot-service:8006
       ANALYTICS_SERVICE_URL: http://analytics-service:8007
       POS_SERVICE_URL: http://pos-service:8008
+      COACHING_SERVICE_URL: http://coaching-service:8009
     depends_on:
       - auth-service
       - venue-service
@@ -59,6 +61,7 @@ services:
       - iot-service
       - analytics-service
       - pos-service
+      - coaching-service
 
   # ═══════════════════════════════════════════════════════════════════
   # MICROSERVICES
@@ -68,14 +71,14 @@ services:
     build:
       context: .
       dockerfile: auth-service/Dockerfile
-    container_name: horizon-auth
+    container_name: lobbi-auth
     ports:
       - "8001:8001"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME:-}
@@ -90,14 +93,14 @@ services:
     build:
       context: .
       dockerfile: venue-service/Dockerfile
-    container_name: horizon-venue
+    container_name: lobbi-venue
     ports:
       - "8002:8002"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     depends_on:
       mongodb:
@@ -109,14 +112,14 @@ services:
     build:
       context: .
       dockerfile: booking-service/Dockerfile
-    container_name: horizon-booking
+    container_name: lobbi-booking
     ports:
       - "8003:8003"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -127,14 +130,15 @@ services:
     build:
       context: .
       dockerfile: social-service/Dockerfile
-    container_name: horizon-social
+    container_name: lobbi-social
     ports:
       - "8004:8004"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
+      CHAT_ENCRYPTION_KEY: ${CHAT_ENCRYPTION_KEY:-}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -145,19 +149,19 @@ services:
     build:
       context: .
       dockerfile: notification-service/Dockerfile
-    container_name: horizon-notification
+    container_name: lobbi-notification
     ports:
       - "8005:8005"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
-      SMTP_FROM: ${SMTP_FROM:-noreply@horizon.sports}
+      SMTP_FROM: ${SMTP_FROM:-noreply@lobbi.in}
       SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
       TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
       TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
@@ -173,20 +177,20 @@ services:
     build:
       context: .
       dockerfile: iot-service/Dockerfile
-    container_name: horizon-iot
+    container_name: lobbi-iot
     ports:
       - "8006:8006"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
       MQTT_BROKER: ${MQTT_BROKER:-broker.emqx.io}
       MQTT_PORT: ${MQTT_PORT:-1883}
       MQTT_USERNAME: ${MQTT_USERNAME:-}
       MQTT_PASSWORD: ${MQTT_PASSWORD:-}
-      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-horizon-iot-service}
-      MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-horizon}
+      MQTT_CLIENT_ID: ${MQTT_CLIENT_ID:-lobbi-iot-service}
+      MQTT_BASE_TOPIC: ${MQTT_BASE_TOPIC:-lobbi}
     depends_on:
       mongodb:
         condition: service_healthy
@@ -197,14 +201,14 @@ services:
     build:
       context: .
       dockerfile: analytics-service/Dockerfile
-    container_name: horizon-analytics
+    container_name: lobbi-analytics
     ports:
       - "8007:8007"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
       EMERGENT_LLM_KEY: ${EMERGENT_LLM_KEY:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
@@ -222,14 +226,32 @@ services:
     build:
       context: .
       dockerfile: pos-service/Dockerfile
-    container_name: horizon-pos
+    container_name: lobbi-pos
     ports:
       - "8008:8008"
     environment:
       MONGO_URL: mongodb://mongodb:27017
-      MONGO_DB: horizon
+      MONGO_DB: lobbi
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-horizon-jwt-secret-change-in-production}
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  coaching-service:
+    build:
+      context: .
+      dockerfile: coaching-service/Dockerfile
+    container_name: lobbi-coaching
+    ports:
+      - "8009:8009"
+    environment:
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: lobbi
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-lobbi-jwt-secret-change-in-production}
     depends_on:
       mongodb:
         condition: service_healthy

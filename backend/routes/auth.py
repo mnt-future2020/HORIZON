@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 from database import db
-from auth import hash_pw, verify_pw, create_token, get_current_user
+from auth import hash_pw, verify_pw, create_token, create_refresh_token, verify_refresh_token, validate_password_strength, get_current_user
 from models import RegisterInput, LoginInput
 import uuid
 
@@ -15,6 +15,7 @@ async def register(input: RegisterInput):
     existing = await db.users.find_one({"email": input.email})
     if existing:
         raise HTTPException(400, "Email already registered")
+    validate_password_strength(input.password)
     account_status = "pending" if input.role in ("venue_owner", "coach") else "active"
     user = {
         "id": str(uuid.uuid4()),
@@ -43,7 +44,7 @@ async def register(input: RegisterInput):
     await db.users.insert_one(user)
     user.pop("_id", None)
     token = create_token(user["id"], user["role"])
-    return {"token": token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
+    return {"token": token, "refresh_token": create_refresh_token(user["id"], user["role"]), "user": {k: v for k, v in user.items() if k != "password_hash"}}
 
 
 @router.post("/auth/login")
@@ -53,7 +54,7 @@ async def login(input: LoginInput):
         raise HTTPException(401, "Invalid credentials")
     token = create_token(user["id"], user["role"])
     user.pop("_id", None)
-    return {"token": token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
+    return {"token": token, "refresh_token": create_refresh_token(user["id"], user["role"]), "user": {k: v for k, v in user.items() if k != "password_hash"}}
 
 
 @router.get("/auth/me")
@@ -85,3 +86,20 @@ async def register_push_token(request: Request, user=Depends(get_current_user)):
         {"$set": {"push_token": push_token, "push_platform": platform}}
     )
     return {"message": "Push token registered"}
+
+
+@router.post("/auth/refresh")
+async def refresh_token(request: Request):
+    data = await request.json()
+    refresh_tok = data.get("refresh_token", "")
+    if not refresh_tok:
+        raise HTTPException(400, "refresh_token required")
+    payload = verify_refresh_token(refresh_tok)
+    user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(401, "User not found")
+    if user.get("account_status") in ("suspended", "deleted"):
+        raise HTTPException(403, "Account is suspended or deactivated")
+    new_access = create_token(user["id"], user["role"])
+    new_refresh = create_refresh_token(user["id"], user["role"])
+    return {"token": new_access, "refresh_token": new_refresh}

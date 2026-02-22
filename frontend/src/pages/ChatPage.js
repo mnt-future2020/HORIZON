@@ -61,6 +61,7 @@ export default function ChatPage() {
   const [msgSearchResults, setMsgSearchResults] = useState([]);
   const [hoverReaction, setHoverReaction] = useState(null);
 
+  const reactionPickerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const typingTimeout = useRef(null);
@@ -202,6 +203,18 @@ export default function ChatPage() {
       ));
     }
   }, [convoSearch, conversations]);
+
+  // Close emoji reaction picker on outside click
+  useEffect(() => {
+    if (!hoverReaction) return;
+    const handleClickOutside = (e) => {
+      if (reactionPickerRef.current && !reactionPickerRef.current.contains(e.target)) {
+        setHoverReaction(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [hoverReaction]);
 
   // ─── Actions ────────────────────────────────────────────────────────────────
 
@@ -769,7 +782,7 @@ export default function ChatPage() {
 
                         {/* Emoji reaction picker popup */}
                         {hoverReaction === msg.id && (
-                          <div className={`absolute -top-8 z-10 flex gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg ${isMe ? "right-0" : "left-0"}`}>
+                          <div ref={reactionPickerRef} className={`absolute -top-8 z-10 flex gap-0.5 bg-card border border-border rounded-full px-1.5 py-1 shadow-lg ${isMe ? "right-0" : "left-0"}`}>
                             {EMOJI_LIST.map(([key, emoji]) => (
                               <button key={key} onClick={() => handleReaction(msg, key)}
                                 className="h-6 w-6 rounded-full hover:bg-secondary/50 flex items-center justify-center text-sm hover:scale-125 transition-transform">

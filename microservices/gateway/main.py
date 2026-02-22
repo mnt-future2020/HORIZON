@@ -1,5 +1,5 @@
 """
-API Gateway – Port 8000
+Lobbi API Gateway – Port 8000
 Reverse proxy that routes requests to the appropriate microservice.
 Provides unified entry point, health aggregation, and service discovery.
 """
@@ -9,14 +9,42 @@ import httpx
 from fastapi import FastAPI, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("gateway")
+logger = logging.getLogger("lobbi-gateway")
 
-app = FastAPI(title="Horizon API Gateway", version="2.0.0",
-              description="Unified entry point for all Horizon microservices")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
-                   allow_methods=["*"], allow_headers=["*"])
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SECURITY HEADERS MIDDLEWARE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+        if request.url.scheme == "https":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        return response
+
+
+app = FastAPI(title="Lobbi API Gateway", version="2.0.0",
+              description="Unified entry point for all Lobbi microservices")
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SERVICE REGISTRY
@@ -31,15 +59,17 @@ SERVICES = {
     "iot": os.environ.get("IOT_SERVICE_URL", "http://iot-service:8006"),
     "analytics": os.environ.get("ANALYTICS_SERVICE_URL", "http://analytics-service:8007"),
     "pos": os.environ.get("POS_SERVICE_URL", "http://pos-service:8008"),
+    "coaching": os.environ.get("COACHING_SERVICE_URL", "http://coaching-service:8009"),
 }
 
-# Route prefix → service mapping
+# Route prefix → service mapping (order matters — more specific first)
 ROUTE_MAP = [
     # Auth Service
     ("/auth/", "auth"),
     ("/admin/", "auth"),
     ("/subscription/", "auth"),
     ("/upload/", "auth"),
+    ("/organizations", "auth"),
 
     # Venue Service
     ("/venues", "venue"),
@@ -58,11 +88,18 @@ ROUTE_MAP = [
     ("/rating/", "booking"),
     ("/leaderboard", "booking"),
 
+    # Coaching Service
+    ("/coaching/", "coaching"),
+
     # Social Service
     ("/feed", "social"),
     ("/player-card/", "social"),
     ("/clubs", "social"),
     ("/tournaments", "social"),
+    ("/chat/", "social"),
+    ("/users/search", "social"),
+    ("/live/", "social"),
+    ("/communities/", "social"),
 
     # Notification Service
     ("/notifications", "notification"),
@@ -75,6 +112,11 @@ ROUTE_MAP = [
     ("/highlights", "analytics"),
     ("/compliance/", "analytics"),
     ("/academies", "analytics"),
+    ("/training/", "analytics"),
+    ("/performance/", "analytics"),
+    ("/recommendations/", "analytics"),
+    ("/compatibility/", "analytics"),
+    ("/engagement/", "analytics"),
 
     # POS Service
     ("/pos/", "pos"),
@@ -151,7 +193,7 @@ async def proxy(path: str, request: Request):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# WEBSOCKET PROXY (for venue & IoT live updates)
+# WEBSOCKET PROXY (for venue, IoT, chat, and live scoring)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @app.websocket("/venues/{venue_id}/ws")
@@ -164,6 +206,17 @@ async def iot_ws_proxy(websocket: WebSocket):
     await _ws_proxy(websocket, f"{SERVICES['iot']}/iot/ws")
 
 
+@app.websocket("/chat/ws")
+async def chat_ws_proxy(websocket: WebSocket):
+    token = websocket.query_params.get("token", "")
+    await _ws_proxy(websocket, f"{SERVICES['social']}/chat/ws?token={token}")
+
+
+@app.websocket("/live/ws/{live_match_id}")
+async def live_ws_proxy(websocket: WebSocket, live_match_id: str):
+    await _ws_proxy(websocket, f"{SERVICES['social']}/live/ws/{live_match_id}")
+
+
 async def _ws_proxy(client_ws: WebSocket, target_url: str):
     """Proxy WebSocket connection to a backend service."""
     await client_ws.accept()
@@ -171,7 +224,6 @@ async def _ws_proxy(client_ws: WebSocket, target_url: str):
 
     try:
         async with httpx.AsyncClient() as client:
-            # Use a simple forwarding approach
             import asyncio
             import websockets
 
@@ -207,7 +259,7 @@ async def _ws_proxy(client_ws: WebSocket, target_url: str):
 @app.get("/")
 async def root():
     return {
-        "name": "Horizon API Gateway",
+        "name": "Lobbi API Gateway",
         "version": "2.0.0",
         "services": list(SERVICES.keys()),
         "docs": "/docs"

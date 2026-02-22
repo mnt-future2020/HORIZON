@@ -80,6 +80,7 @@ export default function SocialFeedPage() {
   const [engScore, setEngScore] = useState(null);
 
   const storiesRef = useRef(null);
+  const reactionPickerRef = useRef(null);
 
   const loadFeed = useCallback(async (p = 1, tab = feedTab) => {
     try {
@@ -143,6 +144,18 @@ export default function SocialFeedPage() {
     setLoading(true);
     loadFeed(1, tab);
   };
+
+  // Close reaction picker on outside click
+  useEffect(() => {
+    if (!reactionPickerPost) return;
+    const handleClickOutside = (e) => {
+      if (reactionPickerRef.current && !reactionPickerRef.current.contains(e.target)) {
+        setReactionPickerPost(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [reactionPickerPost]);
 
   // ─── Post Actions ──────────────────────────────────────────────────────────
 
@@ -754,7 +767,7 @@ export default function SocialFeedPage() {
                   </button>
 
                   {/* Reaction Picker */}
-                  <div className="relative">
+                  <div className="relative" ref={reactionPickerRef}>
                     <button onClick={() => setReactionPickerPost(reactionPickerPost === post.id ? null : post.id)}
                       className={`flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors ${post.my_reaction ? "" : "text-muted-foreground"}`}>
                       <span className="text-base">{post.my_reaction ? REACTION_EMOJI[post.my_reaction] : "+"}</span>

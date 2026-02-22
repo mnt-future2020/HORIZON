@@ -24,7 +24,7 @@ from models import NotifySubscribeInput
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("notification-service")
 
-app = FastAPI(title="Horizon Notification Service", version="2.0.0")
+app = FastAPI(title="Lobbi Notification Service", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
@@ -33,7 +33,7 @@ SMTP_HOST = os.environ.get("SMTP_HOST", "")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
-SMTP_FROM = os.environ.get("SMTP_FROM", "noreply@horizon.sports")
+SMTP_FROM = os.environ.get("SMTP_FROM", "noreply@lobbi.in")
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY", "")
 TWILIO_SID = os.environ.get("TWILIO_ACCOUNT_SID", "")
 TWILIO_AUTH = os.environ.get("TWILIO_AUTH_TOKEN", "")
@@ -93,7 +93,7 @@ async def _send_email_sendgrid(to_email: str, subject: str, body_html: str, body
                 headers={"Authorization": f"Bearer {SENDGRID_API_KEY}", "Content-Type": "application/json"},
                 json={
                     "personalizations": [{"to": [{"email": to_email}]}],
-                    "from": {"email": SMTP_FROM, "name": "Horizon Sports"},
+                    "from": {"email": SMTP_FROM, "name": "Lobbi"},
                     "subject": subject,
                     "content": [
                         {"type": "text/plain", "value": body_text or subject},
@@ -172,12 +172,12 @@ def _build_email_html(title: str, message: str) -> str:
     <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#fafafa;padding:40px 20px;">
     <div style="max-width:600px;margin:0 auto;background:#141414;border-radius:16px;padding:40px;border:1px solid #262626;">
     <div style="text-align:center;margin-bottom:32px;">
-    <h1 style="font-size:28px;font-weight:900;letter-spacing:-0.03em;margin:0;background:linear-gradient(135deg,#22c55e,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">HORIZON</h1>
+    <h1 style="font-size:28px;font-weight:900;letter-spacing:-0.03em;margin:0;background:linear-gradient(135deg,#22c55e,#16a34a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">LOBBI</h1>
     <p style="color:#737373;font-size:12px;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;">Sports Platform</p></div>
     <h2 style="font-size:22px;font-weight:800;margin-bottom:16px;">{title}</h2>
     <p style="color:#a3a3a3;font-size:16px;line-height:1.6;">{message}</p>
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid #262626;text-align:center;">
-    <p style="color:#525252;font-size:12px;">Automated notification from Horizon Sports.</p></div></div></body></html>"""
+    <p style="color:#525252;font-size:12px;">Automated notification from Lobbi.</p></div></div></body></html>"""
 
 
 async def send_notification(user_id: str, title: str, message: str,
@@ -205,12 +205,12 @@ async def send_notification(user_id: str, title: str, message: str,
 
     if "email" in channels and prefs.get("email", True) and is_email_configured():
         html = _build_email_html(title, message)
-        results["email"] = await send_email(user.get("email", ""), f"Horizon: {title}", html, message)
+        results["email"] = await send_email(user.get("email", ""), f"Lobbi: {title}", html, message)
     else:
         results["email"] = False
 
     if "sms" in channels and prefs.get("sms", True) and is_sms_configured():
-        sms_text = f"Horizon: {title}\n{message}"[:160]
+        sms_text = f"Lobbi: {title}\n{message}"[:160]
         results["sms"] = await send_sms(user.get("phone", ""), sms_text)
     else:
         results["sms"] = False

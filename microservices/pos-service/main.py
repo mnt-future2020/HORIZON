@@ -19,7 +19,7 @@ from auth import get_current_user
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("pos-service")
 
-app = FastAPI(title="Horizon POS Service", version="2.0.0")
+app = FastAPI(title="Lobbi POS Service", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 

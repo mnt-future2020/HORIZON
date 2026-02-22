@@ -13,7 +13,9 @@ import math
 import logging
 import json
 import os
+import re as _re
 from pathlib import Path
+from encryption import encrypt_message, decrypt_message
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
@@ -428,6 +430,9 @@ async def get_conversations(user=Depends(get_current_user)):
                 {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
             )
             c["other_user"] = other or {"id": other_id, "name": "Unknown", "avatar": ""}
+        # Decrypt last_message preview
+        if c.get("last_message"):
+            c["last_message"] = decrypt_message(c["last_message"], c["id"])
         # Unread count
         c["unread_count"] = await db.direct_messages.count_documents({
             "conversation_id": c["id"],
@@ -491,6 +496,11 @@ async def get_dm_messages(
     ).limit(limit).to_list(limit)
     messages.reverse()
 
+    # Decrypt message content
+    for m in messages:
+        if m.get("content"):
+            m["content"] = decrypt_message(m["content"], conversation_id)
+
     # Mark as read
     result = await db.direct_messages.update_many(
         {"conversation_id": conversation_id, "sender_id": {"$ne": user["id"]}, "read": False},
@@ -514,13 +524,16 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
     if not convo or user["id"] not in convo.get("participants", []):
         raise HTTPException(403, "Not your conversation")
 
+    plaintext_content = inp.content or ""
+    encrypted_content = encrypt_message(plaintext_content, conversation_id) if plaintext_content else ""
+
     msg = {
         "id": str(uuid.uuid4()),
         "conversation_id": conversation_id,
         "sender_id": user["id"],
         "sender_name": user.get("name", "Unknown"),
         "sender_avatar": user.get("avatar", ""),
-        "content": inp.content or "",
+        "content": encrypted_content,
         "media_url": inp.media_url or "",
         "media_type": inp.media_type or "",
         "file_name": inp.file_name or "",
@@ -532,26 +545,28 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
     await db.direct_messages.insert_one(msg)
     msg.pop("_id", None)
 
-    preview = inp.content[:100] if inp.content else (
+    preview = plaintext_content[:100] if plaintext_content else (
         "🎤 Voice message" if inp.media_type == "voice" else
         f"📎 {inp.file_name or 'File'}" if inp.media_type else ""
     )
+    encrypted_preview = encrypt_message(preview, conversation_id) if preview else ""
     await db.conversations.update_one({"id": conversation_id}, {"$set": {
-        "last_message": preview,
+        "last_message": encrypted_preview,
         "last_message_at": msg["created_at"],
         "last_message_by": user.get("name", "")
     }})
 
-    # Broadcast via WebSocket
+    # Return plaintext to sender + broadcast plaintext via WebSocket
+    msg_response = {**msg, "content": plaintext_content}
     other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
     if other_id:
         await chat_manager.send_to_user(other_id, {
             "type": "new_message",
             "conversation_id": conversation_id,
-            "message": msg,
+            "message": msg_response,
         })
 
-    return msg
+    return msg_response
 
 
 @router.get("/chat/unread-total")
@@ -755,16 +770,24 @@ async def search_messages(
     if not convo or user["id"] not in convo.get("participants", []):
         raise HTTPException(403, "Not your conversation")
 
-    query = {
-        "conversation_id": conversation_id,
-        "content": {"$regex": q, "$options": "i"},
-        "deleted": {"$ne": True},
-    }
+    # Fetch all non-deleted messages, decrypt, and search server-side
+    # (encrypted content can't be searched via MongoDB regex)
+    all_msgs = await db.direct_messages.find(
+        {"conversation_id": conversation_id, "deleted": {"$ne": True}},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(5000)
+
+    pattern = _re.compile(_re.escape(q), _re.IGNORECASE)
+    matched = []
+    for m in all_msgs:
+        decrypted = decrypt_message(m.get("content", ""), conversation_id)
+        if pattern.search(decrypted):
+            m["content"] = decrypted
+            matched.append(m)
+
+    total = len(matched)
     skip_n = (page - 1) * limit
-    total = await db.direct_messages.count_documents(query)
-    results = await db.direct_messages.find(query, {"_id": 0}).sort(
-        "created_at", -1
-    ).skip(skip_n).limit(limit).to_list(limit)
+    results = matched[skip_n:skip_n + limit]
 
     return {"results": results, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1)), "query": q}
 

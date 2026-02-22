@@ -11,7 +11,7 @@ from auth import get_current_user, get_optional_user, get_platform_settings
 from models import VenueCreate, SlotLockInput, PricingRuleCreate
 import uuid, random, math, re, json, logging, pickle, os as _os
 
-app = FastAPI(title="Horizon Venue Service")
+app = FastAPI(title="Lobbi Venue Service")
 logger = logging.getLogger("venue-service")
 logging.basicConfig(level=logging.INFO)
 

@@ -1,19 +1,99 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 
-// Use backend URL from environment or fallback to localhost for dev
+// Use backend URL from environment - never fallback to HTTP in production
 const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL
   ? `${process.env.EXPO_PUBLIC_BACKEND_URL}/api`
   : 'http://localhost:8000/api';
 
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create({
+  baseURL: BASE_URL,
+  timeout: 30000, // 30 second timeout
+});
 
-// Attach token to every request
+// Secure token helpers — use SecureStore (encrypted) with AsyncStorage fallback
+const TOKEN_KEY = 'horizon_token';
+const REFRESH_KEY = 'horizon_refresh_token';
+
+export const secureStorage = {
+  async getToken() {
+    try {
+      return await SecureStore.getItemAsync(TOKEN_KEY);
+    } catch {
+      // Fallback for devices where SecureStore isn't available
+      return await AsyncStorage.getItem(TOKEN_KEY);
+    }
+  },
+  async setToken(token) {
+    try {
+      await SecureStore.setItemAsync(TOKEN_KEY, token);
+    } catch {
+      await AsyncStorage.setItem(TOKEN_KEY, token);
+    }
+  },
+  async getRefreshToken() {
+    try {
+      return await SecureStore.getItemAsync(REFRESH_KEY);
+    } catch {
+      return await AsyncStorage.getItem(REFRESH_KEY);
+    }
+  },
+  async setRefreshToken(token) {
+    try {
+      await SecureStore.setItemAsync(REFRESH_KEY, token);
+    } catch {
+      await AsyncStorage.setItem(REFRESH_KEY, token);
+    }
+  },
+  async clearTokens() {
+    try {
+      await SecureStore.deleteItemAsync(TOKEN_KEY);
+      await SecureStore.deleteItemAsync(REFRESH_KEY);
+    } catch {
+      // ignore
+    }
+    await AsyncStorage.removeItem(TOKEN_KEY);
+    await AsyncStorage.removeItem(REFRESH_KEY);
+  },
+};
+
+// Public endpoints that don't need auth tokens
+const PUBLIC_PATHS = ['/auth/login', '/auth/register', '/auth/refresh', '/contact'];
+
+// Attach token to authenticated requests only
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('horizon_token');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const isPublic = PUBLIC_PATHS.some(path => config.url?.includes(path));
+  if (!isPublic) {
+    const token = await secureStorage.getToken();
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
+
+// Auto-refresh token on 401
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/')) {
+      originalRequest._retry = true;
+      try {
+        const refreshToken = await secureStorage.getRefreshToken();
+        if (refreshToken) {
+          const res = await axios.post(`${BASE_URL}/auth/refresh`, { refresh_token: refreshToken });
+          await secureStorage.setToken(res.data.token);
+          await secureStorage.setRefreshToken(res.data.refresh_token);
+          originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
+          return api(originalRequest);
+        }
+      } catch {
+        await secureStorage.clearTokens();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),

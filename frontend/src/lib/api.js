@@ -2,19 +2,52 @@ import axios from "axios";
 
 const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
-const api = axios.create({ baseURL: API_URL });
+const api = axios.create({ baseURL: API_URL, timeout: 30000 });
+
+// Public paths that don't need auth
+const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/contact"];
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("horizon_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  const isPublic = PUBLIC_PATHS.some((p) => config.url?.includes(p));
+  if (!isPublic) {
+    const token = localStorage.getItem("horizon_token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
   return config;
 });
+
+// Auto-refresh token on 401
+api.interceptors.response.use(
+  (res) => res,
+  async (error) => {
+    const original = error.config;
+    if (error.response?.status === 401 && !original._retry && !original.url?.includes("/auth/")) {
+      original._retry = true;
+      try {
+        const refreshToken = localStorage.getItem("horizon_refresh_token");
+        if (refreshToken) {
+          const res = await axios.post(`${API_URL}/auth/refresh`, { refresh_token: refreshToken });
+          localStorage.setItem("horizon_token", res.data.token);
+          localStorage.setItem("horizon_refresh_token", res.data.refresh_token);
+          original.headers.Authorization = `Bearer ${res.data.token}`;
+          return api(original);
+        }
+      } catch {
+        localStorage.removeItem("horizon_token");
+        localStorage.removeItem("horizon_refresh_token");
+        window.location.href = "/auth";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export const authAPI = {
   register: (data) => api.post("/auth/register", data),
   login: (data) => api.post("/auth/login", data),
   getMe: () => api.get("/auth/me"),
   updateProfile: (data) => api.put("/auth/profile", data),
+  refreshToken: (token) => api.post("/auth/refresh", { refresh_token: token }),
 };
 
 export const venueAPI = {

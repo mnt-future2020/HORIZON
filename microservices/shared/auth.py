@@ -1,12 +1,14 @@
-"""Shared auth module for all microservices."""
+"""Shared auth module for all microservices — with refresh tokens & password validation."""
 from fastapi import Request, HTTPException
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timezone, timedelta
 import os
+import re
 import razorpay
 
-JWT_SECRET = os.environ.get('JWT_SECRET', 'horizon-secret-key-change-in-production')
+JWT_SECRET = os.environ.get('JWT_SECRET', 'lobbi-secret-key-change-in-production')
+REFRESH_SECRET = os.environ.get('REFRESH_SECRET', JWT_SECRET + '-refresh')
 JWT_ALGORITHM = "HS256"
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -19,11 +21,45 @@ def verify_pw(plain: str, hashed: str) -> bool:
     return pwd_ctx.verify(plain, hashed)
 
 
+def validate_password_strength(password: str):
+    """Enforce minimum password strength: 8+ chars, uppercase, lowercase, number."""
+    if len(password) < 8:
+        raise HTTPException(400, "Password must be at least 8 characters")
+    if not re.search(r'[A-Z]', password):
+        raise HTTPException(400, "Password must contain at least one uppercase letter")
+    if not re.search(r'[a-z]', password):
+        raise HTTPException(400, "Password must contain at least one lowercase letter")
+    if not re.search(r'\d', password):
+        raise HTTPException(400, "Password must contain at least one number")
+
+
 def create_token(uid: str, role: str) -> str:
+    """Create a short-lived access token (2 hours)."""
     return jwt.encode(
-        {"sub": uid, "role": role, "exp": datetime.now(timezone.utc) + timedelta(hours=72)},
+        {"sub": uid, "role": role, "type": "access",
+         "exp": datetime.now(timezone.utc) + timedelta(hours=2)},
         JWT_SECRET, algorithm=JWT_ALGORITHM
     )
+
+
+def create_refresh_token(uid: str, role: str) -> str:
+    """Create a long-lived refresh token (7 days)."""
+    return jwt.encode(
+        {"sub": uid, "role": role, "type": "refresh",
+         "exp": datetime.now(timezone.utc) + timedelta(days=7)},
+        REFRESH_SECRET, algorithm=JWT_ALGORITHM
+    )
+
+
+def verify_refresh_token(token: str) -> dict:
+    """Verify and decode a refresh token."""
+    try:
+        payload = jwt.decode(token, REFRESH_SECRET, algorithms=[JWT_ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(401, "Invalid token type")
+        return payload
+    except JWTError:
+        raise HTTPException(401, "Invalid or expired refresh token")
 
 
 def decode_token(token: str) -> dict:
@@ -37,9 +73,13 @@ async def get_current_user(request: Request):
         raise HTTPException(401, "Not authenticated")
     try:
         payload = decode_token(auth[7:])
+        if payload.get("type") == "refresh":
+            raise HTTPException(401, "Cannot use refresh token for API access")
         user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
         if not user:
             raise HTTPException(401, "User not found")
+        if user.get("account_status") in ("suspended", "deleted"):
+            raise HTTPException(403, "Account is suspended or deactivated")
         return user
     except JWTError:
         raise HTTPException(401, "Invalid token")
@@ -52,6 +92,8 @@ async def get_optional_user(request: Request):
         return None
     try:
         payload = decode_token(auth[7:])
+        if payload.get("type") == "refresh":
+            return None
         return await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
     except Exception:
         return None

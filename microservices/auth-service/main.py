@@ -1,4 +1,4 @@
-"""Auth Service - Handles authentication, admin, subscriptions, file uploads."""
+"""Auth Service - Handles authentication, admin, subscriptions, file uploads, organizations."""
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "shared"))
 
@@ -7,16 +7,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from database import db, init_redis, close_connections
-from auth import hash_pw, verify_pw, create_token, get_current_user, get_platform_settings, require_admin, get_razorpay_client
-from models import RegisterInput, LoginInput
+from auth import (hash_pw, verify_pw, create_token, get_current_user,
+                  get_platform_settings, require_admin, get_razorpay_client,
+                  validate_password_strength, create_refresh_token, verify_refresh_token)
+from models import RegisterInput, LoginInput, OrganizationCreate
 import uuid
 import logging
 import boto3
 from botocore.exceptions import ClientError
 from botocore.config import Config
 
-app = FastAPI(title="Horizon Auth Service")
-logger = logging.getLogger("auth-service")
+app = FastAPI(title="Lobbi Auth Service")
+logger = logging.getLogger("lobbi")
 logging.basicConfig(level=logging.INFO)
 
 app.add_middleware(CORSMiddleware, allow_credentials=True,
@@ -116,6 +118,7 @@ async def register(input: RegisterInput):
     existing = await db.users.find_one({"email": input.email})
     if existing:
         raise HTTPException(400, "Email already registered")
+    validate_password_strength(input.password)
     account_status = "pending" if input.role == "venue_owner" else "active"
     user = {
         "id": str(uuid.uuid4()), "name": input.name, "email": input.email,
@@ -130,7 +133,9 @@ async def register(input: RegisterInput):
     await db.users.insert_one(user)
     user.pop("_id", None)
     token = create_token(user["id"], user["role"])
-    return {"token": token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
+    refresh_token = create_refresh_token(user["id"], user["role"])
+    logger.info(f"New user registered: {user['email']} (role={user['role']})")
+    return {"token": token, "refresh_token": refresh_token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
 
 @app.post("/auth/login")
 async def login(input: LoginInput):
@@ -138,8 +143,27 @@ async def login(input: LoginInput):
     if not user or not verify_pw(input.password, user["password_hash"]):
         raise HTTPException(401, "Invalid credentials")
     token = create_token(user["id"], user["role"])
+    refresh_token = create_refresh_token(user["id"], user["role"])
     user.pop("_id", None)
-    return {"token": token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
+    logger.info(f"User logged in: {user['email']}")
+    return {"token": token, "refresh_token": refresh_token, "user": {k: v for k, v in user.items() if k != "password_hash"}}
+
+@app.post("/auth/refresh")
+async def refresh_token(request: Request):
+    data = await request.json()
+    refresh_tok = data.get("refresh_token", "")
+    if not refresh_tok:
+        raise HTTPException(400, "refresh_token required")
+    payload = verify_refresh_token(refresh_tok)
+    user = await db.users.find_one({"id": payload["sub"]}, {"_id": 0})
+    if not user:
+        raise HTTPException(401, "User not found")
+    if user.get("account_status") in ("suspended", "deleted"):
+        raise HTTPException(403, "Account is suspended or deactivated")
+    new_access = create_token(user["id"], user["role"])
+    new_refresh = create_refresh_token(user["id"], user["role"])
+    logger.info(f"Token refreshed for user: {user.get('email', user['id'])}")
+    return {"token": new_access, "refresh_token": new_refresh}
 
 @app.get("/auth/me")
 async def get_me(user=Depends(get_current_user)):
@@ -354,6 +378,257 @@ async def sub_process_dunning(user=Depends(get_current_user)):
     if user["role"] != "super_admin": raise HTTPException(403, "Admin only")
     return await process_due_retries()
 
+# ─── Organization Helpers ────────────────────────────────────────────────────
+
+async def _get_org_or_404(org_id: str):
+    org = await db.organizations.find_one({"id": org_id}, {"_id": 0})
+    if not org:
+        raise HTTPException(404, "Organization not found")
+    return org
+
+
+def _is_org_member(org, user_id: str) -> bool:
+    if org["owner_id"] == user_id:
+        return True
+    return any(s["user_id"] == user_id for s in org.get("staff", []))
+
+
+def _require_org_access(org, user):
+    if not _is_org_member(org, user["id"]):
+        raise HTTPException(403, "You don't have access to this organization")
+
+
+# ─── Organization CRUD ───────────────────────────────────────────────────────
+
+@app.post("/organizations")
+async def create_organization(input: OrganizationCreate, user=Depends(get_current_user)):
+    if user["role"] not in ("coach", "super_admin"):
+        raise HTTPException(403, "Only coaches and admins can create organizations")
+
+    if input.org_type not in ("individual_coach", "academy", "school", "college"):
+        raise HTTPException(400, "org_type must be individual_coach, academy, school, or college")
+
+    org = {
+        "id": str(uuid.uuid4()),
+        "name": input.name,
+        "org_type": input.org_type,
+        "owner_id": user["id"],
+        "owner_name": user.get("name", ""),
+        "sports": input.sports,
+        "description": input.description,
+        "location": input.location,
+        "city": input.city,
+        "logo_url": input.logo_url,
+        "contact_email": input.contact_email or user.get("email", ""),
+        "contact_phone": input.contact_phone or user.get("phone", ""),
+        "staff": [{
+            "user_id": user["id"],
+            "name": user.get("name", ""),
+            "role": "head_coach",
+            "joined_at": datetime.now(timezone.utc).isoformat()
+        }],
+        "players": [],
+        "player_count": 0,
+        "staff_count": 1,
+        "stats": {"total_records": 0, "total_training_sessions": 0, "tournaments_organized": 0},
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.organizations.insert_one(org)
+    org.pop("_id", None)
+    logger.info(f"Organization created: {org['name']} by {user.get('email', user['id'])}")
+    return org
+
+
+@app.get("/organizations")
+async def list_organizations(
+    org_type: Optional[str] = None,
+    sport: Optional[str] = None,
+    city: Optional[str] = None,
+    search: Optional[str] = None
+):
+    query = {"status": "active"}
+    if org_type:
+        query["org_type"] = org_type
+    if sport:
+        query["sports"] = sport
+    if city:
+        query["city"] = {"$regex": city, "$options": "i"}
+    if search:
+        query["name"] = {"$regex": search, "$options": "i"}
+    orgs = await db.organizations.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return orgs
+
+
+@app.get("/organizations/my")
+async def my_organizations(user=Depends(get_current_user)):
+    orgs = await db.organizations.find(
+        {"$or": [
+            {"owner_id": user["id"]},
+            {"staff.user_id": user["id"]}
+        ], "status": "active"},
+        {"_id": 0}
+    ).to_list(50)
+    return orgs
+
+
+@app.get("/organizations/{org_id}")
+async def get_organization(org_id: str):
+    return await _get_org_or_404(org_id)
+
+
+@app.put("/organizations/{org_id}")
+async def update_organization(org_id: str, request: Request, user=Depends(get_current_user)):
+    org = await _get_org_or_404(org_id)
+    _require_org_access(org, user)
+
+    data = await request.json()
+    allowed = ["name", "description", "sports", "location", "city", "logo_url",
+               "contact_email", "contact_phone"]
+    updates = {k: v for k, v in data.items() if k in allowed}
+    if updates:
+        await db.organizations.update_one({"id": org_id}, {"$set": updates})
+    updated = await db.organizations.find_one({"id": org_id}, {"_id": 0})
+    return updated
+
+
+# ─── Organization Staff Management ──────────────────────────────────────────
+
+@app.post("/organizations/{org_id}/staff")
+async def add_staff(org_id: str, request: Request, user=Depends(get_current_user)):
+    org = await _get_org_or_404(org_id)
+    if org["owner_id"] != user["id"]:
+        raise HTTPException(403, "Only the organization owner can manage staff")
+
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(400, "Staff email is required")
+
+    staff_user = await db.users.find_one({"email": email}, {"_id": 0, "id": 1, "name": 1, "role": 1})
+    if not staff_user:
+        raise HTTPException(404, "No user found with that email")
+
+    if any(s["user_id"] == staff_user["id"] for s in org.get("staff", [])):
+        raise HTTPException(409, "User is already staff")
+
+    staff_entry = {
+        "user_id": staff_user["id"],
+        "name": staff_user["name"],
+        "role": data.get("role", "assistant"),
+        "joined_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.organizations.update_one(
+        {"id": org_id},
+        {"$push": {"staff": staff_entry}, "$inc": {"staff_count": 1}}
+    )
+    logger.info(f"Staff added to org {org_id}: {staff_user['id']}")
+    return staff_entry
+
+
+@app.delete("/organizations/{org_id}/staff/{staff_user_id}")
+async def remove_staff(org_id: str, staff_user_id: str, user=Depends(get_current_user)):
+    org = await _get_org_or_404(org_id)
+    if org["owner_id"] != user["id"]:
+        raise HTTPException(403, "Only the organization owner can manage staff")
+    if staff_user_id == org["owner_id"]:
+        raise HTTPException(400, "Cannot remove the owner from staff")
+
+    staff = [s for s in org.get("staff", []) if s["user_id"] != staff_user_id]
+    await db.organizations.update_one(
+        {"id": org_id},
+        {"$set": {"staff": staff, "staff_count": len(staff)}}
+    )
+    logger.info(f"Staff removed from org {org_id}: {staff_user_id}")
+    return {"message": "Staff member removed"}
+
+
+# ─── Organization Player Management ─────────────────────────────────────────
+
+@app.post("/organizations/{org_id}/players")
+async def enroll_player(org_id: str, request: Request, user=Depends(get_current_user)):
+    org = await _get_org_or_404(org_id)
+    _require_org_access(org, user)
+
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    phone = data.get("phone", "").strip()
+    if not email and not phone:
+        raise HTTPException(400, "Player email or phone is required")
+
+    query = {}
+    if email:
+        query["email"] = email
+    elif phone:
+        query["phone"] = phone
+    player = await db.users.find_one(query, {"_id": 0, "id": 1, "name": 1})
+    if not player:
+        raise HTTPException(404, "No player found with that email/phone")
+
+    if any(p["user_id"] == player["id"] for p in org.get("players", [])):
+        raise HTTPException(409, "Player is already enrolled")
+
+    entry = {
+        "user_id": player["id"],
+        "name": player["name"],
+        "enrolled_at": datetime.now(timezone.utc).isoformat(),
+        "status": "active"
+    }
+    await db.organizations.update_one(
+        {"id": org_id},
+        {"$push": {"players": entry}, "$inc": {"player_count": 1}}
+    )
+    logger.info(f"Player enrolled in org {org_id}: {player['id']}")
+    return entry
+
+
+@app.delete("/organizations/{org_id}/players/{player_user_id}")
+async def remove_player(org_id: str, player_user_id: str, user=Depends(get_current_user)):
+    org = await _get_org_or_404(org_id)
+    _require_org_access(org, user)
+
+    players = [p for p in org.get("players", []) if p["user_id"] != player_user_id]
+    await db.organizations.update_one(
+        {"id": org_id},
+        {"$set": {"players": players, "player_count": len(players)}}
+    )
+    logger.info(f"Player removed from org {org_id}: {player_user_id}")
+    return {"message": "Player removed"}
+
+
+# ─── Organization Dashboard / Analytics ──────────────────────────────────────
+
+@app.get("/organizations/{org_id}/dashboard")
+async def org_dashboard(org_id: str, user=Depends(get_current_user)):
+    org = await _get_org_or_404(org_id)
+    _require_org_access(org, user)
+
+    player_ids = [p["user_id"] for p in org.get("players", [])]
+
+    total_records = await db.performance_records.count_documents({"organization_id": org_id})
+    total_training = await db.training_logs.count_documents({"organization_id": org_id})
+    total_tournaments = await db.tournaments.count_documents({"organizer_id": {"$in": [s["user_id"] for s in org.get("staff", [])]}})
+
+    recent_records = await db.performance_records.find(
+        {"organization_id": org_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(10)
+
+    recent_training = await db.training_logs.find(
+        {"organization_id": org_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(5)
+
+    return {
+        "organization": org,
+        "total_players": len(player_ids),
+        "total_staff": org.get("staff_count", 1),
+        "total_records": total_records,
+        "total_training_sessions": total_training,
+        "total_tournaments": total_tournaments,
+        "recent_records": recent_records,
+        "recent_training": recent_training
+    }
+
+# ─── Health ──────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "auth-service"}

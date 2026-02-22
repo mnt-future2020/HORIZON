@@ -23,7 +23,7 @@ from auth import get_current_user
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("iot-service")
 
-app = FastAPI(title="Horizon IoT Service", version="2.0.0")
+app = FastAPI(title="Lobbi IoT Service", version="2.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
@@ -36,8 +36,8 @@ MQTT_BROKER = os.environ.get("MQTT_BROKER", "broker.emqx.io")
 MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 MQTT_USERNAME = os.environ.get("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.environ.get("MQTT_PASSWORD", "")
-MQTT_CLIENT_ID = os.environ.get("MQTT_CLIENT_ID", "horizon-iot-service")
-MQTT_BASE_TOPIC = os.environ.get("MQTT_BASE_TOPIC", "horizon")
+MQTT_CLIENT_ID = os.environ.get("MQTT_CLIENT_ID", "lobbi-iot-service")
+MQTT_BASE_TOPIC = os.environ.get("MQTT_BASE_TOPIC", "lobbi")
 
 _mqtt_client = None
 _mqtt_connected = False
@@ -113,7 +113,7 @@ async def send_device_command(device: dict, action: str, brightness: int = 100) 
         "action": action, "brightness": brightness,
         "device_id": device["id"],
         "timestamp": datetime.now(timezone.utc).isoformat(),
-        "source": "horizon-iot-service",
+        "source": "lobbi-iot-service",
     }
     success = await mqtt_publish(cmd_topic, payload)
     if not success and not _mqtt_connected:
@@ -278,7 +278,7 @@ async def register_device(inp: DeviceCreate, user=Depends(get_current_user)):
         "id": device_id, "venue_id": inp.venue_id, "name": inp.name,
         "zone_id": inp.zone_id, "device_type": inp.device_type,
         "protocol": inp.protocol,
-        "mqtt_topic": inp.mqtt_topic or f"horizon/lights/{device_id}",
+        "mqtt_topic": inp.mqtt_topic or f"lobbi/lights/{device_id}",
         "ip_address": inp.ip_address, "power_watts": inp.power_watts,
         "turf_number": inp.turf_number, "status": "off", "brightness": 0,
         "is_online": True, "auto_schedule": True,

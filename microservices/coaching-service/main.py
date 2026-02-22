@@ -1,23 +1,43 @@
-"""
-Coach Session Booking System
-1-on-1 coaching sessions with availability management, booking, and payment.
-"""
-from fastapi import APIRouter, HTTPException, Depends, Request, Query
+"""Coaching Service - Coach profiles, availability, sessions, packages, subscriptions, QR check-in."""
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "shared"))
+
+from fastapi import FastAPI, HTTPException, Depends, Request, Query
+from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 from datetime import datetime, timezone, timedelta
-from database import db
+from database import db, init_redis, close_connections
 from auth import get_current_user, get_razorpay_client, get_platform_settings
+from models import CoachingSessionBook, CoachingPackageCreate
 import uuid
 import hmac
 import hashlib
-import os
+import logging
 
-router = APIRouter(prefix="/coaching", tags=["coaching"])
+app = FastAPI(title="Lobbi Coaching Service")
+logger = logging.getLogger("lobbi")
+logging.basicConfig(level=logging.INFO)
+
+app.add_middleware(CORSMiddleware, allow_credentials=True,
+    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
+    allow_methods=["*"], allow_headers=["*"])
 
 
-# ─── Coach Profile & Availability ─────────────────────────────────────────────
+@app.on_event("startup")
+async def startup():
+    await init_redis()
 
-@router.get("/coaches")
+
+@app.on_event("shutdown")
+async def shutdown():
+    await close_connections()
+
+
+# =============================================================================
+# Coach Profile & Availability
+# =============================================================================
+
+@app.get("/coaching/coaches")
 async def list_coaches(
     sport: Optional[str] = None,
     city: Optional[str] = None,
@@ -56,7 +76,7 @@ async def list_coaches(
     return coaches
 
 
-@router.get("/coaches/{coach_id}")
+@app.get("/coaching/coaches/{coach_id}")
 async def get_coach_profile(coach_id: str, user=Depends(get_current_user)):
     """Get detailed coach profile with availability."""
     coach = await db.users.find_one(
@@ -90,7 +110,7 @@ async def get_coach_profile(coach_id: str, user=Depends(get_current_user)):
     return coach
 
 
-@router.put("/profile")
+@app.put("/coaching/profile")
 async def update_coach_profile(request: Request, user=Depends(get_current_user)):
     """Update coaching profile (coach only)."""
     if user["role"] != "coach":
@@ -113,9 +133,11 @@ async def update_coach_profile(request: Request, user=Depends(get_current_user))
     return updated
 
 
-# ─── Availability Management ──────────────────────────────────────────────────
+# =============================================================================
+# Availability Management
+# =============================================================================
 
-@router.get("/availability")
+@app.get("/coaching/availability")
 async def get_my_availability(user=Depends(get_current_user)):
     """Get coach's availability slots."""
     if user["role"] != "coach":
@@ -126,7 +148,7 @@ async def get_my_availability(user=Depends(get_current_user)):
     return slots
 
 
-@router.post("/availability")
+@app.post("/coaching/availability")
 async def set_availability(request: Request, user=Depends(get_current_user)):
     """Add an availability slot (coach only)."""
     if user["role"] != "coach":
@@ -147,7 +169,7 @@ async def set_availability(request: Request, user=Depends(get_current_user)):
     return slot
 
 
-@router.delete("/availability/{slot_id}")
+@app.delete("/coaching/availability/{slot_id}")
 async def remove_availability(slot_id: str, user=Depends(get_current_user)):
     """Remove an availability slot."""
     if user["role"] != "coach":
@@ -160,9 +182,11 @@ async def remove_availability(slot_id: str, user=Depends(get_current_user)):
     return {"message": "Availability slot removed"}
 
 
-# ─── Available Slots for a Date ───────────────────────────────────────────────
+# =============================================================================
+# Available Slots for a Date
+# =============================================================================
 
-@router.get("/coaches/{coach_id}/slots")
+@app.get("/coaching/coaches/{coach_id}/slots")
 async def get_coach_slots(
     coach_id: str,
     date: str,
@@ -207,9 +231,11 @@ async def get_coach_slots(
     return {"date": date, "day_of_week": day_of_week, "slots": slots}
 
 
-# ─── Session Booking ──────────────────────────────────────────────────────────
+# =============================================================================
+# Session Booking
+# =============================================================================
 
-@router.post("/sessions/book")
+@app.post("/coaching/sessions/book")
 async def book_session(request: Request, user=Depends(get_current_user)):
     """Book a coaching session (player books with coach)."""
     data = await request.json()
@@ -275,7 +301,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
     })
 
     if active_sub and active_sub.get("sessions_used", 0) < active_sub["sessions_per_month"]:
-        # Book from package — no payment needed
+        # Book from package -- no payment needed
         session["status"] = "confirmed"
         session["payment_gateway"] = "package"
         session["subscription_id"] = active_sub["id"]
@@ -293,7 +319,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
         session["booked_from_package"] = True
         session["sessions_remaining"] = active_sub["sessions_per_month"] - active_sub.get("sessions_used", 0) - 1
     else:
-        # Per-session payment flow — same pattern as venue bookings
+        # Per-session payment flow -- same pattern as venue bookings
         rzp_client = await get_razorpay_client()
         if rzp_client:
             session["status"] = "payment_pending"
@@ -335,7 +361,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
     return session
 
 
-@router.get("/sessions")
+@app.get("/coaching/sessions")
 async def list_sessions(
     status: Optional[str] = None,
     upcoming: bool = False,
@@ -361,7 +387,7 @@ async def list_sessions(
     return sessions
 
 
-@router.post("/sessions/{session_id}/cancel")
+@app.post("/coaching/sessions/{session_id}/cancel")
 async def cancel_session(session_id: str, user=Depends(get_current_user)):
     """Cancel a coaching session."""
     session = await db.coaching_sessions.find_one({"id": session_id})
@@ -396,9 +422,11 @@ async def cancel_session(session_id: str, user=Depends(get_current_user)):
     return {"message": "Session cancelled"}
 
 
-# ─── Session Payment Verification ────────────────────────────────────────────
+# =============================================================================
+# Session Payment Verification
+# =============================================================================
 
-@router.post("/sessions/{session_id}/verify-payment")
+@app.post("/coaching/sessions/{session_id}/verify-payment")
 async def verify_session_payment(session_id: str, request: Request, user=Depends(get_current_user)):
     """Verify Razorpay payment for a coaching session."""
     data = await request.json()
@@ -436,7 +464,7 @@ async def verify_session_payment(session_id: str, request: Request, user=Depends
     return {"message": "Payment verified, session confirmed", "status": "confirmed"}
 
 
-@router.post("/sessions/{session_id}/test-confirm")
+@app.post("/coaching/sessions/{session_id}/test-confirm")
 async def test_confirm_session(session_id: str, user=Depends(get_current_user)):
     """Confirm payment for test-mode coaching sessions (no payment gateway configured)."""
     if os.environ.get("ENVIRONMENT") == "production":
@@ -462,7 +490,7 @@ async def test_confirm_session(session_id: str, user=Depends(get_current_user)):
     return {"message": "Test payment confirmed", "status": "confirmed"}
 
 
-@router.post("/sessions/{session_id}/complete")
+@app.post("/coaching/sessions/{session_id}/complete")
 async def complete_session(session_id: str, user=Depends(get_current_user)):
     """Mark a session as completed (coach only)."""
     session = await db.coaching_sessions.find_one({"id": session_id})
@@ -504,7 +532,7 @@ async def complete_session(session_id: str, user=Depends(get_current_user)):
     return {"message": "Session marked as completed"}
 
 
-@router.post("/sessions/{session_id}/review")
+@app.post("/coaching/sessions/{session_id}/review")
 async def review_session(session_id: str, request: Request, user=Depends(get_current_user)):
     """Rate and review a completed coaching session (player only)."""
     session = await db.coaching_sessions.find_one({"id": session_id})
@@ -534,9 +562,11 @@ async def review_session(session_id: str, request: Request, user=Depends(get_cur
     return {"message": "Review submitted"}
 
 
-# ─── Coach Stats ──────────────────────────────────────────────────────────────
+# =============================================================================
+# Coach Stats
+# =============================================================================
 
-@router.get("/stats")
+@app.get("/coaching/stats")
 async def coach_stats(user=Depends(get_current_user)):
     """Get coaching stats for the current coach."""
     if user["role"] != "coach":
@@ -602,9 +632,11 @@ async def coach_stats(user=Depends(get_current_user)):
     }
 
 
-# ─── QR Check-in System ──────────────────────────────────────────────────────
+# =============================================================================
+# QR Check-in System
+# =============================================================================
 
-@router.get("/checkin/qr/{booking_id}")
+@app.get("/coaching/checkin/qr/{booking_id}")
 async def get_checkin_qr(booking_id: str, user=Depends(get_current_user)):
     """Generate QR check-in data for a venue booking OR coaching session."""
     # Try venue booking first
@@ -640,7 +672,7 @@ async def get_checkin_qr(booking_id: str, user=Depends(get_current_user)):
         "booking_id": booking_id,
         "source": source,
         "checkin_token": token,
-        "qr_data": f"HORIZON_CHECKIN:{booking_id}:{token}",
+        "qr_data": f"LOBBI_CHECKIN:{booking_id}:{token}",
         "venue_name": booking.get("venue_name", booking.get("location", "")),
         "date": booking["date"],
         "start_time": booking["start_time"],
@@ -648,7 +680,7 @@ async def get_checkin_qr(booking_id: str, user=Depends(get_current_user)):
     }
 
 
-@router.post("/checkin/verify")
+@app.post("/coaching/checkin/verify")
 async def verify_checkin(request: Request, user=Depends(get_current_user)):
     """Verify a check-in QR code (coach or venue owner scans player's QR)."""
     if user["role"] not in ("venue_owner", "super_admin", "coach"):
@@ -657,9 +689,9 @@ async def verify_checkin(request: Request, user=Depends(get_current_user)):
     data = await request.json()
     qr_data = data.get("qr_data", "")
 
-    # Parse QR data: HORIZON_CHECKIN:{booking_id}:{token}
+    # Parse QR data: LOBBI_CHECKIN:{booking_id}:{token}
     parts = qr_data.split(":")
-    if len(parts) != 3 or parts[0] != "HORIZON_CHECKIN":
+    if len(parts) != 3 or parts[0] != "LOBBI_CHECKIN":
         raise HTTPException(400, "Invalid QR code format")
 
     booking_id = parts[1]
@@ -721,9 +753,11 @@ async def verify_checkin(request: Request, user=Depends(get_current_user)):
     }
 
 
-# ─── Monthly Coaching Packages ───────────────────────────────────────────────
+# =============================================================================
+# Monthly Coaching Packages
+# =============================================================================
 
-@router.post("/packages")
+@app.post("/coaching/packages")
 async def create_package(request: Request, user=Depends(get_current_user)):
     """Create a monthly coaching package (coach only)."""
     if user["role"] != "coach":
@@ -765,7 +799,7 @@ async def create_package(request: Request, user=Depends(get_current_user)):
     return package
 
 
-@router.get("/packages")
+@app.get("/coaching/packages")
 async def list_my_packages(user=Depends(get_current_user)):
     """List coach's own packages (coach) or all active packages."""
     if user["role"] == "coach":
@@ -785,7 +819,7 @@ async def list_my_packages(user=Depends(get_current_user)):
     return packages
 
 
-@router.get("/coaches/{coach_id}/packages")
+@app.get("/coaching/coaches/{coach_id}/packages")
 async def get_coach_packages(coach_id: str, user=Depends(get_current_user)):
     """List active packages for a specific coach (player-facing)."""
     packages = await db.coaching_packages.find(
@@ -807,7 +841,7 @@ async def get_coach_packages(coach_id: str, user=Depends(get_current_user)):
     return packages
 
 
-@router.put("/packages/{package_id}")
+@app.put("/coaching/packages/{package_id}")
 async def update_package(package_id: str, request: Request, user=Depends(get_current_user)):
     """Update a coaching package (coach only)."""
     if user["role"] != "coach":
@@ -832,7 +866,7 @@ async def update_package(package_id: str, request: Request, user=Depends(get_cur
     return updated
 
 
-@router.delete("/packages/{package_id}")
+@app.delete("/coaching/packages/{package_id}")
 async def deactivate_package(package_id: str, user=Depends(get_current_user)):
     """Deactivate a coaching package (soft delete)."""
     if user["role"] != "coach":
@@ -847,9 +881,11 @@ async def deactivate_package(package_id: str, user=Depends(get_current_user)):
     return {"message": "Package deactivated"}
 
 
-# ─── Package Subscriptions ───────────────────────────────────────────────────
+# =============================================================================
+# Package Subscriptions
+# =============================================================================
 
-@router.post("/packages/{package_id}/subscribe")
+@app.post("/coaching/packages/{package_id}/subscribe")
 async def subscribe_to_package(package_id: str, user=Depends(get_current_user)):
     """Subscribe to a monthly coaching package (player)."""
     package = await db.coaching_packages.find_one({"id": package_id, "is_active": True})
@@ -915,7 +951,7 @@ async def subscribe_to_package(package_id: str, user=Depends(get_current_user)):
     return sub
 
 
-@router.post("/subscriptions/{sub_id}/verify-payment")
+@app.post("/coaching/subscriptions/{sub_id}/verify-payment")
 async def verify_subscription_payment(sub_id: str, request: Request, user=Depends(get_current_user)):
     """Verify Razorpay payment for a coaching subscription."""
     data = await request.json()
@@ -965,7 +1001,7 @@ async def verify_subscription_payment(sub_id: str, request: Request, user=Depend
     return {"message": "Payment verified, subscription active", "status": "active"}
 
 
-@router.post("/subscriptions/{sub_id}/test-confirm")
+@app.post("/coaching/subscriptions/{sub_id}/test-confirm")
 async def test_confirm_subscription(sub_id: str, user=Depends(get_current_user)):
     """Confirm payment for test-mode subscriptions."""
     if os.environ.get("ENVIRONMENT") == "production":
@@ -991,7 +1027,7 @@ async def test_confirm_subscription(sub_id: str, user=Depends(get_current_user))
     return {"message": "Test payment confirmed, subscription active", "status": "active"}
 
 
-@router.get("/my-subscriptions")
+@app.get("/coaching/my-subscriptions")
 async def my_subscriptions(user=Depends(get_current_user)):
     """Get player's active coaching subscriptions."""
     subs = await db.coaching_subscriptions.find(
@@ -1003,7 +1039,7 @@ async def my_subscriptions(user=Depends(get_current_user)):
     return subs
 
 
-@router.post("/subscriptions/{sub_id}/cancel")
+@app.post("/coaching/subscriptions/{sub_id}/cancel")
 async def cancel_subscription(sub_id: str, user=Depends(get_current_user)):
     """Cancel a coaching subscription. Remaining sessions usable until period ends."""
     sub = await db.coaching_subscriptions.find_one({"id": sub_id})
@@ -1033,7 +1069,7 @@ async def cancel_subscription(sub_id: str, user=Depends(get_current_user)):
     return {"message": "Subscription cancelled. Remaining sessions are usable until the period ends."}
 
 
-@router.post("/subscriptions/{sub_id}/renew")
+@app.post("/coaching/subscriptions/{sub_id}/renew")
 async def renew_subscription(sub_id: str, user=Depends(get_current_user)):
     """Renew a coaching subscription for the next month."""
     sub = await db.coaching_subscriptions.find_one({"id": sub_id})
@@ -1074,7 +1110,7 @@ async def renew_subscription(sub_id: str, user=Depends(get_current_user)):
         except Exception:
             raise HTTPException(502, "Payment gateway error. Please try again.")
     else:
-        # Test mode — auto-renew
+        # Test mode -- auto-renew
         now = datetime.now(timezone.utc)
         await db.coaching_subscriptions.update_one({"id": sub_id}, {"$set": {
             "status": "active",
@@ -1097,7 +1133,7 @@ async def renew_subscription(sub_id: str, user=Depends(get_current_user)):
     return result
 
 
-@router.post("/subscriptions/{sub_id}/verify-renewal")
+@app.post("/coaching/subscriptions/{sub_id}/verify-renewal")
 async def verify_renewal_payment(sub_id: str, request: Request, user=Depends(get_current_user)):
     """Verify Razorpay payment for subscription renewal."""
     data = await request.json()

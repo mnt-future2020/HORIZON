@@ -11,13 +11,15 @@ from auth import get_current_user, get_razorpay_client, get_platform_settings
 from models import BookingCreate, MatchRequestCreate, MercenaryCreate, MatchResultSubmit
 import uuid, hmac, hashlib, math, logging, asyncio
 
-app = FastAPI(title="Horizon Booking Service")
-logger = logging.getLogger("booking-service")
+app = FastAPI(title="Lobbi Booking Service")
+logger = logging.getLogger("lobbi")
 logging.basicConfig(level=logging.INFO)
 
+cors_origins = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
 app.add_middleware(CORSMiddleware, allow_credentials=True,
-    allow_origins=os.environ.get("CORS_ORIGINS", "*").split(","),
-    allow_methods=["*"], allow_headers=["*"])
+    allow_origins=cors_origins,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"])
 
 @app.on_event("startup")
 async def startup():
@@ -226,19 +228,55 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
 @app.post("/bookings/{booking_id}/verify-payment")
 async def verify_payment(booking_id: str, request: Request, user=Depends(get_current_user)):
     data = await request.json()
+    razorpay_payment_id = data.get("razorpay_payment_id", "")
+    razorpay_order_id = data.get("razorpay_order_id", "")
+    razorpay_signature = data.get("razorpay_signature", "")
+
     booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not booking: raise HTTPException(404, "Booking not found")
+    if booking.get("host_id") != user["id"] and user["id"] not in booking.get("players", []):
+        raise HTTPException(403, "Not authorized to verify payment for this booking")
+
+    # HMAC signature verification for Razorpay
+    settings = await get_platform_settings()
+    gw = settings.get("payment_gateway", {})
+    key_secret = gw.get("key_secret", "")
+    if key_secret:
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, razorpay_signature):
+            raise HTTPException(400, "Payment verification failed")
+    elif booking.get("payment_gateway") == "razorpay":
+        raise HTTPException(500, "Payment gateway not configured properly")
+
     if booking.get("split_config"):
         sp = {"id": str(uuid.uuid4()), "booking_id": booking_id, "split_token": booking["split_config"]["split_token"],
               "payer_id": user["id"], "payer_name": user["name"], "amount": booking["split_config"]["per_share"],
-              "razorpay_payment_id": data.get("razorpay_payment_id",""), "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}
+              "razorpay_payment_id": razorpay_payment_id, "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}
         await db.split_payments.insert_one(sp)
-        new_paid = booking["split_config"]["shares_paid"] + 1
-        new_status = "confirmed" if new_paid >= booking["split_config"]["total_shares"] else "pending"
-        await db.bookings.update_one({"id": booking_id}, {"$set": {"split_config.shares_paid": new_paid, "status": new_status}, "$push": {"players": user["id"]}})
+        # Atomic increment to avoid race condition
+        result = await db.bookings.find_one_and_update(
+            {"id": booking_id},
+            {"$inc": {"split_config.shares_paid": 1},
+             "$set": {"payment_details.last_payment_id": razorpay_payment_id},
+             "$addToSet": {"players": user["id"]}},
+            return_document=True, projection={"_id": 0, "split_config": 1}
+        )
+        new_paid = result["split_config"]["shares_paid"]
+        new_status = "confirmed" if new_paid >= result["split_config"]["total_shares"] else "pending"
+        if new_status == "confirmed":
+            await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "confirmed"}})
         return {"message": "Share paid", "shares_paid": new_paid, "status": new_status}
     else:
-        await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "confirmed", "payment_details": {"razorpay_payment_id": data.get("razorpay_payment_id",""), "paid_at": datetime.now(timezone.utc).isoformat()}}})
+        await db.bookings.update_one({"id": booking_id}, {"$set": {
+            "status": "confirmed",
+            "payment_details": {
+                "razorpay_payment_id": razorpay_payment_id,
+                "razorpay_order_id": razorpay_order_id,
+                "razorpay_signature": razorpay_signature,
+                "paid_at": datetime.now(timezone.utc).isoformat()
+            }
+        }})
         return {"message": "Payment verified, booking confirmed", "status": "confirmed"}
 
 @app.post("/bookings/{booking_id}/mock-confirm")
@@ -323,17 +361,39 @@ async def pay_split(token: str, request: Request):
 @app.post("/split/{token}/verify-payment")
 async def verify_split_payment(token: str, request: Request):
     data = await request.json()
+    razorpay_payment_id = data.get("razorpay_payment_id", "")
+    razorpay_order_id = data.get("razorpay_order_id", "")
+    razorpay_signature = data.get("razorpay_signature", "")
+
     booking = await db.bookings.find_one({"split_config.split_token": token})
     if not booking: raise HTTPException(404, "Booking not found")
+
+    # HMAC signature verification for Razorpay
+    settings = await get_platform_settings()
+    gw = settings.get("payment_gateway", {})
+    key_secret = gw.get("key_secret", "")
+    if key_secret:
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected, razorpay_signature):
+            raise HTTPException(400, "Payment verification failed")
+
     payment = {"id": str(uuid.uuid4()), "booking_id": booking["id"], "split_token": token, "payer_id": data.get("payer_id",""),
                "payer_name": data.get("payer_name","Anonymous"), "amount": booking["split_config"]["per_share"],
-               "razorpay_payment_id": data.get("razorpay_payment_id",""), "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}
+               "razorpay_payment_id": razorpay_payment_id, "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()}
     await db.split_payments.insert_one(payment); payment.pop("_id", None)
-    sc = booking["split_config"]; new_paid = sc["shares_paid"] + 1
-    updates = {"split_config.shares_paid": new_paid}
-    if new_paid >= sc["total_shares"]: updates["status"] = "confirmed"
-    await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
-    return {"message": "Share paid", "shares_paid": new_paid, "status": "confirmed" if new_paid >= sc["total_shares"] else "pending"}
+    # Atomic increment to avoid race condition
+    result = await db.bookings.find_one_and_update(
+        {"id": booking["id"]},
+        {"$inc": {"split_config.shares_paid": 1},
+         "$set": {"payment_details.last_payment_id": razorpay_payment_id}},
+        return_document=True, projection={"_id": 0, "split_config": 1}
+    )
+    new_paid = result["split_config"]["shares_paid"]
+    new_status = "confirmed" if new_paid >= result["split_config"]["total_shares"] else "pending"
+    if new_status == "confirmed":
+        await db.bookings.update_one({"id": booking["id"]}, {"$set": {"status": "confirmed"}})
+    return {"message": "Share paid", "shares_paid": new_paid, "status": new_status}
 
 # ─── Matchmaking Routes ─────────────────────────────────────────────────────
 @app.get("/matchmaking")

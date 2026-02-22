@@ -133,7 +133,11 @@ export default function AuthPage() {
                   <Input type="password" required value={regData.password}
                     onChange={e => setRegData(p => ({ ...p, password: e.target.value }))}
                     className="mt-2 bg-background border-border h-11"
-                    placeholder="Min 6 characters" data-testid="register-password-input" />
+                    placeholder="Min 8 chars, uppercase, lowercase, number" data-testid="register-password-input"
+                    minLength={8} />
+                  {regData.password && regData.password.length > 0 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(regData.password) && (
+                    <p className="text-xs text-destructive mt-1">Must be 8+ chars with uppercase, lowercase, and number</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">I am a</Label>
