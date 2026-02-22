@@ -13,6 +13,7 @@ const AthleticCard = React.forwardRef(({
   children,
   withHover = true,
   glowOnHover = false,
+  gradientBorder = false,
   subtle = false,
   ...props
 }, ref) => {
@@ -29,7 +30,8 @@ const AthleticCard = React.forwardRef(({
       className={cn(
         "rounded-2xl border-2 bg-card text-card-foreground overflow-hidden backdrop-blur-md",
         "transition-all duration-300",
-        glowOnHover && "hover:border-primary/50",
+        glowOnHover && "hover:border-primary/50 hover:shadow-glow-sm",
+        gradientBorder && "border-gradient-primary",
         className
       )}
       {...props}

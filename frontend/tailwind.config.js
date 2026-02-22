@@ -62,19 +62,26 @@ module.exports = {
         ring: 'hsl(var(--ring))',
         chart: { '1': 'hsl(var(--chart-1))', '2': 'hsl(var(--chart-2))', '3': 'hsl(var(--chart-3))', '4': 'hsl(var(--chart-4))', '5': 'hsl(var(--chart-5))' }
       },
-      // Athletic gradient utilities
+      // Athletic gradient utilities — richer, more vibrant
       backgroundImage: {
-        'gradient-athletic': 'linear-gradient(135deg, #10B981 0%, #059669 100%)',
-        'gradient-accent': 'linear-gradient(135deg, #7C3AED 0%, #5B21B6 100%)',
-        'gradient-sport': 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-        'gradient-overlay': 'linear-gradient(180deg, rgba(2, 6, 23, 0.3) 0%, rgba(2, 6, 23, 0.9) 100%)',
+        'gradient-athletic': 'linear-gradient(135deg, #10B981 0%, #06d6a0 100%)',
+        'gradient-accent': 'linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)',
+        'gradient-sport': 'linear-gradient(135deg, #F59E0B 0%, #fbbf24 100%)',
+        'gradient-rose': 'linear-gradient(135deg, #f43f5e 0%, #fb7185 100%)',
+        'gradient-sky': 'linear-gradient(135deg, #0ea5e9 0%, #38bdf8 100%)',
+        'gradient-overlay': 'linear-gradient(180deg, rgba(2, 6, 23, 0.3) 0%, rgba(2, 6, 23, 0.92) 100%)',
+        'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
+        'gradient-mesh': 'radial-gradient(at 40% 20%, #10B981 0px, transparent 50%), radial-gradient(at 80% 0%, #8b5cf6 0px, transparent 50%), radial-gradient(at 0% 80%, #0ea5e9 0px, transparent 50%)',
       },
-      // Energy glow shadows
+      // Energy glow shadows — brighter, deeper
       boxShadow: {
-        'glow-primary': '0 0 40px rgba(16, 185, 129, 0.4)',
-        'glow-accent': '0 0 40px rgba(124, 58, 237, 0.4)',
-        'glow-hover': '0 0 60px rgba(16, 185, 129, 0.6)',
+        'glow-primary': '0 0 50px rgba(16, 185, 129, 0.45)',
+        'glow-accent': '0 0 50px rgba(139, 92, 246, 0.45)',
+        'glow-hover': '0 0 70px rgba(16, 185, 129, 0.65)',
+        'glow-rose': '0 0 40px rgba(244, 63, 94, 0.35)',
+        'glow-sky': '0 0 40px rgba(14, 165, 233, 0.35)',
         'glow-sm': '0 0 20px rgba(16, 185, 129, 0.3)',
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.3)',
       },
       // Athletic animation keyframes
       keyframes: {

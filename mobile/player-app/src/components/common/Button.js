@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import Colors from '../../styles/colors';
 import Typography from '../../styles/typography';
 import Spacing from '../../styles/spacing';
@@ -15,23 +16,41 @@ export default function Button({
   textStyle,
   leftIcon,
 }) {
-  const styles = getStyles(variant, size, disabled);
+  const s = getStyles(variant, size, disabled);
+  const isGradient = variant === 'primary' && !disabled;
+
+  const content = loading ? (
+    <ActivityIndicator size="small" color={variant === 'primary' ? Colors.primaryForeground : Colors.primary} />
+  ) : (
+    <View style={s.inner}>
+      {leftIcon && <View style={{ marginRight: 8 }}>{leftIcon}</View>}
+      <Text style={[s.text, textStyle]}>{children}</Text>
+    </View>
+  );
+
+  if (isGradient) {
+    return (
+      <TouchableOpacity onPress={onPress} disabled={disabled || loading} activeOpacity={0.75} style={style}>
+        <LinearGradient
+          colors={['#10b981', '#06d6a0']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[s.button, { backgroundColor: undefined }]}
+        >
+          {content}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity
       onPress={onPress}
       disabled={disabled || loading}
-      style={[styles.button, style]}
+      style={[s.button, style]}
       activeOpacity={0.75}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={variant === 'primary' ? Colors.primaryForeground : Colors.primary} />
-      ) : (
-        <View style={styles.inner}>
-          {leftIcon && <View style={{ marginRight: 8 }}>{leftIcon}</View>}
-          <Text style={[styles.text, textStyle]}>{children}</Text>
-        </View>
-      )}
+      {content}
     </TouchableOpacity>
   );
 }
@@ -69,7 +88,7 @@ function getStyles(variant, size, disabled) {
       alignItems: 'center',
       borderWidth: variant === 'outline' ? 1 : 0,
       borderColor,
-      opacity: disabled ? 0.5 : 1,
+      opacity: disabled ? 0.4 : 1,
     },
     inner: {
       flexDirection: 'row',

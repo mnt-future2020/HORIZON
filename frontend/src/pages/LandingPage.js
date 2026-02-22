@@ -115,15 +115,22 @@ export default function LandingPage() {
       {/* ═══ HERO SECTION ═══ */}
       <section className="relative overflow-hidden min-h-[95vh] flex items-center">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/3 to-transparent" />
-        <div className="absolute top-20 right-0 w-[600px] h-[600px] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-accent/5 blur-3xl" />
+        {/* Animated floating orbs — premium background effect */}
+        <div className="absolute top-10 right-[10%] w-[700px] h-[700px] rounded-full bg-primary/8 blur-[100px] animate-float" />
+        <div className="absolute bottom-[10%] left-[5%] w-[500px] h-[500px] rounded-full bg-accent/8 blur-[100px] animate-float-delayed" />
+        <div className="absolute top-[40%] left-[50%] w-[400px] h-[400px] rounded-full bg-sky-500/5 blur-[80px] animate-float-slow" />
 
         <div className="max-w-7xl mx-auto px-4 md:px-6 pt-24 pb-16 relative w-full">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-8 items-center">
             <div>
-              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-                <Badge variant="athletic" className="text-xs px-5 py-2 mb-8">
+              <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+                className="flex items-center gap-3 mb-8 flex-wrap">
+                <Badge variant="athletic" className="text-xs px-5 py-2">
                   SPORTS FACILITY OPERATING SYSTEM
+                </Badge>
+                <Badge variant="live" className="text-[10px] px-3 py-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 mr-1.5 animate-pulse" />
+                  1,200+ GAMES THIS WEEK
                 </Badge>
               </motion.div>
 
@@ -166,19 +173,19 @@ export default function LandingPage() {
                 </div>
               </motion.form>
 
-              {/* Stats Row */}
+              {/* Stats Row — animated counter feel */}
               <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.7 }}
-                className="flex gap-8 sm:gap-12 mt-12">
+                className="flex gap-6 sm:gap-10 mt-12 p-4 sm:p-6 rounded-2xl bg-card/30 backdrop-blur-md border border-border/30 max-w-xl">
                 {[
-                  { value: `${totalVenues}+`, label: "VENUES" },
-                  { value: "50K+", label: "PLAYERS" },
-                  { value: "4.8", label: "AVG RATING" },
-                  { value: "35+", label: "FEATURES" },
+                  { value: `${totalVenues}+`, label: "VENUES", color: "text-primary" },
+                  { value: "50K+", label: "PLAYERS", color: "text-accent" },
+                  { value: "4.8★", label: "RATING", color: "text-amber-400" },
+                  { value: "10+", label: "SPORTS", color: "text-sky-400" },
                 ].map((s, idx) => (
                   <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.8 + idx * 0.1 }}>
-                    <div className="font-display text-3xl sm:text-4xl font-black text-foreground tracking-athletic">{s.value}</div>
-                    <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mt-1">{s.label}</div>
+                    transition={{ delay: 0.8 + idx * 0.1 }} className="text-center flex-1">
+                    <div className={`font-display text-2xl sm:text-3xl font-black tracking-athletic ${s.color}`}>{s.value}</div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">{s.label}</div>
                   </motion.div>
                 ))}
               </motion.div>
@@ -306,40 +313,53 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {[
             {
-              icon: Swords, title: "For Players", color: "bg-emerald-500/10 text-emerald-400", border: "hover:border-emerald-500/50",
+              icon: Swords, title: "For Players", color: "bg-emerald-500/10 text-emerald-400",
+              border: "hover:border-emerald-500/50", glow: "hover:shadow-[0_0_40px_rgba(16,185,129,0.15)]",
+              gradient: "from-emerald-500/20 to-emerald-500/0",
               features: ["Social Feed & Stories", "AI Matchmaking", "Tournaments & Leagues", "WhatsApp-style Chat", "Communities & Teams", "Leaderboards & Ratings", "Split Payments", "Contact Sync"],
-              cta: "for-players"
+              cta: "for-players", checkColor: "text-emerald-400",
+              btnClass: "hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:text-emerald-400"
             },
             {
-              icon: Building2, title: "For Venue Owners", color: "bg-violet-500/10 text-violet-400", border: "hover:border-violet-500/50",
+              icon: Building2, title: "For Venue Owners", color: "bg-violet-500/10 text-violet-400",
+              border: "hover:border-violet-500/50", glow: "hover:shadow-[0_0_40px_rgba(139,92,246,0.15)]",
+              gradient: "from-violet-500/20 to-violet-500/0",
               features: ["Revenue Dashboard", "Booking Management", "POS System", "IoT Smart Lighting", "Review Management", "Analytics & Reports", "Public Venue Page", "Multi-court Support"],
-              cta: "for-owners"
+              cta: "for-owners", checkColor: "text-violet-400",
+              btnClass: "hover:border-violet-500/50 hover:bg-violet-500/5 hover:text-violet-400"
             },
             {
-              icon: GraduationCap, title: "For Coaches", color: "bg-amber-500/10 text-amber-400", border: "hover:border-amber-500/50",
+              icon: GraduationCap, title: "For Coaches", color: "bg-amber-500/10 text-amber-400",
+              border: "hover:border-amber-500/50", glow: "hover:shadow-[0_0_40px_rgba(245,158,11,0.15)]",
+              gradient: "from-amber-500/20 to-amber-500/0",
               features: ["Academy Dashboard", "Student Management", "Session Scheduling", "Coach Marketplace", "Performance Tracking", "Community Groups", "Direct Messaging", "Profile & Ratings"],
-              cta: "for-coaches"
+              cta: "for-coaches", checkColor: "text-amber-400",
+              btnClass: "hover:border-amber-500/50 hover:bg-amber-500/5 hover:text-amber-400"
             },
           ].map((role, idx) => (
             <motion.div key={role.title} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
-              className={`rounded-3xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-8 group ${role.border} hover:shadow-glow-sm transition-all duration-300`}>
-              <div className={`w-16 h-16 rounded-2xl ${role.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <role.icon className="h-8 w-8" />
+              className={`relative rounded-3xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-8 group ${role.border} ${role.glow} transition-all duration-500`}>
+              {/* Gradient glow on top */}
+              <div className={`absolute top-0 left-0 right-0 h-32 bg-gradient-to-b ${role.gradient} rounded-t-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div className="relative">
+                <div className={`w-16 h-16 rounded-2xl ${role.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <role.icon className="h-8 w-8" />
+                </div>
+                <h3 className="font-display text-xl font-black mb-4">{role.title}</h3>
+                <ul className="space-y-2.5 mb-6">
+                  {role.features.map(f => (
+                    <li key={f} className="flex items-center gap-2.5 text-sm text-muted-foreground font-semibold">
+                      <Check className={`h-4 w-4 ${role.checkColor} flex-shrink-0`} />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Button variant="outline" className={`w-full font-bold border-2 ${role.btnClass} transition-all duration-300`}
+                  onClick={() => scrollTo(role.cta)}>
+                  Learn More <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
-              <h3 className="font-display text-xl font-black mb-4">{role.title}</h3>
-              <ul className="space-y-2.5 mb-6">
-                {role.features.map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-muted-foreground font-semibold">
-                    <Check className="h-4 w-4 text-primary flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Button variant="outline" className="w-full font-bold border-2 hover:border-primary/50 hover:bg-primary/5"
-                onClick={() => scrollTo(role.cta)}>
-                Learn More <ArrowRight className="h-4 w-4 ml-2" />
-              </Button>
             </motion.div>
           ))}
         </div>
@@ -515,18 +535,25 @@ export default function LandingPage() {
           {AMBASSADORS.map((a, idx) => (
             <motion.div key={a.name} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
-              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden group hover:border-primary/50 hover:shadow-glow-sm hover:scale-[1.03] transition-all duration-300">
-              <div className="relative h-56 overflow-hidden">
+              className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden group hover:border-primary/50 hover:shadow-glow-sm hover:scale-[1.03] transition-all duration-500">
+              <div className="relative h-60 overflow-hidden">
                 <img src={a.src} alt={a.name} className="w-full h-full object-cover object-top group-hover:scale-110 transition-transform duration-700" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-                <div className="absolute bottom-3 left-3">
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+                <div className="absolute bottom-3 left-3 flex items-center gap-2">
                   <Badge variant="athletic" className="text-[10px] uppercase backdrop-blur-md">{a.role}</Badge>
                 </div>
               </div>
               <div className="p-5">
-                <h3 className="font-display text-lg font-black text-foreground">{a.name}</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-lg font-black text-foreground">{a.name}</h3>
+                  <div className="flex gap-0.5">
+                    {[1,2,3,4,5].map(s => (
+                      <Star key={s} className="h-3 w-3 text-amber-400 fill-amber-400" />
+                    ))}
+                  </div>
+                </div>
                 <div className="flex items-start gap-2 mt-3">
-                  <Quote className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                  <Quote className="h-5 w-5 text-gradient-primary shrink-0 mt-0.5 text-primary" />
                   <p className="text-sm text-muted-foreground font-semibold leading-relaxed italic">"{a.quote}"</p>
                 </div>
               </div>
@@ -538,8 +565,9 @@ export default function LandingPage() {
       {/* ═══ FULL-WIDTH BANNER ═══ */}
       <section className="relative h-[350px] md:h-[450px] overflow-hidden">
         <img src={BANNER_IMAGE} alt="Athletes celebrating" className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-background/70" />
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/10" />
+        <div className="absolute inset-0 bg-background/75" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/15 via-transparent to-accent/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
         <div className="absolute inset-0 flex items-center justify-center">
           <motion.div initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }}
             className="text-center max-w-3xl px-6">
@@ -671,12 +699,12 @@ export default function LandingPage() {
             </div>
             <div className="flex gap-4 justify-center flex-wrap">
               <Button onClick={() => navigate(user ? "/dashboard" : "/auth")}
-                className="bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl transition-all duration-300"
+                className="bg-gradient-athletic bg-gradient-animated text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-110 active:scale-105 font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl transition-all duration-300"
                 data-testid="cta-get-started">
                 Get Started Free <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
               <Button variant="outline" onClick={() => navigate("/venues")}
-                className="font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl border-2 hover:border-primary/50 hover:scale-105 transition-all duration-300 bg-background/50 backdrop-blur-md"
+                className="font-black uppercase tracking-wide text-base h-14 px-10 rounded-xl border-2 hover:border-primary/50 hover:scale-110 active:scale-105 transition-all duration-300 bg-background/50 backdrop-blur-md hover:shadow-glow-sm"
                 data-testid="cta-browse-venues">
                 Browse Venues
               </Button>

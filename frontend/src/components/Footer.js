@@ -4,7 +4,8 @@ import { Mail, Phone, MapPin, Instagram, Twitter, Linkedin } from "lucide-react"
 export default function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer className="bg-card border-t border-border mt-16">
+    <footer className="bg-card border-t border-border mt-16 relative">
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
@@ -18,13 +19,13 @@ export default function Footer() {
               <span className="text-muted-foreground/60">Magizh NexGen Technologies</span>
             </p>
             <div className="flex items-center gap-3 mt-4">
-              <a href="#" aria-label="Twitter" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors">
+              <a href="#" aria-label="Twitter" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/10 hover:text-primary hover:shadow-glow-sm hover:scale-110 transition-all duration-300">
                 <Twitter className="w-3.5 h-3.5" />
               </a>
-              <a href="#" aria-label="Instagram" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors">
+              <a href="#" aria-label="Instagram" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/10 hover:text-primary hover:shadow-glow-sm hover:scale-110 transition-all duration-300">
                 <Instagram className="w-3.5 h-3.5" />
               </a>
-              <a href="#" aria-label="LinkedIn" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/10 hover:text-primary transition-colors">
+              <a href="#" aria-label="LinkedIn" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-primary/10 hover:text-primary hover:shadow-glow-sm hover:scale-110 transition-all duration-300">
                 <Linkedin className="w-3.5 h-3.5" />
               </a>
             </div>

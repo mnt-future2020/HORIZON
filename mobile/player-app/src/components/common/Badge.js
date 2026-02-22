@@ -12,12 +12,29 @@ const variantMap = {
   violet: { bg: Colors.violetLight, text: Colors.violet },
   sky: { bg: Colors.skyLight, text: Colors.sky },
   outline: { bg: Colors.transparent, text: Colors.foreground, border: Colors.border },
+  // Sport-specific
+  sport: { bg: Colors.amberLight, text: Colors.amber, border: Colors.amber },
+  // Role-specific variants
+  player: { bg: Colors.emeraldLight, text: Colors.emerald, border: Colors.emerald },
+  owner: { bg: Colors.violetLight, text: Colors.violet, border: Colors.violet },
+  coach: { bg: Colors.amberLight, text: Colors.amber, border: Colors.amber },
+  admin: { bg: Colors.roseLight, text: Colors.rose, border: Colors.rose },
+  // Status
+  live: { bg: Colors.roseLight, text: Colors.rose, border: Colors.rose },
+  emerald: { bg: Colors.emeraldLight, text: Colors.emerald },
+  rose: { bg: Colors.roseLight, text: Colors.rose },
+  indigo: { bg: Colors.indigoLight, text: Colors.indigo },
 };
 
 export default function Badge({ children, variant = 'default', style }) {
   const v = variantMap[variant] || variantMap.default;
   return (
-    <View style={[styles.badge, { backgroundColor: v.bg, borderWidth: v.border ? 1 : 0, borderColor: v.border || Colors.transparent }, style]}>
+    <View style={[
+      styles.badge,
+      { backgroundColor: v.bg },
+      v.border ? { borderWidth: 1, borderColor: v.border } : null,
+      style,
+    ]}>
       <Text style={[styles.text, { color: v.text }]}>{children}</Text>
     </View>
   );
@@ -26,7 +43,7 @@ export default function Badge({ children, variant = 'default', style }) {
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: Spacing.radiusFull,
     alignSelf: 'flex-start',
   },

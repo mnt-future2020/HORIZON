@@ -24,6 +24,17 @@ const badgeVariants = cva(
           "border-amber-400 bg-amber-400/10 text-amber-400 backdrop-blur-sm hover:bg-amber-400/20",
         glow:
           "border-primary bg-primary/20 text-primary shadow-glow-sm animate-glow-pulse",
+        // Role-specific badges
+        player:
+          "border-emerald-400 bg-emerald-500/10 text-emerald-400 backdrop-blur-sm",
+        owner:
+          "border-violet-400 bg-violet-500/10 text-violet-400 backdrop-blur-sm",
+        coach:
+          "border-amber-400 bg-amber-500/10 text-amber-400 backdrop-blur-sm",
+        admin:
+          "border-rose-400 bg-rose-500/10 text-rose-400 backdrop-blur-sm",
+        live:
+          "border-rose-500 bg-rose-500/20 text-rose-400 animate-pulse",
       },
     },
     defaultVariants: {

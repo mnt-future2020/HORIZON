@@ -1,29 +1,38 @@
-// Design system colors - exact match to web app CSS variables
+// Design system colors - Premium Athletic Dark palette
+// Synced with web app CSS variables (index.css)
 // Converted from HSL to hex for React Native
 
 const Colors = {
-  // Backgrounds
-  background: '#080e1d',       // hsl(222.2, 84%, 4.9%)
-  card: '#0f1929',             // hsl(222.2, 47.4%, 11.2%)
-  cardHover: '#142038',
+  // Backgrounds — deeper, richer dark
+  background: '#050a15',       // hsl(225, 86%, 3.8%) — deeper navy
+  card: '#0c1525',             // hsl(224, 52%, 9.5%) — darker for depth
+  cardHover: '#111d30',
 
   // Text
   foreground: '#f1f5f9',       // hsl(210, 40%, 98%)
-  mutedForeground: '#8fa3b8',  // hsl(215, 20.2%, 65.1%)
+  mutedForeground: '#7c93a8',  // hsl(215, 18%, 56%) — better contrast
 
-  // Brand
-  primary: '#0fb872',          // hsl(160, 84%, 39.4%) - green
-  primaryForeground: '#080e1d',
-  primaryLight: 'rgba(15, 184, 114, 0.12)',
+  // Brand — richer emerald
+  primary: '#10b981',          // hsl(160, 84%, 39.4%) — vibrant emerald
+  primaryForeground: '#050a15',
+  primaryLight: 'rgba(16, 185, 129, 0.12)',
 
-  accent: '#7c52e8',           // hsl(263, 70%, 58%) - purple
-  accentLight: 'rgba(124, 82, 232, 0.12)',
+  accent: '#8b5cf6',           // hsl(263, 70%, 62%) — brighter violet
+  accentLight: 'rgba(139, 92, 246, 0.12)',
 
-  // States
-  secondary: '#1a2c42',        // hsl(217.2, 32.6%, 17.5%)
-  muted: '#1a2c42',
-  border: '#1e3047',
-  input: '#1e3047',
+  // States — deeper for cleaner cards
+  secondary: '#131f30',        // hsl(220, 38%, 13%) — deeper secondary
+  muted: '#131f30',
+  border: '#162032',           // hsl(220, 30%, 14%) — subtler borders
+  input: '#162032',
+
+  // Extended brand colors
+  emerald: '#10b981',
+  emeraldLight: 'rgba(16, 185, 129, 0.12)',
+  rose: '#f43f5e',
+  roseLight: 'rgba(244, 63, 94, 0.12)',
+  indigo: '#6366f1',
+  indigoLight: 'rgba(99, 102, 241, 0.12)',
 
   // Status colors
   destructive: '#f04444',
