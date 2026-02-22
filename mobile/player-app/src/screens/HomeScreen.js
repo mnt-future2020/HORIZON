@@ -375,7 +375,7 @@ export default function HomeScreen() {
             <View style={styles.insightsGrid}>
               {[
                 { label: 'TOTAL BOOKINGS', value: stats.total_bookings || 0, color: Colors.primary },
-                { label: 'MATCHES PLAYED', value: stats.total_matches || user?.total_games || 0, color: Colors.emerald },
+                { label: 'MATCHES PLAYED', value: stats.total_matches || user?.total_games || 0, color: Colors.primary },
                 { label: 'WINS', value: user?.wins || 0, color: Colors.amber },
                 { label: 'TOTAL SPENT', value: `₹${(stats.total_spent || 0).toLocaleString('en-IN')}`, color: Colors.sky },
               ].map((s, i) => (

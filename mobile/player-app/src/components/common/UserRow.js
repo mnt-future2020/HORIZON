@@ -7,8 +7,9 @@ import Spacing from '../../styles/spacing';
 
 export default function UserRow({ user, subtitle, rightComponent, onPress, style }) {
   const Wrapper = onPress ? TouchableOpacity : View;
+  const wrapperProps = onPress ? { onPress, activeOpacity: 0.75 } : {};
   return (
-    <Wrapper onPress={onPress} style={[styles.row, style]}>
+    <Wrapper {...wrapperProps} style={[styles.row, style]}>
       <Avatar uri={user.avatar} name={user.name || ''} size={40} />
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{user.name || 'Unknown'}</Text>

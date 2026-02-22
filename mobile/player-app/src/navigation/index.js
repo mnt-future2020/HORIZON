@@ -83,7 +83,7 @@ function VenuesStack() {
   return (
     <VenuesStackNav.Navigator screenOptions={{ headerShown: false }}>
       <VenuesStackNav.Screen name="VenueList" component={VenuesScreen} />
-      <VenuesStackNav.Screen name="VenueDetail" component={VenueDetailScreen} />
+      <VenuesStackNav.Screen name="VenueDetailNested" component={VenueDetailScreen} />
     </VenuesStackNav.Navigator>
   );
 }

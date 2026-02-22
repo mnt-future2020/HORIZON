@@ -1,7 +1,10 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'https://player-app-preview-1.preview.emergentagent.com/api';
+// Use backend URL from environment or fallback to localhost for dev
+const BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL
+  ? `${process.env.EXPO_PUBLIC_BACKEND_URL}/api`
+  : 'http://localhost:8000/api';
 
 const api = axios.create({ baseURL: BASE_URL });
 
@@ -49,7 +52,6 @@ export const bookingAPI = {
   list: () => api.get('/bookings'),
   get: (id) => api.get(`/bookings/${id}`),
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
-  mockConfirm: (id) => api.post(`/bookings/${id}/mock-confirm`),
   testConfirm: (id) => api.post(`/bookings/${id}/test-confirm`),
 };
 

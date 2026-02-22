@@ -20,6 +20,10 @@ const Typography = {
   xl3: 26,
   xl4: 32,
   xl5: 40,
+
+  // Letter spacing
+  wider: 1.5,
+  widest: 2,
 };
 
 export default Typography;

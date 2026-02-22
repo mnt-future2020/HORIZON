@@ -167,7 +167,7 @@ export default function VenuesScreen() {
           renderItem={({ item }) => (
             <VenueCard
               venue={item}
-              onPress={() => navigation.navigate('VenueDetail', { venueId: item.id, venueName: item.name })}
+              onPress={() => navigation.navigate('VenueDetailNested', { venueId: item.id, venueName: item.name })}
             />
           )}
           contentContainerStyle={styles.listContent}
