@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { playerCardAPI, recommendationAPI, socialAPI, careerAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AthleticStatCard } from "@/components/ui/stat-card";
@@ -191,7 +192,7 @@ export default function PlayerCardPage() {
               className="h-24 w-24 rounded-full bg-primary/20 border-4 border-primary/30 flex items-center justify-center mx-auto mb-4"
             >
               {card.avatar ? (
-                <img src={card.avatar} alt={card.name} className="h-full w-full rounded-full object-cover" />
+                <img src={mediaUrl(card.avatar)} alt={card.name} className="h-full w-full rounded-full object-cover" />
               ) : (
                 <User className="h-10 w-10 text-primary" />
               )}
@@ -656,7 +657,7 @@ export default function PlayerCardPage() {
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + idx * 0.05 }}
                   className="p-4 rounded-2xl border border-border/50 bg-card">
                   {post.content && <p className="text-sm leading-relaxed mb-2">{post.content}</p>}
-                  {post.media_url && <img src={post.media_url} alt="" className="rounded-xl w-full max-h-60 object-cover mb-2" />}
+                  {post.media_url && <img src={mediaUrl(post.media_url)} alt="" className="rounded-xl w-full max-h-60 object-cover mb-2" />}
                   <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/30">
                     <span className="flex items-center gap-1">
                       <Heart className={`h-3 w-3 ${post.liked_by_me ? "fill-red-500 text-red-500" : ""}`} />

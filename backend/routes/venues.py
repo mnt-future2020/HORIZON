@@ -296,8 +296,13 @@ async def update_venue(venue_id: str, request: Request, user=Depends(get_current
     if updates:
         await db.venues.update_one({"id": venue_id}, {"$set": updates})
     updated = await db.venues.find_one({"id": venue_id}, {"_id": 0})
-    # Broadcast live update to all public page viewers
-    await venue_manager.broadcast(venue_id, {"type": "venue_update", "venue": updated})
+    # MEDIUM FIX: Sanitize broadcast data — only send public-safe venue fields via WebSocket
+    public_fields = ["id", "name", "slug", "description", "sports", "address", "city", "area",
+                     "amenities", "images", "base_price", "rating", "total_reviews",
+                     "total_bookings", "turfs", "opening_hour", "closing_hour",
+                     "slot_duration_minutes", "lat", "lng", "status"]
+    safe_venue = {k: updated.get(k) for k in public_fields if k in updated}
+    await venue_manager.broadcast(venue_id, {"type": "venue_update", "venue": safe_venue})
     return updated
 
 

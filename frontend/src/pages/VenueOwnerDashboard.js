@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, pricingMLAPI, coachingAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -14,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Power, Users, CreditCard, X, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, ImageOff, Rocket, Brain, Zap, Camera, ScanLine, ShieldCheck, UserCheck, UserX, ClipboardList, Loader2, XCircle } from "lucide-react";
+import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Power, Users, CreditCard, X, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Rocket, Brain, Zap, Camera, ScanLine, ShieldCheck, UserCheck, UserX, ClipboardList, Loader2, XCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // Professional / venue owner imagery
@@ -23,17 +24,15 @@ const VENUE_BANNER = "https://images.unsplash.com/photo-1534438327276-14e5300c3a
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/** Image upload component for venue images — uses /api/upload/image (S3) */
+/** Image upload component for venue images — S3 priority, local fallback */
 function VenueImageUpload({ images = [], onChange }) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [s3Missing, setS3Missing] = useState(false);
 
   const handleFiles = async (files) => {
     const arr = Array.from(files).filter(f => f.type.startsWith("image/"));
     if (!arr.length) return;
     setUploading(true);
-    setS3Missing(false);
     const uploaded = [...images];
     for (const file of arr) {
       try {
@@ -43,13 +42,7 @@ function VenueImageUpload({ images = [], onChange }) {
         uploaded.push(res.data.url);
         setUploadProgress(0);
       } catch (err) {
-        const status = err?.response?.status;
-        if (status === 503) {
-          setS3Missing(true);
-          toast.error("S3 not configured. Ask the admin to set up S3 in Admin → Settings.");
-        } else {
-          toast.error(`Upload failed: ${err?.response?.data?.detail || "Unknown error"}`);
-        }
+        toast.error(`Upload failed: ${err?.response?.data?.detail || "Unknown error"}`);
         break;
       }
     }
@@ -67,7 +60,7 @@ function VenueImageUpload({ images = [], onChange }) {
         <div className="flex flex-wrap gap-2">
           {images.map((url, i) => (
             <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
-              <img src={url} alt="" className="w-full h-full object-cover" />
+              <img src={mediaUrl(url)} alt="" className="w-full h-full object-cover" />
               <button
                 type="button"
                 onClick={() => removeImage(i)}
@@ -88,12 +81,6 @@ function VenueImageUpload({ images = [], onChange }) {
         )}
         <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} disabled={uploading} />
       </label>
-      {s3Missing && (
-        <div className="flex items-center gap-1.5 text-xs text-amber-500 bg-amber-500/10 rounded-lg px-3 py-2 border border-amber-500/20">
-          <ImageOff className="h-3.5 w-3.5 shrink-0" />
-          S3 not configured. Contact admin to enable image uploads.
-        </div>
-      )}
       <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP · max 10 MB each. Images appear on your public venue page.</p>
     </div>
   );

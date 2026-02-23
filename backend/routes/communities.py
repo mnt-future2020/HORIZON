@@ -835,12 +835,13 @@ async def upload_chat_file(file: UploadFile = FileParam(...), user=Depends(get_c
                 raise HTTPException(413, f"File too large. Max {max_size // (1024 * 1024)}MB")
             f.write(chunk)
 
+    # Upload to S3 (priority) — falls back to local URL automatically
     url = f"/api/uploads/chat/{filename}"
     try:
         data = filepath.read_bytes()
-        s3_url = await s3_service.upload_bytes(data, "chat", filename, mime)
-        if s3_url:
-            url = s3_url
+        uploaded_url = await s3_service.upload_bytes(data, "chat", filename, mime)
+        if uploaded_url:
+            url = uploaded_url
     except Exception:
         pass
 

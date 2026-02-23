@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { socialAPI, recommendationAPI } from "@/lib/api";
+import { socialAPI, recommendationAPI, uploadAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -160,11 +161,14 @@ export default function SocialFeedPage() {
   // ─── Post Actions ──────────────────────────────────────────────────────────
 
   const handleCreatePost = async () => {
-    if (!newContent.trim() && !imagePreview) return;
+    if (!newContent.trim() && !imageFile && !imagePreview) return;
     setPosting(true);
     try {
       const postData = { content: newContent.trim(), post_type: postType };
-      if (imagePreview) postData.media_url = imagePreview;
+      if (imageFile) {
+        const uploadRes = await uploadAPI.image(imageFile);
+        postData.media_url = uploadRes.data.url;
+      }
       const res = await socialAPI.createPost(postData);
       setPosts((prev) => [{ ...res.data, liked_by_me: false, my_reaction: null, bookmarked_by_me: false }, ...prev]);
       setNewContent("");
@@ -438,7 +442,7 @@ export default function SocialFeedPage() {
                 }`}>
                   <div className="h-full w-full rounded-full bg-card flex items-center justify-center border-2 border-card overflow-hidden">
                     {group.user_avatar
-                      ? <img src={group.user_avatar} alt="" className="h-full w-full object-cover" />
+                      ? <img src={mediaUrl(group.user_avatar)} alt="" className="h-full w-full object-cover" />
                       : <User className="h-5 w-5 text-muted-foreground" />
                     }
                   </div>
@@ -548,7 +552,7 @@ export default function SocialFeedPage() {
                 <div key={s.id} className="flex-shrink-0 w-36 p-3 rounded-2xl border border-border/50 bg-card text-center">
                   <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-2 cursor-pointer overflow-hidden"
                     onClick={() => navigate(`/player-card/${s.id}`)}>
-                    {s.avatar ? <img src={s.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                    {s.avatar ? <img src={mediaUrl(s.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
                       : <User className="h-6 w-6 text-primary" />}
                   </div>
                   <div className="text-xs font-bold truncate">{s.name}</div>
@@ -693,7 +697,7 @@ export default function SocialFeedPage() {
                   <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:bg-primary/30 transition-colors overflow-hidden"
                     onClick={() => navigate(`/player-card/${post.user_id}`)}>
                     {post.user_avatar
-                      ? <img src={post.user_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                      ? <img src={mediaUrl(post.user_avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
                       : <User className="h-5 w-5 text-primary" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -726,7 +730,7 @@ export default function SocialFeedPage() {
                 <div className="relative select-none" onClick={() => handleDoubleTap(post.id)}>
                   {post.content && <p className="text-sm leading-relaxed whitespace-pre-wrap mb-3">{post.content}</p>}
                   {post.media_url && (
-                    <img src={post.media_url} alt="Post media" className="rounded-xl w-full max-h-96 object-cover mb-3" draggable={false} />
+                    <img src={mediaUrl(post.media_url)} alt="Post media" className="rounded-xl w-full max-h-96 object-cover mb-3" draggable={false} />
                   )}
                   {/* Heart animation on double-tap */}
                   <AnimatePresence>
@@ -829,7 +833,7 @@ export default function SocialFeedPage() {
                         <div key={c.id} className="flex items-start gap-2 mb-2.5">
                           <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden cursor-pointer"
                             onClick={() => navigate(`/player-card/${c.user_id}`)}>
-                            {c.user_avatar ? <img src={c.user_avatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                            {c.user_avatar ? <img src={mediaUrl(c.user_avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
                               : <User className="h-3 w-3 text-muted-foreground" />}
                           </div>
                           <div>
@@ -897,7 +901,7 @@ export default function SocialFeedPage() {
             <div className="absolute top-8 left-4 right-4 flex items-center gap-3 z-10">
               <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
                 {activeStory.user_avatar
-                  ? <img src={activeStory.user_avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                  ? <img src={mediaUrl(activeStory.user_avatar)} alt="" className="h-8 w-8 rounded-full object-cover" />
                   : <User className="h-4 w-4 text-white" />}
               </div>
               <span className="text-white text-sm font-bold">{activeStory.user_name}</span>
@@ -912,7 +916,7 @@ export default function SocialFeedPage() {
               activeStory.stories[storyIdx].bg_color || STORY_COLORS[0]
             }`}>
               {activeStory.stories[storyIdx].media_url ? (
-                <img src={activeStory.stories[storyIdx].media_url} alt="" className="max-h-full max-w-full rounded-xl object-contain" />
+                <img src={mediaUrl(activeStory.stories[storyIdx].media_url)} alt="" className="max-h-full max-w-full rounded-xl object-contain" />
               ) : (
                 <p className="text-white text-xl font-bold text-center leading-relaxed drop-shadow-lg">
                   {activeStory.stories[storyIdx].content}
@@ -1054,7 +1058,7 @@ export default function SocialFeedPage() {
                     <div key={u.id} className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
                         onClick={() => { setFollowModal(null); navigate(`/player-card/${u.id}`); }}>
-                        {u.avatar ? <img src={u.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                        {u.avatar ? <img src={mediaUrl(u.avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
                           : <User className="h-5 w-5 text-primary" />}
                       </div>
                       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { setFollowModal(null); navigate(`/player-card/${u.id}`); }}>

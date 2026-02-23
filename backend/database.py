@@ -6,12 +6,24 @@ import logging
 logger = logging.getLogger("horizon")
 
 mongo_url = os.environ.get('MONGO_URL') or os.environ.get('DATABASE_URL', 'mongodb://localhost:27017')
-client = AsyncIOMotorClient(mongo_url)
+# HIGH FIX: Configure connection pool + timeout for production readiness
+client = AsyncIOMotorClient(
+    mongo_url,
+    maxPoolSize=50,
+    minPoolSize=5,
+    serverSelectionTimeoutMS=5000,
+    connectTimeoutMS=10000,
+)
 db = client[os.environ.get('DB_NAME', 'horizon_db')]
 
 # Redis
 redis_url = os.environ.get('REDIS_URL') or os.environ.get('REDIS_PRIVATE_URL')
 redis_client: aioredis.Redis = None
+
+# HIGH FIX: Explicitly warn when Redis is not configured — slot locking will be disabled
+if not redis_url:
+    logger.warning("REDIS_URL not set — slot locking, rate limiting, and caching will be DISABLED. "
+                    "Set REDIS_URL for production use.")
 
 # Lock config
 SOFT_LOCK_TTL = 600      # 10 minutes

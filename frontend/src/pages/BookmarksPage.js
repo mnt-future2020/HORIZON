@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { socialAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import {
@@ -81,7 +82,7 @@ export default function BookmarksPage() {
               <div className="flex items-center gap-3 mb-3">
                 <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
                   onClick={() => navigate(`/player-card/${post.user_id}`)}>
-                  {post.user_avatar ? <img src={post.user_avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  {post.user_avatar ? <img src={mediaUrl(post.user_avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
                     : <User className="h-5 w-5 text-primary" />}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -96,7 +97,7 @@ export default function BookmarksPage() {
                 </button>
               </div>
               {post.content && <p className="text-sm leading-relaxed mb-3">{post.content}</p>}
-              {post.media_url && <img src={post.media_url} alt="" className="rounded-xl w-full max-h-80 object-cover mb-3" />}
+              {post.media_url && <img src={mediaUrl(post.media_url)} alt="" className="rounded-xl w-full max-h-80 object-cover mb-3" />}
               <div className="flex items-center gap-3 pt-2 border-t border-border/30 text-xs text-muted-foreground">
                 <button onClick={() => handleLike(post.id)} className="flex items-center gap-1">
                   <Heart className={`h-3.5 w-3.5 ${post.liked_by_me ? "fill-red-500 text-red-500" : ""}`} />

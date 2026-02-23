@@ -61,10 +61,25 @@ app = FastAPI(title="Lobbi API")
 
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Serve uploaded files (chat media, etc.)
+# HIGH FIX: Serve uploaded files with path traversal protection
+# Replaced open StaticFiles mount with a controlled endpoint
 uploads_dir = ROOT_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
-app.mount("/api/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
+from fastapi.responses import FileResponse
+import mimetypes
+
+@app.get("/api/uploads/{file_path:path}")
+async def serve_upload(file_path: str):
+    """Serve uploaded files with path traversal protection."""
+    full_path = (uploads_dir / file_path).resolve()
+    # Prevent directory traversal attacks (e.g., ../../etc/passwd)
+    if not str(full_path).startswith(str(uploads_dir.resolve())):
+        raise HTTPException(403, "Access denied")
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(404, "File not found")
+    content_type = mimetypes.guess_type(str(full_path))[0] or "application/octet-stream"
+    return FileResponse(full_path, media_type=content_type)
 
 # Include all routers with /api prefix
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
@@ -82,7 +97,8 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
 async def seed(user=Depends(get_current_user)):
     if user["role"] != "super_admin":
         raise HTTPException(403, "Admin only")
-    if os.environ.get("ENVIRONMENT", "development") == "production":
+    # HIGH FIX: Case-insensitive check — "Production", "PRODUCTION", " production " all match
+    if os.environ.get("ENVIRONMENT", "development").strip().lower() == "production":
         raise HTTPException(403, "Seed endpoint is disabled in production")
     await seed_demo_data()
     return {"message": "Demo data seeded"}
@@ -152,9 +168,25 @@ import mqtt_service
 async def startup():
     jwt_secret = os.environ.get('JWT_SECRET', '')
     if not jwt_secret or jwt_secret == 'supersecretkey':
-        if os.environ.get("ENVIRONMENT") == "production":
+        if os.environ.get("ENVIRONMENT", "").strip().lower() == "production":
             raise RuntimeError("CRITICAL: JWT_SECRET must be set to a strong secret in production!")
-        logger.warning("⚠️  Using default JWT_SECRET - change this before deploying to production!")
+        logger.warning("Using default JWT_SECRET - change this before deploying to production!")
+    # HIGH FIX: MongoDB connection retry with exponential backoff
+    import asyncio as _asyncio
+    for attempt in range(3):
+        try:
+            await db.command("ping")
+            logger.info("MongoDB connected successfully")
+            break
+        except Exception as e:
+            if attempt < 2:
+                wait = 2 ** attempt
+                logger.warning(f"MongoDB connection failed (attempt {attempt+1}/3), retrying in {wait}s: {e}")
+                await _asyncio.sleep(wait)
+            else:
+                logger.error(f"MongoDB connection failed after 3 attempts: {e}")
+                raise RuntimeError(f"Cannot connect to MongoDB: {e}")
+
     await init_redis()
     # Migrate existing venues without slugs
     import re

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { socialAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -156,7 +157,7 @@ export default function ExplorePage() {
                     className="flex items-center gap-3 p-3 rounded-2xl border border-border/50 bg-card hover:border-border transition-colors">
                     <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
                       onClick={() => navigate(`/player-card/${u.id}`)}>
-                      {u.avatar ? <img src={u.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+                      {u.avatar ? <img src={mediaUrl(u.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
                         : <User className="h-6 w-6 text-primary" />}
                     </div>
                     <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/player-card/${u.id}`)}>
@@ -196,7 +197,7 @@ export default function ExplorePage() {
                     <div className="flex items-center gap-3 mb-2">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
                         onClick={() => navigate(`/player-card/${post.user_id}`)}>
-                        {post.user_avatar ? <img src={post.user_avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                        {post.user_avatar ? <img src={mediaUrl(post.user_avatar)} alt="" className="h-8 w-8 rounded-full object-cover" />
                           : <User className="h-4 w-4 text-primary" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -207,7 +208,7 @@ export default function ExplorePage() {
                       </div>
                     </div>
                     {post.content && <p className="text-sm mb-2 line-clamp-3">{post.content}</p>}
-                    {post.media_url && <img src={post.media_url} alt="" className="rounded-xl w-full max-h-64 object-cover mb-2" />}
+                    {post.media_url && <img src={mediaUrl(post.media_url)} alt="" className="rounded-xl w-full max-h-64 object-cover mb-2" />}
                     <div className="flex items-center gap-2 pt-2 border-t border-border/30">
                       <button onClick={() => handleLike(post.id)} className="flex items-center gap-1 text-xs">
                         <Heart className={`h-3.5 w-3.5 ${post.liked_by_me ? "fill-red-500 text-red-500" : "text-muted-foreground"}`} />
@@ -240,7 +241,7 @@ export default function ExplorePage() {
                   <motion.div key={v.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
                     className="rounded-2xl border border-border/50 bg-card overflow-hidden cursor-pointer hover:border-border transition-colors"
                     onClick={() => navigate(`/venues/${v.id}`)}>
-                    {v.image_url && <img src={v.image_url} alt={v.name} className="w-full h-28 object-cover" />}
+                    {v.image_url && <img src={mediaUrl(v.image_url)} alt={v.name} className="w-full h-28 object-cover" />}
                     <div className="p-3">
                       <div className="font-bold text-xs truncate">{v.name}</div>
                       <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">

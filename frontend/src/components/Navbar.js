@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { notificationAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
@@ -207,7 +208,7 @@ export default function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="flex items-center gap-2 h-9 px-3" data-testid="user-menu-trigger">
                 <Avatar className="h-7 w-7">
-                  {user?.avatar && <AvatarImage src={user.avatar} alt={user.name} />}
+                  {user?.avatar && <AvatarImage src={mediaUrl(user.avatar)} alt={user.name} />}
                   <AvatarFallback className="bg-primary/20 text-primary text-xs font-bold">
                     {user?.name?.[0]?.toUpperCase()}
                   </AvatarFallback>
@@ -276,7 +277,7 @@ export default function Navbar() {
             path === "/profile" ? "ring-2 ring-primary" : ""
           }`}>
             {user?.avatar
-              ? <img src={user.avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+              ? <img src={mediaUrl(user.avatar)} alt="" className="h-7 w-7 rounded-full object-cover" />
               : <User className="h-5 w-5" />}
           </div>
           <span className="text-[9px] font-semibold leading-tight">Me</span>

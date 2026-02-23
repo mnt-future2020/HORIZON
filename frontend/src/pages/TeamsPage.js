@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { teamAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -141,7 +142,7 @@ export default function TeamsPage() {
                 <div className="flex items-start gap-4 mb-3">
                   <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                     {t.avatar_url ? (
-                      <img src={t.avatar_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                      <img src={mediaUrl(t.avatar_url)} alt="" className="h-14 w-14 rounded-xl object-cover" />
                     ) : (
                       <Shield className="h-7 w-7 text-primary" />
                     )}

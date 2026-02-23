@@ -14,10 +14,14 @@ export function AuthProvider({ children }) {
     if (token) {
       authAPI.getMe()
         .then(res => setUser(res.data))
-        .catch(() => {
-          localStorage.removeItem("horizon_token");
-          localStorage.removeItem("horizon_refresh_token");
-          setToken(null);
+        .catch((err) => {
+          // HIGH FIX: Only logout on 401 (invalid/expired token), not on network errors or 5xx
+          // Previously: ANY error (network timeout, 500, DNS failure) would log users out
+          if (err?.response?.status === 401) {
+            localStorage.removeItem("horizon_token");
+            localStorage.removeItem("horizon_refresh_token");
+            setToken(null);
+          }
         })
         .finally(() => setLoading(false));
     } else {

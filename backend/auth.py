@@ -8,11 +8,29 @@ import re
 import secrets
 import razorpay
 
-JWT_SECRET = os.environ.get('JWT_SECRET')
 JWT_ALGORITHM = "HS256"
-REFRESH_SECRET = os.environ.get('REFRESH_SECRET', secrets.token_hex(32))
 ACCESS_TOKEN_EXPIRY_HOURS = 2
 REFRESH_TOKEN_EXPIRY_DAYS = 7
+
+_ENVIRONMENT = os.environ.get("ENVIRONMENT", "development").strip().lower()
+import logging as _logging
+_auth_logger = _logging.getLogger("horizon")
+
+# --- CRITICAL FIX: Validate JWT_SECRET ---
+JWT_SECRET = os.environ.get("JWT_SECRET", "").strip()
+if not JWT_SECRET:
+    if _ENVIRONMENT == "production":
+        raise RuntimeError("FATAL: JWT_SECRET environment variable is required in production. Set a strong random secret (e.g. `openssl rand -hex 64`).")
+    JWT_SECRET = secrets.token_hex(32)
+    _auth_logger.warning("JWT_SECRET not set — using auto-generated secret. This is NOT safe for production!")
+
+# --- CRITICAL FIX: Validate REFRESH_SECRET ---
+REFRESH_SECRET = os.environ.get("REFRESH_SECRET", "").strip()
+if not REFRESH_SECRET:
+    if _ENVIRONMENT == "production":
+        raise RuntimeError("FATAL: REFRESH_SECRET environment variable is required in production. Set a strong random secret (e.g. `openssl rand -hex 64`).")
+    REFRESH_SECRET = secrets.token_hex(32)
+    _auth_logger.warning("REFRESH_SECRET not set — using auto-generated secret. This is NOT safe for production!")
 
 pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -38,15 +56,17 @@ def verify_pw(plain: str, hashed: str) -> bool:
 
 
 def create_token(uid: str, role: str) -> str:
+    now = datetime.now(timezone.utc)
     return jwt.encode(
-        {"sub": uid, "role": role, "type": "access", "exp": datetime.now(timezone.utc) + timedelta(hours=ACCESS_TOKEN_EXPIRY_HOURS)},
+        {"sub": uid, "role": role, "type": "access", "iat": now, "exp": now + timedelta(hours=ACCESS_TOKEN_EXPIRY_HOURS)},
         JWT_SECRET, algorithm=JWT_ALGORITHM
     )
 
 
 def create_refresh_token(uid: str, role: str) -> str:
+    now = datetime.now(timezone.utc)
     return jwt.encode(
-        {"sub": uid, "role": role, "type": "refresh", "exp": datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS)},
+        {"sub": uid, "role": role, "type": "refresh", "iat": now, "exp": now + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS)},
         REFRESH_SECRET, algorithm=JWT_ALGORITHM
     )
 
@@ -74,6 +94,13 @@ async def get_current_user(request: Request):
             raise HTTPException(401, "User not found")
         if user.get("account_status") in ("suspended", "deleted"):
             raise HTTPException(403, "Account is suspended or deactivated")
+        # MEDIUM FIX: Token revocation — reject tokens issued before password change/forced logout
+        invalidated_at = user.get("token_invalidated_at")
+        token_iat = payload.get("iat")
+        if invalidated_at and token_iat:
+            inv_ts = datetime.fromisoformat(invalidated_at).timestamp() if isinstance(invalidated_at, str) else invalidated_at
+            if token_iat < inv_ts:
+                raise HTTPException(401, "Token has been revoked. Please log in again.")
         return user
     except JWTError:
         raise HTTPException(401, "Invalid token")
@@ -105,6 +132,15 @@ async def get_razorpay_client():
 async def get_platform_settings():
     settings = await db.platform_settings.find_one({"key": "platform"}, {"_id": 0})
     return settings or {}
+
+
+async def invalidate_user_tokens(user_id: str):
+    """Revoke all existing tokens for a user by setting token_invalidated_at.
+    Call this after password change, forced logout, account suspension, etc."""
+    await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"token_invalidated_at": datetime.now(timezone.utc).isoformat()}}
+    )
 
 
 async def require_admin(user):

@@ -8,6 +8,7 @@ import hmac
 import hashlib
 import logging
 import asyncio
+import re
 try:
     from push_service import notify_booking_confirmed, notify_booking_cancelled
 except Exception:
@@ -46,6 +47,11 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
         raise HTTPException(409, "Slot already booked")
 
     price = venue.get("base_price", 2000)
+    # MEDIUM FIX #19: Validate base_price is positive
+    if not isinstance(price, (int, float)) or price <= 0:
+        logger.warning(f"Invalid base_price {price} for venue {input.venue_id}, using default 2000")
+        price = 2000
+
     rules = await db.pricing_rules.find(
         {"venue_id": input.venue_id, "is_active": True}, {"_id": 0}
     ).sort("priority", -1).to_list(100)
@@ -67,7 +73,11 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             if act.get("type") == "multiplier":
                 price = int(price * act.get("value", 1))
             elif act.get("type") == "discount":
-                price = int(price * (1 - act.get("value", 0)))
+                # MEDIUM FIX #20: Clamp discount value to 0-1 range to prevent negative prices
+                discount_value = min(max(act.get("value", 0), 0), 1.0)
+                price = int(price * (1 - discount_value))
+    # Final safety: ensure price is never negative
+    price = max(price, 0)
 
     platform = await get_platform_settings()
     commission_pct = platform.get("booking_commission_pct", 0)
@@ -166,13 +176,14 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
     gw = settings.get("payment_gateway", {})
     key_secret = gw.get("key_secret", "")
 
-    if key_secret:
+    # CRITICAL FIX: Always verify signature for razorpay bookings, never skip
+    if booking.get("payment_gateway") == "razorpay":
+        if not key_secret:
+            raise HTTPException(500, "Payment gateway not configured properly — contact support")
         msg = f"{razorpay_order_id}|{razorpay_payment_id}"
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
         if expected != razorpay_signature:
-            raise HTTPException(400, "Payment verification failed")
-    elif booking.get("payment_gateway") == "razorpay":
-        raise HTTPException(500, "Payment gateway not configured properly")
+            raise HTTPException(400, "Payment verification failed — signature mismatch")
 
     if booking.get("split_config"):
         sp = {
@@ -292,10 +303,20 @@ async def list_bookings(user=Depends(get_current_user)):
 
 
 @router.get("/bookings/{booking_id}")
-async def get_booking(booking_id: str):
+async def get_booking(booking_id: str, user=Depends(get_current_user)):
     booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
     if not booking:
         raise HTTPException(404, "Booking not found")
+    # Ownership check: host, player in booking, venue owner, or admin
+    is_host = booking.get("host_id") == user["id"]
+    is_player = user["id"] in booking.get("players", [])
+    is_admin = user.get("role") == "super_admin"
+    is_venue_owner = False
+    if user.get("role") == "venue_owner":
+        venue = await db.venues.find_one({"id": booking.get("venue_id"), "owner_id": user["id"]}, {"_id": 0, "id": 1})
+        is_venue_owner = venue is not None
+    if not (is_host or is_player or is_admin or is_venue_owner):
+        raise HTTPException(403, "You don't have access to this booking")
     return booking
 
 
@@ -348,8 +369,28 @@ async def get_split_info(token: str):
         raise HTTPException(404, "Split payment not found")
     payments = await db.split_payments.find({"split_token": token}, {"_id": 0}).to_list(100)
     sc = booking.get("split_config", {})
+    # CRITICAL FIX: Only expose necessary booking fields, not full payment/user details
+    safe_booking = {
+        "id": booking.get("id"),
+        "venue_name": booking.get("venue_name"),
+        "date": booking.get("date"),
+        "start_time": booking.get("start_time"),
+        "end_time": booking.get("end_time"),
+        "sport": booking.get("sport"),
+        "total_amount": booking.get("total_amount"),
+        "status": booking.get("status"),
+        "split_config": sc,
+        "payment_gateway": booking.get("payment_gateway"),
+        "razorpay_order_id": booking.get("razorpay_order_id", ""),
+    }
+    # Sanitize payment records — strip internal fields
+    safe_payments = [
+        {"id": p.get("id"), "payer_name": p.get("payer_name"), "amount": p.get("amount"),
+         "status": p.get("status"), "paid_at": p.get("paid_at")}
+        for p in payments
+    ]
     return {
-        "booking": booking, "payments": payments,
+        "booking": safe_booking, "payments": safe_payments,
         "remaining": sc.get("total_shares", 0) - sc.get("shares_paid", 0),
         "per_share": sc.get("per_share", 0)
     }
@@ -358,7 +399,9 @@ async def get_split_info(token: str):
 @router.post("/split/{token}/pay")
 async def pay_split(token: str, request: Request):
     body = await request.json()
-    payer_name = body.get("payer_name", "Anonymous")
+    # Sanitize payer_name: strip, limit length, remove HTML/script tags
+    raw_name = body.get("payer_name", "Anonymous") or "Anonymous"
+    payer_name = re.sub(r"<[^>]+>", "", str(raw_name)).strip()[:50] or "Anonymous"
     booking = await db.bookings.find_one({"split_config.split_token": token})
     if not booking:
         raise HTTPException(404, "Split payment not found")
@@ -412,10 +455,29 @@ async def verify_split_payment(token: str, request: Request):
     if not booking:
         raise HTTPException(404, "Booking not found")
 
+    # CRITICAL FIX: Verify Razorpay signature for split payments too
+    if booking.get("payment_gateway") == "razorpay":
+        settings = await get_platform_settings()
+        gw = settings.get("payment_gateway", {})
+        key_secret = gw.get("key_secret", "")
+        if not key_secret:
+            raise HTTPException(500, "Payment gateway not configured properly")
+        razorpay_payment_id = data.get("razorpay_payment_id", "")
+        razorpay_order_id = data.get("razorpay_order_id", "")
+        razorpay_signature = data.get("razorpay_signature", "")
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+        if expected != razorpay_signature:
+            raise HTTPException(400, "Payment verification failed — signature mismatch")
+
+    # Sanitize payer_name
+    raw_name = data.get("payer_name", "Anonymous") or "Anonymous"
+    payer_name = re.sub(r"<[^>]+>", "", str(raw_name)).strip()[:50] or "Anonymous"
+
     payment = {
         "id": str(uuid.uuid4()), "booking_id": booking["id"],
         "split_token": token, "payer_id": data.get("payer_id", ""),
-        "payer_name": data.get("payer_name", "Anonymous"),
+        "payer_name": payer_name,
         "amount": booking["split_config"]["per_share"],
         "razorpay_payment_id": data.get("razorpay_payment_id", ""),
         "status": "paid", "paid_at": datetime.now(timezone.utc).isoformat()
@@ -423,10 +485,13 @@ async def verify_split_payment(token: str, request: Request):
     await db.split_payments.insert_one(payment)
     payment.pop("_id", None)
 
-    sc = booking["split_config"]
-    new_paid = sc["shares_paid"] + 1
-    updates = {"split_config.shares_paid": new_paid}
-    if new_paid >= sc["total_shares"]:
-        updates["status"] = "confirmed"
-    await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
-    return {"message": "Share paid", "shares_paid": new_paid, "status": "confirmed" if new_paid >= sc["total_shares"] else "pending"}
+    # Use atomic increment to prevent race condition
+    result = await db.bookings.find_one_and_update(
+        {"id": booking["id"]},
+        {"$inc": {"split_config.shares_paid": 1}},
+        return_document=True, projection={"_id": 0, "split_config": 1}
+    )
+    new_paid = result["split_config"]["shares_paid"]
+    if new_paid >= result["split_config"]["total_shares"]:
+        await db.bookings.update_one({"id": booking["id"]}, {"$set": {"status": "confirmed"}})
+    return {"message": "Share paid", "shares_paid": new_paid, "status": "confirmed" if new_paid >= result["split_config"]["total_shares"] else "pending"}

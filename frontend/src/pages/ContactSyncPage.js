@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { socialAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
@@ -137,7 +138,7 @@ export default function ContactSyncPage() {
       className="flex items-center gap-3 p-4 rounded-2xl border border-border/50 bg-card">
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
         onClick={() => navigate(`/player-card/${u.id}`)}>
-        {u.avatar ? <img src={u.avatar} alt="" className="h-12 w-12 rounded-full object-cover" />
+        {u.avatar ? <img src={mediaUrl(u.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
           : <User className="h-6 w-6 text-primary" />}
       </div>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/player-card/${u.id}`)}>

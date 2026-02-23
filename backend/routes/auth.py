@@ -3,13 +3,35 @@ from datetime import datetime, timezone
 from database import db
 from auth import hash_pw, verify_pw, create_token, create_refresh_token, verify_refresh_token, validate_password_strength, get_current_user
 from models import RegisterInput, LoginInput
+from collections import defaultdict
 import uuid
+import time
+import logging
 
 router = APIRouter()
+logger = logging.getLogger("horizon")
+
+# --- HIGH FIX: Simple in-memory rate limiter ---
+_rate_limits: dict[str, list[float]] = defaultdict(list)
+
+
+def _check_rate_limit(key: str, max_attempts: int = 10, window: int = 300):
+    """Rate limit by key. Default: 10 attempts per 5 minutes."""
+    now = time.time()
+    # Prune expired entries
+    _rate_limits[key] = [t for t in _rate_limits[key] if now - t < window]
+    if len(_rate_limits[key]) >= max_attempts:
+        logger.warning(f"Rate limit exceeded for: {key}")
+        raise HTTPException(429, "Too many attempts. Please try again later.")
+    _rate_limits[key].append(now)
 
 
 @router.post("/auth/register")
-async def register(input: RegisterInput):
+async def register(input: RegisterInput, request: Request):
+    # HIGH FIX: Rate limit registration by IP
+    client_ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(f"register:{client_ip}", max_attempts=5, window=300)
+
     if input.role == "super_admin":
         raise HTTPException(403, "Cannot register as super admin")
     existing = await db.users.find_one({"email": input.email})
@@ -48,9 +70,19 @@ async def register(input: RegisterInput):
 
 
 @router.post("/auth/login")
-async def login(input: LoginInput):
+async def login(input: LoginInput, request: Request):
+    # HIGH FIX: Rate limit login by IP + email
+    client_ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(f"login:{client_ip}", max_attempts=10, window=300)
+    _check_rate_limit(f"login:{input.email}", max_attempts=5, window=300)
+
     user = await db.users.find_one({"email": input.email})
-    if not user or not verify_pw(input.password, user["password_hash"]):
+    if not user:
+        # HIGH FIX: Always run bcrypt to prevent timing-based email enumeration
+        # Without this, "user not found" returns instantly while "wrong password" takes ~100ms (bcrypt)
+        verify_pw(input.password, "$2b$12$LJ3m4ys3Lz0QqV9wKMkMxOsQOxGVbGShCR.gBBqONhfOUielJhntC")
+        raise HTTPException(401, "Invalid credentials")
+    if not verify_pw(input.password, user["password_hash"]):
         raise HTTPException(401, "Invalid credentials")
     token = create_token(user["id"], user["role"])
     user.pop("_id", None)
@@ -90,6 +122,10 @@ async def register_push_token(request: Request, user=Depends(get_current_user)):
 
 @router.post("/auth/refresh")
 async def refresh_token(request: Request):
+    # Rate limit refresh endpoint
+    client_ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(f"refresh:{client_ip}", max_attempts=20, window=300)
+
     data = await request.json()
     refresh_tok = data.get("refresh_token", "")
     if not refresh_tok:

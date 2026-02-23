@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAPI, analyticsAPI, bookingAPI, uploadAPI, careerAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -72,11 +73,7 @@ export default function ProfilePage() {
       updateUser(profileRes.data);
       toast.success("Profile photo updated!");
     } catch (err) {
-      if (err?.response?.status === 503) {
-        toast.error("S3 not configured. Ask the admin to set up S3 in Admin → Settings.");
-      } else {
-        toast.error("Failed to upload photo");
-      }
+      toast.error(err?.response?.data?.detail || "Failed to upload photo");
     } finally {
       setUploadingAvatar(false);
       e.target.value = "";
@@ -107,7 +104,7 @@ export default function ProfilePage() {
                 title="Change profile photo"
               >
                 {user?.avatar ? (
-                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover" />
+                  <img src={mediaUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
                 ) : (
                   <span className="font-display font-black text-2xl text-primary">{user?.name?.[0]?.toUpperCase()}</span>
                 )}

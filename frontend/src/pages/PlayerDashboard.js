@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { bookingAPI, analyticsAPI, waitlistAPI, coachingAPI, recommendationAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -368,7 +369,7 @@ export default function PlayerDashboard() {
                     <div className="flex items-start gap-3">
                       <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {v.images?.[0] ? (
-                          <img src={v.images[0]} alt="" className="h-10 w-10 rounded-lg object-cover" />
+                          <img src={mediaUrl(v.images[0])} alt="" className="h-10 w-10 rounded-lg object-cover" />
                         ) : (
                           <Building2 className="h-5 w-5 text-primary" />
                         )}

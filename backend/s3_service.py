@@ -1,11 +1,16 @@
 import boto3
 import logging
 import uuid
+from pathlib import Path
 from botocore.exceptions import ClientError
 from botocore.config import Config
 from database import db
 
 logger = logging.getLogger("horizon")
+
+# Local uploads directory (fallback when S3 is not configured)
+UPLOADS_DIR = Path(__file__).parent / "uploads"
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 
 async def get_s3_config():
@@ -33,26 +38,39 @@ def public_url(cfg: dict, key: str) -> str:
     return f"https://{cfg['bucket_name']}.s3.{cfg['region']}.amazonaws.com/{key}"
 
 
+def _save_local(content: bytes, folder: str, filename: str) -> str:
+    """Save file locally under uploads/<folder>/. Returns local URL path."""
+    folder_path = UPLOADS_DIR / folder
+    folder_path.mkdir(parents=True, exist_ok=True)
+    safe_name = f"{uuid.uuid4().hex}_{filename}"
+    file_path = folder_path / safe_name
+    file_path.write_bytes(content)
+    local_url = f"/api/uploads/{folder}/{safe_name}"
+    logger.info(f"Local save OK: {local_url}")
+    return local_url
+
+
 async def upload_bytes(content: bytes, folder: str, filename: str, content_type: str) -> str | None:
-    """Upload bytes to S3. Returns public URL or None if S3 not configured."""
+    """Upload bytes to S3 (priority). Falls back to local storage if S3 not configured."""
     cfg = await get_s3_config()
-    if not cfg:
-        return None
-    key = f"{folder}/{uuid.uuid4().hex}_{filename}"
-    try:
-        client = _make_client(cfg)
-        client.put_object(
-            Bucket=cfg["bucket_name"],
-            Key=key,
-            Body=content,
-            ContentType=content_type,
-        )
-        url = public_url(cfg, key)
-        logger.info(f"S3 upload OK: {url}")
-        return url
-    except ClientError as e:
-        logger.error(f"S3 upload failed: {e}")
-        return None
+    if cfg:
+        key = f"{folder}/{uuid.uuid4().hex}_{filename}"
+        try:
+            client = _make_client(cfg)
+            client.put_object(
+                Bucket=cfg["bucket_name"],
+                Key=key,
+                Body=content,
+                ContentType=content_type,
+            )
+            url = public_url(cfg, key)
+            logger.info(f"S3 upload OK: {url}")
+            return url
+        except ClientError as e:
+            logger.error(f"S3 upload failed, falling back to local: {e}")
+
+    # Fallback: save locally
+    return _save_local(content, folder, filename)
 
 
 async def test_connection(cfg: dict) -> dict:

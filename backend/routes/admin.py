@@ -246,7 +246,7 @@ async def admin_test_s3(request: Request, user=Depends(get_current_user)):
 
 @router.post("/upload/image")
 async def upload_image(file: UploadFile = File(...), user=Depends(get_current_user)):
-    """Upload an image to S3. Returns {url} or 503 if S3 not configured."""
+    """Upload an image — S3 priority, local fallback."""
     if file.content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
         raise HTTPException(400, "Only JPEG/PNG/WebP/GIF images allowed")
     if file.size and file.size > 10 * 1024 * 1024:
@@ -254,14 +254,12 @@ async def upload_image(file: UploadFile = File(...), user=Depends(get_current_us
     content = await file.read()
     ext = file.filename.split(".")[-1] if "." in file.filename else "jpg"
     url = await s3_service.upload_bytes(content, "images", f"{uuid.uuid4().hex}.{ext}", file.content_type)
-    if not url:
-        raise HTTPException(503, "S3 not configured. Please set up S3 in Admin → Settings.")
     return {"url": url}
 
 
 @router.post("/upload/video")
 async def upload_video(file: UploadFile = File(...), user=Depends(get_current_user)):
-    """Upload a video to S3. Returns {url} or 503 if not configured."""
+    """Upload a video — S3 priority, local fallback."""
     if file.content_type not in ["video/mp4", "video/quicktime", "video/x-msvideo", "video/webm"]:
         raise HTTPException(400, "Only MP4/MOV/AVI/WebM videos allowed")
     if file.size and file.size > 100 * 1024 * 1024:
@@ -269,8 +267,6 @@ async def upload_video(file: UploadFile = File(...), user=Depends(get_current_us
     content = await file.read()
     ext = file.filename.split(".")[-1] if "." in file.filename else "mp4"
     url = await s3_service.upload_bytes(content, "videos", f"{uuid.uuid4().hex}.{ext}", file.content_type)
-    if not url:
-        raise HTTPException(503, "S3 not configured. Please set up S3 in Admin → Settings.")
     return {"url": url}
 
 

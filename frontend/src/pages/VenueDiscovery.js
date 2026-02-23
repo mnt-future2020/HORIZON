@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -393,7 +394,7 @@ export default function VenueDiscovery() {
                   <div className="relative h-52 overflow-hidden bg-secondary/30">
                     {venue.images?.[0] ? (
                       <>
-                        <img src={venue.images[0]} alt={venue.name}
+                        <img src={mediaUrl(venue.images[0])} alt={venue.name}
                           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                         <div className="absolute inset-0 bg-gradient-overlay" />
                       </>

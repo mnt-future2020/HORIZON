@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { groupAPI, recommendationAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,7 +154,7 @@ export default function CommunitiesPage() {
                   onClick={() => navigate(`/communities/${g.id}`)}>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      {g.avatar_url ? <img src={g.avatar_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+                      {g.avatar_url ? <img src={mediaUrl(g.avatar_url)} alt="" className="h-10 w-10 rounded-xl object-cover" />
                         : <Users className="h-5 w-5 text-primary" />}
                     </div>
                     <div className="min-w-0">
@@ -193,7 +194,7 @@ export default function CommunitiesPage() {
                 <div className="flex items-start gap-4 mb-3">
                   <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
                     {g.avatar_url ? (
-                      <img src={g.avatar_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
+                      <img src={mediaUrl(g.avatar_url)} alt="" className="h-14 w-14 rounded-xl object-cover" />
                     ) : (
                       <Users className="h-7 w-7 text-primary" />
                     )}

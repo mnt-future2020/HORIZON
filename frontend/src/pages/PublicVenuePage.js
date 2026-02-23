@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { venueAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
 import { Badge } from "@/components/ui/badge";
@@ -251,7 +252,7 @@ export default function PublicVenuePage() {
       {/* Hero Image */}
       <div className="relative h-64 sm:h-80 md:h-96 overflow-hidden bg-muted">
         <img
-          src={images[currentImageIndex]}
+          src={mediaUrl(images[currentImageIndex])}
           alt={venue.name}
           className="w-full h-full object-cover"
           onError={(e) => {

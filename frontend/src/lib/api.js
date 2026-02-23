@@ -1,6 +1,11 @@
 import axios from "axios";
 
-const API_URL = `${process.env.REACT_APP_BACKEND_URL}/api`;
+// HIGH FIX: Validate backend URL — prevent silent failures from undefined env var
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+if (!BACKEND_URL) {
+  console.error("[api.js] REACT_APP_BACKEND_URL is not set! API calls will fail. Check your .env file.");
+}
+const API_URL = `${BACKEND_URL || "http://localhost:8000"}/api`;
 
 const api = axios.create({ baseURL: API_URL, timeout: 30000 });
 
@@ -16,6 +21,19 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// HIGH FIX: Serialize concurrent refresh token requests
+// Without this, multiple simultaneous 401s each trigger their own refresh — only the first succeeds
+let _isRefreshing = false;
+let _refreshQueue = [];
+
+function _processRefreshQueue(error, token = null) {
+  _refreshQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token);
+  });
+  _refreshQueue = [];
+}
+
 // Auto-refresh token on 401
 api.interceptors.response.use(
   (res) => res,
@@ -23,6 +41,18 @@ api.interceptors.response.use(
     const original = error.config;
     if (error.response?.status === 401 && !original._retry && !original.url?.includes("/auth/")) {
       original._retry = true;
+
+      if (_isRefreshing) {
+        // Queue this request — wait for the in-flight refresh to complete
+        return new Promise((resolve, reject) => {
+          _refreshQueue.push({ resolve, reject });
+        }).then((token) => {
+          original.headers.Authorization = `Bearer ${token}`;
+          return api(original);
+        });
+      }
+
+      _isRefreshing = true;
       try {
         const refreshToken = localStorage.getItem("horizon_refresh_token");
         if (refreshToken) {
@@ -30,12 +60,16 @@ api.interceptors.response.use(
           localStorage.setItem("horizon_token", res.data.token);
           localStorage.setItem("horizon_refresh_token", res.data.refresh_token);
           original.headers.Authorization = `Bearer ${res.data.token}`;
+          _processRefreshQueue(null, res.data.token);
           return api(original);
         }
-      } catch {
+      } catch (refreshError) {
+        _processRefreshQueue(refreshError);
         localStorage.removeItem("horizon_token");
         localStorage.removeItem("horizon_refresh_token");
         window.location.href = "/auth";
+      } finally {
+        _isRefreshing = false;
       }
     }
     return Promise.reject(error);

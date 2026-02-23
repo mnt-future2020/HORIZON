@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { groupAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -139,7 +140,7 @@ export default function GroupDetailPage() {
           </button>
           <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
             {group.avatar_url ? (
-              <img src={group.avatar_url} alt="" className="h-10 w-10 rounded-xl object-cover" />
+              <img src={mediaUrl(group.avatar_url)} alt="" className="h-10 w-10 rounded-xl object-cover" />
             ) : (
               <Users className="h-5 w-5 text-primary" />
             )}
@@ -182,7 +183,7 @@ export default function GroupDetailPage() {
                   <div key={m.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/30 cursor-pointer"
                     onClick={() => navigate(`/player-card/${m.id}`)}>
                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                      {m.avatar ? <img src={m.avatar} alt="" className="h-8 w-8 rounded-full object-cover" />
+                      {m.avatar ? <img src={mediaUrl(m.avatar)} alt="" className="h-8 w-8 rounded-full object-cover" />
                         : <User className="h-4 w-4 text-primary" />}
                     </div>
                     <div className="flex-1">
@@ -238,7 +239,7 @@ export default function GroupDetailPage() {
                             {!isMe && showAvatar ? (
                               <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1 cursor-pointer"
                                 onClick={() => navigate(`/player-card/${msg.sender_id}`)}>
-                                {msg.sender_avatar ? <img src={msg.sender_avatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+                                {msg.sender_avatar ? <img src={mediaUrl(msg.sender_avatar)} alt="" className="h-7 w-7 rounded-full object-cover" />
                                   : <User className="h-3.5 w-3.5 text-primary" />}
                               </div>
                             ) : !isMe ? <div className="w-7 flex-shrink-0" /> : null}
@@ -253,7 +254,7 @@ export default function GroupDetailPage() {
                               }`}>
                                 {msg.content}
                                 {msg.media_url && (
-                                  <img src={msg.media_url} alt="" className="rounded-lg mt-2 max-h-48 object-cover" />
+                                  <img src={mediaUrl(msg.media_url)} alt="" className="rounded-lg mt-2 max-h-48 object-cover" />
                                 )}
                               </div>
                               <span className={`text-[9px] text-muted-foreground/60 mt-0.5 block ${isMe ? "text-right mr-1" : "ml-1"}`}>

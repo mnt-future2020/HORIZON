@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import { venueAPI, bookingAPI, slotLockAPI, notificationAPI, paymentAPI, waitlistAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -380,7 +381,7 @@ export default function VenueDetail() {
         <div className="relative h-[400px] md:h-[500px] overflow-hidden">
           {/* Hero Image with Gradient Overlay */}
           <img
-            src={venue.images?.[0] || "https://images.unsplash.com/photo-1750716413756-b66624b64ce4?w=1200&q=80"}
+            src={mediaUrl(venue.images?.[0]) || "https://images.unsplash.com/photo-1750716413756-b66624b64ce4?w=1200&q=80"}
             alt={venue.name}
             className="w-full h-full object-cover"
           />

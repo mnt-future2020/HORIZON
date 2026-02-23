@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { chatAPI, userSearchAPI, socialAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -578,7 +579,7 @@ export default function ChatPage() {
     <button onClick={onSelect}
       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 active:bg-secondary/50 transition-all text-left">
       <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-        {u.avatar ? <img src={u.avatar} alt="" className="h-11 w-11 rounded-full object-cover" />
+        {u.avatar ? <img src={mediaUrl(u.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" />
           : <User className="h-5 w-5 text-primary" />}
       </div>
       <div className="flex-1 min-w-0">
@@ -615,7 +616,7 @@ export default function ChatPage() {
             <div className="relative cursor-pointer" onClick={() => navigate(`/player-card/${activeConvo.other_user?.id}`)}>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
                 {activeConvo.other_user?.avatar
-                  ? <img src={activeConvo.other_user.avatar} alt="" className="h-10 w-10 rounded-full object-cover" />
+                  ? <img src={mediaUrl(activeConvo.other_user.avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
                   : <User className="h-5 w-5 text-primary" />}
               </div>
               {onlineStatus?.online && (
@@ -712,11 +713,11 @@ export default function ChatPage() {
                               {msg.content && <span>{msg.content}</span>}
                               {/* Image */}
                               {msg.media_url && (!msg.media_type || msg.media_type === "image") && !msg.media_type?.startsWith("voice") && !msg.media_type?.startsWith("audio") && !msg.media_type?.startsWith("document") && (
-                                <img src={msg.media_url} alt="" className="rounded-lg mt-1 max-h-52 object-cover cursor-pointer" onClick={() => window.open(msg.media_url, "_blank")} />
+                                <img src={mediaUrl(msg.media_url)} alt="" className="rounded-lg mt-1 max-h-52 object-cover cursor-pointer" onClick={() => window.open(mediaUrl(msg.media_url), "_blank")} />
                               )}
                               {/* Document */}
                               {msg.media_url && msg.media_type === "document" && (
-                                <a href={msg.media_url} target="_blank" rel="noopener noreferrer"
+                                <a href={mediaUrl(msg.media_url)} target="_blank" rel="noopener noreferrer"
                                   className={`flex items-center gap-2 mt-1 p-2 rounded-lg ${isMe ? "bg-white/10" : "bg-secondary/30"}`}>
                                   <FileText className="h-5 w-5 flex-shrink-0" />
                                   <span className="text-xs truncate">{msg.file_name || "Document"}</span>
@@ -725,7 +726,7 @@ export default function ChatPage() {
                               {/* Voice message */}
                               {msg.media_url && (msg.media_type === "voice" || msg.media_type === "audio") && (
                                 <div className="flex items-center gap-2 mt-1 min-w-[180px]">
-                                  <button onClick={() => togglePlayAudio(msg.id, msg.media_url)}
+                                  <button onClick={() => togglePlayAudio(msg.id, mediaUrl(msg.media_url))}
                                     className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-secondary/50"}`}>
                                     {playingAudio === msg.id ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5 ml-0.5" />}
                                   </button>
@@ -1020,7 +1021,7 @@ export default function ChatPage() {
                 <div className="h-13 w-13 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden"
                   style={{ width: 52, height: 52 }}>
                   {convo.other_user?.avatar
-                    ? <img src={convo.other_user.avatar} alt="" className="rounded-full object-cover" style={{ width: 52, height: 52 }} />
+                    ? <img src={mediaUrl(convo.other_user.avatar)} alt="" className="rounded-full object-cover" style={{ width: 52, height: 52 }} />
                     : <User className="h-6 w-6 text-primary" />}
                 </div>
                 {convo.unread_count > 0 && (

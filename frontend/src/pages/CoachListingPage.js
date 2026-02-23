@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { coachingAPI, paymentAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -30,7 +31,7 @@ function CoachCard({ coach, onSelect, delay = 0 }) {
       <div className="flex items-start gap-4">
         <div className="w-16 h-16 rounded-xl overflow-hidden bg-secondary shrink-0">
           <img
-            src={coach.avatar || COACH_PLACEHOLDER}
+            src={mediaUrl(coach.avatar) || COACH_PLACEHOLDER}
             alt={coach.name}
             className="w-full h-full object-cover"
           />
@@ -454,7 +455,7 @@ export default function CoachListingPage() {
               {/* Coach Info */}
               <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg">
                 <div className="w-10 h-10 rounded-lg overflow-hidden bg-secondary">
-                  <img src={selectedCoach.avatar || COACH_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
+                  <img src={mediaUrl(selectedCoach.avatar) || COACH_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="flex-1">
                   <div className="font-bold text-sm">{selectedCoach.name}</div>
