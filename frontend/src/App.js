@@ -7,46 +7,56 @@ import { lazy, Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
+// Lazy load with retry: if chunk fails to load (stale cache after rebuild), retry once
+function lazyRetry(importFn) {
+  return lazy(() => importFn().catch((err) => {
+    // Retry once after a small delay
+    return new Promise(resolve => setTimeout(resolve, 500))
+      .then(() => importFn())
+      .catch(() => { throw err; });
+  }));
+}
+
 // MEDIUM FIX #22: Lazy-load all pages — reduces initial bundle size significantly
 // Only Navbar + ErrorBoundary are eagerly loaded (needed immediately)
-const LandingPage = lazy(() => import("@/pages/LandingPage"));
-const AuthPage = lazy(() => import("@/pages/AuthPage"));
-const PlayerDashboard = lazy(() => import("@/pages/PlayerDashboard"));
-const VenueDiscovery = lazy(() => import("@/pages/VenueDiscovery"));
-const VenueDetail = lazy(() => import("@/pages/VenueDetail"));
-const MatchmakingPage = lazy(() => import("@/pages/MatchmakingPage"));
-const VenueOwnerDashboard = lazy(() => import("@/pages/VenueOwnerDashboard"));
-const CoachDashboard = lazy(() => import("@/pages/CoachDashboard"));
-const SplitPaymentPage = lazy(() => import("@/pages/SplitPaymentPage"));
-const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
-const SuperAdminDashboard = lazy(() => import("@/pages/SuperAdminDashboard"));
-const LeaderboardPage = lazy(() => import("@/pages/LeaderboardPage"));
-const RatingProfilePage = lazy(() => import("@/pages/RatingProfilePage"));
-const HighlightsPage = lazy(() => import("@/pages/HighlightsPage"));
-const SharedHighlightPage = lazy(() => import("@/pages/SharedHighlightPage"));
-const IoTDashboard = lazy(() => import("@/pages/IoTDashboard"));
-const PublicVenuePage = lazy(() => import("@/pages/PublicVenuePage"));
-const POSPage = lazy(() => import("@/pages/POSPage"));
-const AboutPage = lazy(() => import("@/pages/AboutPage"));
-const ContactPage = lazy(() => import("@/pages/ContactPage"));
-const PrivacyPolicyPage = lazy(() => import("@/pages/PrivacyPolicyPage"));
-const TermsPage = lazy(() => import("@/pages/TermsPage"));
-const RefundPolicyPage = lazy(() => import("@/pages/RefundPolicyPage"));
-const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
-const PrivacySettingsPage = lazy(() => import("@/pages/PrivacySettingsPage"));
-const SocialFeedPage = lazy(() => import("@/pages/SocialFeedPage"));
-const PlayerCardPage = lazy(() => import("@/pages/PlayerCardPage"));
-const TournamentsPage = lazy(() => import("@/pages/TournamentsPage"));
-const TournamentDetailPage = lazy(() => import("@/pages/TournamentDetailPage"));
-const CoachListingPage = lazy(() => import("@/pages/CoachListingPage"));
-const CommunitiesPage = lazy(() => import("@/pages/CommunitiesPage"));
-const GroupDetailPage = lazy(() => import("@/pages/GroupDetailPage"));
-const TeamsPage = lazy(() => import("@/pages/TeamsPage"));
-const ChatPage = lazy(() => import("@/pages/ChatPage"));
-const ExplorePage = lazy(() => import("@/pages/ExplorePage"));
-const BookmarksPage = lazy(() => import("@/pages/BookmarksPage"));
-const ContactSyncPage = lazy(() => import("@/pages/ContactSyncPage"));
-const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+const LandingPage = lazyRetry(() => import("@/pages/LandingPage"));
+const AuthPage = lazyRetry(() => import("@/pages/AuthPage"));
+const PlayerDashboard = lazyRetry(() => import("@/pages/PlayerDashboard"));
+const VenueDiscovery = lazyRetry(() => import("@/pages/VenueDiscovery"));
+const VenueDetail = lazyRetry(() => import("@/pages/VenueDetail"));
+const MatchmakingPage = lazyRetry(() => import("@/pages/MatchmakingPage"));
+const VenueOwnerDashboard = lazyRetry(() => import("@/pages/VenueOwnerDashboard"));
+const CoachDashboard = lazyRetry(() => import("@/pages/CoachDashboard"));
+const SplitPaymentPage = lazyRetry(() => import("@/pages/SplitPaymentPage"));
+const ProfilePage = lazyRetry(() => import("@/pages/ProfilePage"));
+const SuperAdminDashboard = lazyRetry(() => import("@/pages/SuperAdminDashboard"));
+const LeaderboardPage = lazyRetry(() => import("@/pages/LeaderboardPage"));
+const RatingProfilePage = lazyRetry(() => import("@/pages/RatingProfilePage"));
+const HighlightsPage = lazyRetry(() => import("@/pages/HighlightsPage"));
+const SharedHighlightPage = lazyRetry(() => import("@/pages/SharedHighlightPage"));
+const IoTDashboard = lazyRetry(() => import("@/pages/IoTDashboard"));
+const PublicVenuePage = lazyRetry(() => import("@/pages/PublicVenuePage"));
+const POSPage = lazyRetry(() => import("@/pages/POSPage"));
+const AboutPage = lazyRetry(() => import("@/pages/AboutPage"));
+const ContactPage = lazyRetry(() => import("@/pages/ContactPage"));
+const PrivacyPolicyPage = lazyRetry(() => import("@/pages/PrivacyPolicyPage"));
+const TermsPage = lazyRetry(() => import("@/pages/TermsPage"));
+const RefundPolicyPage = lazyRetry(() => import("@/pages/RefundPolicyPage"));
+const NotificationsPage = lazyRetry(() => import("@/pages/NotificationsPage"));
+const PrivacySettingsPage = lazyRetry(() => import("@/pages/PrivacySettingsPage"));
+const SocialFeedPage = lazyRetry(() => import("@/pages/SocialFeedPage"));
+const PlayerCardPage = lazyRetry(() => import("@/pages/PlayerCardPage"));
+const TournamentsPage = lazyRetry(() => import("@/pages/TournamentsPage"));
+const TournamentDetailPage = lazyRetry(() => import("@/pages/TournamentDetailPage"));
+const CoachListingPage = lazyRetry(() => import("@/pages/CoachListingPage"));
+const CommunitiesPage = lazyRetry(() => import("@/pages/CommunitiesPage"));
+const GroupDetailPage = lazyRetry(() => import("@/pages/GroupDetailPage"));
+const TeamsPage = lazyRetry(() => import("@/pages/TeamsPage"));
+const ChatPage = lazyRetry(() => import("@/pages/ChatPage"));
+const ExplorePage = lazyRetry(() => import("@/pages/ExplorePage"));
+const BookmarksPage = lazyRetry(() => import("@/pages/BookmarksPage"));
+const ContactSyncPage = lazyRetry(() => import("@/pages/ContactSyncPage"));
+const NotFoundPage = lazyRetry(() => import("@/pages/NotFoundPage"));
 
 function PageLoader() {
   return (

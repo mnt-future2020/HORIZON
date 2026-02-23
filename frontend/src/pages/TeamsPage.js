@@ -152,7 +152,7 @@ export default function TeamsPage() {
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t.description || `${t.sport} team`}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="sport" className="text-[10px] capitalize">{t.sport}</Badge>
-                      <span className="text-[10px] text-muted-foreground">{t.player_count || 0}/{t.max_players} players</span>
+                      <span className="text-[10px] text-muted-foreground">{t.player_count || 0}/{t.max_players} Lobbians</span>
                     </div>
                   </div>
                 </div>
@@ -217,7 +217,7 @@ export default function TeamsPage() {
 
         {(tab === "discover" ? teams : myTeams).length === 0 && (
           <div className="text-center py-20">
-            <Shield className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+            <Shield className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-display text-xl font-bold text-muted-foreground">
               {tab === "discover" ? "No teams found" : "You're not on any teams yet"}
             </h3>
@@ -257,11 +257,11 @@ export default function TeamsPage() {
                   <div>
                     <Label className="text-xs text-muted-foreground">Description</Label>
                     <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                      placeholder="Tell players about your team..." rows={3}
+                      placeholder="Tell Lobbians about your team..." rows={3}
                       className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Max Players</Label>
+                    <Label className="text-xs text-muted-foreground">Max Lobbians</Label>
                     <Input type="number" value={form.max_players} onChange={e => setForm(p => ({ ...p, max_players: parseInt(e.target.value) || 20 }))}
                       min={2} max={50} className="mt-1 bg-background border-border" />
                   </div>

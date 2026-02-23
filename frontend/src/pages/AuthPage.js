@@ -146,7 +146,7 @@ export default function AuthPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="player">Player</SelectItem>
+                      <SelectItem value="player">Lobbian</SelectItem>
                       <SelectItem value="venue_owner">Venue Owner</SelectItem>
                       <SelectItem value="coach">Coach</SelectItem>
                     </SelectContent>

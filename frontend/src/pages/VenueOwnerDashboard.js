@@ -185,18 +185,23 @@ function VenueOwnerDashboardContent() {
         venueAPI.getOwnerVenues().catch(() => ({ data: [] })),
         bookingAPI.list().catch(() => ({ data: [] })),
       ]);
-      setVenues(vRes.data || []);
-      setBookings(bRes.data || []);
-      if (vRes.data?.length > 0) {
-        const v = selectedVenue || vRes.data[0];
+      const venueList = Array.isArray(vRes.data) ? vRes.data : [];
+      const bookingList = Array.isArray(bRes.data) ? bRes.data : [];
+      setVenues(venueList);
+      setBookings(bookingList);
+      if (venueList.length > 0) {
+        const v = selectedVenue || venueList[0];
         setSelectedVenue(v);
         const [aRes, pRes] = await Promise.all([
           analyticsAPI.venue(v.id).catch(() => ({ data: null })),
           venueAPI.getPricingRules(v.id).catch(() => ({ data: [] })),
         ]);
         setAnalytics(aRes.data);
-        setPricingRules(pRes.data || []);
+        setPricingRules(Array.isArray(pRes.data) ? pRes.data : []);
       }
+    } catch (err) {
+      console.error("Failed to load dashboard data:", err);
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
@@ -359,7 +364,10 @@ function VenueOwnerDashboardContent() {
     } else if (timeFilter === "past") {
       filtered = filtered.filter(b => b.date < today);
     }
-    filtered.sort((a, b) => sortOrder === "desc" ? b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time) : a.date.localeCompare(b.date) || a.start_time.localeCompare(b.start_time));
+    filtered.sort((a, b) => {
+      const ad = a.date || "", bd = b.date || "", ast = a.start_time || "", bst = b.start_time || "";
+      return sortOrder === "desc" ? bd.localeCompare(ad) || bst.localeCompare(ast) : ad.localeCompare(bd) || ast.localeCompare(bst);
+    });
     return filtered;
   }, [bookings, selectedVenue, statusFilter, timeFilter, sortOrder, today]);
 
@@ -799,7 +807,7 @@ function VenueOwnerDashboardContent() {
                   {selectedBooking.payment_details && (
                     <div className="pt-2 border-t border-border/50">
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Paid At</span>
-                      <p className="text-xs text-foreground mt-0.5">{new Date(selectedBooking.payment_details.paid_at).toLocaleString()}</p>
+                      <p className="text-xs text-foreground mt-0.5">{selectedBooking.payment_details.paid_at ? new Date(selectedBooking.payment_details.paid_at).toLocaleString() : "N/A"}</p>
                       {selectedBooking.payment_details.razorpay_payment_id && (
                         <>
                           <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2 block">Payment ID</span>
@@ -871,8 +879,8 @@ function VenueOwnerDashboardContent() {
                   )}
                   {selectedBooking.players?.length > 0 && (
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Players</span>
-                      <span className="text-foreground">{selectedBooking.players.length} player{selectedBooking.players.length > 1 ? "s" : ""}</span>
+                      <span className="text-muted-foreground">Lobbians</span>
+                      <span className="text-foreground">{selectedBooking.players.length} Lobbian{selectedBooking.players.length > 1 ? "s" : ""}</span>
                     </div>
                   )}
                 </div>
@@ -979,12 +987,12 @@ function VenueOwnerDashboardContent() {
               <h3 className="font-display font-bold text-base sm:text-lg">
                 Customer Reviews {selectedVenue && <span className="text-muted-foreground font-normal text-sm">- {selectedVenue.name}</span>}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">See what players say about your venue</p>
+              <p className="text-xs text-muted-foreground mt-0.5">See what Lobbians say about your venue</p>
             </div>
 
             {venueReviews.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <MessageSquare className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
+                <MessageSquare className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-sm">No reviews yet for {selectedVenue?.name || "this venue"}</p>
               </div>
             ) : (
@@ -992,7 +1000,7 @@ function VenueOwnerDashboardContent() {
                 {/* Quick Stats */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   {(() => {
-                    const avg = venueReviews.reduce((s, r) => s + r.rating, 0) / venueReviews.length;
+                    const avg = venueReviews.length > 0 ? venueReviews.reduce((s, r) => s + (r.rating || 0), 0) / venueReviews.length : 0;
                     const r5 = venueReviews.filter(r => r.rating === 5).length;
                     return (
                       <>
@@ -1029,7 +1037,7 @@ function VenueOwnerDashboardContent() {
                             <span className="font-bold text-sm">{r.user_name}</span>
                             <div className="flex gap-0.5 mt-0.5">
                               {[1, 2, 3, 4, 5].map(s => (
-                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/20"}`} />
+                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/40"}`} />
                               ))}
                             </div>
                           </div>
@@ -1268,7 +1276,7 @@ function VenueOwnerDashboardContent() {
                 <div className="flex items-center gap-3 mb-4">
                   <Crown className="h-5 w-5 text-primary shrink-0" />
                   <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-primary">{planData.current_plan.name}</span></h3>
+                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-primary">{planData.current_plan?.name}</span></h3>
                     <p className="text-xs text-muted-foreground">{planData.venues_used} / {planData.venues_limit} venues used</p>
                   </div>
                 </div>
@@ -1279,19 +1287,19 @@ function VenueOwnerDashboardContent() {
 
               <h3 className="text-sm font-bold">Available Plans</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {planData.all_plans.map(plan => {
-                  const isCurrent = plan.id === planData.current_plan.id;
+                {(planData.all_plans || []).map(plan => {
+                  const isCurrent = plan.id === planData.current_plan?.id;
                   return (
                     <div key={plan.id} className={`glass-card rounded-lg p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-primary" : "border-transparent hover:border-primary/30"}`}
                       data-testid={`plan-card-${plan.id}`}>
                       <div className="text-sm font-bold mb-1">{plan.name}</div>
                       <div className="text-2xl font-display font-black text-primary mb-3">
-                        {plan.price === 0 ? "Free" : `\u20B9${plan.price.toLocaleString()}`}
+                        {!plan.price ? "Free" : `\u20B9${Number(plan.price).toLocaleString()}`}
                         {plan.price > 0 && <span className="text-xs text-muted-foreground font-normal">/mo</span>}
                       </div>
                       <div className="text-xs text-muted-foreground mb-1">Up to {plan.max_venues} venue{plan.max_venues > 1 ? "s" : ""}</div>
                       <ul className="space-y-1 mb-4">
-                        {plan.features.map((f, i) => (
+                        {(plan.features || []).map((f, i) => (
                           <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
                             <CheckCircle className="h-3 w-3 text-primary shrink-0" /> {f}
                           </li>
@@ -1302,7 +1310,7 @@ function VenueOwnerDashboardContent() {
                       ) : (
                         <Button size="sm" className="w-full text-xs font-bold" disabled={upgrading}
                           onClick={() => handleUpgrade(plan.id)} data-testid={`upgrade-${plan.id}`}>
-                          {upgrading ? "..." : plan.price > planData.current_plan.price ? "Upgrade" : "Switch"}
+                          {upgrading ? "..." : plan.price > (planData.current_plan?.price || 0) ? "Upgrade" : "Switch"}
                         </Button>
                       )}
                     </div>
@@ -1612,7 +1620,7 @@ function MLPricingPanel({ venueId, venueName }) {
           </div>
         ) : (
           <div className="text-center py-8 text-muted-foreground">
-            <Brain className="h-8 w-8 mx-auto mb-2 opacity-30" />
+            <Brain className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
             <p className="text-xs">No forecast data. Train the model with 50+ bookings first.</p>
           </div>
         )}
@@ -1727,9 +1735,9 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
               <Camera className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base">Scan Player's QR Code</h3>
+              <h3 className="font-display font-bold text-base">Scan Lobbian's QR Code</h3>
               <p className="text-xs text-muted-foreground">
-                Point your camera at the player's phone to verify check-in at {venueName || "this venue"}.
+                Point your camera at the Lobbian's phone to verify check-in at {venueName || "this venue"}.
               </p>
             </div>
           </div>
@@ -1737,7 +1745,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
           {!cameraActive ? (
             <div className="text-center">
               <div className="w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 flex flex-col items-center justify-center mb-4 border-2 border-dashed border-border">
-                <Camera className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                <Camera className="h-12 w-12 text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground mb-1">Camera preview will appear here</p>
                 {cameraError && <p className="text-xs text-destructive mt-2 px-4">{cameraError}</p>}
               </div>
@@ -1769,7 +1777,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
             </div>
             <div>
               <h3 className="font-display font-bold text-base">Manual Code Entry</h3>
-              <p className="text-xs text-muted-foreground">Type the check-in code shown below the player's QR.</p>
+              <p className="text-xs text-muted-foreground">Type the check-in code shown below the Lobbian's QR.</p>
             </div>
           </div>
           <div className="space-y-3">
@@ -1816,7 +1824,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
 
           {todayBookings.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
+              <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm">No confirmed bookings for today</p>
             </div>
           ) : (
@@ -1828,7 +1836,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm truncate">{b.host_name || b.booked_by_name || "Player"}</span>
+                      <span className="font-bold text-sm truncate">{b.host_name || b.booked_by_name || "Lobbian"}</span>
                       {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
@@ -1845,7 +1853,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-sm truncate">{b.host_name || b.booked_by_name || "Player"}</span>
+                      <span className="font-bold text-sm truncate">{b.host_name || b.booked_by_name || "Lobbian"}</span>
                       {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
                     </div>
                     <div className="text-[10px] text-muted-foreground">

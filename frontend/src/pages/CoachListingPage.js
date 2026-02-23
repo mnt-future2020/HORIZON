@@ -430,7 +430,7 @@ export default function CoachListingPage() {
       {/* Coach List */}
       {filtered.length === 0 ? (
         <div className="text-center py-16">
-          <GraduationCap className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+          <GraduationCap className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
           <p className="font-bold mb-1">No coaches found</p>
           <p className="text-sm text-muted-foreground">Try adjusting your filters.</p>
         </div>
@@ -637,7 +637,7 @@ function SessionReviewCard({ session, onReview }) {
       {hasReview ? (
         <div className="flex items-center gap-1 mt-2">
           {[1, 2, 3, 4, 5].map(s => (
-            <Star key={s} className={`h-3.5 w-3.5 ${s <= session.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"}`} />
+            <Star key={s} className={`h-3.5 w-3.5 ${s <= session.rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/50"}`} />
           ))}
           {session.review && <span className="ml-2 text-xs text-muted-foreground italic">"{session.review}"</span>}
         </div>
@@ -646,7 +646,7 @@ function SessionReviewCard({ session, onReview }) {
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map(s => (
               <button key={s} onClick={() => setRating(s)}>
-                <Star className={`h-4 w-4 transition-colors ${s <= rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30 hover:text-amber-300"}`} />
+                <Star className={`h-4 w-4 transition-colors ${s <= rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/50 hover:text-amber-300"}`} />
               </button>
             ))}
           </div>

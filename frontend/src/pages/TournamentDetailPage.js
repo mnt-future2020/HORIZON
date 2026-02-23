@@ -236,13 +236,13 @@ export default function TournamentDetailPage() {
   const TABS = tournament.format === "knockout"
     ? [
         { id: "bracket", label: "Bracket", icon: Swords },
-        { id: "participants", label: "Players", icon: Users },
+        { id: "participants", label: "Lobbians", icon: Users },
         { id: "info", label: "Info", icon: Trophy },
       ]
     : [
         { id: "standings", label: "Standings", icon: Medal },
         { id: "matches", label: "Matches", icon: Swords },
-        { id: "participants", label: "Players", icon: Users },
+        { id: "participants", label: "Lobbians", icon: Users },
         { id: "info", label: "Info", icon: Trophy },
       ];
 
@@ -273,7 +273,7 @@ export default function TournamentDetailPage() {
             <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <Users className="h-3.5 w-3.5" />
-                {participants.length}/{tournament.max_participants} players
+                {participants.length}/{tournament.max_participants} Lobbians
               </span>
               {tournament.start_date && (
                 <span className="flex items-center gap-1">
@@ -357,9 +357,9 @@ export default function TournamentDetailPage() {
         <div className="space-y-4">
           {tournament.status === "registration" ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Swords className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Swords className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">Bracket will be generated when tournament starts</p>
-              <p className="text-xs mt-1">{participants.length} players registered so far</p>
+              <p className="text-xs mt-1">{participants.length} Lobbians registered so far</p>
             </div>
           ) : (
             <div className="overflow-x-auto pb-4">
@@ -388,7 +388,7 @@ export default function TournamentDetailPage() {
         <div className="space-y-3">
           {standings.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Medal className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Medal className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">
                 {tournament.status === "registration" ? "Standings appear after tournament starts" : "No standings yet"}
               </p>
@@ -399,7 +399,7 @@ export default function TournamentDetailPage() {
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground">
                     <th className="text-left p-3 font-mono uppercase">#</th>
-                    <th className="text-left p-3 font-mono uppercase">Player</th>
+                    <th className="text-left p-3 font-mono uppercase">Lobbian</th>
                     <th className="text-center p-3 font-mono uppercase">P</th>
                     <th className="text-center p-3 font-mono uppercase">W</th>
                     <th className="text-center p-3 font-mono uppercase">D</th>
@@ -442,7 +442,7 @@ export default function TournamentDetailPage() {
         <div className="space-y-2">
           {matches.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Swords className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Swords className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">Matches appear after tournament starts</p>
             </div>
           ) : (
@@ -459,7 +459,7 @@ export default function TournamentDetailPage() {
         <div className="space-y-2">
           {participants.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Users className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Users className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">No participants yet</p>
             </div>
           ) : (
@@ -512,7 +512,7 @@ export default function TournamentDetailPage() {
                 <span className="font-bold capitalize">{tournament.sport?.replace("_", " ")}</span>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground block">Max Players</span>
+                <span className="text-xs text-muted-foreground block">Max Lobbians</span>
                 <span className="font-bold">{tournament.max_participants}</span>
               </div>
               {tournament.entry_fee > 0 && (
@@ -600,13 +600,13 @@ export default function TournamentDetailPage() {
                   {resultDialog.player_a && (
                     <button onClick={() => setResultForm(p => ({ ...p, winner: resultDialog.player_a }))}
                       className={`w-full p-2.5 rounded-lg border text-sm font-bold text-left transition-all ${resultForm.winner === resultDialog.player_a ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:border-primary/50"}`}>
-                      {nameMap[resultDialog.player_a] || "Player A"}
+                      {nameMap[resultDialog.player_a] || "Lobbian A"}
                     </button>
                   )}
                   {resultDialog.player_b && (
                     <button onClick={() => setResultForm(p => ({ ...p, winner: resultDialog.player_b }))}
                       className={`w-full p-2.5 rounded-lg border text-sm font-bold text-left transition-all ${resultForm.winner === resultDialog.player_b ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:border-primary/50"}`}>
-                      {nameMap[resultDialog.player_b] || "Player B"}
+                      {nameMap[resultDialog.player_b] || "Lobbian B"}
                     </button>
                   )}
                   {tournament.format !== "knockout" && (
@@ -919,8 +919,8 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Player Name</Label>
-                  <Input value={eventForm.player_name} onChange={e => setEventForm(f => ({ ...f, player_name: e.target.value }))} placeholder="Player name" />
+                  <Label>Lobbian Name</Label>
+                  <Input value={eventForm.player_name} onChange={e => setEventForm(f => ({ ...f, player_name: e.target.value }))} placeholder="Lobbian name" />
                 </div>
                 <div>
                   <Label>Minute</Label>

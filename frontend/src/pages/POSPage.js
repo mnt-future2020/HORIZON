@@ -151,7 +151,9 @@ function POSTerminal({ user }) {
       const v = r.data || [];
       setVenues(v);
       if (v.length > 0) setSelectedVenue(v[0]);
-    }).catch(() => {});
+    }).catch((err) => {
+      toast.error("Failed to load venues");
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load products when venue changes (IndexedDB cache)
@@ -265,10 +267,14 @@ function POSTerminal({ user }) {
     setProductForm({ name: p.name, category: p.category, price: String(p.price), stock: String(p.stock), emoji: p.emoji || "" });
     setProductDialogOpen(true);
   };
+  const [savingProduct, setSavingProduct] = useState(false);
   const handleSaveProduct = async () => {
-    if (!productForm.name || !productForm.price || !selectedVenue) return;
+    if (!productForm.name.trim()) { toast.error("Product name is required"); return; }
+    if (!productForm.price || parseFloat(productForm.price) < 0) { toast.error("Valid price is required"); return; }
+    if (!selectedVenue) { toast.error("No venue selected. Please add a venue first."); return; }
+    setSavingProduct(true);
     const payload = {
-      venue_id: selectedVenue.id, name: productForm.name, category: productForm.category,
+      venue_id: selectedVenue.id, name: productForm.name.trim(), category: productForm.category,
       price: parseFloat(productForm.price), stock: parseInt(productForm.stock, 10),
       emoji: productForm.emoji || CAT_EMOJI[productForm.category],
     };
@@ -283,7 +289,8 @@ function POSTerminal({ user }) {
         toast.success("Product added");
       }
       setProductDialogOpen(false);
-    } catch (err) { toast.error(err?.response?.data?.detail || "Failed"); }
+    } catch (err) { toast.error(err?.response?.data?.detail || "Failed to save product"); }
+    finally { setSavingProduct(false); }
   };
   const handleDeleteProduct = async (id) => {
     try {
@@ -373,7 +380,7 @@ function POSTerminal({ user }) {
             </div>
             {filteredProducts.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
-                <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <Package className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-sm">No products yet</p>
                 <Button size="sm" variant="outline" className="mt-3 text-xs" onClick={() => setActiveView("products")}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add Products
@@ -406,7 +413,7 @@ function POSTerminal({ user }) {
 
               {cart.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  <ShoppingCart className="h-8 w-8 mx-auto mb-2 opacity-20" />
+                  <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                   <p className="text-xs">Tap products to add</p>
                 </div>
               ) : (
@@ -468,15 +475,21 @@ function POSTerminal({ user }) {
       {/* ─── Products Management ─── */}
       {activeView === "products" && (
         <div className="space-y-4">
+          {!selectedVenue && (
+            <div className="rounded-xl border-2 border-amber-500/30 bg-amber-500/10 p-4 text-center">
+              <p className="text-sm font-bold text-amber-400">No venue selected</p>
+              <p className="text-xs text-muted-foreground mt-1">You need at least one venue to manage POS products. Add a venue from your dashboard first.</p>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-base">Products Catalog</h2>
-            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8" onClick={openCreateProduct} data-testid="add-product-btn">
+            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8" onClick={openCreateProduct} disabled={!selectedVenue} data-testid="add-product-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Product
             </Button>
           </div>
           {products.length === 0 ? (
             <div className="text-center py-16 text-muted-foreground">
-              <Package className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Package className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">No products yet. Add your first item!</p>
             </div>
           ) : (
@@ -548,7 +561,7 @@ function POSTerminal({ user }) {
           <h2 className="font-bold text-base">Recent Sales</h2>
           {recentSales.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <History className="h-8 w-8 mx-auto mb-3 opacity-30" /><p className="text-sm">No sales yet</p>
+              <History className="h-8 w-8 mx-auto mb-3 text-muted-foreground" /><p className="text-sm">No sales yet</p>
             </div>
           ) : (
             recentSales.map(sale => (
@@ -611,8 +624,8 @@ function POSTerminal({ user }) {
                   placeholder="-1" className="mt-1 bg-background border-border" data-testid="product-stock-input" />
               </div>
             </div>
-            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveProduct} data-testid="save-product-btn">
-              {editingProduct ? "Update Product" : "Add Product"}
+            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveProduct} disabled={savingProduct} data-testid="save-product-btn">
+              {savingProduct ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : editingProduct ? "Update Product" : "Add Product"}
             </Button>
           </div>
         </DialogContent>

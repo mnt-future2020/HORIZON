@@ -96,7 +96,7 @@ export default function ExplorePage() {
       {/* Search Header */}
       <div className="sticky top-14 md:top-14 z-20 bg-background pb-4">
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50" />
           <Input
             placeholder="Search people, posts, venues..."
             className="pl-10 pr-10 h-11 bg-secondary/50 border-border/50 rounded-xl text-sm"
@@ -257,12 +257,12 @@ export default function ExplorePage() {
           {/* Empty state */}
           {!results.users?.length && !results.posts?.length && !results.venues?.length && (
             <div className="text-center py-20">
-              <Search className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+              <Search className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
               <h3 className="font-display text-xl font-bold text-muted-foreground">
-                {query ? "No results found" : "Discover players & content"}
+                {query ? "No results found" : "Discover Lobbians & content"}
               </h3>
               <p className="text-sm text-muted-foreground/70 mt-2">
-                {query ? "Try a different search term" : "Search for players, posts, or venues"}
+                {query ? "Try a different search term" : "Search for Lobbians, posts, or venues"}
               </p>
             </div>
           )}

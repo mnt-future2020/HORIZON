@@ -141,7 +141,7 @@ export default function NotificationsPage() {
             animate={{ opacity: 1, scale: 1 }}
             className="text-center py-20"
           >
-            <BellOff className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+            <BellOff className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-display text-xl font-bold text-muted-foreground">
               No notifications
             </h3>

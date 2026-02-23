@@ -195,7 +195,7 @@ function ResultDialog({ match, onSubmit, userId }) {
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   const players = (match.players_joined || []).map((id, i) => ({
-    id, name: match.player_names?.[i] || "Player " + (i + 1),
+    id, name: match.player_names?.[i] || "Lobbian " + (i + 1),
     rating: match.player_ratings?.[id] || 1500
   }));
 
@@ -231,7 +231,7 @@ function ResultDialog({ match, onSubmit, userId }) {
 
   const handleSubmit = () => {
     if (teamA.length === 0 || teamB.length === 0) {
-      toast.error("Both teams need at least 1 player");
+      toast.error("Both teams need at least 1 Lobbian");
       return;
     }
     onSubmit(match.id, {
@@ -442,7 +442,7 @@ export default function MatchmakingPage() {
     catch (err) { toast.error(err.response?.data?.detail || "Failed to apply"); }
   };
   const handleAccept = async (postId, applicantId) => {
-    try { await mercenaryAPI.accept(postId, applicantId); toast.success("Player accepted!"); loadData(); }
+    try { await mercenaryAPI.accept(postId, applicantId); toast.success("Lobbian accepted!"); loadData(); }
     catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
   };
   const handleReject = async (postId, applicantId) => {
@@ -588,7 +588,7 @@ export default function MatchmakingPage() {
                   <div><Label className="text-xs text-muted-foreground">Venue Name</Label>
                     <Input value={form.venue_name} onChange={e => setForm(p => ({ ...p, venue_name: e.target.value }))}
                       className="mt-1 bg-background border-border text-sm" data-testid="create-venue-input" /></div>
-                  <div><Label className="text-xs text-muted-foreground">Players Needed</Label>
+                  <div><Label className="text-xs text-muted-foreground">Lobbians Needed</Label>
                     <Input type="number" value={form.players_needed} onChange={e => setForm(p => ({ ...p, players_needed: e.target.value }))}
                       className="mt-1 bg-background border-border text-sm" data-testid="create-players-input" /></div>
                   <div className="grid grid-cols-2 gap-3">
@@ -622,7 +622,7 @@ export default function MatchmakingPage() {
                     <Input value={form.position_needed} onChange={e => setForm(p => ({ ...p, position_needed: e.target.value }))}
                       placeholder="Goalkeeper, Defender..." className="mt-1 bg-background border-border text-sm" data-testid="create-position-input" /></div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs text-muted-foreground">Fee Per Player</Label>
+                    <div><Label className="text-xs text-muted-foreground">Fee Per Lobbian</Label>
                       <Input type="number" value={form.amount_per_player} onChange={e => setForm(p => ({ ...p, amount_per_player: e.target.value }))}
                         className="mt-1 bg-background border-border text-sm" data-testid="create-amount-input" /></div>
                     <div><Label className="text-xs text-muted-foreground">Spots Available</Label>
@@ -695,7 +695,7 @@ export default function MatchmakingPage() {
             <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           ) : recommended.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Sparkles className="h-8 w-8 mx-auto mb-3 opacity-50" /><p className="text-sm">No recommended matches</p>
+              <Sparkles className="h-8 w-8 mx-auto mb-3 text-muted-foreground" /><p className="text-sm">No recommended matches</p>
               <p className="text-xs mt-1">Create one or check back later!</p>
             </div>
           ) : (
@@ -725,7 +725,7 @@ export default function MatchmakingPage() {
         <TabsContent value="my-matches">
           {myActiveMatches.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <Trophy className="h-8 w-8 mx-auto mb-3 opacity-50" />
+              <Trophy className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">No active games to report results for</p>
               <p className="text-xs mt-1">Join a match and play to submit results!</p>
             </div>
@@ -752,7 +752,7 @@ export default function MatchmakingPage() {
           ) : allMercenaryPosts.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No mercenary posts yet</p>
-              <p className="text-xs mt-1">Book a slot and create a post to find players!</p>
+              <p className="text-xs mt-1">Book a slot and create a post to find Lobbians!</p>
             </div>
           ) : (
             <div className="space-y-4">

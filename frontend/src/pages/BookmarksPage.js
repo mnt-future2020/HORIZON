@@ -69,7 +69,7 @@ export default function BookmarksPage() {
         </div>
       ) : posts.length === 0 ? (
         <div className="text-center py-20">
-          <Bookmark className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+          <Bookmark className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h3 className="font-display text-xl font-bold text-muted-foreground">No saved posts</h3>
           <p className="text-sm text-muted-foreground/70 mt-2">Tap the bookmark icon on posts to save them here</p>
         </div>

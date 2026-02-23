@@ -179,7 +179,7 @@ export default function PlayerDashboard() {
                 onClick={() => navigate("/player-card/me")}
                 className="h-12 px-6 rounded-xl font-black uppercase tracking-wide"
               >
-                <User className="h-4 w-4 mr-2" /> My Player Card
+                <User className="h-4 w-4 mr-2" /> My Lobbian Card
               </Button>
             </div>
           </div>

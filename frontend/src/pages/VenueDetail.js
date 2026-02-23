@@ -717,7 +717,7 @@ export default function VenueDetail() {
                 <div className="font-display text-4xl font-black text-primary">{reviewSummary.avg_rating}</div>
                 <div className="flex gap-0.5 justify-center mt-1">
                   {[1, 2, 3, 4, 5].map(s => (
-                    <Star key={s} className={`h-4 w-4 ${s <= Math.round(reviewSummary.avg_rating) ? "text-primary fill-primary" : "text-muted-foreground/30"}`} />
+                    <Star key={s} className={`h-4 w-4 ${s <= Math.round(reviewSummary.avg_rating) ? "text-primary fill-primary" : "text-muted-foreground/50"}`} />
                   ))}
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">{reviewSummary.total} review{reviewSummary.total !== 1 ? "s" : ""}</div>
@@ -756,7 +756,7 @@ export default function VenueDetail() {
                     onMouseEnter={() => setReviewHover(s)} onMouseLeave={() => setReviewHover(0)}
                     data-testid={`star-${s}`}
                     className="p-0.5 transition-transform hover:scale-110">
-                    <Star className={`h-7 w-7 transition-colors ${s <= (reviewHover || reviewRating) ? "text-primary fill-primary" : "text-muted-foreground/30"}`} />
+                    <Star className={`h-7 w-7 transition-colors ${s <= (reviewHover || reviewRating) ? "text-primary fill-primary" : "text-muted-foreground/50"}`} />
                   </button>
                 ))}
                 {reviewRating > 0 && <span className="text-xs text-muted-foreground ml-2 self-center">{["", "Poor", "Fair", "Good", "Great", "Excellent"][reviewRating]}</span>}
@@ -800,7 +800,7 @@ export default function VenueDetail() {
         {/* Review List */}
         {reviews.length === 0 && !showReviewForm ? (
           <div className="text-center py-8 text-muted-foreground" data-testid="no-reviews">
-            <Star className="h-8 w-8 mx-auto mb-3 text-muted-foreground/30" />
+            <Star className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm">No reviews yet. Be the first to review this venue!</p>
           </div>
         ) : (
@@ -819,7 +819,7 @@ export default function VenueDetail() {
                         <span className="font-bold text-sm text-foreground">{r.user_name}</span>
                         <div className="flex items-center gap-1 mt-0.5">
                           {[1, 2, 3, 4, 5].map(s => (
-                            <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/20"}`} />
+                            <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/40"}`} />
                           ))}
                         </div>
                       </div>
@@ -912,7 +912,7 @@ export default function VenueDetail() {
                     <span className="font-display text-base font-black">Split Payment</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-semibold">
-                    Your share: <span className="text-primary font-black">₹{confirmResult.split_config.per_share}</span> ({confirmResult.split_config.total_shares} players)
+                    Your share: <span className="text-primary font-black">₹{confirmResult.split_config.per_share}</span> ({confirmResult.split_config.total_shares} Lobbians)
                   </p>
                 </div>
               )}
@@ -1026,14 +1026,14 @@ export default function VenueDetail() {
 
               {payMode === "split" && (
                 <div>
-                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Number of Players</Label>
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Number of Lobbians</Label>
                   <Select value={String(splitCount)} onValueChange={v => setSplitCount(Number(v))}>
                     <SelectTrigger className="mt-2 bg-background border-border" data-testid="split-count-select">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {[2, 4, 5, 6, 8, 10, 12, 14, 16, 20, 22].map(n => (
-                        <SelectItem key={n} value={String(n)}>{n} players ({"\u20B9"}{Math.floor(selectedSlot.price / n)}/each)</SelectItem>
+                        <SelectItem key={n} value={String(n)}>{n} Lobbians ({"\u20B9"}{Math.floor(selectedSlot.price / n)}/each)</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

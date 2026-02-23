@@ -247,7 +247,7 @@ export default function ContactSyncPage() {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                   <p className="text-sm text-muted-foreground mb-4">No friends found from your contacts</p>
                   <Button variant="athletic-outline" onClick={() => setActiveTab("invite")}>
                     <Share2 className="h-4 w-4 mr-2" /> Invite Friends
@@ -285,7 +285,7 @@ export default function ContactSyncPage() {
             </div>
           ) : (
             <div className="text-center py-12">
-              <Phone className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+              <Phone className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-sm text-muted-foreground">Enter a phone number or email to find friends</p>
               <p className="text-[10px] text-muted-foreground mt-1">Example: 9876543210 or friend@email.com</p>
             </div>

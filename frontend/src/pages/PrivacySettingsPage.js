@@ -282,7 +282,7 @@ export default function PrivacySettingsPage() {
           <TabsContent value="audit">
             {auditLog.length === 0 ? (
               <div className="text-center py-12">
-                <FileText className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">No audit records yet</p>
               </div>
             ) : (

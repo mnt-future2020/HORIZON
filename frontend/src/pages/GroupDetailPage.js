@@ -210,7 +210,7 @@ export default function GroupDetailPage() {
           {!group.is_member ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center p-8">
-                <Users className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+                <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
                 <h3 className="font-display text-xl font-bold text-muted-foreground mb-2">Join to chat</h3>
                 <p className="text-sm text-muted-foreground/70 mb-4">Become a member to send and read messages</p>
                 <Button variant="athletic" onClick={handleJoin}>
@@ -268,7 +268,7 @@ export default function GroupDetailPage() {
                   ))}
                   {messages.length === 0 && (
                     <div className="text-center py-20">
-                      <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground/20 mb-3" />
+                      <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                       <p className="text-sm text-muted-foreground">No messages yet. Say hello!</p>
                     </div>
                   )}

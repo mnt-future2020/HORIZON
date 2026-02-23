@@ -1,18 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
 import { adminAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
   Users, Building2, CalendarCheck, IndianRupee, Clock, Shield,
   CheckCircle, XCircle, Ban, RotateCcw, Settings, CreditCard,
   Percent, Crown, Eye, EyeOff, Save, KeyRound,
-  Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy
+  Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy,
+  FileText, Loader2, Star, Video
 } from "lucide-react";
 
 function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
@@ -79,6 +83,12 @@ function UsersTab() {
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  // Document viewer state
+  const [docViewUserId, setDocViewUserId] = useState(null);
+  const [docViewData, setDocViewData] = useState(null);
+  const [docViewLoading, setDocViewLoading] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectMode, setRejectMode] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -93,7 +103,7 @@ function UsersTab() {
   const handleAction = async (userId, action) => {
     try {
       if (action === "approve") await adminAPI.approveUser(userId);
-      else if (action === "reject") await adminAPI.rejectUser(userId);
+      else if (action === "reject") await adminAPI.rejectUser(userId, "");
       else if (action === "suspend") await adminAPI.suspendUser(userId);
       else if (action === "activate") await adminAPI.activateUser(userId);
       toast.success(`User ${action}d`);
@@ -109,13 +119,49 @@ function UsersTab() {
     } catch { toast.error("Failed to toggle verification"); }
   };
 
+  const openDocViewer = async (userId) => {
+    setDocViewUserId(userId);
+    setDocViewLoading(true);
+    setRejectMode(false);
+    setRejectReason("");
+    try {
+      const res = await adminAPI.getUserDocuments(userId);
+      setDocViewData(res.data);
+    } catch {
+      toast.error("Failed to load documents");
+      setDocViewUserId(null);
+    } finally {
+      setDocViewLoading(false);
+    }
+  };
+
+  const handleVerifyDocs = async (userId) => {
+    try {
+      await adminAPI.approveUser(userId);
+      toast.success("Venue owner verified and approved!");
+      setDocViewUserId(null);
+      load();
+    } catch { toast.error("Failed to verify"); }
+  };
+
+  const handleRejectDocs = async (userId, reason) => {
+    try {
+      await adminAPI.rejectUser(userId, reason);
+      toast.success("Venue owner rejected with reason");
+      setDocViewUserId(null);
+      load();
+    } catch { toast.error("Failed to reject"); }
+  };
+
+  const DOC_LABELS = { business_license: "Business License", gst_certificate: "GST Certificate", id_proof: "ID Proof", address_proof: "Address Proof" };
+
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
       <div className="flex flex-wrap gap-2">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-            {f === "all" ? "All" : f === "pending" ? "Pending Approval" : f.replace("_", " ")}
+            {f === "all" ? "All" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
           </button>
         ))}
       </div>
@@ -136,7 +182,7 @@ function UsersTab() {
                     {u.business_name && <div className="text-[10px] text-muted-foreground/70">Business: {u.business_name} {u.gst_number && `| GST: ${u.gst_number}`}</div>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
                   <Badge variant="secondary" className="text-[10px]">{u.role.replace("_", " ")}</Badge>
                   {u.role === "venue_owner" && u.subscription_plan && (
                     <Badge className="text-[10px] bg-purple-500/20 text-purple-400">{u.subscription_plan}</Badge>
@@ -144,7 +190,20 @@ function UsersTab() {
                   <Badge className={`text-[10px] ${u.account_status === "active" ? "bg-emerald-500/20 text-emerald-400" : u.account_status === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-destructive/20 text-destructive"}`}>
                     {u.account_status}
                   </Badge>
-                  {u.account_status === "pending" && (
+                  {/* Venue owner: doc icon */}
+                  {u.role === "venue_owner" && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
+                    <Button size="sm" variant="ghost"
+                      className={`h-7 px-2 ${
+                        u.doc_verification_status === "pending_review" ? "text-amber-400 hover:bg-amber-500/10" :
+                        u.doc_verification_status === "verified" ? "text-emerald-400 hover:bg-emerald-500/10" :
+                        "text-destructive hover:bg-destructive/10"
+                      }`}
+                      onClick={() => openDocViewer(u.id)} data-testid={`docs-${u.id}`}>
+                      <FileText className="h-3.5 w-3.5 mr-1" /> Docs
+                    </Button>
+                  )}
+                  {/* Pending: Approve/Reject for non-venue_owners */}
+                  {u.account_status === "pending" && u.role !== "venue_owner" && (
                     <>
                       <Button size="sm" variant="ghost" className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
                         onClick={() => handleAction(u.id, "approve")} data-testid={`approve-${u.id}`}>
@@ -155,6 +214,12 @@ function UsersTab() {
                         <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
                       </Button>
                     </>
+                  )}
+                  {/* Pending venue_owner: show doc status badge */}
+                  {u.account_status === "pending" && u.role === "venue_owner" && (
+                    <Badge className={`text-[10px] ${u.doc_verification_status === "pending_review" ? "bg-amber-500/20 text-amber-400" : "bg-blue-500/20 text-blue-400"}`}>
+                      {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
+                    </Badge>
                   )}
                   {u.account_status === "active" && (
                     <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:bg-amber-500/10"
@@ -181,6 +246,122 @@ function UsersTab() {
           ))}
         </div>
       )}
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={!!docViewUserId} onOpenChange={(open) => { if (!open) setDocViewUserId(null); }}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Verification Documents</DialogTitle>
+            <DialogDescription>
+              {docViewData?.name} {docViewData?.business_name && `— ${docViewData.business_name}`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {docViewLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+          ) : docViewData ? (
+            <div className="space-y-4">
+              <Badge className={`text-[10px] ${
+                docViewData.doc_verification_status === "pending_review" ? "bg-amber-500/20 text-amber-400" :
+                docViewData.doc_verification_status === "verified" ? "bg-emerald-500/20 text-emerald-400" :
+                docViewData.doc_verification_status === "rejected" ? "bg-destructive/20 text-destructive" :
+                "bg-secondary text-muted-foreground"
+              }`}>{docViewData.doc_verification_status?.replace("_", " ") || "unknown"}</Badge>
+
+              {docViewData.doc_rejection_reason && (
+                <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+                  <span className="font-bold">Previous rejection:</span> {docViewData.doc_rejection_reason}
+                </div>
+              )}
+
+              {/* Document grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {Object.entries(DOC_LABELS).map(([key, label]) => {
+                  const doc = docViewData.verification_documents?.[key];
+                  const isPdf = doc?.url?.toLowerCase().endsWith(".pdf");
+                  return (
+                    <div key={key} className="border border-border rounded-lg p-3">
+                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">{label}</Label>
+                      {doc?.url ? (
+                        isPdf ? (
+                          <a href={mediaUrl(doc.url)} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-2 mt-2 p-2 rounded-md bg-background/50 text-xs text-primary hover:underline">
+                            <FileText className="h-4 w-4" /> View PDF
+                          </a>
+                        ) : (
+                          <img src={mediaUrl(doc.url)} alt={label}
+                            className="mt-2 rounded max-h-40 w-full object-contain cursor-pointer bg-background/50"
+                            onClick={() => window.open(mediaUrl(doc.url), "_blank")} />
+                        )
+                      ) : (
+                        <div className="mt-2 text-[10px] text-muted-foreground/60 py-4 text-center">Not uploaded</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Turf images */}
+              {docViewData.verification_documents?.turf_images?.length > 0 && (
+                <div>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Turf Images</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {docViewData.verification_documents.turf_images.map((img, i) => (
+                      <img key={i} src={mediaUrl(img.url || img)} alt={`Turf ${i + 1}`}
+                        className="w-20 h-20 rounded-md object-cover cursor-pointer"
+                        onClick={() => window.open(mediaUrl(img.url || img), "_blank")} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Turf videos */}
+              {docViewData.verification_documents?.turf_videos?.length > 0 && (
+                <div>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Turf Videos</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {docViewData.verification_documents.turf_videos.map((vid, i) => (
+                      <video key={i} src={mediaUrl(vid.url || vid)} controls className="w-40 h-28 rounded-md object-cover" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              {docViewData.doc_verification_status === "pending_review" && (
+                <div className="border-t border-border pt-4 space-y-3">
+                  {!rejectMode ? (
+                    <div className="flex gap-3">
+                      <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => handleVerifyDocs(docViewUserId)}>
+                        <CheckCircle className="h-4 w-4 mr-2" /> Verify & Approve
+                      </Button>
+                      <Button variant="outline" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                        onClick={() => setRejectMode(true)}>
+                        <XCircle className="h-4 w-4 mr-2" /> Reject
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Label className="text-xs">Rejection Reason (required)</Label>
+                      <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
+                        placeholder="Explain what needs to be corrected..." rows={3}
+                        className="bg-background border-border" />
+                      <div className="flex gap-3">
+                        <Button variant="ghost" onClick={() => setRejectMode(false)}>Cancel</Button>
+                        <Button variant="destructive" disabled={!rejectReason.trim()}
+                          onClick={() => handleRejectDocs(docViewUserId, rejectReason)}>
+                          Confirm Rejection
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

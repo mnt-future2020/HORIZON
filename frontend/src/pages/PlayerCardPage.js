@@ -55,7 +55,7 @@ export default function PlayerCardPage() {
     setLoading(true);
     const loadCard = (isMe ? playerCardAPI.getMyCard() : playerCardAPI.getCard(userId))
       .then(res => setCard(res.data))
-      .catch(() => toast.error("Failed to load player card"));
+      .catch(() => toast.error("Failed to load Lobbian card"));
 
     const loadEngagement = recommendationAPI.userEngagement(isMe ? currentUser?.id : userId)
       .then(res => setEngagementScore(res.data))
@@ -139,9 +139,9 @@ export default function PlayerCardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <User className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+          <User className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <h3 className="font-display text-xl font-bold text-muted-foreground">
-            Player not found
+            Lobbian not found
           </h3>
           <Button variant="athletic-outline" className="mt-4" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
@@ -273,7 +273,7 @@ export default function PlayerCardPage() {
               <div className="flex items-center gap-6">
                 <div className="relative w-24 h-24 shrink-0">
                   <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
-                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-border/30" />
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/20" />
                     <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
                       strokeDasharray={`${card.overall_score * 2.64} 264`} strokeLinecap="round"
                       className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-violet-400" : card.overall_score >= 51 ? "text-emerald-400" : card.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
@@ -647,7 +647,7 @@ export default function PlayerCardPage() {
             </div>
           ) : userPosts.length === 0 ? (
             <div className="text-center py-12 rounded-2xl border border-border/50 bg-card">
-              <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+              <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">No posts yet</p>
             </div>
           ) : (

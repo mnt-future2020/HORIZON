@@ -235,7 +235,7 @@ export default function TournamentsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
-          <Trophy className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+          <Trophy className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">No tournaments found</p>
           {canCreate && (
             <Button variant="outline" size="sm" className="mt-4 text-xs" onClick={openCreate}>

@@ -119,7 +119,7 @@ function UploadSection({ onUpload }) {
           onClick={() => document.getElementById("video-input")?.click()}
           data-testid="drop-zone"
         >
-          <Video className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+          <Video className="h-8 w-8 mx-auto mb-3 text-foreground/50" />
           <p className="text-sm text-muted-foreground">
             Drag & drop your match video here, or <span className="text-primary font-semibold">browse</span>
           </p>
@@ -316,7 +316,7 @@ function AnalysisDialog({ highlight, open, onClose, baseUrl }) {
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Match Summary</span>
             <p className="text-sm mt-2 text-foreground leading-relaxed">{a.summary}</p>
             {a.players_observed && (
-              <p className="text-xs text-muted-foreground mt-2">Players: {a.players_observed}</p>
+              <p className="text-xs text-muted-foreground mt-2">Lobbians: {a.players_observed}</p>
             )}
           </div>
 
@@ -431,7 +431,7 @@ export default function HighlightsPage() {
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : highlights.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground" data-testid="empty-state">
-            <Video className="h-8 w-8 mx-auto mb-3" />
+            <Video className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm">No highlights yet</p>
             <p className="text-xs mt-1">Upload a match video to get started</p>
           </div>

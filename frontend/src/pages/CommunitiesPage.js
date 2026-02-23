@@ -246,7 +246,7 @@ export default function CommunitiesPage() {
 
         {(tab === "discover" ? groups : myGroups).length === 0 && (
           <div className="text-center py-20">
-            <Users className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+            <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-display text-xl font-bold text-muted-foreground">
               {tab === "discover" ? "No groups found" : "You haven't joined any groups yet"}
             </h3>

@@ -63,6 +63,18 @@ async def register(input: RegisterInput, request: Request):
         "is_verified": False,
         "created_at": datetime.now(timezone.utc).isoformat()
     }
+    # Venue owner: add document verification fields
+    if input.role == "venue_owner":
+        user["verification_documents"] = {
+            "business_license": None,
+            "gst_certificate": None,
+            "id_proof": None,
+            "address_proof": None,
+            "turf_images": [],
+            "turf_videos": [],
+        }
+        user["doc_verification_status"] = "not_uploaded"
+        user["doc_rejection_reason"] = ""
     await db.users.insert_one(user)
     user.pop("_id", None)
     token = create_token(user["id"], user["role"])
@@ -97,10 +109,30 @@ async def get_me(user=Depends(get_current_user)):
 @router.put("/auth/profile")
 async def update_profile(request: Request, user=Depends(get_current_user)):
     data = await request.json()
-    allowed = ["name", "phone", "sports", "preferred_position", "avatar"]
+    allowed = ["name", "phone", "sports", "preferred_position", "avatar", "business_name", "gst_number"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})
+    updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return updated
+
+
+@router.put("/auth/verification-documents")
+async def update_verification_documents(request: Request, user=Depends(get_current_user)):
+    """Venue owner uploads/updates verification documents. Send submit=true to submit for review."""
+    if user.get("role") != "venue_owner":
+        raise HTTPException(403, "Only venue owners can submit verification documents")
+    data = await request.json()
+    allowed_keys = ["business_license", "gst_certificate", "id_proof", "address_proof", "turf_images", "turf_videos"]
+    current_docs = user.get("verification_documents", {})
+    for key in allowed_keys:
+        if key in data:
+            current_docs[key] = data[key]
+    updates = {"verification_documents": current_docs}
+    if data.get("submit"):
+        updates["doc_verification_status"] = "pending_review"
+        updates["doc_rejection_reason"] = ""
+    await db.users.update_one({"id": user["id"]}, {"$set": updates})
     updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
     return updated
 

@@ -198,7 +198,7 @@ function RecordRow({ record, index }) {
           <div className="flex items-center gap-2">
             <Eye className="h-3 w-3 text-muted-foreground" />
             <span className="text-[10px] text-muted-foreground">
-              Confirmed by {record.confirmations?.length || 0} player(s)
+              Confirmed by {record.confirmations?.length || 0} Lobbian(s)
             </span>
           </div>
         </motion.div>
@@ -265,7 +265,7 @@ export default function RatingProfilePage() {
         <div>
           <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Rating Certificate</span>
           <h1 className="font-display text-2xl md:text-3xl font-bold tracking-tight mt-1">
-            {p.name || "Player"}
+            {p.name || "Lobbian"}
           </h1>
         </div>
         <VerificationBadge verification={v} />
@@ -366,7 +366,7 @@ export default function RatingProfilePage() {
 
         {records.length === 0 ? (
           <div className="glass-card rounded-lg p-10 text-center text-muted-foreground">
-            <Trophy className="h-8 w-8 mx-auto mb-3 opacity-40" />
+            <Trophy className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm">No match results recorded yet</p>
             <p className="text-xs mt-1">Play and report results to build your rating history!</p>
           </div>

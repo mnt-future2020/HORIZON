@@ -400,7 +400,7 @@ export default function VenueDiscovery() {
                       </>
                     ) : (
                       <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                        <Building2 className="h-16 w-16 text-muted-foreground/30" />
+                        <Building2 className="h-16 w-16 text-muted-foreground" />
                       </div>
                     )}
 

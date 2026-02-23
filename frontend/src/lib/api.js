@@ -82,6 +82,7 @@ export const authAPI = {
   getMe: () => api.get("/auth/me"),
   updateProfile: (data) => api.put("/auth/profile", data),
   refreshToken: (token) => api.post("/auth/refresh", { refresh_token: token }),
+  updateVerificationDocs: (data) => api.put("/auth/verification-documents", data),
 };
 
 export const venueAPI = {
@@ -186,7 +187,7 @@ export const adminAPI = {
   dashboard: () => api.get("/admin/dashboard"),
   users: (params) => api.get("/admin/users", { params }),
   approveUser: (id) => api.put(`/admin/users/${id}/approve`),
-  rejectUser: (id) => api.put(`/admin/users/${id}/reject`),
+  rejectUser: (id, reason) => api.put(`/admin/users/${id}/reject`, { reason: reason || "" }),
   suspendUser: (id) => api.put(`/admin/users/${id}/suspend`),
   activateUser: (id) => api.put(`/admin/users/${id}/activate`),
   setUserPlan: (id, data) => api.put(`/admin/users/${id}/set-plan`, data),
@@ -198,6 +199,7 @@ export const adminAPI = {
   updateSettings: (data) => api.put("/admin/settings", data),
   changePassword: (data) => api.put("/admin/change-password", data),
   toggleVerified: (id) => api.put(`/admin/users/${id}/toggle-verified`),
+  getUserDocuments: (id) => api.get(`/admin/users/${id}/documents`),
 };
 
 export const paymentAPI = {
@@ -268,6 +270,14 @@ export const uploadAPI = {
     const formData = new FormData();
     formData.append("file", file);
     return api.post("/upload/video", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+      onUploadProgress: onProgress,
+    });
+  },
+  document: (file, onProgress) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return api.post("/upload/document", formData, {
       headers: { "Content-Type": "multipart/form-data" },
       onUploadProgress: onProgress,
     });

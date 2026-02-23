@@ -585,7 +585,7 @@ export default function ChatPage() {
       <div className="flex-1 min-w-0">
         <span className="text-sm font-bold truncate block">{u.name}</span>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[10px] text-muted-foreground capitalize">{u.role || "player"}</span>
+          <span className="text-[10px] text-muted-foreground capitalize">{u.role === "player" ? "lobbian" : (u.role || "lobbian")}</span>
           {u.skill_rating && <span className="text-[10px] text-muted-foreground">{u.skill_rating} SR</span>}
           {badge && <span className="text-[9px] text-primary font-bold capitalize bg-primary/10 px-1.5 py-0.5 rounded-full">{badge}</span>}
         </div>
@@ -639,7 +639,7 @@ export default function ChatPage() {
             </div>
             <button onClick={() => { setShowMsgSearch(!showMsgSearch); setMsgSearchQuery(""); setMsgSearchResults([]); }}
               className="p-2 rounded-full hover:bg-secondary/50">
-              <Search className="h-4 w-4 text-muted-foreground" />
+              <Search className="h-4 w-4 text-foreground/70" />
             </button>
           </div>
         </div>
@@ -815,7 +815,7 @@ export default function ChatPage() {
             {messages.length === 0 && (
               <div className="text-center py-16">
                 <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle className="h-8 w-8 text-primary/50" />
+                  <MessageCircle className="h-8 w-8 text-primary" />
                 </div>
                 <p className="text-sm text-muted-foreground font-medium">Say hello! 👋</p>
                 <p className="text-[10px] text-muted-foreground/60 mt-1">Messages are private between you two</p>
@@ -999,7 +999,7 @@ export default function ChatPage() {
 
         {/* Search conversations */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50" />
           <Input
             placeholder="Search conversations..."
             className="pl-9 h-10 bg-secondary/30 border-border/50 rounded-xl text-sm"
@@ -1056,7 +1056,7 @@ export default function ChatPage() {
 
         {filteredConvos.length === 0 && conversations.length > 0 && (
           <div className="text-center py-12">
-            <Search className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+            <Search className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-sm text-muted-foreground">No conversations match "{convoSearch}"</p>
           </div>
         )}
@@ -1064,10 +1064,10 @@ export default function ChatPage() {
         {conversations.length === 0 && !showNewChat && (
           <div className="text-center py-16">
             <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
-              <MessageCircle className="h-10 w-10 text-primary/50" />
+              <MessageCircle className="h-10 w-10 text-primary" />
             </div>
             <h3 className="font-display text-xl font-bold text-muted-foreground">No conversations yet</h3>
-            <p className="text-sm text-muted-foreground/70 mt-2 mb-6">Message players, coaches, and friends</p>
+            <p className="text-sm text-muted-foreground/70 mt-2 mb-6">Message Lobbians, coaches, and friends</p>
             <Button variant="athletic" onClick={openNewChatModal}>
               <Plus className="h-4 w-4 mr-2" /> Start a Conversation
             </Button>
@@ -1149,7 +1149,7 @@ export default function ChatPage() {
                           <UserRow key={u.id} u={u} onSelect={() => handleStartConversation(u.id)} />
                         ))
                         : <div className="text-center py-8">
-                            <Users className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                            <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                             <p className="text-sm text-muted-foreground">
                               {tabFollowers.length === 0 ? "No followers yet" : "No matches found"}
                             </p>
@@ -1166,7 +1166,7 @@ export default function ChatPage() {
                           <UserRow key={u.id} u={u} onSelect={() => handleStartConversation(u.id)} />
                         ))
                         : <div className="text-center py-8">
-                            <UserPlus className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                            <UserPlus className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                             <p className="text-sm text-muted-foreground">
                               {tabFollowing.length === 0 ? "Not following anyone yet" : "No matches found"}
                             </p>
@@ -1197,7 +1197,7 @@ export default function ChatPage() {
                           <UserRow key={u.id} u={u} onSelect={() => handleStartConversation(u.id)} badge={u.match_type} />
                         ))
                         : <div className="text-center py-8">
-                            <ContactRound className="h-8 w-8 mx-auto text-muted-foreground/30 mb-2" />
+                            <ContactRound className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                             <p className="text-sm text-muted-foreground">
                               {syncedContacts.length === 0 ? "No synced contacts yet" : "No matches found"}
                             </p>

@@ -373,11 +373,11 @@ export default function CoachDashboard() {
     setOrgActionLoading(true);
     try {
       await organizationAPI.addPlayer(orgId, { email: addPlayerEmail.trim() });
-      toast.success("Player added!");
+      toast.success("Lobbian added!");
       setAddPlayerEmail("");
       loadOrgDashboard(orgId);
       loadOrganizations();
-    } catch (err) { toast.error(err.response?.data?.detail || "Failed to add player"); }
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to add Lobbian"); }
     setOrgActionLoading(false);
   };
 
@@ -385,7 +385,7 @@ export default function CoachDashboard() {
     setOrgActionLoading(true);
     try {
       await organizationAPI.removePlayer(orgId, userId);
-      toast.success("Player removed");
+      toast.success("Lobbian removed");
       loadOrgDashboard(orgId);
       loadOrganizations();
     } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
@@ -418,7 +418,7 @@ export default function CoachDashboard() {
 
   // ─── Records handlers ───
   const handleSubmitRecord = async () => {
-    if (!recordForm.player_id) { toast.error("Select a player"); return; }
+    if (!recordForm.player_id) { toast.error("Select a Lobbian"); return; }
     if (!recordForm.title.trim()) { toast.error("Title is required"); return; }
     setSubmittingRecord(true);
     try {
@@ -657,7 +657,7 @@ export default function CoachDashboard() {
 
           {sessions.length === 0 && (
             <div className="text-center py-16 text-muted-foreground">
-              <Calendar className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Calendar className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">No sessions yet. Set up your availability to start receiving bookings!</p>
               <Button variant="outline" size="sm" className="mt-3 text-xs" onClick={() => setActiveView("availability")}>
                 Set Availability
@@ -758,7 +758,7 @@ export default function CoachDashboard() {
             </motion.div>
           ) : (
             <div className="text-center py-16">
-              <GraduationCap className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" />
+              <GraduationCap className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-bold mb-2">No Academy Yet</p>
               <p className="text-sm text-muted-foreground mb-4">Create an academy to manage group training.</p>
               <Button onClick={() => setCreateOpen(true)} className="bg-primary text-primary-foreground font-bold"
@@ -813,7 +813,7 @@ export default function CoachDashboard() {
             </div>
           ) : (
             <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
-              <Clock className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">No availability set. Add your coaching hours.</p>
             </div>
           )}
@@ -865,7 +865,7 @@ export default function CoachDashboard() {
               <Label className="text-xs text-muted-foreground">Bio</Label>
               <textarea value={profileForm.coaching_bio}
                 onChange={e => setProfileForm(p => ({ ...p, coaching_bio: e.target.value }))}
-                rows={3} placeholder="Tell players about your coaching experience..."
+                rows={3} placeholder="Tell Lobbians about your coaching experience..."
                 className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -998,9 +998,9 @@ export default function CoachDashboard() {
             </div>
           ) : orgs.length === 0 ? (
             <div className="text-center py-16 glass-card rounded-xl text-muted-foreground">
-              <Building2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <Building2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-bold mb-1">No Organizations Yet</p>
-              <p className="text-sm">Create an organization to manage players and staff.</p>
+              <p className="text-sm">Create an organization to manage Lobbians and staff.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1025,7 +1025,7 @@ export default function CoachDashboard() {
                           </div>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                             <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />{org.player_count ?? org.players_count ?? 0} players
+                              <Users className="h-3 w-3" />{org.player_count ?? org.players_count ?? 0} Lobbians
                             </span>
                             <span className="flex items-center gap-1">
                               <UserCheck className="h-3 w-3" />{org.staff_count ?? org.staffs_count ?? 0} staff
@@ -1054,7 +1054,7 @@ export default function CoachDashboard() {
                             </div>
                             <div className="bg-secondary/20 rounded-lg p-3 text-center">
                               <div className="text-lg font-black text-primary">{orgDetail?.players?.length ?? 0}</div>
-                              <div className="text-[10px] text-muted-foreground font-bold uppercase">Players</div>
+                              <div className="text-[10px] text-muted-foreground font-bold uppercase">Lobbians</div>
                             </div>
                             <div className="bg-secondary/20 rounded-lg p-3 text-center">
                               <div className="text-lg font-black text-primary">{orgDetail?.staff?.length ?? 0}</div>
@@ -1063,21 +1063,21 @@ export default function CoachDashboard() {
                           </div>
                         )}
 
-                        {/* Players Section */}
+                        {/* Lobbians Section */}
                         <div>
                           <div className="flex items-center justify-between mb-3">
-                            <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-widest">Players</h4>
+                            <h4 className="font-bold text-xs text-muted-foreground uppercase tracking-widest">Lobbians</h4>
                             <div className="flex items-center gap-2">
                               <Input value={addPlayerEmail}
                                 onChange={e => setAddPlayerEmail(e.target.value)}
-                                placeholder="Player email..."
+                                placeholder="Lobbian email..."
                                 className="h-7 text-xs bg-background border-border w-48"
                                 onKeyDown={e => e.key === "Enter" && handleAddOrgPlayer(org.id)}
                                 data-testid="org-add-player-email" />
                               <Button size="sm" className="h-7 text-[10px] bg-primary text-primary-foreground font-bold"
                                 onClick={() => handleAddOrgPlayer(org.id)} disabled={orgActionLoading}
                                 data-testid="org-add-player-btn">
-                                <UserPlus className="h-3 w-3 mr-1" /> Add Player
+                                <UserPlus className="h-3 w-3 mr-1" /> Add Lobbian
                               </Button>
                             </div>
                           </div>
@@ -1099,7 +1099,7 @@ export default function CoachDashboard() {
                               ))}
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground text-center py-4">No players yet. Add one above.</p>
+                            <p className="text-xs text-muted-foreground text-center py-4">No Lobbians yet. Add one above.</p>
                           )}
                         </div>
 
@@ -1158,7 +1158,7 @@ export default function CoachDashboard() {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Monthly Packages</h3>
-              <p className="text-xs text-muted-foreground mt-1">Create and manage subscription packages for players</p>
+              <p className="text-xs text-muted-foreground mt-1">Create and manage subscription packages for Lobbians</p>
             </div>
             <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
               onClick={() => setShowCreatePkg(!showCreatePkg)} data-testid="create-pkg-btn">
@@ -1281,7 +1281,7 @@ export default function CoachDashboard() {
             </div>
           ) : (
             <div className="text-center py-16 glass-card rounded-xl text-muted-foreground">
-              <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-bold mb-1">No Packages Yet</p>
               <p className="text-sm">Create a monthly package to offer subscription-based coaching.</p>
             </div>
@@ -1308,10 +1308,10 @@ export default function CoachDashboard() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Player</Label>
+                    <Label className="text-xs text-muted-foreground">Lobbian</Label>
                     <Select value={recordForm.player_id} onValueChange={v => setRecordForm(p => ({ ...p, player_id: v }))}>
                       <SelectTrigger className="mt-1 bg-background border-border" data-testid="record-player-select">
-                        <SelectValue placeholder="Select player..." />
+                        <SelectValue placeholder="Select Lobbian..." />
                       </SelectTrigger>
                       <SelectContent>
                         {orgPlayers.map(p => (
@@ -1458,10 +1458,10 @@ export default function CoachDashboard() {
                     className="mt-1 bg-background border-border" data-testid="training-drills-input" />
                 </div>
 
-                {/* Player Selection Checkboxes */}
+                {/* Lobbian Selection Checkboxes */}
                 {orgPlayers.length > 0 && (
                   <div>
-                    <Label className="text-xs text-muted-foreground mb-2 block">Select Players</Label>
+                    <Label className="text-xs text-muted-foreground mb-2 block">Select Lobbians</Label>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
                       {orgPlayers.map(p => {
                         const pId = p.user_id || p.id;
@@ -1490,7 +1490,7 @@ export default function CoachDashboard() {
                   <Label className="text-xs text-muted-foreground">Notes</Label>
                   <textarea value={trainingForm.notes}
                     onChange={e => setTrainingForm(p => ({ ...p, notes: e.target.value }))}
-                    rows={2} placeholder="Session observations, player feedback..."
+                    rows={2} placeholder="Session observations, Lobbian feedback..."
                     className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
                 </div>
 
@@ -1518,7 +1518,7 @@ export default function CoachDashboard() {
                         <span className="text-xs text-muted-foreground">{r.date}</span>
                       </div>
                       {r.player_name && (
-                        <p className="text-xs text-muted-foreground mb-1">Player: <span className="font-medium text-foreground">{r.player_name}</span></p>
+                        <p className="text-xs text-muted-foreground mb-1">Lobbian: <span className="font-medium text-foreground">{r.player_name}</span></p>
                       )}
                       {r.stats && Object.keys(r.stats).length > 0 && (
                         <div className="flex flex-wrap gap-2 mt-2">
@@ -1534,7 +1534,7 @@ export default function CoachDashboard() {
                   ))
                 ) : (
                   <div className="text-center py-8 glass-card rounded-xl text-muted-foreground">
-                    <FileText className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm">No performance records yet. Submit one above.</p>
                   </div>
                 )}
@@ -1561,7 +1561,7 @@ export default function CoachDashboard() {
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{log.duration_minutes} min</span>
                         )}
                         {log.player_ids?.length > 0 && (
-                          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{log.player_ids.length} players</span>
+                          <span className="flex items-center gap-1"><Users className="h-3 w-3" />{log.player_ids.length} Lobbians</span>
                         )}
                       </div>
                       {log.drills?.length > 0 && (
@@ -1578,7 +1578,7 @@ export default function CoachDashboard() {
                   ))
                 ) : (
                   <div className="text-center py-8 glass-card rounded-xl text-muted-foreground">
-                    <Dumbbell className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                    <Dumbbell className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                     <p className="text-sm">No training logs yet. Log a session above.</p>
                   </div>
                 )}
@@ -1740,9 +1740,9 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
               <Camera className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base">Scan Player's QR Code</h3>
+              <h3 className="font-display font-bold text-base">Scan Lobbian's QR Code</h3>
               <p className="text-xs text-muted-foreground">
-                Point your camera at the player's phone to verify check-in.
+                Point your camera at the Lobbian's phone to verify check-in.
               </p>
             </div>
           </div>
@@ -1750,7 +1750,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
           {!cameraActive ? (
             <div className="text-center">
               <div className="w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 flex flex-col items-center justify-center mb-4 border-2 border-dashed border-border">
-                <Camera className="h-12 w-12 text-muted-foreground/30 mb-3" />
+                <Camera className="h-12 w-12 text-muted-foreground mb-3" />
                 <p className="text-sm text-muted-foreground mb-1">Camera preview will appear here</p>
                 {cameraError && (
                   <p className="text-xs text-destructive mt-2 px-4">{cameraError}</p>
@@ -1793,7 +1793,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
             <div>
               <h3 className="font-display font-bold text-base">Manual Code Entry</h3>
               <p className="text-xs text-muted-foreground">
-                Type the check-in code shown below the player's QR.
+                Type the check-in code shown below the Lobbian's QR.
               </p>
             </div>
           </div>
@@ -1863,7 +1863,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
 
             {todaySessions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                <Calendar className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
                 <p className="text-sm">No sessions scheduled for today</p>
               </div>
             ) : (

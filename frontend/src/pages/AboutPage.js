@@ -33,7 +33,7 @@ export default function AboutPage() {
             Magizh NexGen Technologies is a Chennai-based technology company focused on building scalable digital infrastructure for the sports and fitness industry in India. We believe every amateur athlete deserves access to quality sports facilities without friction.
           </p>
           <p className="text-muted-foreground leading-relaxed">
-            Our flagship product, <strong className="text-foreground">HORIZON</strong>, enables venue owners to digitize their operations, helps players discover and book turfs instantly, and creates a connected sports ecosystem with matchmaking, coaching, and analytics.
+            Our flagship product, <strong className="text-foreground">HORIZON</strong>, enables venue owners to digitize their operations, helps Lobbians discover and book turfs instantly, and creates a connected sports ecosystem with matchmaking, coaching, and analytics.
           </p>
         </div>
 
@@ -61,7 +61,7 @@ export default function AboutPage() {
         <div className="grid grid-cols-3 gap-4 mb-10">
           {[
             { icon: Building2, value: "16+", label: "Active Venues" },
-            { icon: Users, value: "50K+", label: "Registered Players" },
+            { icon: Users, value: "50K+", label: "Registered Lobbians" },
             { icon: Trophy, value: "4.8★", label: "Average Rating" },
           ].map(({ icon: Icon, value, label }) => (
             <div key={label} className="glass-card rounded-xl p-5 text-center">
@@ -78,7 +78,7 @@ export default function AboutPage() {
             {[
               { icon: Zap, title: "Instant Booking", desc: "Real-time slot availability and instant confirmations" },
               { icon: Users, title: "Matchmaking", desc: "AI-powered opponent matching based on skill level" },
-              { icon: Trophy, title: "Skill Ratings", desc: "Glicko-2 algorithm for accurate player skill tracking" },
+              { icon: Trophy, title: "Skill Ratings", desc: "Glicko-2 algorithm for accurate Lobbian skill tracking" },
               { icon: Building2, title: "Venue Management", desc: "Complete dashboard for venue owners with analytics" },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3">

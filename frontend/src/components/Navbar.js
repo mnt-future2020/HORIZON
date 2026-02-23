@@ -221,7 +221,7 @@ export default function Navbar() {
                 <User className="mr-2 h-4 w-4" /> Profile
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/player-card/me")}>
-                <Trophy className="mr-2 h-4 w-4" /> Player Card
+                <Trophy className="mr-2 h-4 w-4" /> Lobbian Card
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/bookmarks")}>
                 <Bookmark className="mr-2 h-4 w-4" /> Saved Posts

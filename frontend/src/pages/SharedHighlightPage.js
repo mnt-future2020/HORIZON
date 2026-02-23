@@ -66,7 +66,7 @@ export default function SharedHighlightPage() {
           <div className="glass-card rounded-xl p-5 mb-6" data-testid="shared-summary">
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Match Summary</span>
             <p className="text-sm mt-2 leading-relaxed">{a.summary}</p>
-            {a.players_observed && <p className="text-xs text-muted-foreground mt-2">Players: {a.players_observed}</p>}
+            {a.players_observed && <p className="text-xs text-muted-foreground mt-2">Lobbians: {a.players_observed}</p>}
           </div>
         )}
 

@@ -99,8 +99,11 @@ async def admin_approve_user(user_id: str, user=Depends(get_current_user)):
     if target.get("role") == "coach":
         updates["is_verified"] = True
         msg = "Your coach account has been approved and verified. You can now manage sessions and academies."
+    elif target.get("role") == "venue_owner":
+        updates["doc_verification_status"] = "verified"
+        msg = "Your venue owner account has been verified and approved. You can now create and manage venues."
     else:
-        msg = "Your venue owner account has been approved. You can now create and manage venues."
+        msg = "Your account has been approved."
     await db.users.update_one({"id": user_id}, {"$set": updates})
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": user_id,
@@ -112,17 +115,31 @@ async def admin_approve_user(user_id: str, user=Depends(get_current_user)):
 
 
 @router.put("/admin/users/{user_id}/reject")
-async def admin_reject_user(user_id: str, user=Depends(get_current_user)):
+async def admin_reject_user(user_id: str, request: Request, user=Depends(get_current_user)):
     await require_admin(user)
     target = await db.users.find_one({"id": user_id})
     if not target:
         raise HTTPException(404, "User not found")
-    await db.users.update_one({"id": user_id}, {"$set": {"account_status": "rejected"}})
+    # Parse optional rejection reason from body
+    reason = ""
+    try:
+        data = await request.json()
+        reason = data.get("reason", "")
+    except Exception:
+        pass
+    update_fields = {"account_status": "rejected"}
+    if target.get("role") == "venue_owner":
+        update_fields["doc_verification_status"] = "rejected"
+        update_fields["doc_rejection_reason"] = reason
+    await db.users.update_one({"id": user_id}, {"$set": update_fields})
     role_label = "coach" if target.get("role") == "coach" else "venue owner"
+    notification_msg = f"Your {role_label} registration was not approved."
+    if reason:
+        notification_msg += f" Reason: {reason}"
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": user_id,
         "type": "account_rejected", "title": "Registration Update",
-        "message": f"Your {role_label} registration was not approved. Please contact support for details.",
+        "message": notification_msg,
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
     return {"message": "User rejected"}
@@ -257,6 +274,20 @@ async def upload_image(file: UploadFile = File(...), user=Depends(get_current_us
     return {"url": url}
 
 
+@router.post("/upload/document")
+async def upload_document(file: UploadFile = File(...), user=Depends(get_current_user)):
+    """Upload a document (image or PDF) — S3 priority, local fallback."""
+    allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+    if file.content_type not in allowed:
+        raise HTTPException(400, "Only JPEG/PNG/WebP images and PDF files allowed")
+    if file.size and file.size > 10 * 1024 * 1024:
+        raise HTTPException(400, "File too large (max 10 MB)")
+    content = await file.read()
+    ext = file.filename.split(".")[-1] if "." in file.filename else "pdf"
+    url = await s3_service.upload_bytes(content, "documents", f"{uuid.uuid4().hex}.{ext}", file.content_type)
+    return {"url": url}
+
+
 @router.post("/upload/video")
 async def upload_video(file: UploadFile = File(...), user=Depends(get_current_user)):
     """Upload a video — S3 priority, local fallback."""
@@ -295,3 +326,20 @@ async def admin_toggle_verified(user_id: str, user=Depends(get_current_user)):
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
     return {"message": f"User {label}", "is_verified": new_state}
+
+
+@router.get("/admin/users/{user_id}/documents")
+async def admin_get_user_documents(user_id: str, user=Depends(get_current_user)):
+    """Admin: view a venue owner's verification documents."""
+    await require_admin(user)
+    target = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+    if not target:
+        raise HTTPException(404, "User not found")
+    return {
+        "user_id": user_id,
+        "name": target.get("name", ""),
+        "business_name": target.get("business_name", ""),
+        "verification_documents": target.get("verification_documents", {}),
+        "doc_verification_status": target.get("doc_verification_status", "not_uploaded"),
+        "doc_rejection_reason": target.get("doc_rejection_reason", ""),
+    }

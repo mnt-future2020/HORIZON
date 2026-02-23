@@ -25,7 +25,7 @@ export default function TermsPage() {
             <p>By accessing HORIZON operated by Magizh NexGen Technologies, you agree to be bound by these Terms. If you disagree, please do not use our Service.</p>
           </Sec>
           <Sec title="2. Description of Service">
-            <p>HORIZON enables players to discover and book sports facilities, venue owners to manage and monetise facilities, coaches to offer training, and players to find opponents via AI matchmaking.</p>
+            <p>HORIZON enables Lobbians to discover and book sports facilities, venue owners to manage and monetise facilities, coaches to offer training, and Lobbians to find opponents via AI matchmaking.</p>
           </Sec>
           <Sec title="3. User Accounts">
             <p>You are responsible for maintaining account confidentiality and for all activities under your account. Provide accurate registration information. We may suspend accounts that violate these terms.</p>
@@ -33,7 +33,7 @@ export default function TermsPage() {
           <Sec title="4. Booking Terms">
             <p><strong className="text-foreground">4.1 Reservation:</strong> A temporary slot lock is placed for up to 30 minutes to complete payment. Unpaid bookings are auto-cancelled.</p>
             <p><strong className="text-foreground">4.2 Payment:</strong> Full payment is required to confirm a booking.</p>
-            <p><strong className="text-foreground">4.3 Split Payments:</strong> Multiple players may split booking costs. Confirmation requires all participants to pay.</p>
+            <p><strong className="text-foreground">4.3 Split Payments:</strong> Multiple Lobbians may split booking costs. Confirmation requires all participants to pay.</p>
           </Sec>
           <Sec title="5. Cancellation & Refunds">
             <p>See our <Link to="/refund-policy" className="text-primary hover:underline">Cancellation and Refund Policy</Link> for full details.</p>

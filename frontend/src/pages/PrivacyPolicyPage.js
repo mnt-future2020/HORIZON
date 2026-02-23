@@ -42,7 +42,7 @@ export default function PrivacyPolicyPage() {
           <Sec title="3. How We Use Your Information">
             <ul className="list-disc pl-5 space-y-1">
               <li>To process bookings and payments</li>
-              <li>To match players via AI matchmaking</li>
+              <li>To match Lobbians via AI matchmaking</li>
               <li>To send booking confirmations and reminders</li>
               <li>To improve and personalise the platform</li>
               <li>To comply with legal obligations</li>

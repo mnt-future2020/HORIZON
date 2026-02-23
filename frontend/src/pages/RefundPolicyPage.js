@@ -41,7 +41,7 @@ export default function RefundPolicyPage() {
         </div>
 
         <div className="glass-card rounded-2xl p-6 sm:p-10">
-          <Sec title="1. Cancellation by Player">
+          <Sec title="1. Cancellation by Lobbian">
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">
                 <thead>
@@ -69,11 +69,11 @@ export default function RefundPolicyPage() {
             </div>
           </Sec>
           <Sec title="2. Cancellation by Venue">
-            <p>If a venue cancels a confirmed booking, the player receives a <strong className="text-foreground">100% refund</strong> regardless of timing.</p>
+            <p>If a venue cancels a confirmed booking, the Lobbian receives a <strong className="text-foreground">100% refund</strong> regardless of timing.</p>
           </Sec>
           <Sec title="3. How to Cancel">
             <ol className="list-decimal pl-5 space-y-1">
-              <li>Login to HORIZON → Player Dashboard → Bookings</li>
+              <li>Login to HORIZON → Lobbian Dashboard → Bookings</li>
               <li>Select the booking and click "Cancel Booking"</li>
             </ol>
             <p>Or email <a href="mailto:support@magizhnexgen.com" className="text-primary hover:underline">support@magizhnexgen.com</a> with your booking ID.</p>

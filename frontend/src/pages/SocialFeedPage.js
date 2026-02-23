@@ -541,7 +541,7 @@ export default function SocialFeedPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                {algoPlayers.length > 0 ? "Recommended Players" : "Suggested for you"}
+                {algoPlayers.length > 0 ? "Recommended Lobbians" : "Suggested for you"}
               </span>
               {algoPlayers.length > 0 && (
                 <span className="text-[9px] text-muted-foreground/60 font-mono">AI-powered</span>
@@ -559,7 +559,7 @@ export default function SocialFeedPage() {
                   <div className="text-[10px] text-muted-foreground capitalize mb-1">
                     {s.rec_reason === "played_together" ? "Played together" :
                      s.rec_reason === "mutual_friends" ? "Mutual friends" :
-                     s.reason === "played_together" ? "Co-player" : "Suggested"}
+                     s.reason === "played_together" ? "Co-Lobbian" : "Suggested"}
                   </div>
                   {s.rec_score > 0 && (
                     <div className="text-[9px] text-primary/70 font-bold mb-1">
@@ -870,12 +870,12 @@ export default function SocialFeedPage() {
 
         {posts.length === 0 && (
           <div className="text-center py-20">
-            <MessageCircle className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
+            <MessageCircle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-display text-xl font-bold text-muted-foreground">
               {feedTab === "following" ? "Follow people to see their posts" : "No posts yet"}
             </h3>
             <p className="text-sm text-muted-foreground/70 mt-2">
-              {feedTab === "following" ? "Discover players in the 'For You' tab!" : "Be the first to share something!"}
+              {feedTab === "following" ? "Discover Lobbians in the 'For You' tab!" : "Be the first to share something!"}
             </p>
           </div>
         )}
@@ -1048,7 +1048,7 @@ export default function SocialFeedPage() {
                   </div>
                 ) : followModal.list.length === 0 ? (
                   <div className="text-center py-12">
-                    <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                    <Users className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                     <p className="text-sm text-muted-foreground">
                       {followModal.type === "followers" ? "No followers yet" : "Not following anyone yet"}
                     </p>
