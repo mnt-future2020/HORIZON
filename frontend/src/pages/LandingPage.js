@@ -80,7 +80,7 @@ export default function LandingPage() {
         <div className="hidden md:flex items-center gap-12">
           {[
             { label: "Features", id: "features" },
-            { label: "Players", id: "players" },
+            { label: "Lobbians", id: "players" },
             { label: "Partners", id: "partners" },
           ].map(l => (
             <button key={l.id} onClick={() => scrollTo(l.id)}
