@@ -178,70 +178,70 @@ export default function VenueDiscovery() {
   const sports = ["football", "cricket", "badminton", "basketball", "tennis", "table_tennis"];
 
   return (
-    <div className="min-h-screen bg-white text-zinc-900 selection:bg-zinc-900 selection:text-white" data-testid="venue-discovery-page">
+    <div className="min-h-screen bg-slate-50 text-slate-800 selection:bg-emerald-600 selection:text-white" data-testid="venue-discovery-page">
       {/* Top bar for non-logged-in users */}
       {!user && (
-        <nav className="fixed top-0 w-full z-40 h-16 flex items-center justify-between px-6 md:px-12 bg-white border-b border-zinc-100">
-          <Link to="/" className="font-display font-black text-2xl tracking-tighter uppercase text-zinc-900">Lobbi</Link>
+        <nav className="fixed top-0 w-full z-40 h-16 flex items-center justify-between px-6 md:px-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
+          <Link to="/" className="font-display font-black text-2xl tracking-tighter uppercase text-emerald-700">Lobbi</Link>
           <div className="flex items-center gap-6">
-            <Button variant="link" size="sm" onClick={() => navigate("/auth")} className="text-[11px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-900">Log in</Button>
-            <Button size="sm" onClick={() => navigate("/auth")} className="bg-zinc-900 text-white rounded-none h-10 px-6 text-[11px] font-black uppercase tracking-widest hover:bg-zinc-800">Get Started</Button>
+            <Button variant="link" size="sm" onClick={() => navigate("/auth")} className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600">Log in</Button>
+            <Button size="sm" onClick={() => navigate("/auth")} className="bg-emerald-600 text-white rounded-full h-10 px-6 text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700">Get Started</Button>
           </div>
         </nav>
       )}
 
       {/* Search Hero - Editorial Style */}
-      <div className={`border-b border-zinc-100 bg-white sticky z-30 ${user ? "top-16" : "top-16"}`}>
+      <div className={`border-b border-slate-200 bg-white sticky z-30 ${user ? "top-16" : "top-16"}`}>
         <div className="max-w-[90rem] mx-auto px-6 py-8">
-          {/* Main Search Bar - Minimalist Heavy */}
+          {/* Main Search Bar */}
           <div className="flex gap-4 items-center" data-testid="search-bar">
             <div className="relative flex-1">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-zinc-400" />
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
               <Input
                 placeholder="Search venue, area, city..."
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                className="pl-16 pr-12 bg-zinc-50 border-2 border-zinc-200 rounded-none h-16 text-lg font-bold focus-visible:ring-0 focus-visible:border-zinc-900 placeholder:text-zinc-400 placeholder:font-medium transition-all"
+                className="pl-16 pr-12 bg-slate-50 border-2 border-slate-200 rounded-xl h-14 text-lg font-bold focus-visible:ring-0 focus-visible:border-emerald-500 placeholder:text-slate-400 placeholder:font-medium transition-all"
                 data-testid="search-input"
               />
               {searchText && (
                 <button onClick={() => setSearchText("")} className="absolute right-6 top-1/2 -translate-y-1/2">
-                  <X className="h-5 w-5 text-zinc-400 hover:text-zinc-900 transition-colors" />
+                  <X className="h-5 w-5 text-slate-400 hover:text-slate-800 transition-colors" />
                 </button>
               )}
             </div>
-            <Button variant="outline" size="icon" className={`h-16 w-16 shrink-0 relative rounded-none border-2 transition-all ${filtersOpen ? "border-zinc-900 bg-zinc-100 text-zinc-900" : "border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-400"}`}
+            <Button variant="outline" size="icon" className={`h-14 w-14 shrink-0 relative rounded-xl border-2 transition-all ${filtersOpen ? "border-emerald-600 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-400"}`}
               onClick={() => setFiltersOpen(!filtersOpen)} data-testid="filters-toggle">
               <SlidersHorizontal className="h-5 w-5" />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-zinc-900 text-white text-[10px] w-6 h-6 flex items-center justify-center font-black">
+                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] w-6 h-6 flex items-center justify-center font-black rounded-full">
                   {activeFilterCount}
                 </span>
               )}
             </Button>
           </div>
 
-          {/* Quick City Pills + Near Me - Minimalist Style */}
+          {/* Quick City Pills + Near Me */}
           <div className="flex gap-3 mt-6 overflow-x-auto pb-2 scrollbar-hide" data-testid="city-pills">
             <button onClick={handleNearMe} data-testid="near-me-btn"
               disabled={locatingUser}
-              className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 ${nearMeActive ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-900 hover:text-zinc-900"}`}>
+              className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 rounded-full ${nearMeActive ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-slate-200 hover:border-emerald-500 hover:text-emerald-600"}`}>
               {locatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
               {locatingUser ? "Locating..." : "Near Me"}
             </button>
             {nearMeActive && (
               <button onClick={() => setDriveTimeMode(!driveTimeMode)} data-testid="drive-time-toggle"
-                className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 ${driveTimeMode ? "bg-zinc-100 text-zinc-900 border-zinc-900" : "bg-transparent text-zinc-400 border-transparent hover:text-zinc-900"}`}>
+                className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 rounded-full ${driveTimeMode ? "bg-emerald-50 text-emerald-700 border-emerald-600" : "bg-transparent text-slate-400 border-transparent hover:text-emerald-600"}`}>
                 <Car className="h-4 w-4" />
                 Drive Time
               </button>
             )}
             <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false); }} data-testid="city-pill-all"
-              className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 ${selectedCity === "all" && !nearMeActive ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-900 hover:text-zinc-900"}`}>
+              className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 rounded-full ${selectedCity === "all" && !nearMeActive ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-slate-200 hover:border-emerald-500 hover:text-emerald-600"}`}>
               All Cities
             </button>
             {cities.map(c => (
               <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
-                className={`px-5 py-3 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 ${selectedCity === c.city && !nearMeActive ? "bg-zinc-900 text-white border-zinc-900" : "bg-white text-zinc-500 border-zinc-200 hover:border-zinc-900 hover:text-zinc-900"}`}>
+                className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 rounded-full ${selectedCity === c.city && !nearMeActive ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-slate-200 hover:border-emerald-500 hover:text-emerald-600"}`}>
                 {c.city} <span className="opacity-50 ml-1">({c.count})</span>
               </button>
             ))}
@@ -252,15 +252,15 @@ export default function VenueDiscovery() {
             {filtersOpen && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden" data-testid="filters-panel">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 mt-6 border-t border-zinc-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 mt-6 border-t border-slate-200">
                   {/* Area */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 block">Area</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Area</label>
                     <Select value={selectedArea} onValueChange={setSelectedArea}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-zinc-50 border-2 border-zinc-200 rounded-none focus:ring-0 focus:border-zinc-900" data-testid="area-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="area-filter">
                         <SelectValue placeholder="All Areas" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-none border-2 border-zinc-200">
+                      <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
                         <SelectItem value="all" className="font-bold">All Areas</SelectItem>
                         {areas.map(a => <SelectItem key={a.area} value={a.area} className="font-bold">{a.area} ({a.count})</SelectItem>)}
                       </SelectContent>
@@ -268,12 +268,12 @@ export default function VenueDiscovery() {
                   </div>
                   {/* Sport */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 block">Sport</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Sport</label>
                     <Select value={selectedSport} onValueChange={setSelectedSport}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-zinc-50 border-2 border-zinc-200 rounded-none focus:ring-0 focus:border-zinc-900" data-testid="sport-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="sport-filter">
                         <SelectValue placeholder="All Sports" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-none border-2 border-zinc-200">
+                      <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
                         <SelectItem value="all" className="font-bold">All Sports</SelectItem>
                         {sports.map(s => <SelectItem key={s} value={s} className="capitalize font-bold">{s.replace("_", " ")}</SelectItem>)}
                       </SelectContent>
@@ -281,14 +281,14 @@ export default function VenueDiscovery() {
                   </div>
                   {/* Price Range */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 block">Price</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Price</label>
                     <Select value={priceRange} onValueChange={setPriceRange}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-zinc-50 border-2 border-zinc-200 rounded-none focus:ring-0 focus:border-zinc-900" data-testid="price-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="price-filter">
                         <SelectValue placeholder="Any Price" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-none border-2 border-zinc-200">
+                      <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
                         <SelectItem value="all" className="font-bold">Any Price</SelectItem>
-                        <SelectItem value="budget" className="font-bold">Budget (≤ 1000)</SelectItem>
+                        <SelectItem value="budget" className="font-bold">Budget (&le; 1000)</SelectItem>
                         <SelectItem value="mid" className="font-bold">Mid (1001-2000)</SelectItem>
                         <SelectItem value="premium" className="font-bold">Premium (2000+)</SelectItem>
                       </SelectContent>
@@ -296,26 +296,26 @@ export default function VenueDiscovery() {
                   </div>
                   {/* Amenity */}
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400 mb-2 block">Amenity</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Amenity</label>
                     <Select value={selectedAmenity} onValueChange={setSelectedAmenity}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-zinc-50 border-2 border-zinc-200 rounded-none focus:ring-0 focus:border-zinc-900" data-testid="amenity-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="amenity-filter">
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-none border-2 border-zinc-200">
+                      <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
                         <SelectItem value="all" className="font-bold">Any Amenity</SelectItem>
                         {allAmenities.map(a => <SelectItem key={a.amenity} value={a.amenity} className="font-bold">{a.amenity} ({a.count})</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 pt-6 border-t border-zinc-200 gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-6 pt-6 border-t border-slate-200 gap-4">
                   <div className="flex items-center gap-4">
-                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">Sort By</label>
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sort By</label>
                     <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="h-10 w-[160px] text-xs font-bold bg-white border-2 border-zinc-200 rounded-none focus:ring-0 focus:border-zinc-900" data-testid="sort-select">
+                      <SelectTrigger className="h-10 w-[160px] text-xs font-bold bg-white border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="sort-select">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-none border-2 border-zinc-200">
+                      <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
                         <SelectItem value="rating" className="font-bold uppercase tracking-widest text-[10px]">Top Rated</SelectItem>
                         <SelectItem value="price_low" className="font-bold uppercase tracking-widest text-[10px]">Price: Low</SelectItem>
                         <SelectItem value="price_high" className="font-bold uppercase tracking-widest text-[10px]">Price: High</SelectItem>
@@ -325,7 +325,7 @@ export default function VenueDiscovery() {
                     </Select>
                   </div>
                   {activeFilterCount > 0 && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-[11px] font-black uppercase tracking-widest text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-none h-10 px-4"
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg h-10 px-4"
                       data-testid="clear-filters-btn">
                       <X className="h-3 w-3 mr-2" /> Clear Fields
                     </Button>
@@ -340,31 +340,31 @@ export default function VenueDiscovery() {
       {/* Results */}
       <div className={`max-w-[90rem] mx-auto px-6 py-12 ${!user ? "pt-12" : ""}`}>
         <div className="flex items-center justify-between mb-8">
-          <p className="text-sm font-bold text-zinc-500 uppercase tracking-widest" data-testid="results-count">
-            <span className="font-black text-zinc-900">{venues.length}</span> venue{venues.length !== 1 ? "s" : ""} found
-            {nearMeActive && <> <span className="text-zinc-900 font-black">near you</span> <span className="text-[10px]">(within 50 km)</span></>}
-            {!nearMeActive && selectedCity !== "all" && <> in <span className="text-zinc-900 font-black">{selectedCity}</span></>}
-            {selectedArea !== "all" && <>, <span className="text-zinc-900">{selectedArea}</span></>}
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-widest" data-testid="results-count">
+            <span className="font-black text-slate-800">{venues.length}</span> venue{venues.length !== 1 ? "s" : ""} found
+            {nearMeActive && <> <span className="text-emerald-700 font-black">near you</span> <span className="text-[10px]">(within 50 km)</span></>}
+            {!nearMeActive && selectedCity !== "all" && <> in <span className="text-slate-800 font-black">{selectedCity}</span></>}
+            {selectedArea !== "all" && <>, <span className="text-slate-800">{selectedArea}</span></>}
           </p>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div key={i} className="bg-zinc-100 rounded-none h-80 animate-pulse border border-zinc-200" />
+              <div key={i} className="bg-white rounded-xl h-80 animate-pulse border border-slate-200 shadow-sm" />
             ))}
           </div>
         ) : venues.length === 0 ? (
-          <div className="border border-zinc-200 bg-zinc-50 overflow-hidden" data-testid="no-results">
+          <div className="border border-slate-200 bg-white overflow-hidden rounded-2xl shadow-sm" data-testid="no-results">
             <div className="grid md:grid-cols-2 gap-0">
               <div className="p-12 md:p-24 flex flex-col items-center md:items-start justify-center text-center md:text-left">
-                <div className="w-16 h-16 bg-zinc-200 flex items-center justify-center mb-6">
-                  <Search className="h-6 w-6 text-zinc-400" />
+                <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
+                  <Search className="h-6 w-6 text-slate-400" />
                 </div>
-                <p className="font-display text-4xl font-black mb-4 tracking-tighter uppercase text-zinc-900">Zero Results</p>
-                <p className="text-sm text-zinc-500 font-bold mb-8 uppercase tracking-widest leading-relaxed">Adjust your filters or broaden your search criteria to discover facilities.</p>
+                <p className="font-display text-4xl font-black mb-4 tracking-tighter uppercase text-slate-800">Zero Results</p>
+                <p className="text-sm text-slate-500 font-bold mb-8 uppercase tracking-widest leading-relaxed">Adjust your filters or broaden your search criteria to discover facilities.</p>
                 <Button
-                  className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-none h-14 px-8 font-black uppercase tracking-[0.1em] text-sm transition-all"
+                  className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl h-14 px-8 font-black uppercase tracking-[0.1em] text-sm transition-all"
                   onClick={clearFilters}
                 >
                   Reset Parameters
@@ -374,42 +374,42 @@ export default function VenueDiscovery() {
                 <img
                   src={EMPTY_STATE_IMG}
                   alt="Empty court"
-                  className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-125 opacity-20"
+                  className="absolute inset-0 w-full h-full object-cover opacity-20"
                 />
               </div>
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {venues.map((venue, idx) => (
                 <motion.div key={venue.id} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                   onClick={() => venue.slug ? navigate(`/venue/${venue.slug}`) : navigate(`/venues/${venue.id}`)}
-                  className="group cursor-pointer flex flex-col h-full bg-white border border-zinc-200 hover:border-zinc-900 transition-colors duration-300"
+                  className="group cursor-pointer flex flex-col h-full bg-white border border-slate-200 hover:border-emerald-400 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
                   data-testid={`venue-card-${venue.id}`}>
-                  {/* Image - Strict framing */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-zinc-100 p-2">
-                    <div className="relative w-full h-full overflow-hidden">
+                  {/* Image */}
+                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 p-2">
+                    <div className="relative w-full h-full overflow-hidden rounded-lg">
                       {venue.images?.[0] ? (
                         <img src={mediaUrl(venue.images[0])} alt={venue.name}
-                          className="w-full h-full object-cover filter contrast-125 transition-transform duration-700 group-hover:scale-105" />
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                       ) : (
-                        <div className="w-full h-full bg-zinc-200 flex items-center justify-center">
-                          <Building2 className="h-10 w-10 text-zinc-400" />
+                        <div className="w-full h-full bg-slate-100 flex items-center justify-center rounded-lg">
+                          <Building2 className="h-10 w-10 text-slate-300" />
                         </div>
                       )}
                     </div>
 
-                    {/* Distance / Drive-time badge - stark absolute */}
+                    {/* Distance / Drive-time badge */}
                     {(distanceMap[venue.id] != null || venue.distance_km != null) && (
                       <div className="absolute top-4 left-4 flex gap-2" data-testid={`distance-badge-${venue.id}`}>
-                        <div className="bg-white text-zinc-900 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md">
-                          <Navigation className="h-3 w-3 mr-1.5" />
+                        <div className="bg-white text-slate-800 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
+                          <Navigation className="h-3 w-3 mr-1.5 text-emerald-600" />
                           {(distanceMap[venue.id] ?? venue.distance_km).toFixed(1)} km
                         </div>
                         {driveTimeMap[venue.id]?.duration_minutes != null && (
-                          <div className="bg-zinc-900 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md">
+                          <div className="bg-emerald-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
                             <Clock className="h-3 w-3 mr-1.5" />
                             {driveTimeMap[venue.id].duration_minutes} min
                           </div>
@@ -417,47 +417,42 @@ export default function VenueDiscovery() {
                       </div>
                     )}
 
-                    {/* Sport badge - top right absolute */}
+                    {/* Sport badge */}
                     {venue.sports?.[0] && (
                       <div className="absolute top-4 right-4">
-                        <div className="bg-zinc-900 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md">
+                        <div className="bg-emerald-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md rounded-full">
                           {venue.sports[0].replace("_", " ")}
                         </div>
                       </div>
                     )}
                   </div>
 
-                  {/* Info - Editorial Typography */}
-                  <div className="p-6 flex flex-col flex-grow">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-display text-2xl font-black tracking-tighter uppercase text-zinc-900 truncate group-hover:text-zinc-500 transition-colors duration-300"
-                        data-testid={`venue-name-${venue.id}`}>
-                        {venue.name}
-                      </h3>
-                      {venue.badge === "enquiry" && (
-                        <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">Enquiry</Badge>
-                      )}
-                    </div>
+                  {/* Info */}
+                  <div className="p-5 flex flex-col flex-grow">
+                    <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 mb-2 truncate group-hover:text-emerald-700 transition-colors duration-300"
+                      data-testid={`venue-name-${venue.id}`}>
+                      {venue.name}
+                    </h3>
 
                     {/* Location */}
-                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-zinc-400 mb-6">
-                      <MapPin className="h-4 w-4 text-zinc-900" />
+                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-5">
+                      <MapPin className="h-3.5 w-3.5 text-emerald-500" />
                       <span className="truncate">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
                     </div>
 
-                    {/* Stats row - strict border */}
-                    <div className="mt-auto flex items-center justify-between pt-6 border-t border-zinc-100">
+                    {/* Stats row */}
+                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
                       <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 fill-zinc-900 text-zinc-900" />
-                        <span className="font-black text-sm text-zinc-900">{venue.rating?.toFixed(1) || "NEW"}</span>
+                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                        <span className="font-black text-sm text-slate-800">{venue.rating?.toFixed(1) || "NEW"}</span>
                         {venue.total_reviews > 0 && (
-                          <span className="text-[10px] uppercase font-bold text-zinc-400 tracking-widest ml-1">({venue.total_reviews})</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest ml-1">({venue.total_reviews})</span>
                         )}
                       </div>
 
-                      <div className="font-black text-xl text-zinc-900">
+                      <div className="font-black text-lg text-emerald-700">
                         ₹{venue.base_price || venue.price_per_hour}
-                        <span className="text-[10px] text-zinc-400 uppercase tracking-widest ml-1">/HR</span>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-widest ml-1">/HR</span>
                       </div>
                     </div>
                   </div>
