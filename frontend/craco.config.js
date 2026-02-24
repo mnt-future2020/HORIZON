@@ -48,6 +48,17 @@ const webpackConfig = {
     },
     configure: (webpackConfig) => {
 
+      // Silence source-map warnings from third-party packages (html5-qrcode)
+      webpackConfig.ignoreWarnings = [
+        function (warning) {
+          return (
+            warning.module &&
+            /node_modules/.test(warning.module.resource || "") &&
+            /Failed to parse source map/.test(warning.message || "")
+          );
+        },
+      ];
+
       // Add ignored patterns to reduce watched directories
         webpackConfig.watchOptions = {
           ...webpackConfig.watchOptions,
