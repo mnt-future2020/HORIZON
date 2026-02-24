@@ -429,10 +429,15 @@ export default function VenueDiscovery() {
 
                   {/* Info */}
                   <div className="p-5 flex flex-col flex-grow">
-                    <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 mb-2 truncate group-hover:text-emerald-700 transition-colors duration-300"
-                      data-testid={`venue-name-${venue.id}`}>
-                      {venue.name}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 truncate group-hover:text-emerald-700 transition-colors duration-300"
+                        data-testid={`venue-name-${venue.id}`}>
+                        {venue.name}
+                      </h3>
+                      {venue.badge === "enquiry" && (
+                        <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-500 border border-amber-500/30 shrink-0">Enquiry</Badge>
+                      )}
+                    </div>
 
                     {/* Location */}
                     <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-5">
