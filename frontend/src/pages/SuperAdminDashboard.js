@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { adminAPI } from "@/lib/api";
+import { adminAPI, uploadAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,8 +16,10 @@ import {
   CheckCircle, XCircle, Ban, RotateCcw, Settings, CreditCard,
   Percent, Crown, Eye, EyeOff, Save, KeyRound,
   Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy,
-  FileText, Loader2, Star, Video
+  FileText, Loader2, Star, Video, Plus, UserPlus, Phone,
+  ImagePlus, X, MessageCircle
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
   return (
@@ -369,6 +371,15 @@ function UsersTab() {
 function VenuesTab() {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "", city: "", sports: ["football"], base_price: 2000, turfs: 1, contact_phone: "", images: [] });
+  const [uploading, setUploading] = useState(false);
+  // Assign owner
+  const [assignDialog, setAssignDialog] = useState(null); // venue object or null
+  const [venueOwners, setVenueOwners] = useState([]);
+  const [selectedOwner, setSelectedOwner] = useState("");
+  const [assigning, setAssigning] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -386,25 +397,191 @@ function VenuesTab() {
     } catch { toast.error("Failed to update venue"); }
   };
 
+  const handleCreateVenue = async () => {
+    if (!venueForm.name.trim() || !venueForm.city.trim()) { toast.error("Name and city are required"); return; }
+    setCreating(true);
+    try {
+      await adminAPI.createVenue(venueForm);
+      toast.success("Venue created (Enquiry mode)");
+      setShowCreateDialog(false);
+      setVenueForm({ name: "", description: "", address: "", city: "", sports: ["football"], base_price: 2000, turfs: 1, contact_phone: "", images: [] });
+      load();
+    } catch (err) { toast.error(err?.response?.data?.detail || "Failed to create venue"); }
+    finally { setCreating(false); }
+  };
+
+  const handleImageUpload = async (files) => {
+    const arr = Array.from(files).filter(f => f.type.startsWith("image/"));
+    if (!arr.length) return;
+    setUploading(true);
+    const uploaded = [...venueForm.images];
+    for (const file of arr) {
+      try {
+        const res = await uploadAPI.image(file);
+        uploaded.push(res.data.url);
+      } catch { toast.error("Image upload failed"); break; }
+    }
+    setVenueForm(p => ({ ...p, images: uploaded }));
+    setUploading(false);
+  };
+
+  const openAssignDialog = async (venue) => {
+    setAssignDialog(venue);
+    setSelectedOwner("");
+    try {
+      const res = await adminAPI.users({ role: "venue_owner", status: "active" });
+      setVenueOwners(res.data || []);
+    } catch { setVenueOwners([]); }
+  };
+
+  const handleAssignOwner = async () => {
+    if (!selectedOwner || !assignDialog) return;
+    setAssigning(true);
+    try {
+      await adminAPI.assignVenueOwner(assignDialog.id, selectedOwner);
+      toast.success("Owner assigned! Venue is now bookable.");
+      setAssignDialog(null);
+      load();
+    } catch (err) { toast.error(err?.response?.data?.detail || "Failed to assign owner"); }
+    finally { setAssigning(false); }
+  };
+
   if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   return (
-    <div className="space-y-2" data-testid="admin-venues-tab">
+    <div className="space-y-3" data-testid="admin-venues-tab">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm text-muted-foreground font-semibold">{venues.length} venues</span>
+        <Button size="sm" className="gap-1.5 h-8 text-xs font-bold" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-3.5 w-3.5" /> Add Venue
+        </Button>
+      </div>
+
       {venues.map(v => (
         <div key={v.id} className="glass-card rounded-lg p-4 flex items-center justify-between flex-wrap gap-3" data-testid={`venue-row-${v.id}`}>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold">{v.name}</div>
-            <div className="text-xs text-muted-foreground">{v.address}, {v.city}</div>
-            <div className="flex items-center gap-2 mt-1">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold">{v.name}</span>
+              <Badge className={`text-[9px] px-1.5 py-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+                {v.badge === "bookable" ? "Bookable" : "Enquiry"}
+              </Badge>
+            </div>
+            <div className="text-xs text-muted-foreground">{v.address}{v.address && ", "}{v.city}</div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <Badge variant="secondary" className="text-[10px]">{v.sports?.join(", ")}</Badge>
               <span className="text-[10px] text-muted-foreground">{v.turfs} turfs | {v.total_bookings} bookings</span>
+              {!v.owner_id && <span className="text-[10px] text-amber-400 font-semibold">No owner</span>}
+              {v.contact_phone && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Phone className="h-2.5 w-2.5" />{v.contact_phone}</span>}
             </div>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
+            {!v.owner_id && (
+              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 font-semibold" onClick={() => openAssignDialog(v)}>
+                <UserPlus className="h-3 w-3" /> Assign Owner
+              </Button>
+            )}
             <Badge className={`text-[10px] ${v.status === "active" ? "bg-emerald-500/20 text-emerald-400" : "bg-destructive/20 text-destructive"}`}>{v.status}</Badge>
             <Switch checked={v.status === "active"} onCheckedChange={() => toggleVenue(v.id, v.status)} data-testid={`toggle-venue-${v.id}`} />
           </div>
         </div>
       ))}
+
+      {/* Create Venue Dialog */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Add Venue (Enquiry)</DialogTitle>
+            <DialogDescription>This venue will be in Enquiry mode until an owner is assigned.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">Venue Name *</Label>
+              <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))} placeholder="PowerPlay Arena" className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Description</Label>
+              <Textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))} placeholder="Premium sports facility..." className="mt-1" rows={2} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Address</Label>
+                <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))} placeholder="123 Main Street" className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">City *</Label>
+                <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))} placeholder="Bengaluru" className="mt-1" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Base Price (INR/hr)</Label>
+                <Input type="number" value={venueForm.base_price} onChange={e => setVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Number of Turfs</Label>
+                <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Owner's WhatsApp Number</Label>
+              <Input value={venueForm.contact_phone} onChange={e => setVenueForm(p => ({ ...p, contact_phone: e.target.value }))} placeholder="+91 98765 43210" className="mt-1" />
+              <p className="text-[10px] text-muted-foreground mt-1">Enquiries from Lobbians will be sent to this WhatsApp number.</p>
+            </div>
+            {/* Image upload */}
+            <div className="space-y-2">
+              <Label className="text-xs text-muted-foreground">Venue Images</Label>
+              {venueForm.images.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {venueForm.images.map((url, i) => (
+                    <div key={i} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-border">
+                      <img src={mediaUrl(url)} alt="" className="w-full h-full object-cover" />
+                      <button type="button" onClick={() => setVenueForm(p => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
+                        className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-primary/40 hover:border-primary hover:bg-primary/5 text-muted-foreground hover:text-primary"}`}>
+                {uploading ? <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />Uploading...</> : <><ImagePlus className="h-4 w-4" />{venueForm.images.length > 0 ? "Add more images" : "Upload venue images"}</>}
+                <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleImageUpload(e.target.files)} disabled={uploading} />
+              </label>
+            </div>
+            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateVenue} disabled={creating}>
+              {creating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : "Create Venue"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Owner Dialog */}
+      <Dialog open={!!assignDialog} onOpenChange={(o) => !o && setAssignDialog(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" /> Assign Owner</DialogTitle>
+            <DialogDescription>Assign a verified venue owner to "{assignDialog?.name}". This will change the badge from Enquiry to Bookable.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            {venueOwners.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">No active venue owners found. Venue owners must register and be approved first.</p>
+            ) : (
+              <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+                <SelectTrigger><SelectValue placeholder="Select venue owner" /></SelectTrigger>
+                <SelectContent>
+                  {venueOwners.map(o => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.name} ({o.email}){o.business_name ? ` — ${o.business_name}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <Button className="w-full font-bold" onClick={handleAssignOwner} disabled={assigning || !selectedOwner}>
+              {assigning ? "Assigning..." : "Assign Owner"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -414,6 +591,7 @@ function SettingsTab() {
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
   const [showS3Secret, setShowS3Secret] = useState(false);
+  const [showWaToken, setShowWaToken] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [changingPw, setChangingPw] = useState(false);
   const [testingS3, setTestingS3] = useState(false);
@@ -433,6 +611,7 @@ function SettingsTab() {
         tournament_commission_pct: settings.tournament_commission_pct,
         subscription_plans: settings.subscription_plans,
         s3_storage: settings.s3_storage,
+        whatsapp: settings.whatsapp,
       });
       setSettings(res.data);
       toast.success("Settings saved!");
@@ -611,6 +790,51 @@ function SettingsTab() {
           <p className="text-[11px] text-muted-foreground">
             ⚠️ Make sure your S3 bucket has public read access enabled (or use a CDN). IAM user needs <code className="bg-secondary px-1 rounded">s3:PutObject</code> and <code className="bg-secondary px-1 rounded">s3:HeadBucket</code> permissions.
           </p>
+        </div>
+      </section>
+
+      {/* WhatsApp Business Cloud API */}
+      <section>
+        <div className="flex items-center gap-2 mb-1">
+          <MessageCircle className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-bold">WhatsApp Business API</h3>
+          {settings.whatsapp?.phone_number_id && settings.whatsapp?.access_token ? (
+            <span className="ml-auto flex items-center gap-1 text-xs text-green-500 font-semibold">
+              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Configured
+            </span>
+          ) : (
+            <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" /> Not configured
+            </span>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Enquiry messages are sent from your business number to venue owners automatically via Meta's WhatsApp Cloud API.
+        </p>
+        <div className="glass-card rounded-lg p-4 space-y-4">
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Phone Number ID</Label>
+            <Input value={settings.whatsapp?.phone_number_id || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, phone_number_id: e.target.value } }))}
+              className="mt-1.5 bg-background border-border h-10 text-sm font-mono" placeholder="e.g. 123456789012345" />
+            <p className="text-[10px] text-muted-foreground mt-1">Found in Meta Developer Console → WhatsApp → API Setup</p>
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Permanent Access Token</Label>
+            <div className="relative mt-1.5">
+              <Input type={showWaToken ? "text" : "password"} value={settings.whatsapp?.access_token || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, access_token: e.target.value } }))}
+                className="bg-background border-border h-10 text-sm font-mono pr-10" placeholder="EAAxxxxxxx..." />
+              <button onClick={() => setShowWaToken(!showWaToken)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                {showWaToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1">Generate a permanent token from Meta Business Settings → System Users</p>
+          </div>
+          <div>
+            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Business Phone (display)</Label>
+            <Input value={settings.whatsapp?.business_phone || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: e.target.value } }))}
+              className="mt-1.5 bg-background border-border h-10 text-sm" placeholder="+91 98765 43210" />
+            <p className="text-[10px] text-muted-foreground mt-1">The registered WhatsApp Business number (for reference only).</p>
+          </div>
         </div>
       </section>
 

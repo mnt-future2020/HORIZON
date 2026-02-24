@@ -5,6 +5,7 @@ from database import db
 from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw
 import s3_service
 import uuid
+import re
 
 router = APIRouter()
 
@@ -184,6 +185,87 @@ async def admin_activate_venue(venue_id: str, user=Depends(get_current_user)):
     return {"message": "Venue activated"}
 
 
+@router.post("/admin/venues")
+async def admin_create_venue(request: Request, user=Depends(get_current_user)):
+    """Admin creates a venue manually (owner_id=null, badge=enquiry)."""
+    await require_admin(user)
+    data = await request.json()
+    name = data.get("name", "").strip()
+    if not name:
+        raise HTTPException(400, "Venue name is required")
+    address = data.get("address", "").strip()
+    city = data.get("city", "").strip()
+    if not city:
+        raise HTTPException(400, "City is required")
+    contact_phone = data.get("contact_phone", "").strip()
+    # Generate unique slug
+    base_slug = re.sub(r'-+', '-', re.sub(r'[^a-z0-9\s-]', '', name.lower()).replace(' ', '-')).strip('-')
+    slug = base_slug
+    counter = 1
+    while await db.venues.find_one({"slug": slug}):
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+    venue = {
+        "id": str(uuid.uuid4()),
+        "owner_id": None,
+        "slug": slug,
+        "name": name,
+        "description": data.get("description", ""),
+        "sports": data.get("sports", ["football"]),
+        "address": address,
+        "area": data.get("area", ""),
+        "city": city,
+        "lat": data.get("lat", 12.9716),
+        "lng": data.get("lng", 77.5946),
+        "amenities": data.get("amenities", []),
+        "images": data.get("images", []),
+        "base_price": data.get("base_price", 2000),
+        "slot_duration_minutes": data.get("slot_duration_minutes", 60),
+        "opening_hour": data.get("opening_hour", 6),
+        "closing_hour": data.get("closing_hour", 23),
+        "turfs": data.get("turfs", 1),
+        "contact_phone": contact_phone,
+        "badge": "enquiry",
+        "created_by": "admin",
+        "rating": 0,
+        "total_reviews": 0,
+        "total_bookings": 0,
+        "status": "active",
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.venues.insert_one(venue)
+    venue.pop("_id", None)
+    return venue
+
+
+@router.put("/admin/venues/{venue_id}/assign-owner")
+async def admin_assign_venue_owner(venue_id: str, request: Request, user=Depends(get_current_user)):
+    """Admin assigns a registered venue owner to an unclaimed venue."""
+    await require_admin(user)
+    data = await request.json()
+    owner_id = data.get("owner_id", "").strip()
+    if not owner_id:
+        raise HTTPException(400, "owner_id is required")
+    venue = await db.venues.find_one({"id": venue_id})
+    if not venue:
+        raise HTTPException(404, "Venue not found")
+    owner = await db.users.find_one({"id": owner_id, "role": "venue_owner"})
+    if not owner:
+        raise HTTPException(404, "Venue owner not found")
+    await db.venues.update_one({"id": venue_id}, {"$set": {
+        "owner_id": owner_id,
+        "badge": "bookable",
+        "contact_phone": venue.get("contact_phone") or owner.get("phone", ""),
+    }})
+    await db.notifications.insert_one({
+        "id": str(uuid.uuid4()), "user_id": owner_id,
+        "type": "venue_assigned", "title": "Venue Assigned!",
+        "message": f'The venue "{venue["name"]}" has been assigned to your account. You can now manage it from your dashboard.',
+        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+    })
+    return {"message": f"Venue assigned to {owner.get('name', owner_id)}"}
+
+
 @router.get("/admin/bookings")
 async def admin_list_bookings(user=Depends(get_current_user)):
     await require_admin(user)
@@ -214,6 +296,8 @@ async def admin_get_settings(user=Depends(get_current_user)):
     # Ensure s3_storage field exists in old records
     if "s3_storage" not in settings:
         settings["s3_storage"] = {"access_key_id": "", "secret_access_key": "", "bucket_name": "", "region": "ap-south-1", "enabled": False}
+    if "whatsapp" not in settings:
+        settings["whatsapp"] = {"phone_number_id": "", "access_token": "", "business_phone": ""}
     return settings
 
 
@@ -221,7 +305,7 @@ async def admin_get_settings(user=Depends(get_current_user)):
 async def admin_update_settings(request: Request, user=Depends(get_current_user)):
     await require_admin(user)
     data = await request.json()
-    allowed = ["payment_gateway", "booking_commission_pct", "coaching_commission_pct", "tournament_commission_pct", "subscription_plans", "s3_storage"]
+    allowed = ["payment_gateway", "booking_commission_pct", "coaching_commission_pct", "tournament_commission_pct", "subscription_plans", "s3_storage", "whatsapp"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if not updates:
         raise HTTPException(400, "No valid fields to update")

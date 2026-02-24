@@ -12,11 +12,99 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff, MessageSquare, Send, Globe, Share2, CalendarCheck, ListOrdered } from "lucide-react";
+import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader2, Bell, BellOff, MessageSquare, Send, Globe, Share2, CalendarCheck, ListOrdered, Phone } from "lucide-react";
 
 // Athlete imagery for empty states
 const NO_SLOTS_IMG = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80";
 import { format } from "date-fns";
+
+function EnquiryForm({ venue }) {
+  const [form, setForm] = useState({ name: "", phone: "", sport: venue.sports?.[0] || "", date: "", time: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [sent, setSent] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!form.name.trim() || !form.phone.trim()) { toast.error("Name and phone are required"); return; }
+    setSubmitting(true);
+    try {
+      const res = await venueAPI.submitEnquiry(venue.id, form);
+      setSent(true);
+      if (res.data?.whatsapp_sent) {
+        toast.success("Enquiry sent via WhatsApp!");
+      } else {
+        toast.success("Enquiry submitted! The venue will be notified.");
+      }
+    } catch (err) { toast.error(err?.response?.data?.detail || "Failed to send enquiry"); }
+    finally { setSubmitting(false); }
+  };
+
+  if (sent) {
+    return (
+      <div className="max-w-xl mx-auto px-4 md:px-6 py-12 text-center">
+        <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/5 p-8">
+          <Check className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+          <h3 className="font-display text-xl font-black mb-2">Enquiry Sent!</h3>
+          <p className="text-sm text-muted-foreground mb-4">Your enquiry has been sent to the venue owner. They will contact you soon.</p>
+          <Button variant="outline" onClick={() => { setSent(false); setForm({ name: "", phone: "", sport: venue.sports?.[0] || "", date: "", time: "", message: "" }); }}>
+            Send Another Enquiry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-xl mx-auto px-4 md:px-6 py-8">
+      <div className="rounded-2xl border-2 border-amber-500/30 bg-card/50 backdrop-blur-md p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <Phone className="h-5 w-5 text-amber-400" />
+          </div>
+          <div>
+            <h3 className="font-display text-lg font-black">Enquire via WhatsApp</h3>
+            <p className="text-xs text-muted-foreground">This venue accepts enquiries only. Fill the form to contact the owner.</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Your Name *</Label>
+              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Rahul Kumar" className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Phone Number *</Label>
+              <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98765 43210" className="mt-1" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs text-muted-foreground">Sport</Label>
+              <select value={form.sport} onChange={e => setForm(p => ({ ...p, sport: e.target.value }))}
+                className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm">
+                {(venue.sports || ["football"]).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Preferred Date</Label>
+              <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="mt-1" />
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Preferred Time</Label>
+            <Input value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))} placeholder="6:00 PM - 7:00 PM" className="mt-1" />
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">Message (optional)</Label>
+            <Input value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Looking for a regular slot..." className="mt-1" />
+          </div>
+          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 gap-2" onClick={handleSubmit} disabled={submitting}>
+            {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Sending...</> : <><Send className="h-4 w-4" />Send Enquiry via WhatsApp</>}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function VenueDetail() {
   const { id } = useParams();
@@ -398,6 +486,9 @@ export default function VenueDetail() {
                     {s}
                   </Badge>
                 ))}
+                <Badge className={`text-xs px-3 py-1 ${venue.badge === "bookable" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
+                  {venue.badge === "bookable" ? "Bookable" : "Enquiry Only"}
+                </Badge>
               </div>
 
               {/* Venue Name - Large & Bold */}
@@ -512,7 +603,11 @@ export default function VenueDetail() {
         </div>
       </motion.div>
 
-      {/* Booking Section - Athletic Style */}
+      {/* Enquiry Form — shown for enquiry-badge venues */}
+      {venue.badge === "enquiry" ? (
+        <EnquiryForm venue={venue} />
+      ) : (
+      /* Booking Section - Athletic Style (only for bookable venues) */
       <div className="max-w-7xl mx-auto px-4 md:px-6">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
           {/* Calendar - Athletic Card */}
@@ -693,6 +788,8 @@ export default function VenueDetail() {
           </div>
         </div>
       </div>
+
+      )}
 
       {/* Reviews Section */}
       <div className="mt-10 border-t border-border pt-8" data-testid="reviews-section">

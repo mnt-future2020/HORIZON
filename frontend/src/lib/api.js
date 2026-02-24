@@ -107,6 +107,7 @@ export const venueAPI = {
   getReviewSummary: (id) => api.get(`/venues/${id}/reviews/summary`),
   createReview: (id, data) => api.post(`/venues/${id}/reviews`, data),
   canReview: (id) => api.get(`/venues/${id}/reviews/can-review`),
+  submitEnquiry: (id, data) => api.post(`/venues/${id}/enquiry`, data),
 };
 
 export const bookingAPI = {
@@ -192,6 +193,8 @@ export const adminAPI = {
   activateUser: (id) => api.put(`/admin/users/${id}/activate`),
   setUserPlan: (id, data) => api.put(`/admin/users/${id}/set-plan`, data),
   venues: () => api.get("/admin/venues"),
+  createVenue: (data) => api.post("/admin/venues", data),
+  assignVenueOwner: (venueId, ownerId) => api.put(`/admin/venues/${venueId}/assign-owner`, { owner_id: ownerId }),
   suspendVenue: (id) => api.put(`/admin/venues/${id}/suspend`),
   activateVenue: (id) => api.put(`/admin/venues/${id}/activate`),
   bookings: () => api.get("/admin/bookings"),

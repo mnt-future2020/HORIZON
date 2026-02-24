@@ -10,6 +10,7 @@ import math
 import logging
 import re
 import json
+import whatsapp_service
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
@@ -269,6 +270,9 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
         "owner_id": user["id"],
         "slug": slug,
         **input.model_dump(),
+        "contact_phone": user.get("phone", ""),
+        "badge": "bookable",
+        "created_by": "owner",
         "rating": 0,
         "total_reviews": 0,
         "total_bookings": 0,
@@ -312,6 +316,57 @@ async def get_owner_venues(user=Depends(get_current_user)):
         raise HTTPException(403, "Only venue owners")
     venues = await db.venues.find({"owner_id": user["id"]}, {"_id": 0}).to_list(100)
     return venues
+
+
+# --- Venue Enquiry ---
+@router.post("/venues/{venue_id}/enquiry")
+async def venue_enquiry(venue_id: str, request: Request):
+    """Save an enquiry and send WhatsApp message to venue owner via Cloud API."""
+    venue = await db.venues.find_one({"id": venue_id})
+    if not venue:
+        raise HTTPException(404, "Venue not found")
+    data = await request.json()
+    name = data.get("name", "").strip()
+    phone = data.get("phone", "").strip()
+    sport = data.get("sport", "").strip()
+    date = data.get("date", "").strip()
+    time_slot = data.get("time", "").strip()
+    message = data.get("message", "").strip()
+    if not name or not phone:
+        raise HTTPException(400, "Name and phone are required")
+    # Save enquiry to DB
+    enquiry = {
+        "id": str(uuid.uuid4()),
+        "venue_id": venue_id,
+        "venue_name": venue.get("name", ""),
+        "name": name,
+        "phone": phone,
+        "sport": sport,
+        "date": date,
+        "time": time_slot,
+        "message": message,
+        "status": "new",
+        "whatsapp_sent": False,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.venue_enquiries.insert_one(enquiry)
+    enquiry.pop("_id", None)
+
+    # Send WhatsApp message via Cloud API
+    contact = venue.get("contact_phone", "")
+    if contact:
+        platform = await get_platform_settings()
+        wa_settings = platform.get("whatsapp", {})
+        msg_body = whatsapp_service.build_enquiry_message(
+            venue.get("name", ""), enquiry
+        )
+        result = await whatsapp_service.send_message(wa_settings, contact, msg_body)
+        enquiry["whatsapp_sent"] = result.get("ok", False)
+        if result.get("ok"):
+            await db.venue_enquiries.update_one(
+                {"id": enquiry["id"]}, {"$set": {"whatsapp_sent": True}}
+            )
+    return enquiry
 
 
 # --- Slot Routes (with Redis Locking) ---
