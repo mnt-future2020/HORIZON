@@ -18,6 +18,8 @@ import { MapPin, Star, Clock, IndianRupee, Zap, Users, Copy, Check, Lock, Loader
 const NO_SLOTS_IMG = "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=600&q=80";
 import { format } from "date-fns";
 
+const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
+
 function EnquiryForm({ venue }) {
   const [form, setForm] = useState({ name: "", phone: "", sport: venue.sports?.[0] || "", date: "", time: "", message: "" });
   const [submitting, setSubmitting] = useState(false);
@@ -73,7 +75,10 @@ function EnquiryForm({ venue }) {
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Phone Number *</Label>
-              <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+91 98765 43210" className="mt-1" />
+              <div className="flex mt-1">
+                <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
+                <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))} placeholder="98765 43210" className="rounded-l-none" maxLength={10} />
+              </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -231,8 +236,17 @@ export default function VenueDetail() {
     };
   }, []);
 
+  // Booking restrictions
+  const isAdmin = user?.role === "super_admin";
+  const isOwnVenue = user?.role === "venue_owner" && venue?.owner_id && venue.owner_id === user?.id;
+  const canBook = !isAdmin && !isOwnVenue;
+
   const handleSlotSelect = async (slot) => {
     if (slot.status === "booked" || slot.status === "on_hold") return;
+    if (!canBook) {
+      toast.error(isAdmin ? "Admins cannot book venues" : "You cannot book your own venue");
+      return;
+    }
 
     // If we already have a lock on a different slot, release it
     if (lockRef.current &&
@@ -627,6 +641,14 @@ export default function VenueDetail() {
 
           {/* Slots - Athletic Grid */}
           <div className="lg:col-span-8">
+            {!canBook && venue?.badge === "bookable" && (
+              <div className="mb-4 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 p-4 flex items-center gap-3">
+                <Lock className="h-5 w-5 text-amber-400 shrink-0" />
+                <p className="text-sm font-semibold text-amber-300">
+                  {isAdmin ? "Admins can view slots but cannot book venues." : "You cannot book your own venue."}
+                </p>
+              </div>
+            )}
             <h2 className="font-display text-xl font-black mb-6 uppercase tracking-wide">
               Available Slots - {format(selectedDate, "EEE, MMM d")}
             </h2>

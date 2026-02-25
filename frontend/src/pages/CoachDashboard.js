@@ -25,6 +25,7 @@ const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball", "volleyball", "table_tennis", "swimming"];
 const ORG_TYPES = ["academy", "school", "college"];
 const RECORD_TYPES = ["assessment", "achievement", "match_result", "training"];
+const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
 export default function CoachDashboard() {
   const { user } = useAuth();
@@ -711,8 +712,11 @@ export default function CoachDashboard() {
                         <Input type="email" value={studentForm.email} onChange={e => setStudentForm(p => ({ ...p, email: e.target.value }))}
                           className="mt-1 bg-background border-border" data-testid="student-email-input" /></div>
                       <div><Label className="text-xs text-muted-foreground">Phone</Label>
-                        <Input value={studentForm.phone} onChange={e => setStudentForm(p => ({ ...p, phone: e.target.value }))}
-                          className="mt-1 bg-background border-border" data-testid="student-phone-input" /></div>
+                        <div className="flex mt-1">
+                          <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
+                          <Input value={studentForm.phone} onChange={e => setStudentForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
+                            className="bg-background border-border rounded-l-none" data-testid="student-phone-input" placeholder="98765 43210" maxLength={10} />
+                        </div></div>
                       <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleAddStudent} data-testid="submit-student-btn">Add Student</Button>
                     </div>
                   </DialogContent>

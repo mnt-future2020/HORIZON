@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
+
 function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
   return (
     <div className="glass-card rounded-lg p-4" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
@@ -364,6 +366,7 @@ function UsersTab() {
           ) : null}
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
@@ -373,13 +376,18 @@ function VenuesTab() {
   const [loading, setLoading] = useState(true);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "", city: "", sports: ["football"], base_price: 2000, turfs: 1, contact_phone: "", images: [] });
+  const SPORTS_OPTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis"];
+  const AMENITIES_OPTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
+  const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "", area: "", city: "", sports: [], amenities: [], base_price: 2000, turfs: 1, opening_hour: 6, closing_hour: 23, slot_duration_minutes: 60, contact_phone: "", images: [] });
+  const toggleFormArray = (field, val) => setVenueForm(p => ({ ...p, [field]: p[field].includes(val) ? p[field].filter(v => v !== val) : [...p[field], val] }));
   const [uploading, setUploading] = useState(false);
   // Assign owner
   const [assignDialog, setAssignDialog] = useState(null); // venue object or null
   const [venueOwners, setVenueOwners] = useState([]);
   const [selectedOwner, setSelectedOwner] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [useOwnerPhone, setUseOwnerPhone] = useState(false);
+  const [confirmAssign, setConfirmAssign] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -428,6 +436,8 @@ function VenuesTab() {
   const openAssignDialog = async (venue) => {
     setAssignDialog(venue);
     setSelectedOwner("");
+    setUseOwnerPhone(false);
+    setConfirmAssign(false);
     try {
       const res = await adminAPI.users({ role: "venue_owner", status: "active" });
       setVenueOwners(res.data || []);
@@ -436,11 +446,13 @@ function VenuesTab() {
 
   const handleAssignOwner = async () => {
     if (!selectedOwner || !assignDialog) return;
+    if (!confirmAssign) { setConfirmAssign(true); return; }
     setAssigning(true);
     try {
-      await adminAPI.assignVenueOwner(assignDialog.id, selectedOwner);
+      await adminAPI.assignVenueOwner(assignDialog.id, selectedOwner, useOwnerPhone);
       toast.success("Owner assigned! Venue is now bookable.");
       setAssignDialog(null);
+      setConfirmAssign(false);
       load();
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to assign owner"); }
     finally { setAssigning(false); }
@@ -463,6 +475,9 @@ function VenuesTab() {
               <span className="text-sm font-semibold">{v.name}</span>
               <Badge className={`text-[9px] px-1.5 py-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
+              </Badge>
+              <Badge className={`text-[9px] px-1.5 py-0 ${v.owner_id ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400"}`}>
+                {v.owner_id ? "Owner Linked" : "Manual Entry"}
               </Badge>
             </div>
             <div className="text-xs text-muted-foreground">{v.address}{v.address && ", "}{v.city}</div>
@@ -507,8 +522,36 @@ function VenuesTab() {
                 <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))} placeholder="123 Main Street" className="mt-1" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">City *</Label>
-                <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))} placeholder="Bengaluru" className="mt-1" />
+                <Label className="text-xs text-muted-foreground">Area</Label>
+                <Input value={venueForm.area} onChange={e => setVenueForm(p => ({ ...p, area: e.target.value }))} placeholder="Koramangala" className="mt-1" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">City *</Label>
+              <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))} placeholder="Bengaluru" className="mt-1" />
+            </div>
+            {/* Sports */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Sports *</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {SPORTS_OPTIONS.map(s => (
+                  <button key={s} type="button" onClick={() => toggleFormArray("sports", s.toLowerCase())}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Amenities */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Amenities</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {AMENITIES_OPTIONS.map(a => (
+                  <button key={a} type="button" onClick={() => toggleFormArray("amenities", a)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                    {a}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -521,9 +564,26 @@ function VenuesTab() {
                 <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1" />
               </div>
             </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Opening Hour</Label>
+                <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Closing Hour</Label>
+                <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Slot (min)</Label>
+                <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))} className="mt-1" />
+              </div>
+            </div>
             <div>
               <Label className="text-xs text-muted-foreground">Owner's WhatsApp Number</Label>
-              <Input value={venueForm.contact_phone} onChange={e => setVenueForm(p => ({ ...p, contact_phone: e.target.value }))} placeholder="+91 98765 43210" className="mt-1" />
+              <div className="flex mt-1">
+                <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
+                <Input value={venueForm.contact_phone} onChange={e => setVenueForm(p => ({ ...p, contact_phone: cleanPhone(e.target.value) }))} placeholder="98765 43210" className="rounded-l-none" maxLength={10} />
+              </div>
               <p className="text-[10px] text-muted-foreground mt-1">Enquiries from Lobbians will be sent to this WhatsApp number.</p>
             </div>
             {/* Image upload */}
@@ -565,20 +625,76 @@ function VenuesTab() {
             {venueOwners.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No active venue owners found. Venue owners must register and be approved first.</p>
             ) : (
-              <Select value={selectedOwner} onValueChange={setSelectedOwner}>
-                <SelectTrigger><SelectValue placeholder="Select venue owner" /></SelectTrigger>
-                <SelectContent>
-                  {venueOwners.map(o => (
-                    <SelectItem key={o.id} value={o.id}>
-                      {o.name} ({o.email}){o.business_name ? ` — ${o.business_name}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <>
+                <Select value={selectedOwner} onValueChange={(v) => { setSelectedOwner(v); setConfirmAssign(false); }}>
+                  <SelectTrigger><SelectValue placeholder="Select venue owner" /></SelectTrigger>
+                  <SelectContent>
+                    {venueOwners.map(o => (
+                      <SelectItem key={o.id} value={o.id}>
+                        {o.name} ({o.email}){o.business_name ? ` — ${o.business_name}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Phone number info */}
+                {selectedOwner && (() => {
+                  const owner = venueOwners.find(o => o.id === selectedOwner);
+                  const venuePhone = assignDialog?.contact_phone;
+                  const ownerPhone = owner?.phone;
+                  const phonesAreDifferent = venuePhone && ownerPhone && venuePhone !== ownerPhone;
+                  return (
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-2.5">
+                      <div className="flex items-center gap-2 text-xs">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground">Venue phone:</span>
+                        <span className="font-medium">{venuePhone || "Not set"}{venuePhone && <span className="text-muted-foreground font-normal"> (by admin)</span>}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs">
+                        <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-muted-foreground">Owner phone:</span>
+                        <span className="font-medium">{ownerPhone || "Not set"}</span>
+                      </div>
+                      {phonesAreDifferent && (
+                        <div className="flex items-center justify-between pt-1 border-t border-border/40">
+                          <Label htmlFor="use-owner-phone" className="text-xs text-muted-foreground cursor-pointer">
+                            Update venue phone to owner's number
+                          </Label>
+                          <Switch id="use-owner-phone" checked={useOwnerPhone} onCheckedChange={setUseOwnerPhone} />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </>
             )}
-            <Button className="w-full font-bold" onClick={handleAssignOwner} disabled={assigning || !selectedOwner}>
-              {assigning ? "Assigning..." : "Assign Owner"}
-            </Button>
+            {/* Confirmation summary */}
+            {confirmAssign && selectedOwner && (() => {
+              const owner = venueOwners.find(o => o.id === selectedOwner);
+              return (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-1.5">
+                  <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                    <AlertCircle className="h-3.5 w-3.5" /> Are you sure?
+                  </div>
+                  <div className="text-[11px] text-muted-foreground space-y-0.5">
+                    <p>Venue: <span className="text-foreground font-medium">{assignDialog?.name}</span></p>
+                    <p>Owner: <span className="text-foreground font-medium">{owner?.name} ({owner?.email})</span></p>
+                    <p>Phone: <span className="text-foreground font-medium">{useOwnerPhone ? (owner?.phone || "Not set") + " (owner)" : (assignDialog?.contact_phone || owner?.phone || "Not set") + (!useOwnerPhone && assignDialog?.contact_phone ? " (by admin)" : "")}</span></p>
+                    <p>Badge will change from <span className="text-amber-400 font-medium">Enquiry</span> to <span className="text-emerald-400 font-medium">Bookable</span></p>
+                  </div>
+                </div>
+              );
+            })()}
+            <div className="flex gap-2">
+              {confirmAssign && (
+                <Button variant="outline" className="flex-1 font-bold" onClick={() => setConfirmAssign(false)}>
+                  Go Back
+                </Button>
+              )}
+              <Button className={`${confirmAssign ? "flex-1" : "w-full"} font-bold`} onClick={handleAssignOwner} disabled={assigning || !selectedOwner}>
+                {assigning ? "Assigning..." : confirmAssign ? "Yes, Assign Owner" : "Assign Owner"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -831,8 +947,11 @@ function SettingsTab() {
           </div>
           <div>
             <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Business Phone (display)</Label>
-            <Input value={settings.whatsapp?.business_phone || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: e.target.value } }))}
-              className="mt-1.5 bg-background border-border h-10 text-sm" placeholder="+91 98765 43210" />
+            <div className="flex mt-1.5">
+              <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
+              <Input value={settings.whatsapp?.business_phone || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: cleanPhone(e.target.value) } }))}
+                className="bg-background border-border h-10 text-sm rounded-l-none" placeholder="98765 43210" maxLength={10} />
+            </div>
             <p className="text-[10px] text-muted-foreground mt-1">The registered WhatsApp Business number (for reference only).</p>
           </div>
         </div>

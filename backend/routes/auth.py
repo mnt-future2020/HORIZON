@@ -6,6 +6,7 @@ from models import RegisterInput, LoginInput
 from collections import defaultdict
 import uuid
 import time
+import os
 import logging
 
 router = APIRouter()
@@ -171,3 +172,20 @@ async def refresh_token(request: Request):
     new_access = create_token(user["id"], user["role"])
     new_refresh = create_refresh_token(user["id"], user["role"])
     return {"token": new_access, "refresh_token": new_refresh}
+
+
+@router.post("/auth/dev-login")
+async def dev_login(request: Request):
+    """Quick login by email — development/testing only, no password needed."""
+    if os.environ.get("ENVIRONMENT", "development") != "development":
+        raise HTTPException(403, "Dev login is disabled in production")
+    data = await request.json()
+    email = data.get("email", "").strip().lower()
+    if not email:
+        raise HTTPException(400, "email required")
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(404, "User not found")
+    token = create_token(user["id"], user["role"])
+    user.pop("_id", None)
+    return {"token": token, "refresh_token": create_refresh_token(user["id"], user["role"]), "user": {k: v for k, v in user.items() if k != "password_hash"}}

@@ -246,16 +246,19 @@ async def admin_assign_venue_owner(venue_id: str, request: Request, user=Depends
     owner_id = data.get("owner_id", "").strip()
     if not owner_id:
         raise HTTPException(400, "owner_id is required")
+    use_owner_phone = data.get("use_owner_phone", False)
     venue = await db.venues.find_one({"id": venue_id})
     if not venue:
         raise HTTPException(404, "Venue not found")
     owner = await db.users.find_one({"id": owner_id, "role": "venue_owner"})
     if not owner:
         raise HTTPException(404, "Venue owner not found")
+    # If admin chose to use owner's phone, or venue has no phone, use owner's phone
+    contact_phone = owner.get("phone", "") if use_owner_phone else (venue.get("contact_phone") or owner.get("phone", ""))
     await db.venues.update_one({"id": venue_id}, {"$set": {
         "owner_id": owner_id,
         "badge": "bookable",
-        "contact_phone": venue.get("contact_phone") or owner.get("phone", ""),
+        "contact_phone": contact_phone,
     }})
     await db.notifications.insert_one({
         "id": str(uuid.uuid4()), "user_id": owner_id,
@@ -263,7 +266,7 @@ async def admin_assign_venue_owner(venue_id: str, request: Request, user=Depends
         "message": f'The venue "{venue["name"]}" has been assigned to your account. You can now manage it from your dashboard.',
         "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
     })
-    return {"message": f"Venue assigned to {owner.get('name', owner_id)}"}
+    return {"message": f"Venue assigned to {owner.get('name', owner_id)}", "contact_phone": contact_phone}
 
 
 @router.get("/admin/bookings")

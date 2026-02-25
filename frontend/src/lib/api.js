@@ -10,7 +10,7 @@ const API_URL = `${BACKEND_URL || "http://localhost:8000"}/api`;
 const api = axios.create({ baseURL: API_URL, timeout: 30000 });
 
 // Public paths that don't need auth
-const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/contact"];
+const PUBLIC_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/dev-login", "/contact"];
 
 api.interceptors.request.use((config) => {
   const isPublic = PUBLIC_PATHS.some((p) => config.url?.includes(p));
@@ -79,6 +79,7 @@ api.interceptors.response.use(
 export const authAPI = {
   register: (data) => api.post("/auth/register", data),
   login: (data) => api.post("/auth/login", data),
+  devLogin: (email) => api.post("/auth/dev-login", { email }),
   getMe: () => api.get("/auth/me"),
   updateProfile: (data) => api.put("/auth/profile", data),
   refreshToken: (token) => api.post("/auth/refresh", { refresh_token: token }),
@@ -194,7 +195,7 @@ export const adminAPI = {
   setUserPlan: (id, data) => api.put(`/admin/users/${id}/set-plan`, data),
   venues: () => api.get("/admin/venues"),
   createVenue: (data) => api.post("/admin/venues", data),
-  assignVenueOwner: (venueId, ownerId) => api.put(`/admin/venues/${venueId}/assign-owner`, { owner_id: ownerId }),
+  assignVenueOwner: (venueId, ownerId, useOwnerPhone = false) => api.put(`/admin/venues/${venueId}/assign-owner`, { owner_id: ownerId, use_owner_phone: useOwnerPhone }),
   suspendVenue: (id) => api.put(`/admin/venues/${id}/suspend`),
   activateVenue: (id) => api.put(`/admin/venues/${id}/activate`),
   bookings: () => api.get("/admin/bookings"),
@@ -418,6 +419,49 @@ export const groupAPI = {
   remove: (id) => api.delete(`/groups/${id}`),
   getMessages: (id, before) => api.get(`/groups/${id}/messages`, { params: { before } }),
   sendMessage: (id, data) => api.post(`/groups/${id}/messages`, data),
+  promote: (id, userId) => api.post(`/groups/${id}/promote`, { user_id: userId }),
+  demote: (id, userId) => api.post(`/groups/${id}/demote`, { user_id: userId }),
+  removeMember: (id, userId) => api.post(`/groups/${id}/remove-member`, { user_id: userId }),
+  // Reactions, delete, search
+  reactMessage: (id, msgId, emoji) => api.post(`/groups/${id}/messages/${msgId}/react`, { emoji }),
+  deleteMessage: (id, msgId) => api.delete(`/groups/${id}/messages/${msgId}`),
+  searchMessages: (id, q, page) => api.get(`/groups/${id}/messages/search`, { params: { q, page } }),
+  // Typing
+  setTyping: (id) => api.post(`/groups/${id}/typing`),
+  getTyping: (id) => api.get(`/groups/${id}/typing`),
+  // Read receipts & unread
+  markRead: (id) => api.post(`/groups/${id}/read`),
+  getUnread: (id) => api.get(`/groups/${id}/unread`),
+  getAllUnreads: () => api.get("/groups/unread/all"),
+  getSeenBy: (id, msgId) => api.get(`/groups/${id}/seen-by/${msgId}`),
+  // Pin
+  pinMessage: (id, msgId) => api.post(`/groups/${id}/messages/${msgId}/pin`),
+  unpinMessage: (id, msgId) => api.delete(`/groups/${id}/messages/${msgId}/pin`),
+  getPinned: (id) => api.get(`/groups/${id}/pinned`),
+  // Polls
+  createPoll: (id, data) => api.post(`/groups/${id}/polls`, data),
+  votePoll: (id, msgId, optionIndex) => api.post(`/groups/${id}/polls/${msgId}/vote`, { option_index: optionIndex }),
+  // Media gallery
+  getMedia: (id, page) => api.get(`/groups/${id}/media`, { params: { page } }),
+  // Mute
+  toggleMute: (id) => api.post(`/groups/${id}/mute`),
+  getMute: (id) => api.get(`/groups/${id}/mute`),
+  // Clear chat (per-user)
+  clearChat: (id) => api.post(`/groups/${id}/clear`),
+  // Invite link
+  getInviteLink: (id) => api.post(`/groups/${id}/invite-link`),
+  joinViaInvite: (code) => api.post(`/groups/join/${code}`),
+  // Join requests (private groups)
+  requestJoin: (id) => api.post(`/groups/${id}/join-request`),
+  getJoinRequests: (id) => api.get(`/groups/${id}/join-requests`),
+  approveJoinRequest: (id, reqId) => api.post(`/groups/${id}/join-requests/${reqId}/approve`),
+  rejectJoinRequest: (id, reqId) => api.post(`/groups/${id}/join-requests/${reqId}/reject`),
+  // Member roles
+  setMemberRole: (id, userId, role) => api.put(`/groups/${id}/members/${userId}/role`, { role }),
+  // Online members
+  getOnline: (id) => api.get(`/groups/${id}/online`),
+  // Forward message
+  forwardMessage: (data) => api.post("/messages/forward", data),
 };
 
 export const teamAPI = {
@@ -444,6 +488,23 @@ export const chatAPI = {
   reactToMessage: (convoId, msgId, emoji) => api.post(`/chat/${convoId}/messages/${msgId}/react`, { emoji }),
   searchMessages: (convoId, q, page) => api.get(`/chat/${convoId}/search`, { params: { q, page } }),
   uploadFile: (file) => { const fd = new FormData(); fd.append("file", file); return api.post("/chat/upload", fd, { headers: { "Content-Type": "multipart/form-data" } }); },
+  // Pin
+  pinMessage: (convoId, msgId) => api.post(`/chat/${convoId}/messages/${msgId}/pin`),
+  unpinMessage: (convoId, msgId) => api.delete(`/chat/${convoId}/messages/${msgId}/pin`),
+  getPinned: (convoId) => api.get(`/chat/${convoId}/pinned`),
+  // Polls
+  createPoll: (convoId, data) => api.post(`/chat/${convoId}/polls`, data),
+  votePoll: (convoId, msgId, optionIndex) => api.post(`/chat/${convoId}/polls/${msgId}/vote`, { option_index: optionIndex }),
+  // Media gallery
+  getMedia: (convoId, page) => api.get(`/chat/${convoId}/media`, { params: { page } }),
+  // Mute
+  toggleMute: (convoId) => api.post(`/chat/${convoId}/mute`),
+  // Clear chat (per-user)
+  clearChat: (convoId) => api.post(`/chat/${convoId}/clear`),
+  // Message requests (Instagram-style)
+  getRequests: () => api.get("/chat/requests"),
+  acceptRequest: (convoId) => api.post(`/chat/${convoId}/accept`),
+  declineRequest: (convoId) => api.post(`/chat/${convoId}/decline`),
 };
 
 export const userSearchAPI = {

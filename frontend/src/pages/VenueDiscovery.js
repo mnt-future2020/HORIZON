@@ -434,9 +434,9 @@ export default function VenueDiscovery() {
                         data-testid={`venue-name-${venue.id}`}>
                         {venue.name}
                       </h3>
-                      {venue.badge === "enquiry" && (
-                        <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">Enquiry</Badge>
-                      )}
+                      <Badge className={`text-[9px] px-1.5 py-0 shrink-0 ${venue.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
+                        {venue.badge === "bookable" ? "Bookable" : "Enquiry"}
+                      </Badge>
                     </div>
 
                     {/* Location */}

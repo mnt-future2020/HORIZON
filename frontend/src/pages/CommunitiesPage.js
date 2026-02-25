@@ -303,12 +303,18 @@ export default function CommunitiesPage() {
                       </select>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 justify-between">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={form.is_private} onChange={e => setForm(p => ({ ...p, is_private: e.target.checked }))}
                         className="rounded border-border" />
                       <span className="text-sm">Private group (invite only)</span>
                     </label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground whitespace-nowrap">Max Members</Label>
+                      <Input type="number" min={2} max={5000} value={form.max_members}
+                        onChange={e => setForm(p => ({ ...p, max_members: parseInt(e.target.value) || 500 }))}
+                        className="w-24 bg-background border-border h-8 text-sm" />
+                    </div>
                   </div>
                   <Button variant="athletic" className="w-full" onClick={handleCreate} disabled={creating}>
                     {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}

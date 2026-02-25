@@ -10,7 +10,7 @@ load_dotenv(env_path)
 
 async def test_mongo():
     mongo_url = os.environ.get('MONGO_URL', 'mongodb://localhost:27017')
-    db_name = os.environ.get('DB_NAME', 'horizon_db')
+    db_name = os.environ.get('DB_NAME', 'lobbi_db')
     
     print(f"Connecting to {mongo_url}...")
     try:

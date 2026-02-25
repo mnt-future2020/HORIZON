@@ -243,7 +243,12 @@ export default function ExplorePage() {
                     onClick={() => navigate(`/venues/${v.id}`)}>
                     {v.image_url && <img src={mediaUrl(v.image_url)} alt={v.name} className="w-full h-28 object-cover" />}
                     <div className="p-3">
-                      <div className="font-bold text-xs truncate">{v.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="font-bold text-xs truncate">{v.name}</div>
+                        <Badge className={`text-[8px] px-1 py-0 shrink-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
+                          {v.badge === "bookable" ? "Bookable" : "Enquiry"}
+                        </Badge>
+                      </div>
                       <div className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
                         <MapPin className="h-3 w-3" /> {v.area || v.city || ""}
                       </div>

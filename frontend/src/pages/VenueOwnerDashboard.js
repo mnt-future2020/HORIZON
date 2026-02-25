@@ -150,11 +150,15 @@ function VenueOwnerDashboardContent() {
   const [editVenueOpen, setEditVenueOpen] = useState(false);
   const [editVenueForm, setEditVenueForm] = useState({});
   const [savingVenue, setSavingVenue] = useState(false);
+  const SPORTS_OPTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis"];
+  const AMENITIES_OPTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
   const [venueForm, setVenueForm] = useState({
-    name: "", description: "", sports: ["football"], address: "", city: "Bengaluru",
+    name: "", description: "", sports: [], address: "", area: "", city: "Bengaluru",
     base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
     amenities: [], images: [],
   });
+  const toggleVenueFormArray = (field, val) => setVenueForm(p => ({ ...p, [field]: p[field].includes(val) ? p[field].filter(v => v !== val) : [...p[field], val] }));
+  const toggleEditFormArray = (field, val) => setEditVenueForm(p => ({ ...p, [field]: (p[field] || []).includes(val) ? (p[field] || []).filter(v => v !== val) : [...(p[field] || []), val] }));
   const emptyRule = {
     name: "", priority: 10,
     conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
@@ -455,7 +459,7 @@ function VenueOwnerDashboardContent() {
           <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
             <div className="space-y-3">
-              <div><Label className="text-xs text-muted-foreground">Name</Label>
+              <div><Label className="text-xs text-muted-foreground">Name *</Label>
                 <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))}
                   className="mt-1 bg-background border-border" data-testid="venue-name-input" /></div>
               <div><Label className="text-xs text-muted-foreground">Description</Label>
@@ -465,12 +469,39 @@ function VenueOwnerDashboardContent() {
                 <div><Label className="text-xs text-muted-foreground">Address</Label>
                   <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))}
                     className="mt-1 bg-background border-border" data-testid="venue-address-input" /></div>
-                <div><Label className="text-xs text-muted-foreground">City</Label>
-                  <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))}
-                    className="mt-1 bg-background border-border" data-testid="venue-city-input" /></div>
+                <div><Label className="text-xs text-muted-foreground">Area</Label>
+                  <Input value={venueForm.area} onChange={e => setVenueForm(p => ({ ...p, area: e.target.value }))}
+                    placeholder="Koramangala" className="mt-1 bg-background border-border" /></div>
+              </div>
+              <div><Label className="text-xs text-muted-foreground">City *</Label>
+                <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))}
+                  className="mt-1 bg-background border-border" data-testid="venue-city-input" /></div>
+              {/* Sports */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Sports *</Label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {SPORTS_OPTIONS.map(s => (
+                    <button key={s} type="button" onClick={() => toggleVenueFormArray("sports", s.toLowerCase())}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Amenities */}
+              <div>
+                <Label className="text-xs text-muted-foreground">Amenities</Label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {AMENITIES_OPTIONS.map(a => (
+                    <button key={a} type="button" onClick={() => toggleVenueFormArray("amenities", a)}
+                      className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                      {a}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Base Price</Label>
+                <div><Label className="text-xs text-muted-foreground">Base Price (₹/hr)</Label>
                   <Input type="number" value={venueForm.base_price} onChange={e => setVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))}
                     className="mt-1 bg-background border-border" data-testid="venue-price-input" /></div>
                 <div><Label className="text-xs text-muted-foreground">Turfs</Label>
@@ -479,6 +510,14 @@ function VenueOwnerDashboardContent() {
                 <div><Label className="text-xs text-muted-foreground">Slot (min)</Label>
                   <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))}
                     className="mt-1 bg-background border-border" data-testid="venue-slot-input" /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label className="text-xs text-muted-foreground">Opening Hour</Label>
+                  <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))}
+                    className="mt-1 bg-background border-border" /></div>
+                <div><Label className="text-xs text-muted-foreground">Closing Hour</Label>
+                  <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))}
+                    className="mt-1 bg-background border-border" /></div>
               </div>
               <VenueImageUpload
                 images={venueForm.images}
@@ -1362,9 +1401,38 @@ function VenueOwnerDashboardContent() {
                   className="mt-1 bg-background border-border" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">City</Label>
-                <Input value={editVenueForm.city || ""} onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
-                  className="mt-1 bg-background border-border" />
+                <Label className="text-xs text-muted-foreground">Area</Label>
+                <Input value={editVenueForm.area || ""} onChange={e => setEditVenueForm(p => ({ ...p, area: e.target.value }))}
+                  placeholder="Koramangala" className="mt-1 bg-background border-border" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">City</Label>
+              <Input value={editVenueForm.city || ""} onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
+                className="mt-1 bg-background border-border" />
+            </div>
+            {/* Sports */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Sports</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {SPORTS_OPTIONS.map(s => (
+                  <button key={s} type="button" onClick={() => toggleEditFormArray("sports", s.toLowerCase())}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${(editVenueForm.sports || []).includes(s.toLowerCase()) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Amenities */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Amenities</Label>
+              <div className="flex flex-wrap gap-1.5 mt-1">
+                {AMENITIES_OPTIONS.map(a => (
+                  <button key={a} type="button" onClick={() => toggleEditFormArray("amenities", a)}
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${(editVenueForm.amenities || []).includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                    {a}
+                  </button>
+                ))}
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { chatAPI, userSearchAPI, socialAPI } from "@/lib/api";
+import { chatAPI, userSearchAPI, socialAPI, groupAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { useChatWebSocket } from "@/hooks/useChatWebSocket";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,9 @@ import {
   ArrowLeft, Send, Loader2, Search, MessageCircle,
   User, Plus, Check, CheckCheck, X, Trash2, Reply,
   MoreVertical, Phone, Video, Users, UserPlus, ContactRound, Share2,
-  Paperclip, FileText, Mic, Play, Pause, Square
+  Paperclip, FileText, Mic, Play, Pause, Square,
+  Pin, PinOff, BarChart3, Image, BellOff, Bell, Forward, Vote, Eraser,
+  Inbox, ShieldCheck, ShieldX
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -36,6 +38,12 @@ export default function ChatPage() {
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [convoSearch, setConvoSearch] = useState("");
+
+  // Message requests (Instagram-style)
+  const [requestCount, setRequestCount] = useState(0);
+  const [messageRequests, setMessageRequests] = useState([]);
+  const [showRequests, setShowRequests] = useState(false);
+  const [requestsLoading, setRequestsLoading] = useState(false);
 
   // New Message modal tabs
   const [activeTab, setActiveTab] = useState("all");
@@ -62,6 +70,19 @@ export default function ChatPage() {
   const [msgSearchResults, setMsgSearchResults] = useState([]);
   const [hoverReaction, setHoverReaction] = useState(null);
 
+  // Pin, Polls, Media, Mute, Forward
+  const [showPinned, setShowPinned] = useState(false);
+  const [pinnedMessages, setPinnedMessages] = useState([]);
+  const [showPollCreate, setShowPollCreate] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [showMediaGallery, setShowMediaGallery] = useState(false);
+  const [mediaItems, setMediaItems] = useState([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [forwardMsg, setForwardMsg] = useState(null);
+  const [forwardConvos, setForwardConvos] = useState([]);
+
   const reactionPickerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -80,9 +101,11 @@ export default function ChatPage() {
   const loadConversations = useCallback(async () => {
     try {
       const res = await chatAPI.conversations();
-      const convos = res.data || [];
-      setConversations(convos);
-      setFilteredConvos(convos);
+      const data = res.data || {};
+      const convos = data.conversations || data || [];
+      setConversations(Array.isArray(convos) ? convos : []);
+      setFilteredConvos(Array.isArray(convos) ? convos : []);
+      if (typeof data.request_count === "number") setRequestCount(data.request_count);
     } catch {}
   }, []);
 
@@ -143,7 +166,15 @@ export default function ChatPage() {
         loadMessages(activeConvo.id);
       }
     });
-    return () => { ["new_message","typing","online_status","message_deleted","messages_read","message_reaction"].forEach(t => wsOff(t)); };
+    wsOn("request_accepted", (data) => {
+      // Requester gets notified their request was accepted
+      if (activeConvo && data.conversation_id === activeConvo.id) {
+        setActiveConvo(prev => ({ ...prev, status: "active" }));
+      }
+      toast.success(`${data.accepted_by} accepted your message request`);
+      loadConversations();
+    });
+    return () => { ["new_message","typing","online_status","message_deleted","messages_read","message_reaction","request_accepted"].forEach(t => wsOff(t)); };
   }, [activeConvo, wsOn, wsOff, loadConversations, loadMessages]);
 
   // Poll messages (fallback when WS disconnected)
@@ -424,6 +455,151 @@ export default function ChatPage() {
     setMsgSearchResults([]);
   };
 
+  // ─── Pin Messages ──────────────────────────────────────────────────────────
+  const handlePinMessage = async (msg) => {
+    try {
+      await chatAPI.pinMessage(activeConvo.id, msg.id);
+      toast.success("Message pinned");
+      setLongPressMsg(null);
+      await loadMessages(activeConvo.id);
+    } catch { toast.error("Failed to pin"); }
+  };
+
+  const handleUnpinMessage = async (msg) => {
+    try {
+      await chatAPI.unpinMessage(activeConvo.id, msg.id);
+      toast.success("Unpinned");
+      setPinnedMessages(prev => prev.filter(m => m.id !== msg.id));
+      await loadMessages(activeConvo.id);
+    } catch { toast.error("Failed to unpin"); }
+  };
+
+  const loadPinnedMessages = async () => {
+    if (!activeConvo) return;
+    try {
+      const res = await chatAPI.getPinned(activeConvo.id);
+      setPinnedMessages(res.data || []);
+      setShowPinned(true);
+    } catch { toast.error("Failed to load pinned messages"); }
+  };
+
+  // ─── Polls ────────────────────────────────────────────────────────────────
+  const handleCreatePoll = async () => {
+    const validOpts = pollOptions.filter(o => o.trim());
+    if (!pollQuestion.trim() || validOpts.length < 2) {
+      toast.error("Need a question and at least 2 options");
+      return;
+    }
+    try {
+      await chatAPI.createPoll(activeConvo.id, { question: pollQuestion.trim(), options: validOpts });
+      setShowPollCreate(false);
+      setPollQuestion("");
+      setPollOptions(["", ""]);
+      await loadMessages(activeConvo.id);
+      loadConversations();
+    } catch { toast.error("Failed to create poll"); }
+  };
+
+  const handleVotePoll = async (msg, optionIndex) => {
+    try {
+      await chatAPI.votePoll(activeConvo.id, msg.id, optionIndex);
+      await loadMessages(activeConvo.id);
+    } catch { toast.error("Failed to vote"); }
+  };
+
+  // ─── Media Gallery ────────────────────────────────────────────────────────
+  const loadMediaGallery = async () => {
+    if (!activeConvo) return;
+    try {
+      const res = await chatAPI.getMedia(activeConvo.id);
+      setMediaItems(res.data?.media || res.data || []);
+      setShowMediaGallery(true);
+    } catch { toast.error("Failed to load media"); }
+  };
+
+  // ─── Mute ─────────────────────────────────────────────────────────────────
+  const handleToggleMute = async () => {
+    if (!activeConvo) return;
+    try {
+      const res = await chatAPI.toggleMute(activeConvo.id);
+      const muted = res.data?.muted ?? !isMuted;
+      setIsMuted(muted);
+      toast.success(muted ? "Conversation muted" : "Conversation unmuted");
+    } catch { toast.error("Failed to toggle mute"); }
+  };
+
+  // ─── Forward ──────────────────────────────────────────────────────────────
+  const openForwardModal = (msg) => {
+    setForwardMsg(msg);
+    setLongPressMsg(null);
+    // Load conversations list for forwarding
+    setForwardConvos(conversations.filter(c => c.id !== activeConvo?.id));
+    setShowForwardModal(true);
+  };
+
+  const handleForwardToConvo = async (targetConvo) => {
+    if (!forwardMsg) return;
+    try {
+      await groupAPI.forwardMessage({
+        source_type: "dm",
+        source_id: activeConvo.id,
+        message_id: forwardMsg.id,
+        target_type: "dm",
+        target_id: targetConvo.id,
+      });
+      toast.success(`Forwarded to ${targetConvo.other_user?.name}`);
+      setShowForwardModal(false);
+      setForwardMsg(null);
+    } catch { toast.error("Failed to forward"); }
+  };
+
+  // ─── Clear Chat (per-user) ──────────────────────────────────────────────────
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const handleClearChat = async () => {
+    if (!activeConvo) return;
+    try {
+      await chatAPI.clearChat(activeConvo.id);
+      setMessages([]);
+      setShowClearConfirm(false);
+      toast.success("Chat cleared for you");
+    } catch { toast.error("Failed to clear chat"); }
+  };
+
+  // ─── Message Requests ──────────────────────────────────────────────────────
+  const loadRequests = async () => {
+    setRequestsLoading(true);
+    try {
+      const res = await chatAPI.getRequests();
+      setMessageRequests(res.data || []);
+    } catch { toast.error("Failed to load requests"); }
+    finally { setRequestsLoading(false); }
+  };
+
+  const handleAcceptRequest = async (convo) => {
+    try {
+      await chatAPI.acceptRequest(convo.id);
+      toast.success(`Accepted ${convo.other_user?.name}'s request`);
+      // Move to active — reload both lists
+      setMessageRequests(prev => prev.filter(r => r.id !== convo.id));
+      setRequestCount(prev => Math.max(0, prev - 1));
+      // Open the now-active conversation
+      setActiveConvo({ ...convo, status: "active" });
+      await loadMessages(convo.id);
+      setShowRequests(false);
+      loadConversations();
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to accept"); }
+  };
+
+  const handleDeclineRequest = async (convo) => {
+    try {
+      await chatAPI.declineRequest(convo.id);
+      toast.success("Request declined");
+      setMessageRequests(prev => prev.filter(r => r.id !== convo.id));
+      setRequestCount(prev => Math.max(0, prev - 1));
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to decline"); }
+  };
+
   const handleSearch = async (q) => {
     setSearchQuery(q);
     if (activeTab !== "all") return; // other tabs filter client-side
@@ -637,12 +813,82 @@ export default function ChatPage() {
                 )}
               </p>
             </div>
+            <button onClick={loadPinnedMessages} className="p-2 rounded-full hover:bg-secondary/50" title="Pinned messages">
+              <Pin className="h-4 w-4 text-foreground/70" />
+            </button>
+            <button onClick={loadMediaGallery} className="p-2 rounded-full hover:bg-secondary/50" title="Media gallery">
+              <Image className="h-4 w-4 text-foreground/70" />
+            </button>
+            <button onClick={handleToggleMute} className="p-2 rounded-full hover:bg-secondary/50" title={isMuted ? "Unmute" : "Mute"}>
+              {isMuted ? <BellOff className="h-4 w-4 text-orange-400" /> : <Bell className="h-4 w-4 text-foreground/70" />}
+            </button>
             <button onClick={() => { setShowMsgSearch(!showMsgSearch); setMsgSearchQuery(""); setMsgSearchResults([]); }}
-              className="p-2 rounded-full hover:bg-secondary/50">
+              className="p-2 rounded-full hover:bg-secondary/50" title="Search messages">
               <Search className="h-4 w-4 text-foreground/70" />
+            </button>
+            <button onClick={() => setShowClearConfirm(true)} className="p-2 rounded-full hover:bg-secondary/50" title="Clear chat">
+              <Eraser className="h-4 w-4 text-foreground/70" />
             </button>
           </div>
         </div>
+
+        {/* Message Request Status Banner */}
+        {activeConvo.status === "request" && (
+          <div className={`px-4 py-2.5 flex-shrink-0 border-b border-border ${
+            activeConvo.requester_id === user?.id
+              ? "bg-amber-500/10 border-amber-500/20"
+              : "bg-primary/5 border-primary/20"
+          }`}>
+            <div className="max-w-3xl mx-auto">
+              {activeConvo.requester_id === user?.id ? (
+                // Requester sees "waiting" indicator
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                  <span className="text-xs font-medium text-amber-600">
+                    Request sent — waiting for {activeConvo.other_user?.name} to accept
+                  </span>
+                </div>
+              ) : (
+                // Recipient sees accept/decline
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-foreground/80 flex-1">
+                    {activeConvo.other_user?.name} wants to message you
+                  </span>
+                  <Button size="sm" variant="athletic" className="h-7 text-xs px-3 rounded-full"
+                    onClick={() => handleAcceptRequest(activeConvo)}>
+                    <ShieldCheck className="h-3 w-3 mr-1" /> Accept
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs px-3 rounded-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                    onClick={() => { handleDeclineRequest(activeConvo); setActiveConvo(null); }}>
+                    <ShieldX className="h-3 w-3 mr-1" /> Decline
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Clear Chat Confirmation */}
+        <AnimatePresence>
+          {showClearConfirm && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
+              onClick={() => setShowClearConfirm(false)}>
+              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+                className="bg-card rounded-2xl p-6 w-full max-w-xs shadow-xl border border-border"
+                onClick={e => e.stopPropagation()}>
+                <h3 className="font-bold text-base mb-2">Clear Chat?</h3>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Messages will be cleared only for you. The other person will still see their chat history.
+                </p>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setShowClearConfirm(false)}>Cancel</Button>
+                  <Button variant="destructive" className="flex-1 rounded-xl" onClick={handleClearChat}>Clear</Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Message Search Bar */}
         <AnimatePresence>
@@ -736,6 +982,48 @@ export default function ChatPage() {
                                   <span className="text-[10px] opacity-70">
                                     {msg.duration ? `${Math.floor(msg.duration / 60)}:${(msg.duration % 60).toString().padStart(2, "0")}` : "0:00"}
                                   </span>
+                                </div>
+                              )}
+                              {/* Poll */}
+                              {msg.message_type === "poll" && msg.poll && (
+                                <div className="mt-1 min-w-[200px]">
+                                  <div className="flex items-center gap-1.5 mb-1.5">
+                                    <BarChart3 className="h-3.5 w-3.5" />
+                                    <span className="font-bold text-xs">{msg.poll.question}</span>
+                                  </div>
+                                  {msg.poll.options?.map((opt, oi) => {
+                                    const totalVotes = msg.poll.options.reduce((s, o) => s + (o.votes || 0), 0);
+                                    const pct = totalVotes > 0 ? Math.round((opt.votes || 0) / totalVotes * 100) : 0;
+                                    const voted = opt.voter_ids?.includes(user?.id);
+                                    return (
+                                      <button key={oi} onClick={() => handleVotePoll(msg, oi)}
+                                        className={`w-full text-left mb-1 rounded-lg px-2.5 py-1.5 text-[11px] relative overflow-hidden border transition-all ${
+                                          voted ? "border-primary/50 font-bold" : isMe ? "border-white/20 hover:border-white/40" : "border-border hover:border-primary/30"
+                                        }`}>
+                                        <div className={`absolute inset-0 ${voted ? "bg-primary/20" : isMe ? "bg-white/5" : "bg-primary/5"}`}
+                                          style={{ width: `${pct}%` }} />
+                                        <div className="relative flex justify-between">
+                                          <span>{opt.text}</span>
+                                          <span className="ml-2 opacity-70">{pct}%</span>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                  <span className="text-[9px] opacity-60">{msg.poll.options.reduce((s, o) => s + (o.votes || 0), 0)} votes</span>
+                                </div>
+                              )}
+                              {/* Forwarded indicator */}
+                              {msg.forwarded && (
+                                <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                                  <Forward className="h-2.5 w-2.5" />
+                                  <span className="text-[9px] italic">Forwarded</span>
+                                </div>
+                              )}
+                              {/* Pin indicator */}
+                              {msg.pinned && (
+                                <div className="flex items-center gap-1 mt-0.5 opacity-60">
+                                  <Pin className="h-2.5 w-2.5" />
+                                  <span className="text-[9px] italic">Pinned</span>
                                 </div>
                               )}
                             </>
@@ -885,6 +1173,13 @@ export default function ChatPage() {
         </AnimatePresence>
 
         {/* Message Input — WhatsApp style */}
+        {activeConvo.status === "request" && activeConvo.requester_id !== user?.id ? (
+          // Recipient can't type until they accept
+          <div className="bg-background border-t border-border px-3 py-3 flex-shrink-0 text-center"
+            style={{ paddingBottom: "max(env(safe-area-inset-bottom, 8px), 8px)" }}>
+            <p className="text-xs text-muted-foreground">Accept the request to reply</p>
+          </div>
+        ) : (
         <div className="bg-background border-t border-border px-3 py-2 flex-shrink-0"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom, 8px), 8px)" }}>
           <div className="max-w-3xl mx-auto flex items-end gap-2">
@@ -894,6 +1189,12 @@ export default function ChatPage() {
             <button onClick={() => fileInputRef.current?.click()}
               className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground">
               <Paperclip className="h-5 w-5" />
+            </button>
+            {/* Poll button */}
+            <button onClick={() => setShowPollCreate(true)}
+              className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground"
+              title="Create poll">
+              <BarChart3 className="h-5 w-5" />
             </button>
 
             <div className="flex-1 bg-card rounded-2xl border border-border/50 px-4 py-2 min-h-[44px] flex items-center">
@@ -931,6 +1232,7 @@ export default function ChatPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* Message action sheet (long press) */}
         <AnimatePresence>
@@ -960,6 +1262,18 @@ export default function ChatPage() {
                     <Reply className="h-5 w-5 text-muted-foreground" />
                     <span className="text-sm font-medium">Reply</span>
                   </button>
+                  {/* Pin / Unpin */}
+                  <button onClick={() => { longPressMsg.pinned ? handleUnpinMessage(longPressMsg) : handlePinMessage(longPressMsg); setLongPressMsg(null); }}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
+                    {longPressMsg.pinned ? <PinOff className="h-5 w-5 text-muted-foreground" /> : <Pin className="h-5 w-5 text-muted-foreground" />}
+                    <span className="text-sm font-medium">{longPressMsg.pinned ? "Unpin Message" : "Pin Message"}</span>
+                  </button>
+                  {/* Forward */}
+                  <button onClick={() => openForwardModal(longPressMsg)}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
+                    <Forward className="h-5 w-5 text-muted-foreground" />
+                    <span className="text-sm font-medium">Forward</span>
+                  </button>
                   {longPressMsg.content && (
                     <button onClick={() => { navigator.clipboard.writeText(longPressMsg.content); setLongPressMsg(null); toast.success("Copied!"); }}
                       className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
@@ -974,6 +1288,156 @@ export default function ChatPage() {
                       <span className="text-sm font-medium">Delete Message</span>
                     </button>
                   )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ PINNED MESSAGES MODAL ═══ */}
+        <AnimatePresence>
+          {showPinned && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+              onClick={() => setShowPinned(false)}>
+              <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[60vh] flex flex-col"
+                onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-sm flex items-center gap-2"><Pin className="h-4 w-4" /> Pinned Messages</h3>
+                  <button onClick={() => setShowPinned(false)}><X className="h-4 w-4" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto space-y-2">
+                  {pinnedMessages.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-8">No pinned messages</p>
+                  ) : pinnedMessages.map(msg => (
+                    <div key={msg.id} className="p-3 rounded-xl bg-secondary/30 border border-border/50">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-bold text-primary">{msg.sender_name}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-muted-foreground">{formatTime(msg.created_at)}</span>
+                          <button onClick={() => handleUnpinMessage(msg)} className="text-muted-foreground hover:text-destructive">
+                            <PinOff className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-xs">{msg.content || (msg.media_type === "voice" ? "Voice message" : "Media")}</p>
+                      <button onClick={() => { scrollToMessage(msg.id); setShowPinned(false); }}
+                        className="text-[10px] text-primary mt-1 hover:underline">Jump to message</button>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ POLL CREATE MODAL ═══ */}
+        <AnimatePresence>
+          {showPollCreate && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+              onClick={() => setShowPollCreate(false)}>
+              <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8"
+                onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
+                <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Create Poll</h3>
+                <Input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
+                  placeholder="Ask a question..." className="mb-3 bg-secondary/30 border-border/50 rounded-xl" />
+                {pollOptions.map((opt, i) => (
+                  <div key={i} className="flex items-center gap-2 mb-2">
+                    <Input value={opt} onChange={e => { const opts = [...pollOptions]; opts[i] = e.target.value; setPollOptions(opts); }}
+                      placeholder={`Option ${i + 1}`} className="bg-secondary/30 border-border/50 rounded-xl" />
+                    {pollOptions.length > 2 && (
+                      <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
+                        className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
+                    )}
+                  </div>
+                ))}
+                {pollOptions.length < 6 && (
+                  <button onClick={() => setPollOptions([...pollOptions, ""])}
+                    className="text-xs text-primary font-medium mb-3 hover:underline">+ Add option</button>
+                )}
+                <div className="flex gap-2 mt-3">
+                  <Button variant="outline" size="sm" onClick={() => setShowPollCreate(false)} className="flex-1">Cancel</Button>
+                  <Button variant="athletic" size="sm" onClick={handleCreatePoll} className="flex-1">Create Poll</Button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ MEDIA GALLERY MODAL ═══ */}
+        <AnimatePresence>
+          {showMediaGallery && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+              onClick={() => setShowMediaGallery(false)}>
+              <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[70vh] flex flex-col"
+                onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-sm flex items-center gap-2"><Image className="h-4 w-4" /> Shared Media</h3>
+                  <button onClick={() => setShowMediaGallery(false)}><X className="h-4 w-4" /></button>
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                  {mediaItems.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-8">No shared media yet</p>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {mediaItems.map((item, i) => (
+                        <button key={i} onClick={() => window.open(mediaUrl(item.media_url || item.url), "_blank")}
+                          className="aspect-square rounded-lg overflow-hidden bg-secondary/30 hover:opacity-80 transition-opacity">
+                          {(item.media_type === "image" || !item.media_type) ? (
+                            <img src={mediaUrl(item.media_url || item.url)} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <FileText className="h-6 w-6 text-muted-foreground" />
+                              <span className="text-[9px] text-muted-foreground mt-1 block">{item.media_type}</span>
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ FORWARD MESSAGE MODAL ═══ */}
+        <AnimatePresence>
+          {showForwardModal && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+              onClick={() => { setShowForwardModal(false); setForwardMsg(null); }}>
+              <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[60vh] flex flex-col"
+                onClick={e => e.stopPropagation()}>
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
+                <h3 className="font-bold text-sm mb-1 flex items-center gap-2"><Forward className="h-4 w-4" /> Forward Message</h3>
+                <p className="text-[10px] text-muted-foreground mb-3 truncate">"{forwardMsg?.content || "Media"}"</p>
+                <div className="flex-1 overflow-y-auto space-y-1">
+                  {forwardConvos.length === 0 ? (
+                    <p className="text-center text-sm text-muted-foreground py-8">No other conversations</p>
+                  ) : forwardConvos.map(convo => (
+                    <button key={convo.id} onClick={() => handleForwardToConvo(convo)}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors text-left">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                        {convo.other_user?.avatar
+                          ? <img src={mediaUrl(convo.other_user.avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
+                          : <User className="h-5 w-5 text-primary" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-bold truncate block">{convo.other_user?.name || "Unknown"}</span>
+                      </div>
+                      <Forward className="h-4 w-4 text-primary" />
+                    </button>
+                  ))}
                 </div>
               </motion.div>
             </motion.div>
@@ -1007,6 +1471,25 @@ export default function ChatPage() {
             onChange={e => setConvoSearch(e.target.value)}
           />
         </div>
+
+        {/* Message Requests Banner */}
+        {requestCount > 0 && (
+          <button onClick={() => { setShowRequests(true); loadRequests(); }}
+            className="w-full flex items-center gap-3 p-3.5 mb-3 rounded-2xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all text-left">
+            <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Inbox className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="font-bold text-sm">Message Requests</span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {requestCount} pending {requestCount === 1 ? "request" : "requests"}
+              </p>
+            </div>
+            <span className="h-6 min-w-[24px] px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">
+              {requestCount}
+            </span>
+          </button>
+        )}
 
         {/* Conversation List */}
         <div className="space-y-0.5">
@@ -1208,6 +1691,72 @@ export default function ChatPage() {
                       }
                     </>
                   )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══ MESSAGE REQUESTS MODAL ═══ */}
+        <AnimatePresence>
+          {showRequests && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60"
+              onClick={() => setShowRequests(false)}>
+              <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
+                className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-2xl max-h-[80vh] flex flex-col"
+                onClick={e => e.stopPropagation()}>
+
+                <div className="flex items-center justify-between p-4 border-b border-border/50">
+                  <h2 className="font-display font-bold text-lg flex items-center gap-2">
+                    <Inbox className="h-5 w-5 text-primary" /> Message Requests
+                  </h2>
+                  <button onClick={() => setShowRequests(false)}
+                    className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+                </div>
+
+                <p className="px-4 pt-3 text-[11px] text-muted-foreground">
+                  These people want to message you. Accept to start chatting.
+                </p>
+
+                <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                  {requestsLoading && (
+                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+                  )}
+                  {!requestsLoading && messageRequests.length === 0 && (
+                    <div className="text-center py-12">
+                      <Inbox className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
+                      <p className="text-sm text-muted-foreground">No message requests</p>
+                    </div>
+                  )}
+                  {!requestsLoading && messageRequests.map(req => (
+                    <div key={req.id} className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-border/50">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer"
+                        onClick={() => navigate(`/player-card/${req.other_user?.id}`)}>
+                        {req.other_user?.avatar
+                          ? <img src={mediaUrl(req.other_user.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
+                          : <User className="h-6 w-6 text-primary" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-sm truncate block">{req.other_user?.name || "Unknown"}</span>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                          {req.last_message || "Wants to message you"}
+                        </p>
+                      </div>
+                      <div className="flex gap-1.5 flex-shrink-0">
+                        <button onClick={() => handleAcceptRequest(req)}
+                          className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                          title="Accept">
+                          <ShieldCheck className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleDeclineRequest(req)}
+                          className="h-9 w-9 rounded-full bg-destructive/10 text-destructive flex items-center justify-center hover:bg-destructive/20 transition-colors"
+                          title="Decline">
+                          <ShieldX className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             </motion.div>

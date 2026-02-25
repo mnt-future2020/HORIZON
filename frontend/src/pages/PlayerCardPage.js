@@ -11,7 +11,8 @@ import {
   Trophy, Target, Shield, Zap, Star, Crown, Award, Medal,
   Gamepad2, Calendar, TrendingUp, Loader2, ArrowLeft, User,
   Heart, MessageCircle, UserPlus, Users, Grid3X3, Flame,
-  Dumbbell, Building2, BadgeCheck
+  Dumbbell, Building2, BadgeCheck, Info, X, Swords, BarChart3,
+  GraduationCap, CheckCircle2, Footprints
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -49,8 +50,19 @@ export default function PlayerCardPage() {
   const [postsLoading, setPostsLoading] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [career, setCareer] = useState(null);
+  const [showLevelUpGuide, setShowLevelUpGuide] = useState(false);
+
+  const isOwnProfile = !userId || userId === "me" || userId === currentUser?.id;
+
+  // Admins don't have player stats — redirect to profile if viewing own card
+  useEffect(() => {
+    if (isOwnProfile && currentUser?.role === "super_admin") {
+      navigate("/profile", { replace: true });
+    }
+  }, [isOwnProfile, currentUser?.role, navigate]);
 
   useEffect(() => {
+    if (isOwnProfile && currentUser?.role === "super_admin") return;
     const isMe = !userId || userId === "me" || userId === currentUser?.id;
     setLoading(true);
     const loadCard = (isMe ? playerCardAPI.getMyCard() : playerCardAPI.getCard(userId))
@@ -284,28 +296,46 @@ export default function PlayerCardPage() {
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-display text-lg font-black">Overall Rating</h3>
                     <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : card.overall_score >= 51 ? "bg-emerald-400/20 text-emerald-400" : card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
                       {card.overall_tier}
                     </Badge>
+                    {isOwnProfile && (
+                      <button onClick={() => setShowLevelUpGuide(true)}
+                        className="ml-auto p-1 rounded-full hover:bg-muted transition-colors" title="How to level up">
+                        <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
+                      </button>
+                    )}
                   </div>
+                  {isOwnProfile && card.overall_score < 50 && (
+                    <p className="text-[10px] text-muted-foreground mb-2">
+                      {card.overall_score < 20 ? "Play matches and stay active to start leveling up" :
+                       card.overall_score < 35 ? "Keep playing! You're building your stats" :
+                       "Almost Intermediate! Focus on winning and tournaments"}
+                    </p>
+                  )}
                   {card.score_breakdown && (
                     <div className="space-y-1.5">
                       {[
-                        { label: "Skill", value: card.score_breakdown.skill, color: "bg-primary" },
-                        { label: "Win Rate", value: card.score_breakdown.win_rate, color: "bg-emerald-500" },
-                        { label: "Tournament", value: card.score_breakdown.tournament, color: "bg-amber-500" },
-                        { label: "Training", value: card.score_breakdown.training, color: "bg-violet-500" },
-                        { label: "Reliability", value: card.score_breakdown.reliability, color: "bg-sky-500" },
-                        { label: "Experience", value: card.score_breakdown.experience, color: "bg-rose-500" },
+                        { label: "Skill", value: card.score_breakdown.skill, color: "bg-primary", tip: card.score_breakdown.skill < 30 ? "Play rated matches" : null },
+                        { label: "Win Rate", value: card.score_breakdown.win_rate, color: "bg-emerald-500", tip: card.score_breakdown.win_rate === 0 ? "Win matches to boost" : null },
+                        { label: "Tournament", value: card.score_breakdown.tournament, color: "bg-amber-500", tip: card.score_breakdown.tournament === 0 ? "Join a tournament" : null },
+                        { label: "Training", value: card.score_breakdown.training, color: "bg-violet-500", tip: card.score_breakdown.training === 0 ? "Book coaching sessions" : null },
+                        { label: "Reliability", value: card.score_breakdown.reliability, color: "bg-sky-500", tip: card.score_breakdown.reliability < 80 ? "Don't miss bookings" : null },
+                        { label: "Experience", value: card.score_breakdown.experience, color: "bg-rose-500", tip: card.score_breakdown.experience < 10 ? "Play more games" : null },
                       ].map(b => (
-                        <div key={b.label} className="flex items-center gap-2">
-                          <span className="text-[10px] font-bold text-muted-foreground w-16 shrink-0">{b.label}</span>
-                          <div className="flex-1 h-1.5 rounded-full bg-border/30 overflow-hidden">
-                            <div className={`h-full rounded-full ${b.color} transition-all duration-500`} style={{ width: `${b.value}%` }} />
+                        <div key={b.label}>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-muted-foreground w-16 shrink-0">{b.label}</span>
+                            <div className="flex-1 h-1.5 rounded-full bg-border/30 overflow-hidden">
+                              <div className={`h-full rounded-full ${b.color} transition-all duration-500`} style={{ width: `${b.value}%` }} />
+                            </div>
+                            <span className="text-[10px] font-bold w-6 text-right">{b.value}</span>
                           </div>
-                          <span className="text-[10px] font-bold w-6 text-right">{b.value}</span>
+                          {isOwnProfile && b.tip && (
+                            <p className="text-[9px] text-muted-foreground/70 ml-[72px] mt-0.5">{b.tip}</p>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -314,6 +344,127 @@ export default function PlayerCardPage() {
               </div>
             </motion.div>
           )}
+
+          {/* How to Level Up Modal */}
+          <AnimatePresence>
+            {showLevelUpGuide && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+                onClick={() => setShowLevelUpGuide(false)}>
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                  className="w-full max-w-md max-h-[85vh] overflow-y-auto bg-card border-2 border-border rounded-2xl shadow-2xl"
+                  onClick={e => e.stopPropagation()}>
+                  <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
+                    <h2 className="font-display text-lg font-black">How to Level Up</h2>
+                    <button onClick={() => setShowLevelUpGuide(false)} className="p-1 rounded-full hover:bg-muted">
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="p-4 space-y-4">
+                    {/* Overall Score Section */}
+                    <div>
+                      <h3 className="font-display font-bold text-sm mb-3 flex items-center gap-2">
+                        <Target className="h-4 w-4 text-primary" /> Overall Score
+                      </h3>
+                      <div className="space-y-3">
+                        {[
+                          { icon: Swords, color: "text-primary", label: "Skill", weight: "40%", items: ["Play rated matches", "Beat higher-rated players for bigger jumps", "Rating starts at 1500 (Bronze)"] },
+                          { icon: Trophy, color: "text-emerald-400", label: "Win Rate", weight: "20%", items: ["Win your matches", "Higher win % = higher score"] },
+                          { icon: Crown, color: "text-amber-400", label: "Tournament", weight: "15%", items: ["Join tournaments on Lobbi", "Win tournaments for bonus points"] },
+                          { icon: GraduationCap, color: "text-violet-400", label: "Training", weight: "10%", items: ["Book coaching sessions", "Training hours are tracked"] },
+                          { icon: Shield, color: "text-sky-400", label: "Reliability", weight: "10%", items: ["Show up to your bookings", "No-shows will drop your score", "Starts at 100 — keep it there!"] },
+                          { icon: Footprints, color: "text-rose-400", label: "Experience", weight: "5%", items: ["Play more games overall", "Every game counts"] },
+                        ].map(s => {
+                          const Icon = s.icon;
+                          return (
+                            <div key={s.label} className="rounded-lg bg-background/50 border border-border/50 p-3">
+                              <div className="flex items-center gap-2 mb-1.5">
+                                <Icon className={`h-4 w-4 ${s.color}`} />
+                                <span className="font-bold text-xs">{s.label}</span>
+                                <Badge variant="secondary" className="text-[9px] ml-auto">{s.weight}</Badge>
+                              </div>
+                              <ul className="space-y-0.5">
+                                {s.items.map((item, i) => (
+                                  <li key={i} className="text-[11px] text-muted-foreground flex items-start gap-1.5">
+                                    <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0 text-muted-foreground/50" />
+                                    {item}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Tier Levels */}
+                    <div>
+                      <h3 className="font-display font-bold text-sm mb-3 flex items-center gap-2">
+                        <Award className="h-4 w-4 text-amber-400" /> Score Tiers
+                      </h3>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { tier: "Elite", range: "86-100", color: "text-amber-400 bg-amber-400/10 border-amber-400/30" },
+                          { tier: "Pro", range: "71-85", color: "text-violet-400 bg-violet-400/10 border-violet-400/30" },
+                          { tier: "Advanced", range: "51-70", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30" },
+                          { tier: "Intermediate", range: "31-50", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                          { tier: "Beginner", range: "0-30", color: "text-muted-foreground bg-muted/50 border-border" },
+                        ].map(t => (
+                          <div key={t.tier} className={`rounded-lg border p-2.5 text-center ${t.color}`}>
+                            <div className="font-display font-black text-xs">{t.tier}</div>
+                            <div className="text-[10px] opacity-70">{t.range} pts</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Engagement Score Section */}
+                    <div>
+                      <h3 className="font-display font-bold text-sm mb-3 flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-400" /> Engagement Score
+                      </h3>
+                      <p className="text-[11px] text-muted-foreground mb-3">
+                        Separate from Overall Score — measures your weekly activity on the platform.
+                      </p>
+                      <div className="space-y-2">
+                        {[
+                          { action: "Post on feed", points: "3 pts/post", max: "max 20" },
+                          { action: "Like or comment", points: "2 pts each", max: "max 20" },
+                          { action: "Daily streak", points: "2 pts/day", max: "max 15" },
+                          { action: "Book a venue", points: "3 pts/booking", max: "max 15" },
+                          { action: "Join groups/teams", points: "Community pts", max: "max 10" },
+                          { action: "Post stories", points: "3 pts/story", max: "max 10" },
+                          { action: "Consistency bonus", points: "Unique active days", max: "max 10" },
+                        ].map((e, i) => (
+                          <div key={i} className="flex items-center justify-between text-[11px] py-1.5 border-b border-border/30 last:border-0">
+                            <span className="text-foreground font-medium">{e.action}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-primary font-bold">{e.points}</span>
+                              <span className="text-muted-foreground/60 text-[10px]">({e.max})</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 grid grid-cols-5 gap-1 text-center">
+                        {[
+                          { level: "Legend", min: "80+" },
+                          { level: "All-Star", min: "60+" },
+                          { level: "Pro", min: "40+" },
+                          { level: "Rookie", min: "20+" },
+                          { level: "Bench", min: "<20" },
+                        ].map(l => (
+                          <div key={l.level} className="rounded-md bg-background/50 border border-border/50 p-1.5">
+                            <div className="font-bold text-[9px]">{l.level}</div>
+                            <div className="text-[8px] text-muted-foreground">{l.min}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pb-6">

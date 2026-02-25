@@ -8,14 +8,37 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Dumbbell, Building2, Users } from "lucide-react";
+
+const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
+
+const DEV_ACCOUNTS = [
+  { label: "Admin", email: "admin@lobbi.com", icon: ShieldCheck, color: "bg-red-500 hover:bg-red-600" },
+  { label: "Player", email: "kansha@mntfuture.com", icon: Users, color: "bg-blue-500 hover:bg-blue-600" },
+  { label: "Venue Owner", email: "kansha2312@mntfuture.com", icon: Building2, color: "bg-amber-500 hover:bg-amber-600" },
+  { label: "Coach", email: "coach@lobbi.com", icon: Dumbbell, color: "bg-green-500 hover:bg-green-600" },
+];
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { login, register } = useAuth();
+  const { login, register, devLogin } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [devLoading, setDevLoading] = useState(null);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
   const [regData, setRegData] = useState({ name: "", email: "", password: "", role: "player", phone: "", business_name: "", gst_number: "" });
+
+  const handleDevLogin = async (account) => {
+    setDevLoading(account.email);
+    try {
+      await devLogin(account.email);
+      toast.success(`Logged in as ${account.label}`);
+      navigate("/dashboard");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Dev login failed");
+    } finally {
+      setDevLoading(null);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -129,6 +152,28 @@ export default function AuthPage() {
                     {loading ? "Authenticating..." : "Sign In"}
                   </Button>
                 </form>
+
+                {/* Quick Dev Login */}
+                <div className="mt-8 pt-6 border-t-2 border-dashed border-zinc-200">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-3 text-center">Quick Login (Dev)</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {DEV_ACCOUNTS.map((acc) => {
+                      const Icon = acc.icon;
+                      return (
+                        <button key={acc.email} onClick={() => handleDevLogin(acc)}
+                          disabled={devLoading !== null}
+                          className={`${acc.color} text-white rounded-none px-3 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors disabled:opacity-50`}>
+                          {devLoading === acc.email ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Icon className="h-4 w-4" />
+                          )}
+                          {acc.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="register" className="mt-0">
@@ -173,10 +218,13 @@ export default function AuthPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">Phone (optional)</Label>
-                    <Input value={regData.phone}
-                      onChange={e => setRegData(p => ({ ...p, phone: e.target.value }))}
-                      className="h-12 bg-white border-2 border-zinc-200 rounded-none focus-visible:ring-0 focus-visible:border-zinc-900 shadow-none text-sm font-bold"
-                      placeholder="+91 98765 43210" data-testid="register-phone-input" />
+                    <div className="flex">
+                      <span className="inline-flex items-center px-3 h-12 bg-zinc-100 border-2 border-r-0 border-zinc-200 text-sm font-bold text-zinc-500 select-none">+91</span>
+                      <Input value={regData.phone}
+                        onChange={e => setRegData(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
+                        className="h-12 bg-white border-2 border-zinc-200 rounded-none focus-visible:ring-0 focus-visible:border-zinc-900 shadow-none text-sm font-bold flex-1"
+                        placeholder="98765 43210" data-testid="register-phone-input" maxLength={10} />
+                    </div>
                   </div>
                   
                   {regData.role === "venue_owner" && (

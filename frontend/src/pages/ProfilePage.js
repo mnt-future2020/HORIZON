@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAPI, analyticsAPI, bookingAPI, uploadAPI, careerAPI, venueAPI, coachingAPI, organizationAPI, playerCardAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -11,9 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
-import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Video, Image } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Video, Image, Info } from "lucide-react";
+
+const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
@@ -37,6 +42,7 @@ export default function ProfilePage() {
   const [uploadingDoc, setUploadingDoc] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submittingDocs, setSubmittingDocs] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const avatarInputRef = useRef(null);
 
   useEffect(() => {
@@ -395,11 +401,24 @@ export default function ProfilePage() {
                   <span className="font-display text-xl font-black">{playerCard.overall_score}</span>
                 </div>
               </div>
-              <div>
-                <div className="font-display text-sm font-black">Overall Score</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-sm font-black">Overall Score</div>
+                  <button onClick={() => navigate(`/lobbian/${user?.id}`)}
+                    className="p-0.5 rounded-full hover:bg-muted transition-colors" title="View full breakdown & how to level up">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+                  </button>
+                </div>
                 <Badge className={`text-[10px] mt-1 ${playerCard.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : playerCard.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : playerCard.overall_score >= 51 ? "bg-emerald-400/20 text-emerald-400" : playerCard.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
                   {playerCard.overall_tier}
                 </Badge>
+                {playerCard.overall_score < 50 && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {playerCard.overall_score < 20 ? "Play matches to start leveling up" :
+                     playerCard.overall_score < 35 ? "Keep playing to improve your stats" :
+                     "Almost Intermediate! Keep it up"}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -475,8 +494,11 @@ export default function ProfilePage() {
                     <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                       className="mt-1 bg-background border-border" data-testid="profile-name-input" /></div>
                   <div><Label className="text-xs text-muted-foreground">Phone</Label>
-                    <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                      className="mt-1 bg-background border-border" data-testid="profile-phone-input" /></div>
+                    <div className="flex mt-1">
+                      <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
+                      <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
+                        className="bg-background border-border rounded-l-none" data-testid="profile-phone-input" placeholder="98765 43210" maxLength={10} />
+                    </div></div>
                   {/* Lobbian-specific edit fields */}
                   {user?.role === "player" && (
                     <div><Label className="text-xs text-muted-foreground">Preferred Position</Label>
@@ -886,15 +908,29 @@ export default function ProfilePage() {
                   );
                 })}
 
-                {/* Submit for Review button */}
+                {/* Agreement checkbox + Submit for Review button */}
                 {docStatus !== "pending_review" && docStatus !== "verified" && (
-                  <Button onClick={handleSubmitForReview}
-                    disabled={!allRequiredDocsUploaded || submittingDocs || !!uploadingDoc}
-                    className="w-full bg-primary text-primary-foreground">
-                    {submittingDocs ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : (
-                      <><Upload className="h-4 w-4 mr-2" /> Submit Documents for Review</>
-                    )}
-                  </Button>
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                      <Checkbox id="agree-terms" checked={agreedToTerms} onCheckedChange={setAgreedToTerms} className="mt-0.5" />
+                      <label htmlFor="agree-terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                        I confirm that all uploaded documents are genuine and I agree to the{" "}
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+                          Terms & Conditions
+                        </a>{" "}and{" "}
+                        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+                          Privacy Policy
+                        </a>.
+                      </label>
+                    </div>
+                    <Button onClick={handleSubmitForReview}
+                      disabled={!allRequiredDocsUploaded || !agreedToTerms || submittingDocs || !!uploadingDoc}
+                      className="w-full bg-primary text-primary-foreground">
+                      {submittingDocs ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : (
+                        <><Upload className="h-4 w-4 mr-2" /> Submit Documents for Review</>
+                      )}
+                    </Button>
+                  </div>
                 )}
                 {!allRequiredDocsUploaded && docStatus !== "pending_review" && docStatus !== "verified" && (
                   <p className="text-[10px] text-muted-foreground text-center">Upload all required documents (*) to submit for review</p>

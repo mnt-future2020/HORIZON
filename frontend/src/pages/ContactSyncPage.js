@@ -263,11 +263,11 @@ export default function ContactSyncPage() {
       {activeTab === "manual" && (
         <div>
           <div className="flex gap-2 mb-6">
-            <div className="flex-1 relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="flex-1 flex">
+              <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
               <Input
-                placeholder="Enter phone number or email..."
-                className="pl-10 h-11 bg-secondary/50"
+                placeholder="Phone or email..."
+                className="h-11 bg-secondary/50 rounded-l-none flex-1"
                 value={manualPhone}
                 onChange={(e) => setManualPhone(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleManualSearch()}

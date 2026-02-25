@@ -336,6 +336,17 @@ export default function PlayerDashboard() {
                   <span className="font-bold text-orange-500">{engagementScore.current_streak}-day streak</span>
                 </div>
               )}
+              {engagementScore.score < 40 && (
+                <p className="text-[10px] text-muted-foreground text-center mt-2">
+                  {engagementScore.score < 10 ? "Post, like, and book venues to earn points" :
+                   engagementScore.score < 25 ? "Keep posting daily to build your streak" :
+                   "Almost Pro! Stay active this week"}
+                </p>
+              )}
+              <button onClick={() => navigate(`/lobbian/${user?.id}`)}
+                className="mt-3 w-full text-[10px] text-center text-muted-foreground hover:text-primary transition-colors font-bold uppercase tracking-wider">
+                How to earn points →
+              </button>
             </motion.div>
           )}
 

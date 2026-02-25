@@ -220,9 +220,11 @@ export default function Navbar() {
               <DropdownMenuItem onClick={() => navigate("/profile")} data-testid="menu-profile">
                 <User className="mr-2 h-4 w-4" /> Profile
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/player-card/me")}>
-                <Trophy className="mr-2 h-4 w-4" /> Lobbian Card
-              </DropdownMenuItem>
+              {user?.role !== "super_admin" && (
+                <DropdownMenuItem onClick={() => navigate("/player-card/me")}>
+                  <Trophy className="mr-2 h-4 w-4" /> Lobbian Card
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={() => navigate("/bookmarks")}>
                 <Bookmark className="mr-2 h-4 w-4" /> Saved Posts
               </DropdownMenuItem>

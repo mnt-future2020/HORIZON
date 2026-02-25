@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
 import { Search, MapPin, Star, ArrowRight } from "lucide-react";
@@ -238,7 +239,12 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="font-display text-2xl font-black uppercase tracking-tighter mb-2 group-hover:text-zinc-400 transition-colors">{v.name}</h3>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-display text-2xl font-black uppercase tracking-tighter group-hover:text-zinc-400 transition-colors">{v.name}</h3>
+                      <Badge className={`text-[9px] px-1.5 py-0 shrink-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
+                        {v.badge === "bookable" ? "Bookable" : "Enquiry"}
+                      </Badge>
+                    </div>
                     <div className="flex items-center justify-between text-zinc-400 font-bold uppercase tracking-widest text-[11px]">
                       <span>{v.area ? `${v.area}, ` : ""}{v.city}</span>
                       <span className="text-white">{v.base_price ? `₹${v.base_price}` : ""}</span>

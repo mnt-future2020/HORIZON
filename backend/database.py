@@ -14,7 +14,7 @@ client = AsyncIOMotorClient(
     serverSelectionTimeoutMS=5000,
     connectTimeoutMS=10000,
 )
-db = client[os.environ.get('DB_NAME', 'horizon_db')]
+db = client[os.environ.get('DB_NAME', 'lobbi_db')]
 
 # Redis
 redis_url = os.environ.get('REDIS_URL') or os.environ.get('REDIS_PRIVATE_URL')

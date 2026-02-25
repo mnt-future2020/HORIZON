@@ -193,6 +193,63 @@ async def delete_group(group_id: str, user=Depends(get_current_user)):
     return {"message": "Group deleted"}
 
 
+@router.post("/groups/{group_id}/promote")
+async def promote_to_admin(group_id: str, request: Request, user=Depends(get_current_user)):
+    """Promote a member to admin. Only existing admins can promote."""
+    group = await db.groups.find_one({"id": group_id})
+    if not group:
+        raise HTTPException(404, "Group not found")
+    if user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can promote members")
+    data = await request.json()
+    target_id = data.get("user_id", "")
+    if not target_id or target_id not in group.get("members", []):
+        raise HTTPException(400, "User is not a member of this group")
+    if target_id in group.get("admins", []):
+        raise HTTPException(400, "User is already an admin")
+    await db.groups.update_one({"id": group_id}, {"$push": {"admins": target_id}})
+    return {"message": "Member promoted to admin"}
+
+
+@router.post("/groups/{group_id}/demote")
+async def demote_admin(group_id: str, request: Request, user=Depends(get_current_user)):
+    """Demote an admin to regular member. Only the creator can demote."""
+    group = await db.groups.find_one({"id": group_id})
+    if not group:
+        raise HTTPException(404, "Group not found")
+    if user["id"] != group.get("created_by"):
+        raise HTTPException(403, "Only the group creator can demote admins")
+    data = await request.json()
+    target_id = data.get("user_id", "")
+    if target_id == group.get("created_by"):
+        raise HTTPException(400, "Cannot demote the group creator")
+    if target_id not in group.get("admins", []):
+        raise HTTPException(400, "User is not an admin")
+    await db.groups.update_one({"id": group_id}, {"$pull": {"admins": target_id}})
+    return {"message": "Admin demoted to member"}
+
+
+@router.post("/groups/{group_id}/remove-member")
+async def remove_member(group_id: str, request: Request, user=Depends(get_current_user)):
+    """Remove a member from the group. Only admins can remove."""
+    group = await db.groups.find_one({"id": group_id})
+    if not group:
+        raise HTTPException(404, "Group not found")
+    if user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can remove members")
+    data = await request.json()
+    target_id = data.get("user_id", "")
+    if not target_id or target_id not in group.get("members", []):
+        raise HTTPException(400, "User is not a member")
+    if target_id == group.get("created_by"):
+        raise HTTPException(400, "Cannot remove the group creator")
+    await db.groups.update_one(
+        {"id": group_id},
+        {"$pull": {"members": target_id, "admins": target_id}, "$inc": {"member_count": -1}}
+    )
+    return {"message": "Member removed"}
+
+
 @router.put("/groups/{group_id}")
 async def update_group(group_id: str, request: Request, user=Depends(get_current_user)):
     group = await db.groups.find_one({"id": group_id})
@@ -229,6 +286,11 @@ async def get_group_messages(
     if before:
         query["created_at"] = {"$lt": before}
 
+    # Per-user clear chat: filter out messages before user's cleared_at timestamp
+    cleared_at = group.get("cleared_at", {}).get(user["id"])
+    if cleared_at:
+        query["created_at"] = {**(query.get("created_at") or {}), "$gt": cleared_at}
+
     messages = await db.group_messages.find(query, {"_id": 0}).sort(
         "created_at", -1
     ).limit(limit).to_list(limit)
@@ -244,6 +306,13 @@ async def send_group_message(group_id: str, inp: MessageCreate, user=Depends(get
     if user["id"] not in group.get("members", []):
         raise HTTPException(403, "Must be a member to send messages")
 
+    # Extract @mentions from content
+    mentioned_ids = []
+    if inp.content:
+        import re as _mention_re
+        mentions = _mention_re.findall(r"@\[([^\]]+)\]\(([^)]+)\)", inp.content)
+        mentioned_ids = [m[1] for m in mentions]
+
     msg = {
         "id": str(uuid.uuid4()),
         "group_id": group_id,
@@ -252,20 +321,535 @@ async def send_group_message(group_id: str, inp: MessageCreate, user=Depends(get
         "sender_avatar": user.get("avatar", ""),
         "content": inp.content,
         "media_url": inp.media_url or "",
+        "media_type": inp.media_type or "",
+        "duration": inp.duration,
         "reply_to": inp.reply_to or "",
+        "mentioned_users": mentioned_ids,
+        "pinned": False,
+        "reactions": [],
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
     await db.group_messages.insert_one(msg)
     msg.pop("_id", None)
 
-    # Update group last_message for previews
+    preview = inp.content[:100] if inp.content else (
+        "🎤 Voice message" if inp.media_type == "voice" else
+        "📷 Photo" if inp.media_type == "image" or inp.media_url else ""
+    )
     await db.groups.update_one({"id": group_id}, {"$set": {
-        "last_message": msg["content"][:100],
+        "last_message": preview,
         "last_message_at": msg["created_at"],
         "last_message_by": user.get("name", "")
     }})
 
+    # Broadcast to group members via WebSocket
+    for member_id in group.get("members", []):
+        if member_id != user["id"]:
+            await chat_manager.send_to_user(member_id, {
+                "type": "group_message",
+                "group_id": group_id,
+                "message": msg,
+            })
+
     return msg
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# GROUP CHAT — REACTIONS, DELETE, PIN, SEARCH, TYPING, READ, POLLS
+# ═══════════════════════════════════════════════════════════════════════════════
+
+GROUP_REACTIONS = {"thumbsup", "heart", "laugh", "wow", "fire", "clap"}
+
+
+@router.post("/groups/{group_id}/messages/{message_id}/react")
+async def react_group_message(group_id: str, message_id: str, request: Request, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    msg = await db.group_messages.find_one({"id": message_id, "group_id": group_id})
+    if not msg:
+        raise HTTPException(404, "Message not found")
+    data = await request.json()
+    emoji = data.get("emoji", "")
+    if emoji not in GROUP_REACTIONS:
+        raise HTTPException(400, "Invalid reaction")
+
+    reactions = msg.get("reactions", [])
+    existing = next((r for r in reactions if r["user_id"] == user["id"] and r["emoji"] == emoji), None)
+    if existing:
+        await db.group_messages.update_one({"id": message_id}, {"$pull": {"reactions": {"user_id": user["id"], "emoji": emoji}}})
+        action = "removed"
+    else:
+        await db.group_messages.update_one({"id": message_id}, {"$pull": {"reactions": {"user_id": user["id"]}}})
+        await db.group_messages.update_one({"id": message_id}, {"$push": {"reactions": {"user_id": user["id"], "user_name": user.get("name", ""), "emoji": emoji}}})
+        action = "added"
+
+    for mid in group.get("members", []):
+        if mid != user["id"]:
+            await chat_manager.send_to_user(mid, {"type": "group_reaction", "group_id": group_id, "message_id": message_id, "user_id": user["id"], "emoji": emoji, "action": action})
+    return {"action": action, "emoji": emoji}
+
+
+@router.delete("/groups/{group_id}/messages/{message_id}")
+async def delete_group_message(group_id: str, message_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    msg = await db.group_messages.find_one({"id": message_id, "group_id": group_id})
+    if not msg:
+        raise HTTPException(404, "Message not found")
+    is_admin = user["id"] in group.get("admins", [])
+    if msg["sender_id"] != user["id"] and not is_admin:
+        raise HTTPException(403, "Can only delete your own messages (or admin)")
+    await db.group_messages.update_one({"id": message_id}, {"$set": {"content": "", "media_url": "", "deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat(), "deleted_by": user["id"]}})
+    for mid in group.get("members", []):
+        if mid != user["id"]:
+            await chat_manager.send_to_user(mid, {"type": "group_message_deleted", "group_id": group_id, "message_id": message_id})
+    return {"deleted": True}
+
+
+@router.get("/groups/{group_id}/messages/search")
+async def search_group_messages(group_id: str, q: str = Query("", min_length=1), page: int = Query(1, ge=1), limit: int = Query(20, ge=1, le=50), user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    query = {"group_id": group_id, "deleted": {"$ne": True}, "content": {"$regex": q, "$options": "i"}}
+    total = await db.group_messages.count_documents(query)
+    skip = (page - 1) * limit
+    results = await db.group_messages.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"results": results, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
+
+
+@router.post("/groups/{group_id}/typing")
+async def group_typing(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    await db.typing_status.update_one(
+        {"group_id": group_id, "user_id": user["id"]},
+        {"$set": {"group_id": group_id, "user_id": user["id"], "user_name": user.get("name", ""), "typing_at": datetime.now(timezone.utc).isoformat()}},
+        upsert=True
+    )
+    for mid in group.get("members", []):
+        if mid != user["id"]:
+            await chat_manager.send_to_user(mid, {"type": "group_typing", "group_id": group_id, "user_id": user["id"], "user_name": user.get("name", "")})
+    return {"ok": True}
+
+
+@router.get("/groups/{group_id}/typing")
+async def get_group_typing(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        return {"typing": []}
+    cutoff = datetime.now(timezone.utc).isoformat()[:-7]  # ~5s tolerance handled client-side
+    statuses = await db.typing_status.find({"group_id": group_id, "user_id": {"$ne": user["id"]}}, {"_id": 0}).to_list(50)
+    now = datetime.now(timezone.utc)
+    typing = []
+    for s in statuses:
+        try:
+            t = datetime.fromisoformat(s["typing_at"].replace("Z", "+00:00"))
+            if (now - t).total_seconds() < 5:
+                typing.append({"user_id": s["user_id"], "user_name": s.get("user_name", "")})
+        except Exception:
+            pass
+    return {"typing": typing}
+
+
+@router.post("/groups/{group_id}/read")
+async def mark_group_read(group_id: str, user=Depends(get_current_user)):
+    """Mark all messages as read for this user in this group."""
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.group_read_status.update_one(
+        {"group_id": group_id, "user_id": user["id"]},
+        {"$set": {"group_id": group_id, "user_id": user["id"], "last_read_at": now}},
+        upsert=True
+    )
+    return {"ok": True}
+
+
+@router.get("/groups/{group_id}/unread")
+async def get_group_unread(group_id: str, user=Depends(get_current_user)):
+    status = await db.group_read_status.find_one({"group_id": group_id, "user_id": user["id"]})
+    last_read = status.get("last_read_at", "") if status else ""
+    query = {"group_id": group_id}
+    if last_read:
+        query["created_at"] = {"$gt": last_read}
+    count = await db.group_messages.count_documents(query)
+    return {"unread": count}
+
+
+@router.get("/groups/{group_id}/seen-by/{message_id}")
+async def get_seen_by(group_id: str, message_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    msg = await db.group_messages.find_one({"id": message_id, "group_id": group_id})
+    if not msg:
+        return {"seen_by": []}
+    msg_time = msg["created_at"]
+    reads = await db.group_read_status.find({"group_id": group_id, "last_read_at": {"$gte": msg_time}}, {"_id": 0}).to_list(500)
+    user_ids = [r["user_id"] for r in reads if r["user_id"] != msg.get("sender_id")]
+    if not user_ids:
+        return {"seen_by": []}
+    users = await db.users.find({"id": {"$in": user_ids}}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}).to_list(500)
+    return {"seen_by": users}
+
+
+# --- Pin messages ---
+
+@router.post("/groups/{group_id}/messages/{message_id}/pin")
+async def pin_group_message(group_id: str, message_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can pin messages")
+    await db.group_messages.update_one({"id": message_id, "group_id": group_id}, {"$set": {"pinned": True, "pinned_by": user["id"], "pinned_at": datetime.now(timezone.utc).isoformat()}})
+    return {"pinned": True}
+
+
+@router.delete("/groups/{group_id}/messages/{message_id}/pin")
+async def unpin_group_message(group_id: str, message_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can unpin messages")
+    await db.group_messages.update_one({"id": message_id, "group_id": group_id}, {"$set": {"pinned": False}})
+    return {"unpinned": True}
+
+
+@router.get("/groups/{group_id}/pinned")
+async def get_pinned_messages(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    msgs = await db.group_messages.find({"group_id": group_id, "pinned": True}, {"_id": 0}).sort("pinned_at", -1).to_list(50)
+    return msgs
+
+
+# --- Polls ---
+
+@router.post("/groups/{group_id}/polls")
+async def create_group_poll(group_id: str, request: Request, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    data = await request.json()
+    question = data.get("question", "").strip()
+    options = data.get("options", [])
+    if not question or len(options) < 2:
+        raise HTTPException(400, "Need a question and at least 2 options")
+
+    msg = {
+        "id": str(uuid.uuid4()),
+        "group_id": group_id,
+        "sender_id": user["id"],
+        "sender_name": user.get("name", "Unknown"),
+        "sender_avatar": user.get("avatar", ""),
+        "content": f"📊 Poll: {question}",
+        "message_type": "poll",
+        "poll": {"question": question, "options": [{"text": o, "votes": []} for o in options[:10]], "multiple": data.get("multiple", False)},
+        "media_url": "",
+        "reactions": [],
+        "pinned": False,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.group_messages.insert_one(msg)
+    msg.pop("_id", None)
+
+    await db.groups.update_one({"id": group_id}, {"$set": {"last_message": f"📊 Poll: {question}"[:100], "last_message_at": msg["created_at"], "last_message_by": user.get("name", "")}})
+    for mid in group.get("members", []):
+        if mid != user["id"]:
+            await chat_manager.send_to_user(mid, {"type": "group_message", "group_id": group_id, "message": msg})
+    return msg
+
+
+@router.post("/groups/{group_id}/polls/{message_id}/vote")
+async def vote_group_poll(group_id: str, message_id: str, request: Request, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    msg = await db.group_messages.find_one({"id": message_id, "group_id": group_id, "message_type": "poll"})
+    if not msg:
+        raise HTTPException(404, "Poll not found")
+    data = await request.json()
+    option_index = data.get("option_index", -1)
+    poll = msg.get("poll", {})
+    options = poll.get("options", [])
+    if option_index < 0 or option_index >= len(options):
+        raise HTTPException(400, "Invalid option")
+
+    # Remove previous votes if not multiple choice
+    if not poll.get("multiple"):
+        for i, opt in enumerate(options):
+            if user["id"] in opt.get("votes", []):
+                await db.group_messages.update_one({"id": message_id}, {"$pull": {f"poll.options.{i}.votes": user["id"]}})
+
+    # Toggle vote
+    if user["id"] in options[option_index].get("votes", []):
+        await db.group_messages.update_one({"id": message_id}, {"$pull": {f"poll.options.{option_index}.votes": user["id"]}})
+        action = "removed"
+    else:
+        await db.group_messages.update_one({"id": message_id}, {"$push": {f"poll.options.{option_index}.votes": user["id"]}})
+        action = "added"
+
+    updated = await db.group_messages.find_one({"id": message_id}, {"_id": 0, "poll": 1})
+    for mid in group.get("members", []):
+        if mid != user["id"]:
+            await chat_manager.send_to_user(mid, {"type": "group_poll_update", "group_id": group_id, "message_id": message_id, "poll": updated.get("poll")})
+    return {"action": action, "poll": updated.get("poll")}
+
+
+# --- Media gallery ---
+
+@router.get("/groups/{group_id}/media")
+async def get_group_media(group_id: str, page: int = Query(1, ge=1), limit: int = Query(30, ge=1, le=100), user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    query = {"group_id": group_id, "media_url": {"$ne": ""}, "deleted": {"$ne": True}}
+    total = await db.group_messages.count_documents(query)
+    skip = (page - 1) * limit
+    media = await db.group_messages.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"media": media, "total": total, "page": page}
+
+
+# --- Mute group ---
+
+@router.post("/groups/{group_id}/mute")
+async def toggle_group_mute(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    muted_by = group.get("muted_by", [])
+    if user["id"] in muted_by:
+        await db.groups.update_one({"id": group_id}, {"$pull": {"muted_by": user["id"]}})
+        return {"muted": False}
+    else:
+        await db.groups.update_one({"id": group_id}, {"$push": {"muted_by": user["id"]}})
+        return {"muted": True}
+
+
+@router.get("/groups/{group_id}/mute")
+async def get_group_mute(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group:
+        raise HTTPException(404, "Group not found")
+    return {"muted": user["id"] in group.get("muted_by", [])}
+
+
+@router.post("/groups/{group_id}/clear")
+async def clear_group_chat(group_id: str, user=Depends(get_current_user)):
+    """Per-user clear chat — only hides messages for this user."""
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.groups.update_one(
+        {"id": group_id},
+        {"$set": {f"cleared_at.{user['id']}": now}}
+    )
+    return {"cleared": True, "cleared_at": now}
+
+
+# --- Invite link ---
+
+@router.post("/groups/{group_id}/invite-link")
+async def generate_invite_link(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can generate invite links")
+    code = group.get("invite_code")
+    if not code:
+        code = str(uuid.uuid4())[:8]
+        await db.groups.update_one({"id": group_id}, {"$set": {"invite_code": code}})
+    return {"invite_code": code, "group_id": group_id}
+
+
+@router.post("/groups/join/{invite_code}")
+async def join_via_invite(invite_code: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"invite_code": invite_code})
+    if not group:
+        raise HTTPException(404, "Invalid invite link")
+    if user["id"] in group.get("members", []):
+        return {"message": "Already a member", "group_id": group["id"]}
+    if group.get("member_count", 0) >= group.get("max_members", 500):
+        raise HTTPException(400, "Group is full")
+    await db.groups.update_one({"id": group["id"]}, {"$push": {"members": user["id"]}, "$inc": {"member_count": 1}})
+    return {"message": "Joined group", "group_id": group["id"], "group_name": group.get("name", "")}
+
+
+# --- Join requests (private groups) ---
+
+@router.post("/groups/{group_id}/join-request")
+async def request_to_join(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group:
+        raise HTTPException(404, "Group not found")
+    if not group.get("is_private"):
+        raise HTTPException(400, "This group is public — join directly")
+    if user["id"] in group.get("members", []):
+        raise HTTPException(400, "Already a member")
+    existing = await db.group_join_requests.find_one({"group_id": group_id, "user_id": user["id"], "status": "pending"})
+    if existing:
+        raise HTTPException(400, "Request already pending")
+
+    req = {
+        "id": str(uuid.uuid4()),
+        "group_id": group_id,
+        "user_id": user["id"],
+        "user_name": user.get("name", ""),
+        "user_avatar": user.get("avatar", ""),
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.group_join_requests.insert_one(req)
+    req.pop("_id", None)
+    return req
+
+
+@router.get("/groups/{group_id}/join-requests")
+async def list_join_requests(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can view join requests")
+    requests = await db.group_join_requests.find({"group_id": group_id, "status": "pending"}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return requests
+
+
+@router.post("/groups/{group_id}/join-requests/{request_id}/approve")
+async def approve_join_request(group_id: str, request_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can approve requests")
+    req = await db.group_join_requests.find_one({"id": request_id, "group_id": group_id, "status": "pending"})
+    if not req:
+        raise HTTPException(404, "Request not found")
+    await db.group_join_requests.update_one({"id": request_id}, {"$set": {"status": "approved"}})
+    await db.groups.update_one({"id": group_id}, {"$push": {"members": req["user_id"]}, "$inc": {"member_count": 1}})
+    return {"message": "Request approved"}
+
+
+@router.post("/groups/{group_id}/join-requests/{request_id}/reject")
+async def reject_join_request(group_id: str, request_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can reject requests")
+    await db.group_join_requests.update_one({"id": request_id, "group_id": group_id}, {"$set": {"status": "rejected"}})
+    return {"message": "Request rejected"}
+
+
+# --- Member roles/badges ---
+
+@router.put("/groups/{group_id}/members/{target_id}/role")
+async def set_member_role(group_id: str, target_id: str, request: Request, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("admins", []):
+        raise HTTPException(403, "Only admins can set roles")
+    if target_id not in group.get("members", []):
+        raise HTTPException(400, "User is not a member")
+    data = await request.json()
+    role = data.get("role", "").strip()
+    if role:
+        await db.groups.update_one({"id": group_id}, {"$set": {f"member_roles.{target_id}": role}})
+    else:
+        await db.groups.update_one({"id": group_id}, {"$unset": {f"member_roles.{target_id}": ""}})
+    return {"message": f"Role set to '{role}'" if role else "Role removed"}
+
+
+# --- Online members ---
+
+@router.get("/groups/{group_id}/online")
+async def get_group_online(group_id: str, user=Depends(get_current_user)):
+    group = await db.groups.find_one({"id": group_id})
+    if not group or user["id"] not in group.get("members", []):
+        raise HTTPException(403, "Not a member")
+    online = [mid for mid in group.get("members", []) if chat_manager.is_online(mid)]
+    return {"online": online, "count": len(online)}
+
+
+# --- Unread counts for all user groups ---
+
+@router.get("/groups/unread/all")
+async def get_all_group_unreads(user=Depends(get_current_user)):
+    groups = await db.groups.find({"members": user["id"]}, {"id": 1}).to_list(100)
+    result = {}
+    for g in groups:
+        gid = g["id"]
+        status = await db.group_read_status.find_one({"group_id": gid, "user_id": user["id"]})
+        last_read = status.get("last_read_at", "") if status else ""
+        query = {"group_id": gid}
+        if last_read:
+            query["created_at"] = {"$gt": last_read}
+        result[gid] = await db.group_messages.count_documents(query)
+    return result
+
+
+# --- Message forwarding ---
+
+@router.post("/messages/forward")
+async def forward_message(request: Request, user=Depends(get_current_user)):
+    """Forward a message to a group or DM conversation."""
+    data = await request.json()
+    source_type = data.get("source_type", "")  # "group" or "dm"
+    source_id = data.get("source_id", "")  # group_id or conversation_id
+    message_id = data.get("message_id", "")
+    target_type = data.get("target_type", "")  # "group" or "dm"
+    target_id = data.get("target_id", "")  # group_id or conversation_id
+
+    # Fetch original message
+    if source_type == "group":
+        orig = await db.group_messages.find_one({"id": message_id, "group_id": source_id})
+    else:
+        orig = await db.direct_messages.find_one({"id": message_id, "conversation_id": source_id})
+    if not orig:
+        raise HTTPException(404, "Message not found")
+
+    content = orig.get("content", "")
+    if source_type == "dm" and content:
+        content = decrypt_message(content, source_id)
+
+    now = datetime.now(timezone.utc).isoformat()
+
+    if target_type == "group":
+        group = await db.groups.find_one({"id": target_id})
+        if not group or user["id"] not in group.get("members", []):
+            raise HTTPException(403, "Not a member of target group")
+        fwd = {
+            "id": str(uuid.uuid4()), "group_id": target_id,
+            "sender_id": user["id"], "sender_name": user.get("name", "Unknown"), "sender_avatar": user.get("avatar", ""),
+            "content": content, "media_url": orig.get("media_url", ""),
+            "forwarded_from": orig.get("sender_name", ""), "reactions": [], "pinned": False,
+            "created_at": now,
+        }
+        await db.group_messages.insert_one(fwd)
+        fwd.pop("_id", None)
+        await db.groups.update_one({"id": target_id}, {"$set": {"last_message": content[:100], "last_message_at": now, "last_message_by": user.get("name", "")}})
+        for mid in group.get("members", []):
+            if mid != user["id"]:
+                await chat_manager.send_to_user(mid, {"type": "group_message", "group_id": target_id, "message": fwd})
+        return fwd
+    else:
+        convo = await db.conversations.find_one({"id": target_id})
+        if not convo or user["id"] not in convo.get("participants", []):
+            raise HTTPException(403, "Not your conversation")
+        encrypted = encrypt_message(content, target_id) if content else ""
+        fwd = {
+            "id": str(uuid.uuid4()), "conversation_id": target_id,
+            "sender_id": user["id"], "sender_name": user.get("name", "Unknown"), "sender_avatar": user.get("avatar", ""),
+            "content": encrypted, "media_url": orig.get("media_url", ""), "media_type": orig.get("media_type", ""),
+            "forwarded_from": orig.get("sender_name", ""), "read": False,
+            "created_at": now,
+        }
+        await db.direct_messages.insert_one(fwd)
+        fwd.pop("_id", None)
+        preview = encrypt_message(content[:100], target_id) if content else ""
+        await db.conversations.update_one({"id": target_id}, {"$set": {"last_message": preview, "last_message_at": now, "last_message_by": user.get("name", "")}})
+        fwd_response = {**fwd, "content": content}
+        other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
+        if other_id:
+            await chat_manager.send_to_user(other_id, {"type": "new_message", "conversation_id": target_id, "message": fwd_response})
+        return fwd_response
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -417,12 +1001,25 @@ async def delete_team(team_id: str, user=Depends(get_current_user)):
 
 @router.get("/chat/conversations")
 async def get_conversations(user=Depends(get_current_user)):
-    """List all DM conversations for current user, sorted by last message."""
+    """List DM conversations for current user.
+    Shows: active convos + requests where user is the sender (they see it in main inbox).
+    Hides: requests where user is the recipient (those go to /chat/requests).
+    """
     convos = await db.conversations.find(
         {"participants": user["id"]}, {"_id": 0}
     ).sort("last_message_at", -1).to_list(50)
 
+    result = []
+    request_count = 0
     for c in convos:
+        status = c.get("status", "active")  # backward compat: missing = active
+        # Count incoming requests for badge
+        if status == "request" and c.get("requester_id") != user["id"]:
+            request_count += 1
+            continue  # Don't show in main inbox
+        if status == "declined":
+            continue  # Hide declined
+
         # Find the other participant
         other_id = next((p for p in c.get("participants", []) if p != user["id"]), None)
         if other_id:
@@ -439,12 +1036,17 @@ async def get_conversations(user=Depends(get_current_user)):
             "sender_id": {"$ne": user["id"]},
             "read": False
         })
-    return convos
+        result.append(c)
+    # Attach request count as header so frontend can show badge
+    return {"conversations": result, "request_count": request_count}
 
 
 @router.post("/chat/conversations")
 async def start_conversation(request: Request, user=Depends(get_current_user)):
-    """Start or get existing conversation with another user."""
+    """Start or get existing conversation with another user.
+    Checks mutual follow — if both follow each other, conversation is active.
+    Otherwise it's a message request that the recipient must accept.
+    """
     data = await request.json()
     other_id = data.get("user_id", "")
     if not other_id or other_id == user["id"]:
@@ -459,16 +1061,32 @@ async def start_conversation(request: Request, user=Depends(get_current_user)):
         "participants": {"$all": [user["id"], other_id], "$size": 2}
     }, {"_id": 0})
     if existing:
+        # If previously declined, allow re-request
+        if existing.get("status") == "declined" and existing.get("requester_id") == user["id"]:
+            await db.conversations.update_one(
+                {"id": existing["id"]},
+                {"$set": {"status": "request", "requested_at": datetime.now(timezone.utc).isoformat()}}
+            )
+            existing["status"] = "request"
         existing["other_user"] = {"id": other_id, "name": other.get("name", ""), "avatar": other.get("avatar", "")}
         return existing
 
+    # Check mutual follow to decide active vs request
+    i_follow = await db.follows.find_one({"follower_id": user["id"], "following_id": other_id})
+    they_follow = await db.follows.find_one({"follower_id": other_id, "following_id": user["id"]})
+    is_mutual = bool(i_follow and they_follow)
+
+    now = datetime.now(timezone.utc).isoformat()
     convo = {
         "id": str(uuid.uuid4()),
         "participants": [user["id"], other_id],
+        "status": "active" if is_mutual else "request",
+        "requester_id": user["id"] if not is_mutual else "",
+        "requested_at": now if not is_mutual else "",
         "last_message": "",
-        "last_message_at": datetime.now(timezone.utc).isoformat(),
+        "last_message_at": now,
         "last_message_by": "",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now,
     }
     await db.conversations.insert_one(convo)
     convo.pop("_id", None)
@@ -490,6 +1108,11 @@ async def get_dm_messages(
     query = {"conversation_id": conversation_id}
     if before:
         query["created_at"] = {"$lt": before}
+
+    # Per-user clear chat: filter out messages before user's cleared_at timestamp
+    cleared_at = convo.get("cleared_at", {}).get(user["id"])
+    if cleared_at:
+        query["created_at"] = {**(query.get("created_at") or {}), "$gt": cleared_at}
 
     messages = await db.direct_messages.find(query, {"_id": 0}).sort(
         "created_at", -1
@@ -523,6 +1146,13 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
     convo = await db.conversations.find_one({"id": conversation_id})
     if not convo or user["id"] not in convo.get("participants", []):
         raise HTTPException(403, "Not your conversation")
+
+    # Message request enforcement
+    status = convo.get("status", "active")
+    if status == "request" and convo.get("requester_id") != user["id"]:
+        raise HTTPException(403, "Accept the message request before replying")
+    if status == "declined":
+        raise HTTPException(403, "This conversation request was declined")
 
     plaintext_content = inp.content or ""
     encrypted_content = encrypt_message(plaintext_content, conversation_id) if plaintext_content else ""
@@ -790,6 +1420,215 @@ async def search_messages(
     results = matched[skip_n:skip_n + limit]
 
     return {"results": results, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1)), "query": q}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DM ENHANCEMENTS — PIN, POLLS, MEDIA GALLERY, MUTE
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.post("/chat/{conversation_id}/messages/{message_id}/pin")
+async def pin_dm_message(conversation_id: str, message_id: str, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    await db.direct_messages.update_one({"id": message_id, "conversation_id": conversation_id}, {"$set": {"pinned": True, "pinned_by": user["id"], "pinned_at": datetime.now(timezone.utc).isoformat()}})
+    return {"pinned": True}
+
+
+@router.delete("/chat/{conversation_id}/messages/{message_id}/pin")
+async def unpin_dm_message(conversation_id: str, message_id: str, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    await db.direct_messages.update_one({"id": message_id, "conversation_id": conversation_id}, {"$set": {"pinned": False}})
+    return {"unpinned": True}
+
+
+@router.get("/chat/{conversation_id}/pinned")
+async def get_pinned_dm_messages(conversation_id: str, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    msgs = await db.direct_messages.find({"conversation_id": conversation_id, "pinned": True}, {"_id": 0}).sort("pinned_at", -1).to_list(50)
+    for m in msgs:
+        if m.get("content"):
+            m["content"] = decrypt_message(m["content"], conversation_id)
+    return msgs
+
+
+@router.post("/chat/{conversation_id}/polls")
+async def create_dm_poll(conversation_id: str, request: Request, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    data = await request.json()
+    question = data.get("question", "").strip()
+    options = data.get("options", [])
+    if not question or len(options) < 2:
+        raise HTTPException(400, "Need a question and at least 2 options")
+
+    msg = {
+        "id": str(uuid.uuid4()), "conversation_id": conversation_id,
+        "sender_id": user["id"], "sender_name": user.get("name", "Unknown"), "sender_avatar": user.get("avatar", ""),
+        "content": encrypt_message(f"📊 Poll: {question}", conversation_id),
+        "message_type": "poll",
+        "poll": {"question": question, "options": [{"text": o, "votes": []} for o in options[:10]], "multiple": data.get("multiple", False)},
+        "media_url": "", "read": False, "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.direct_messages.insert_one(msg)
+    msg.pop("_id", None)
+
+    preview = encrypt_message(f"📊 Poll: {question}"[:100], conversation_id)
+    await db.conversations.update_one({"id": conversation_id}, {"$set": {"last_message": preview, "last_message_at": msg["created_at"], "last_message_by": user.get("name", "")}})
+
+    msg_response = {**msg, "content": f"📊 Poll: {question}"}
+    other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
+    if other_id:
+        await chat_manager.send_to_user(other_id, {"type": "new_message", "conversation_id": conversation_id, "message": msg_response})
+    return msg_response
+
+
+@router.post("/chat/{conversation_id}/polls/{message_id}/vote")
+async def vote_dm_poll(conversation_id: str, message_id: str, request: Request, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    msg = await db.direct_messages.find_one({"id": message_id, "conversation_id": conversation_id, "message_type": "poll"})
+    if not msg:
+        raise HTTPException(404, "Poll not found")
+    data = await request.json()
+    option_index = data.get("option_index", -1)
+    poll = msg.get("poll", {})
+    options = poll.get("options", [])
+    if option_index < 0 or option_index >= len(options):
+        raise HTTPException(400, "Invalid option")
+
+    if not poll.get("multiple"):
+        for i, opt in enumerate(options):
+            if user["id"] in opt.get("votes", []):
+                await db.direct_messages.update_one({"id": message_id}, {"$pull": {f"poll.options.{i}.votes": user["id"]}})
+
+    if user["id"] in options[option_index].get("votes", []):
+        await db.direct_messages.update_one({"id": message_id}, {"$pull": {f"poll.options.{option_index}.votes": user["id"]}})
+        action = "removed"
+    else:
+        await db.direct_messages.update_one({"id": message_id}, {"$push": {f"poll.options.{option_index}.votes": user["id"]}})
+        action = "added"
+
+    updated = await db.direct_messages.find_one({"id": message_id}, {"_id": 0, "poll": 1})
+    other_id = next((p for p in convo.get("participants", []) if p != user["id"]), None)
+    if other_id:
+        await chat_manager.send_to_user(other_id, {"type": "poll_update", "conversation_id": conversation_id, "message_id": message_id, "poll": updated.get("poll")})
+    return {"action": action, "poll": updated.get("poll")}
+
+
+@router.get("/chat/{conversation_id}/media")
+async def get_dm_media(conversation_id: str, page: int = Query(1, ge=1), limit: int = Query(30, ge=1, le=100), user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    query = {"conversation_id": conversation_id, "media_url": {"$ne": ""}, "deleted": {"$ne": True}}
+    total = await db.direct_messages.count_documents(query)
+    skip = (page - 1) * limit
+    media = await db.direct_messages.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"media": media, "total": total, "page": page}
+
+
+@router.post("/chat/{conversation_id}/mute")
+async def toggle_dm_mute(conversation_id: str, user=Depends(get_current_user)):
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    muted_by = convo.get("muted_by", [])
+    if user["id"] in muted_by:
+        await db.conversations.update_one({"id": conversation_id}, {"$pull": {"muted_by": user["id"]}})
+        return {"muted": False}
+    else:
+        await db.conversations.update_one({"id": conversation_id}, {"$push": {"muted_by": user["id"]}})
+        return {"muted": True}
+
+
+@router.post("/chat/{conversation_id}/clear")
+async def clear_dm_chat(conversation_id: str, user=Depends(get_current_user)):
+    """Per-user clear chat — only hides messages for this user, not the other."""
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    now = datetime.now(timezone.utc).isoformat()
+    await db.conversations.update_one(
+        {"id": conversation_id},
+        {"$set": {f"cleared_at.{user['id']}": now}}
+    )
+    return {"cleared": True, "cleared_at": now}
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MESSAGE REQUESTS (Instagram-style)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@router.get("/chat/requests")
+async def get_message_requests(user=Depends(get_current_user)):
+    """List incoming message requests for the current user."""
+    convos = await db.conversations.find(
+        {"participants": user["id"], "status": "request", "requester_id": {"$ne": user["id"]}},
+        {"_id": 0}
+    ).sort("requested_at", -1).to_list(50)
+
+    for c in convos:
+        other_id = c.get("requester_id", "")
+        if other_id:
+            other = await db.users.find_one(
+                {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
+            )
+            c["other_user"] = other or {"id": other_id, "name": "Unknown", "avatar": ""}
+        if c.get("last_message"):
+            c["last_message"] = decrypt_message(c["last_message"], c["id"])
+        c["unread_count"] = await db.direct_messages.count_documents({
+            "conversation_id": c["id"], "sender_id": {"$ne": user["id"]}, "read": False
+        })
+    return convos
+
+
+@router.post("/chat/{conversation_id}/accept")
+async def accept_message_request(conversation_id: str, user=Depends(get_current_user)):
+    """Accept a message request — moves conversation to active."""
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    if convo.get("status") != "request":
+        raise HTTPException(400, "Not a pending request")
+    if convo.get("requester_id") == user["id"]:
+        raise HTTPException(400, "You sent this request — wait for the other person to accept")
+
+    await db.conversations.update_one(
+        {"id": conversation_id},
+        {"$set": {"status": "active", "accepted_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    # Notify requester via WebSocket
+    await chat_manager.send_to_user(convo["requester_id"], {
+        "type": "request_accepted",
+        "conversation_id": conversation_id,
+        "accepted_by": user.get("name", ""),
+    })
+    return {"accepted": True}
+
+
+@router.post("/chat/{conversation_id}/decline")
+async def decline_message_request(conversation_id: str, user=Depends(get_current_user)):
+    """Decline a message request."""
+    convo = await db.conversations.find_one({"id": conversation_id})
+    if not convo or user["id"] not in convo.get("participants", []):
+        raise HTTPException(403, "Not your conversation")
+    if convo.get("status") != "request":
+        raise HTTPException(400, "Not a pending request")
+    if convo.get("requester_id") == user["id"]:
+        raise HTTPException(400, "You sent this request")
+
+    await db.conversations.update_one(
+        {"id": conversation_id},
+        {"$set": {"status": "declined", "declined_at": datetime.now(timezone.utc).isoformat()}}
+    )
+    return {"declined": True}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

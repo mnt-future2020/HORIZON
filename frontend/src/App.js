@@ -3,9 +3,12 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "@/components/ui/sonner";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Upload, Clock, XCircle, ShieldAlert } from "lucide-react";
 
 // Lazy load with retry: if chunk fails to load (stale cache after rebuild), retry once
 function lazyRetry(importFn) {
@@ -66,21 +69,106 @@ function PageLoader() {
   );
 }
 
+const VENUE_OWNER_ALLOWED_PATHS = ["/feed", "/chat", "/communities", "/profile"];
+
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" />;
   if (roles && !roles.includes(user.role)) return <Navigate to="/dashboard" />;
+  // Venue owner with unverified docs: only allow feed, chat, communities, profile
+  if (user.role === "venue_owner" && (user.doc_verification_status || "not_uploaded") !== "verified") {
+    const path = window.location.pathname;
+    const allowed = VENUE_OWNER_ALLOWED_PATHS.some(p => path === p || path.startsWith(p + "/"));
+    if (!allowed) {
+      const docStatus = user.doc_verification_status || "not_uploaded";
+      return (
+        <div className="max-w-lg mx-auto px-4 py-24 text-center">
+          <div className="glass-card rounded-lg p-8 space-y-4">
+            <ShieldAlert className="h-12 w-12 text-amber-400 mx-auto" />
+            <h1 className="font-display text-xl font-black">Account Not Verified</h1>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {docStatus === "pending_review"
+                ? "Your documents are under review. You'll get access once our team verifies them."
+                : "To access this feature, please upload your verification documents and get your account verified."}
+            </p>
+            {docStatus !== "pending_review" && (
+              <Button className="font-bold" onClick={() => window.location.href = "/profile"}>
+                <Upload className="h-4 w-4 mr-2" /> Upload Documents
+              </Button>
+            )}
+          </div>
+        </div>
+      );
+    }
+  }
   return children;
 }
 
 function DashboardRouter() {
   const { user } = useAuth();
   if (!user) return <Navigate to="/auth" />;
-  if (user.role === "super_admin") return <Navigate to="/admin" />;
-  if (user.role === "venue_owner") return <Navigate to="/owner" />;
-  if (user.role === "coach") return <Navigate to="/coach" />;
-  return <Navigate to="/player" />;
+  return <Navigate to="/feed" />;
+}
+
+function DocVerificationPopup() {
+  const { user } = useAuth();
+  const docStatus = user?.doc_verification_status || "not_uploaded";
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    if (user && user.role === "venue_owner" && docStatus !== "verified") setOpen(true);
+  }, [user, docStatus]);
+
+  if (!user || user.role !== "venue_owner" || docStatus === "verified") return null;
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            {docStatus === "rejected" ? <><XCircle className="h-5 w-5 text-destructive" /> Documents Rejected</> :
+             docStatus === "pending_review" ? <><Clock className="h-5 w-5 text-amber-400" /> Under Review</> :
+             <><Upload className="h-5 w-5 text-primary" /> Verify Your Account</>}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-1">
+          {docStatus === "not_uploaded" && (
+            <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 space-y-2">
+              <p className="text-sm text-muted-foreground">Upload your verification documents to get your account verified and unlock full venue management features.</p>
+              <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
+                <li>Business License</li>
+                <li>GST Certificate</li>
+                <li>ID Proof</li>
+                <li>Address Proof</li>
+              </ul>
+            </div>
+          )}
+          {docStatus === "pending_review" && (
+            <div className="rounded-lg bg-amber-500/10 border border-amber-500/30 p-3">
+              <p className="text-sm text-muted-foreground">Your documents have been submitted and are being reviewed by our team. We'll notify you once verified.</p>
+            </div>
+          )}
+          {docStatus === "rejected" && (
+            <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 space-y-2">
+              <p className="text-sm text-muted-foreground">Your documents were rejected. Please re-upload correct documents.</p>
+              {user?.doc_rejection_reason && (
+                <p className="text-xs text-destructive font-medium">Reason: {user.doc_rejection_reason}</p>
+              )}
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>Later</Button>
+            {docStatus !== "pending_review" && (
+              <Button className="flex-1 font-bold" onClick={() => { setOpen(false); window.location.href = "/profile"; }}>
+                {docStatus === "rejected" ? "Re-upload Docs" : "Upload Docs"}
+              </Button>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function AppRoutes() {
@@ -88,6 +176,7 @@ function AppRoutes() {
   return (
     <div className="min-h-screen bg-background">
       {user && <Navbar />}
+      <DocVerificationPopup />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={user ? <Navigate to="/feed" /> : <LandingPage />} />

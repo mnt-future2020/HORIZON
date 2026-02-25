@@ -47,6 +47,15 @@ export function AuthProvider({ children }) {
     return res.data;
   }, []);
 
+  const devLogin = useCallback(async (email) => {
+    const res = await authAPI.devLogin(email);
+    localStorage.setItem("horizon_token", res.data.token);
+    if (res.data.refresh_token) localStorage.setItem("horizon_refresh_token", res.data.refresh_token);
+    setToken(res.data.token);
+    setUser(res.data.user);
+    return res.data;
+  }, []);
+
   const logout = useCallback(() => {
     localStorage.removeItem("horizon_token");
     localStorage.removeItem("horizon_refresh_token");
@@ -57,7 +66,7 @@ export function AuthProvider({ children }) {
   const updateUser = useCallback((data) => setUser(prev => ({ ...prev, ...data })), []);
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, token, loading, login, register, logout, devLogin, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
