@@ -81,7 +81,8 @@ async def serve_upload(file_path: str):
     content_type = mimetypes.guess_type(str(full_path))[0] or "application/octet-stream"
     return FileResponse(full_path, media_type=content_type)
 
-# Include all routers with /api prefix
+# Include all routers — prefix is configurable for platforms that strip path prefixes (e.g. DigitalOcean App Platform)
+API_PREFIX = os.environ.get("API_PREFIX", "/api")
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           notifications_router, admin_router, academies_router, analytics_router,
           ratings_router, highlights_router, iot_router, reviews_router, pos_router,
@@ -89,11 +90,11 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           social_router, tournaments_router, coaching_router, communities_router,
           recommendations_router, organizations_router, performance_router,
           training_router, live_scoring_router]:
-    app.include_router(r, prefix="/api")
+    app.include_router(r, prefix=API_PREFIX)
 
 
 # Seed endpoint (admin only)
-@app.post("/api/seed")
+@app.post(f"{API_PREFIX}/seed")
 async def seed(user=Depends(get_current_user)):
     if user["role"] != "super_admin":
         raise HTTPException(403, "Admin only")
@@ -105,7 +106,7 @@ async def seed(user=Depends(get_current_user)):
 
 
 # Health check endpoint (for Docker + monitoring)
-@app.get("/api/health")
+@app.get(f"{API_PREFIX}/health")
 async def health_check():
     try:
         await db.command("ping")
@@ -120,7 +121,7 @@ from fastapi import Request as FastAPIRequest
 from datetime import datetime as dt, timezone as tz
 import uuid as _uuid
 
-@app.post("/api/contact")
+@app.post(f"{API_PREFIX}/contact")
 async def submit_contact(request: FastAPIRequest):
     data = await request.json()
     name = data.get("name", "").strip()
