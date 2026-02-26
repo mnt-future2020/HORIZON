@@ -5,7 +5,7 @@
  * POST requests pass through (offline sales handled by IndexedDB).
  */
 
-const CACHE_NAME = "horizon-pos-v1";
+const CACHE_NAME = "horizon-pos-v2";
 
 // App shell — index.html is enough; CRA injects JS/CSS bundles as <script>/<link>
 // and the browser will request them, which we cache dynamically on first load.
@@ -65,9 +65,11 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets (JS, CSS, fonts) — cache first
+  // Static assets (JS, CSS, fonts) — stale-while-revalidate
+  // CRA production builds use content-hashed filenames (main.abc123.js),
+  // so a new deploy = new URLs = no stale cache. Old URLs expire naturally.
   if (CACHEABLE_EXTENSIONS.test(url.pathname)) {
-    event.respondWith(cacheFirstWithNetwork(request));
+    event.respondWith(staleWhileRevalidate(request));
     return;
   }
 });

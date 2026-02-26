@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 from database import db
-from auth import hash_pw, verify_pw, create_token, create_refresh_token, verify_refresh_token, validate_password_strength, get_current_user
+from auth import hash_pw, verify_pw, create_token, create_refresh_token, verify_refresh_token, validate_password_strength, get_current_user, invalidate_user_tokens
 from models import RegisterInput, LoginInput
 from collections import defaultdict
 import uuid
@@ -50,6 +50,7 @@ async def register(input: RegisterInput, request: Request):
         "phone": input.phone or "",
         "avatar": "",
         "sports": input.sports or [],
+        "bio": "",
         "preferred_position": "",
         "skill_rating": 1500,
         "skill_deviation": 350,
@@ -110,12 +111,30 @@ async def get_me(user=Depends(get_current_user)):
 @router.put("/auth/profile")
 async def update_profile(request: Request, user=Depends(get_current_user)):
     data = await request.json()
-    allowed = ["name", "phone", "sports", "preferred_position", "avatar", "business_name", "gst_number"]
+    allowed = ["name", "phone", "sports", "preferred_position", "avatar", "business_name", "gst_number", "bio"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})
     updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
     return updated
+
+
+@router.put("/auth/change-password")
+async def change_password(request: Request, user=Depends(get_current_user)):
+    data = await request.json()
+    current_pw = data.get("current_password", "")
+    new_pw = data.get("new_password", "")
+    if not current_pw or not new_pw:
+        raise HTTPException(400, "Both current and new password required")
+    full_user = await db.users.find_one({"id": user["id"]})
+    if not full_user or not verify_pw(current_pw, full_user.get("password_hash", "")):
+        raise HTTPException(400, "Current password is incorrect")
+    validate_password_strength(new_pw)
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(new_pw)}})
+    await invalidate_user_tokens(user["id"])
+    new_token = create_token(user["id"], user["role"])
+    new_refresh = create_refresh_token(user["id"], user["role"])
+    return {"message": "Password updated", "token": new_token, "refresh_token": new_refresh}
 
 
 @router.put("/auth/verification-documents")

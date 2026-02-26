@@ -13,7 +13,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Video, Image, Info } from "lucide-react";
+import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Video, Image, Info, Lock, Minus, Eye, EyeOff } from "lucide-react";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
@@ -44,6 +44,11 @@ export default function ProfilePage() {
   const [submittingDocs, setSubmittingDocs] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const avatarInputRef = useRef(null);
+  // Password change state
+  const [showPwChange, setShowPwChange] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: "", new_pw: "", confirm: "" });
+  const [changingPw, setChangingPw] = useState(false);
+  const [showPw, setShowPw] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -51,7 +56,7 @@ export default function ProfilePage() {
 
     // Initialize form based on role
     if (role === "player") {
-      setForm({ name: user.name || "", phone: user.phone || "", preferred_position: user.preferred_position || "" });
+      setForm({ name: user.name || "", phone: user.phone || "", preferred_position: user.preferred_position || "", bio: user.bio || "", sports: (user.sports || []).join(", ") });
     } else if (role === "venue_owner") {
       setForm({ name: user.name || "", phone: user.phone || "", business_name: user.business_name || "", gst_number: user.gst_number || "" });
       const rawDocs = user.verification_documents || {};
@@ -135,7 +140,11 @@ export default function ProfilePage() {
         ]);
         updateUser(authRes.data);
       } else {
-        const res = await authAPI.updateProfile(form);
+        const payload = { ...form };
+        if (role === "player" && typeof payload.sports === "string") {
+          payload.sports = payload.sports.split(",").map(s => s.trim()).filter(Boolean);
+        }
+        const res = await authAPI.updateProfile(payload);
         updateUser(res.data);
       }
       toast.success("Profile updated!");
@@ -305,7 +314,7 @@ export default function ProfilePage() {
 
           {/* Role-specific stats grid */}
           {user?.role === "player" && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
               <div className="text-center p-3 rounded-lg bg-background/50">
                 <Trophy className={`h-5 w-5 mx-auto mb-1 ${tier.color}`} />
                 <div className={`text-lg font-display font-black ${tier.color}`}>{user?.skill_rating || 1500}</div>
@@ -324,9 +333,25 @@ export default function ProfilePage() {
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Win Rate</div>
               </div>
               <div className="text-center p-3 rounded-lg bg-background/50">
+                <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-emerald-400" />
+                <div className="text-lg font-display font-black text-emerald-400">{stats?.wins || 0}</div>
+                <div className="text-[10px] text-muted-foreground font-mono uppercase">Wins</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background/50">
+                <XCircle className="h-5 w-5 mx-auto mb-1 text-red-400" />
+                <div className="text-lg font-display font-black text-red-400">{stats?.losses || user?.losses || 0}</div>
+                <div className="text-[10px] text-muted-foreground font-mono uppercase">Losses</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background/50">
+                <Minus className="h-5 w-5 mx-auto mb-1 text-amber-400" />
+                <div className="text-lg font-display font-black text-amber-400">{stats?.draws || user?.draws || 0}</div>
+                <div className="text-[10px] text-muted-foreground font-mono uppercase">Draws</div>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-background/50">
                 <Shield className="h-5 w-5 mx-auto mb-1 text-sky-400" />
                 <div className="text-lg font-display font-black">{user?.reliability_score || 100}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Reliability</div>
+                {(user?.no_shows > 0) && <div className="text-[9px] text-red-400 mt-0.5">{user.no_shows} no-show{user.no_shows > 1 ? "s" : ""}</div>}
               </div>
             </div>
           )}
@@ -500,12 +525,19 @@ export default function ProfilePage() {
                         className="bg-background border-border rounded-l-none" data-testid="profile-phone-input" placeholder="98765 43210" maxLength={10} />
                     </div></div>
                   {/* Lobbian-specific edit fields */}
-                  {user?.role === "player" && (
+                  {user?.role === "player" && (<>
+                    <div><Label className="text-xs text-muted-foreground">Bio</Label>
+                      <Textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
+                        placeholder="Tell Lobbians about yourself..." rows={3}
+                        className="mt-1 bg-background border-border" /></div>
+                    <div><Label className="text-xs text-muted-foreground">Sports (comma separated)</Label>
+                      <Input value={form.sports} onChange={e => setForm(p => ({ ...p, sports: e.target.value }))}
+                        placeholder="Football, Cricket, Badminton" className="mt-1 bg-background border-border" /></div>
                     <div><Label className="text-xs text-muted-foreground">Preferred Position</Label>
                       <Input value={form.preferred_position} onChange={e => setForm(p => ({ ...p, preferred_position: e.target.value }))}
                         placeholder="Midfielder, Goalkeeper..." className="mt-1 bg-background border-border"
                         data-testid="profile-position-input" /></div>
-                  )}
+                  </>)}
                   {/* Venue Owner-specific edit fields */}
                   {user?.role === "venue_owner" && (<>
                     <div><Label className="text-xs text-muted-foreground">Business Name</Label>
@@ -559,6 +591,20 @@ export default function ProfilePage() {
                     <Badge variant="secondary" className="text-[10px]">{user?.role === "player" ? "LOBBIAN" : user?.role?.replace("_", " ").toUpperCase()}</Badge>
                   </div>
                   {/* Lobbian display fields */}
+                  {user?.bio && (
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-sm text-muted-foreground">Bio</span>
+                      <span className="text-sm font-medium text-foreground text-right max-w-[60%]">{user.bio}</span>
+                    </div>
+                  )}
+                  {user?.sports?.length > 0 && (
+                    <div className="flex justify-between py-2 border-b border-border">
+                      <span className="text-sm text-muted-foreground">Sports</span>
+                      <div className="flex flex-wrap gap-1 justify-end">
+                        {user.sports.map(s => <Badge key={s} variant="secondary" className="text-[10px]">{s}</Badge>)}
+                      </div>
+                    </div>
+                  )}
                   {user?.preferred_position && (
                     <div className="flex justify-between py-2 border-b border-border">
                       <span className="text-sm text-muted-foreground">Position</span>
@@ -625,6 +671,57 @@ export default function ProfilePage() {
                   </>)}
                 </div>
               )}
+
+              {/* Password Change */}
+              <div className="mt-6 border border-border rounded-lg overflow-hidden">
+                <button onClick={() => setShowPwChange(p => !p)}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary/30 transition-colors">
+                  <span className="flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" /> Change Password</span>
+                  <span className="text-muted-foreground text-xs">{showPwChange ? "▲" : "▼"}</span>
+                </button>
+                {showPwChange && (
+                  <div className="px-4 pb-4 space-y-3">
+                    <div><Label className="text-xs text-muted-foreground">Current Password</Label>
+                      <div className="relative mt-1">
+                        <Input type={showPw ? "text" : "password"} value={pwForm.current}
+                          onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
+                          className="bg-background border-border pr-10" placeholder="Enter current password" />
+                        <button type="button" onClick={() => setShowPw(p => !p)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                          {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <div><Label className="text-xs text-muted-foreground">New Password</Label>
+                      <Input type={showPw ? "text" : "password"} value={pwForm.new_pw}
+                        onChange={e => setPwForm(p => ({ ...p, new_pw: e.target.value }))}
+                        className="mt-1 bg-background border-border" placeholder="Min 8 chars, 1 upper, 1 lower, 1 number" />
+                    </div>
+                    <div><Label className="text-xs text-muted-foreground">Confirm New Password</Label>
+                      <Input type={showPw ? "text" : "password"} value={pwForm.confirm}
+                        onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
+                        className="mt-1 bg-background border-border" placeholder="Re-enter new password" />
+                    </div>
+                    <Button className="w-full font-bold" disabled={changingPw || !pwForm.current || !pwForm.new_pw || !pwForm.confirm}
+                      onClick={async () => {
+                        if (pwForm.new_pw !== pwForm.confirm) { toast.error("Passwords don't match"); return; }
+                        setChangingPw(true);
+                        try {
+                          const res = await authAPI.changePassword({ current_password: pwForm.current, new_password: pwForm.new_pw });
+                          localStorage.setItem("horizon_token", res.data.token);
+                          localStorage.setItem("horizon_refresh_token", res.data.refresh_token);
+                          toast.success("Password changed!");
+                          setPwForm({ current: "", new_pw: "", confirm: "" });
+                          setShowPwChange(false);
+                        } catch (err) {
+                          toast.error(err?.response?.data?.detail || "Failed to change password");
+                        } finally { setChangingPw(false); }
+                      }}>
+                      {changingPw ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Password"}
+                    </Button>
+                  </div>
+                )}
+              </div>
 
               <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 mt-4"
                 onClick={logout} data-testid="profile-logout-btn">

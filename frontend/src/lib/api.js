@@ -84,6 +84,7 @@ export const authAPI = {
   updateProfile: (data) => api.put("/auth/profile", data),
   refreshToken: (token) => api.post("/auth/refresh", { refresh_token: token }),
   updateVerificationDocs: (data) => api.put("/auth/verification-documents", data),
+  changePassword: (data) => api.put("/auth/change-password", data),
 };
 
 export const venueAPI = {

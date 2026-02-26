@@ -147,11 +147,16 @@ function POSTerminal({ user }) {
     window.addEventListener("offline", onOffline);
     // Init: migrate localStorage to IndexedDB, then load count
     migrateFromLocalStorage().then(() => getQueueCountAsync()).then(setPendingCount);
-    // Register POS Service Worker for offline PWA support
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/pos-sw.js").then(() => {
+    // Register POS Service Worker ONLY in production (dev uses hot reload, SW would cache stale bundles)
+    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/pos-sw.js").then((reg) => {
         registerBackgroundSync();
+        // Auto-update: check for new SW every 5 minutes
+        setInterval(() => reg.update(), 5 * 60 * 1000);
       }).catch(() => {});
+    } else if (process.env.NODE_ENV !== "production" && "serviceWorker" in navigator) {
+      // Dev mode: unregister any existing SW to prevent caching issues
+      navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
     }
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
   }, []);
