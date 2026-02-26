@@ -474,21 +474,21 @@ export default function SocialFeedPage() {
               </button>
             ))}
           </div>
-          <div className="ml-auto flex gap-1">
+          <div className="flex items-center gap-2">
             <button onClick={handleRefresh}
-              className="h-8 w-8 rounded-lg bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
+              className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               title="Refresh">
-              <RefreshCw className={`h-3.5 w-3.5 text-muted-foreground ${refreshing ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
             </button>
             <button onClick={() => navigate("/explore")}
-              className="h-8 w-8 rounded-lg bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
-              title="Explore">
-              <Search className="h-3.5 w-3.5 text-muted-foreground" />
+              className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground px-3 py-1.5 rounded-full border border-border/60 hover:bg-card hover:text-foreground transition-all">
+              <Search className="h-3.5 w-3.5" />
+              Filter
             </button>
             <button onClick={() => navigate("/bookmarks")}
-              className="h-8 w-8 rounded-lg bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
+              className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
               title="Saved Posts">
-              <Bookmark className="h-3.5 w-3.5 text-muted-foreground" />
+              <Bookmark className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>

@@ -342,7 +342,7 @@ export function Sidebar() {
   const navLinks = links[user?.role] || links.player;
 
   return (
-    <aside className="hidden lg:flex sticky top-[96px] h-[calc(100vh-120px)] w-[280px] flex-shrink-0 flex-col bg-card rounded-[24px] border border-border/40 shadow-sm p-5 overflow-y-auto no-scrollbar">
+    <aside className="hidden lg:flex sticky top-[96px] h-[calc(100vh-120px)] w-64 flex-shrink-0 flex-col bg-card rounded-[24px] border border-border/40 shadow-sm p-5 overflow-y-auto no-scrollbar">
       <nav className="flex flex-col gap-1.5 mb-8">
         {navLinks.map(l => {
            const active = path === l.to || path.startsWith(l.to + "/");
