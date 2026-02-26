@@ -116,7 +116,17 @@ async def _insert_sale(data: dict, user: dict) -> dict:
     if not items:
         raise HTTPException(400, "items required")
 
-    total = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in items)
+    subtotal = sum(float(i.get("price", 0)) * int(i.get("qty", 1)) for i in items)
+
+    # Discount handling
+    discount_type = data.get("discount_type")  # "percent" or "flat"
+    discount_value = float(data.get("discount_value", 0))
+    discount_amount = 0.0
+    if discount_type == "percent" and 0 < discount_value <= 100:
+        discount_amount = round(subtotal * discount_value / 100, 2)
+    elif discount_type == "flat" and discount_value > 0:
+        discount_amount = min(round(discount_value, 2), subtotal)
+    total = round(subtotal - discount_amount, 2)
 
     sale = {
         "id": data.get("offline_id") or str(uuid.uuid4()),   # honour offline ID for idempotency
@@ -124,9 +134,15 @@ async def _insert_sale(data: dict, user: dict) -> dict:
         "served_by": user["id"],
         "served_by_name": user.get("name", ""),
         "items": items,
+        "subtotal": subtotal,
+        "discount_type": discount_type,
+        "discount_value": discount_value if discount_type else 0,
+        "discount_amount": discount_amount,
         "total": total,
         "payment_method": data.get("payment_method", "cash"),
         "note": data.get("note", ""),
+        "customer_name": data.get("customer_name", ""),
+        "customer_phone": data.get("customer_phone", ""),
         "offline_at": data.get("offline_at"),   # original timestamp if offline sale
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -187,4 +203,31 @@ async def sales_summary(venue_id: str, user=Depends(get_current_user)):
         "total_revenue": total_revenue,
         "total_items_sold": total_items,
         "by_payment_method": by_method,
+    }
+
+
+@router.get("/report")
+async def daily_report(venue_id: str, date: str, user=Depends(get_current_user)):
+    """Return all sales for a venue on a specific date for CSV export."""
+    await _require_venue_owner(venue_id, user)
+    try:
+        datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(400, "Invalid date format. Use YYYY-MM-DD")
+
+    all_sales = await db.pos_sales.find(
+        {"venue_id": venue_id, "created_at": {"$regex": f"^{date}"}},
+        {"_id": 0}
+    ).sort("created_at", 1).to_list(5000)
+
+    total_revenue = sum(s.get("total", 0) for s in all_sales)
+    total_items = sum(sum(i.get("qty", 1) for i in s.get("items", [])) for s in all_sales)
+
+    return {
+        "date": date,
+        "venue_id": venue_id,
+        "total_sales": len(all_sales),
+        "total_revenue": total_revenue,
+        "total_items_sold": total_items,
+        "sales": all_sales,
     }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI, posAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart, Plus, Minus, Trash2, Wifi, WifiOff, RefreshCw,
   Package, IndianRupee, CheckCircle, X, Pencil, BarChart3,
-  Banknote, CreditCard, Smartphone, History, ShieldAlert
+  Banknote, CreditCard, Smartphone, History, ShieldAlert,
+  Printer, Share2, Download, User, AlertTriangle
 } from "lucide-react";
 
 // --- Offline queue helpers (IndexedDB with localStorage fallback) -------
@@ -47,6 +48,7 @@ const PAYMENT_METHODS = [
 ];
 
 const CAT_EMOJI = { beverages: "🥤", snacks: "🍿", equipment: "⚽", apparel: "👕", other: "🛒" };
+const LOW_STOCK_THRESHOLD = 5;
 
 // --- Product Card -------------------------------------------------------
 function ProductCard({ product, cartQty, onAdd, onRemove }) {
@@ -84,7 +86,9 @@ function ProductCard({ product, cartQty, onAdd, onRemove }) {
         )}
       </div>
       {product.stock > 0 && (
-        <div className="text-[9px] text-muted-foreground/60">{product.stock} left</div>
+        <div className={`text-[9px] ${product.stock <= LOW_STOCK_THRESHOLD ? "text-amber-400 font-bold" : "text-muted-foreground/60"}`}>
+          {product.stock} left {product.stock <= LOW_STOCK_THRESHOLD ? "⚠" : ""}
+        </div>
       )}
     </motion.div>
   );
@@ -126,6 +130,14 @@ function POSTerminal({ user }) {
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [productForm, setProductForm] = useState({ name: "", category: "beverages", price: "", stock: "-1", emoji: "" });
+  // Feature: Discount
+  const [discountType, setDiscountType] = useState("percent");
+  const [discountValue, setDiscountValue] = useState("");
+  // Feature: Customer
+  const [customerName, setCustomerName] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  // Ref for receipt printing
+  const receiptRef = useRef(null);
 
   // Online/offline listeners + IndexedDB init
   useEffect(() => {
@@ -135,8 +147,12 @@ function POSTerminal({ user }) {
     window.addEventListener("offline", onOffline);
     // Init: migrate localStorage to IndexedDB, then load count
     migrateFromLocalStorage().then(() => getQueueCountAsync()).then(setPendingCount);
-    // Register background sync
-    registerBackgroundSync();
+    // Register POS Service Worker for offline PWA support
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/pos-sw.js").then(() => {
+        registerBackgroundSync();
+      }).catch(() => {});
+    }
     return () => { window.removeEventListener("online", onOnline); window.removeEventListener("offline", onOffline); };
   }, []);
 
@@ -145,13 +161,21 @@ function POSTerminal({ user }) {
     if (isOnline && pendingCount > 0 && selectedVenue) syncQueue();
   }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load venues
+  // Load venues (with offline cache fallback)
   useEffect(() => {
     venueAPI.getOwnerVenues().then(r => {
       const v = r.data || [];
       setVenues(v);
       if (v.length > 0) setSelectedVenue(v[0]);
+      try { localStorage.setItem("pos_venues", JSON.stringify(v)); } catch {}
     }).catch((err) => {
+      // Offline — load cached venues
+      if (!err.response) {
+        try {
+          const cached = JSON.parse(localStorage.getItem("pos_venues"));
+          if (cached?.length) { setVenues(cached); setSelectedVenue(cached[0]); return; }
+        } catch {}
+      }
       toast.error("Failed to load venues");
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -179,9 +203,16 @@ function POSTerminal({ user }) {
     return prev.map(c => c.product.id === product.id ? { ...c, qty: c.qty - 1 } : c);
   });
 
-  const clearCart = () => setCart([]);
+  const clearCart = () => { setCart([]); setDiscountValue(""); setCustomerName(""); setCustomerPhone(""); };
   const cartTotal = cart.reduce((s, c) => s + c.product.price * c.qty, 0);
   const cartQty = (id) => cart.find(c => c.product.id === id)?.qty || 0;
+
+  // Discount computed values
+  const discountNumeric = parseFloat(discountValue) || 0;
+  const discountAmount = discountType === "percent"
+    ? Math.round(cartTotal * Math.min(discountNumeric, 100) / 100 * 100) / 100
+    : Math.min(discountNumeric, cartTotal);
+  const finalTotal = Math.round((cartTotal - discountAmount) * 100) / 100;
 
   // Offline sync (IndexedDB)
   const syncQueue = useCallback(async () => {
@@ -212,6 +243,92 @@ function POSTerminal({ user }) {
     posAPI.listSales(selectedVenue.id, 30).then(r => setRecentSales(r.data || [])).catch(() => {});
   }, [selectedVenue]);
 
+  // Receipt handlers
+  const handlePrintReceipt = () => {
+    if (!lastSale) return;
+    const items = (lastSale.items || []).map(i =>
+      `<tr><td>${i.name} x${i.qty}</td><td style="text-align:right;font-weight:bold">₹${i.price * i.qty}</td></tr>`
+    ).join("");
+    const discount = lastSale.discount_amount > 0 ? `
+      <tr><td>Subtotal</td><td style="text-align:right">₹${lastSale.subtotal}</td></tr>
+      <tr><td>Discount</td><td style="text-align:right">-₹${lastSale.discount_amount}</td></tr>` : "";
+    const customer = (lastSale.customer_name || lastSale.customer_phone)
+      ? `<tr><td>Customer</td><td style="text-align:right">${[lastSale.customer_name, lastSale.customer_phone].filter(Boolean).join(" — ")}</td></tr>` : "";
+    const html = `<!DOCTYPE html><html><head><title>Receipt</title>
+      <style>body{font-family:'Courier New',monospace;width:80mm;margin:0 auto;padding:6mm;font-size:12px}
+      table{width:100%;border-collapse:collapse}td{padding:2px 0}.center{text-align:center}
+      .divider{border-top:1px dashed #999;margin:6px 0}.bold{font-weight:bold}
+      .total{font-size:18px;font-weight:900}.small{font-size:10px;color:#666}</style></head>
+      <body><div class="center"><b>${selectedVenue?.name || "Venue"}</b><br>
+      <span class="small">${new Date(lastSale.created_at || lastSale.offline_at).toLocaleString("en-IN")}</span></div>
+      <div class="divider"></div><table>${items}</table><div class="divider"></div>
+      ${discount ? `<table>${discount}</table>` : ""}
+      <table><tr><td class="bold">Total</td><td style="text-align:right" class="total">₹${lastSale.total}</td></tr>
+      <tr><td>Payment</td><td style="text-align:right">${lastSale.payment_method}</td></tr>
+      ${customer}</table>
+      <div class="divider"></div><p class="center small">Thank you!</p>
+      <script>window.onload=()=>{window.print();window.onafterprint=()=>window.close()}<\/script></body></html>`;
+    const win = window.open("", "_blank", "width=320,height=600");
+    win.document.write(html);
+    win.document.close();
+  };
+  const handleShareWhatsApp = () => {
+    if (!lastSale) return;
+    const lines = [
+      `*Receipt — ${selectedVenue?.name || "Venue"}*`,
+      `Date: ${new Date(lastSale.created_at || lastSale.offline_at).toLocaleString("en-IN")}`,
+      "",
+      ...(lastSale.items || []).map(i => `${i.name} x${i.qty} — ₹${i.price * i.qty}`),
+      "",
+    ];
+    if (lastSale.discount_amount > 0) {
+      lines.push(`Subtotal: ₹${lastSale.subtotal}`);
+      lines.push(`Discount: -₹${lastSale.discount_amount}`);
+    }
+    lines.push(`*Total: ₹${lastSale.total}*`);
+    lines.push(`Payment: ${lastSale.payment_method}`);
+    if (lastSale.customer_name) lines.push(`Customer: ${lastSale.customer_name}`);
+    if (lastSale.customer_phone) lines.push(`Phone: ${lastSale.customer_phone}`);
+    window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+  };
+
+  // CSV export
+  const handleExportCSV = async () => {
+    if (!selectedVenue) return;
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      const res = await posAPI.report(selectedVenue.id, today);
+      const sales = res.data.sales || [];
+      if (!sales.length) { toast("No sales to export"); return; }
+      const headers = ["Time", "Items", "Qty", "Payment", "Subtotal", "Discount", "Total", "Customer Name", "Customer Phone"];
+      const rows = sales.map(s => [
+        new Date(s.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+        (s.items || []).map(i => i.name).join("; "),
+        (s.items || []).reduce((sum, i) => sum + (i.qty || 1), 0),
+        s.payment_method || "cash",
+        s.subtotal || s.total || 0,
+        s.discount_amount || 0,
+        s.total || 0,
+        s.customer_name || "",
+        s.customer_phone || "",
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pos-report-${today}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Report downloaded!");
+    } catch {
+      toast.error("Failed to generate report");
+    }
+  };
+
+  // Low stock computed
+  const lowStockProducts = products.filter(p => p.stock >= 0 && p.stock <= LOW_STOCK_THRESHOLD && p.is_active !== false);
+
   useEffect(() => { loadSummary(); }, [loadSummary]);
   useEffect(() => {
     if (activeView === "history") loadRecentSales();
@@ -225,10 +342,16 @@ function POSTerminal({ user }) {
     const saleData = {
       venue_id: selectedVenue.id,
       items: cart.map(c => ({ product_id: c.product.id, name: c.product.name, price: c.product.price, qty: c.qty })),
-      total: cartTotal,
+      subtotal: cartTotal,
+      discount_type: discountAmount > 0 ? discountType : null,
+      discount_value: discountAmount > 0 ? discountNumeric : 0,
+      discount_amount: discountAmount,
+      total: finalTotal,
       payment_method: paymentMethod,
+      customer_name: customerName.trim(),
+      customer_phone: customerPhone.trim(),
       offline_id: `offline_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-      offline_at: new Date().toISOString(),
+      ...(isOnline ? {} : { offline_at: new Date().toISOString() }),
     };
     try {
       let result;
@@ -245,6 +368,16 @@ function POSTerminal({ user }) {
       }
       setLastSale(result);
       setShowReceipt(true);
+      // Low stock check before clearing cart
+      const lowAfterSale = cart.filter(c => {
+        const p = products.find(pr => pr.id === c.product.id);
+        if (!p || p.stock < 0) return false;
+        const remaining = p.stock - c.qty;
+        return remaining >= 0 && remaining <= LOW_STOCK_THRESHOLD;
+      });
+      if (lowAfterSale.length > 0) {
+        toast.warning(`Low stock: ${lowAfterSale.map(c => c.product.name).join(", ")}`);
+      }
       clearCart();
       setProducts(prev => prev.map(p => {
         const item = cart.find(c => c.product.id === p.id);
@@ -252,6 +385,36 @@ function POSTerminal({ user }) {
         return { ...p, stock: Math.max(0, p.stock - item.qty) };
       }));
     } catch (err) {
+      // Network error (no response) → fallback to offline IndexedDB
+      if (!err.response) {
+        try {
+          saleData.offline_at = saleData.offline_at || new Date().toISOString();
+          await addToQueueAsync(saleData);
+          const count = await getQueueCountAsync();
+          setPendingCount(count);
+          setIsOnline(false);
+          const offlineResult = { ...saleData, created_at: saleData.offline_at, offline: true };
+          setLastSale(offlineResult);
+          setShowReceipt(true);
+          const lowAfterSale = cart.filter(c => {
+            const p = products.find(pr => pr.id === c.product.id);
+            if (!p || p.stock < 0) return false;
+            return (p.stock - c.qty) >= 0 && (p.stock - c.qty) <= LOW_STOCK_THRESHOLD;
+          });
+          if (lowAfterSale.length > 0) toast.warning(`Low stock: ${lowAfterSale.map(c => c.product.name).join(", ")}`);
+          clearCart();
+          setProducts(prev => prev.map(p => {
+            const item = cart.find(c => c.product.id === p.id);
+            if (!item || p.stock < 0) return p;
+            return { ...p, stock: Math.max(0, p.stock - item.qty) };
+          }));
+          toast("Network unreachable — sale saved offline", { icon: "📴" });
+          return;
+        } catch (offlineErr) {
+          toast.error("Failed to save sale offline");
+          return;
+        }
+      }
       toast.error(err?.response?.data?.detail || "Charge failed");
     } finally { setCharging(false); }
   };
@@ -440,10 +603,34 @@ function POSTerminal({ user }) {
                     </AnimatePresence>
                   </div>
 
-                  <div className="border-t border-border pt-3 mb-4">
+                  <div className="border-t border-border pt-3 mb-4 space-y-2">
+                    {/* Discount */}
+                    <div className="flex items-center gap-2">
+                      <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Discount</p>
+                      <div className="flex items-center gap-1 ml-auto">
+                        <button onClick={() => setDiscountType("percent")}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${discountType === "percent" ? "bg-primary/20 text-primary" : "bg-secondary/50 text-muted-foreground"}`}>%</button>
+                        <button onClick={() => setDiscountType("flat")}
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${discountType === "flat" ? "bg-primary/20 text-primary" : "bg-secondary/50 text-muted-foreground"}`}>₹</button>
+                      </div>
+                    </div>
+                    <Input type="number" placeholder={discountType === "percent" ? "e.g. 10" : "e.g. 50"}
+                      value={discountValue} onChange={e => setDiscountValue(e.target.value)}
+                      className="h-8 text-xs bg-background border-border" />
+                    {discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>Subtotal</span><span>₹{cartTotal}</span>
+                      </div>
+                    )}
+                    {discountAmount > 0 && (
+                      <div className="flex items-center justify-between text-xs text-emerald-400">
+                        <span>Discount ({discountType === "percent" ? `${discountNumeric}%` : `₹${discountNumeric}`})</span>
+                        <span>-₹{discountAmount}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold">Total</span>
-                      <span className="text-xl font-display font-black text-primary">₹{cartTotal}</span>
+                      <span className="text-xl font-display font-black text-primary">₹{finalTotal}</span>
                     </div>
                   </div>
 
@@ -461,8 +648,20 @@ function POSTerminal({ user }) {
                     </div>
                   </div>
 
+                  <div className="mb-4 space-y-2">
+                    <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Customer (optional)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input placeholder="Name" value={customerName}
+                        onChange={e => setCustomerName(e.target.value)}
+                        className="h-8 text-xs bg-background border-border" />
+                      <Input placeholder="Phone" value={customerPhone}
+                        onChange={e => setCustomerPhone(e.target.value)}
+                        className="h-8 text-xs bg-background border-border" type="tel" />
+                    </div>
+                  </div>
+
                   <Button className="w-full bg-primary text-primary-foreground font-black h-12 text-base" onClick={handleCharge} disabled={charging} data-testid="charge-btn">
-                    {charging ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><IndianRupee className="h-5 w-5 mr-1" />Charge ₹{cartTotal}</>}
+                    {charging ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><IndianRupee className="h-5 w-5 mr-1" />Charge ₹{finalTotal}</>}
                   </Button>
                   {!isOnline && <p className="text-[10px] text-amber-400 text-center mt-2">📴 Offline — sale will sync when connected</p>}
                 </>
@@ -481,6 +680,17 @@ function POSTerminal({ user }) {
               <p className="text-xs text-muted-foreground mt-1">You need at least one venue to manage POS products. Add a venue from your dashboard first.</p>
             </div>
           )}
+          {lowStockProducts.length > 0 && (
+            <div className="rounded-xl border-2 border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-amber-400">Low Stock Alert</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lowStockProducts.map(p => `${p.name} (${p.stock} left)`).join(", ")}
+                </p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-base">Products Catalog</h2>
             <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8" onClick={openCreateProduct} disabled={!selectedVenue} data-testid="add-product-btn">
@@ -495,12 +705,15 @@ function POSTerminal({ user }) {
           ) : (
             <div className="space-y-2">
               {products.map(p => (
-                <div key={p.id} className={`glass-card rounded-lg p-3 flex items-center gap-3 ${p.is_active === false ? "opacity-50" : ""}`} data-testid={`manage-product-${p.id}`}>
+                <div key={p.id} className={`glass-card rounded-lg p-3 flex items-center gap-3 ${p.is_active === false ? "opacity-50" : ""} ${p.stock >= 0 && p.stock <= LOW_STOCK_THRESHOLD && p.is_active !== false ? "border-amber-500/50 bg-amber-500/5" : ""}`} data-testid={`manage-product-${p.id}`}>
                   <span className="text-2xl">{p.emoji || CAT_EMOJI[p.category] || "🛒"}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="text-sm font-bold truncate">{p.name}</p>
                       <Badge variant="secondary" className="text-[10px] capitalize">{p.category}</Badge>
+                      {p.stock >= 0 && p.stock <= LOW_STOCK_THRESHOLD && p.is_active !== false && (
+                        <Badge className="text-[9px] bg-amber-500/15 text-amber-400">Low Stock</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">₹{p.price} · {p.stock < 0 ? "Unlimited" : `${p.stock} left`}</p>
                   </div>
@@ -523,7 +736,12 @@ function POSTerminal({ user }) {
       {activeView === "summary" && (
         summary ? (
           <div className="space-y-4">
-            <h2 className="font-bold text-base">Today's Summary <span className="text-muted-foreground font-normal text-sm ml-2">{summary.today}</span></h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-bold text-base">Today's Summary <span className="text-muted-foreground font-normal text-sm ml-2">{summary.today}</span></h2>
+              <Button size="sm" variant="outline" className="text-xs font-bold h-8" onClick={handleExportCSV}>
+                <Download className="h-3.5 w-3.5 mr-1" /> Export CSV
+              </Button>
+            </div>
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: "Revenue", value: `₹${summary.total_revenue}`, color: "text-primary" },
@@ -574,10 +792,50 @@ function POSTerminal({ user }) {
                       {sale.offline_at && <Badge className="text-[9px] bg-amber-500/15 text-amber-400">📴 Offline</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{sale.items?.map(i => `${i.name} ×${i.qty}`).join(", ")}</p>
+                    {sale.discount_amount > 0 && (
+                      <span className="text-[10px] text-emerald-400">Discount: -₹{sale.discount_amount}</span>
+                    )}
+                    {(sale.customer_name || sale.customer_phone) && (
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">
+                        <User className="h-2.5 w-2.5 inline mr-0.5" />
+                        {[sale.customer_name, sale.customer_phone].filter(Boolean).join(" — ")}
+                      </p>
+                    )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {new Date(sale.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(sale.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                    <div className="flex items-center gap-1">
+                      <button onClick={() => { setLastSale(sale); setShowReceipt(true); }}
+                        className="h-6 w-6 rounded-md bg-secondary/60 hover:bg-secondary flex items-center justify-center transition-colors"
+                        title="View Receipt">
+                        <Printer className="h-3 w-3 text-muted-foreground" />
+                      </button>
+                      <button onClick={() => {
+                        const lines = [
+                          `*Receipt — ${selectedVenue?.name || "Venue"}*`,
+                          `Date: ${new Date(sale.created_at || sale.offline_at).toLocaleString("en-IN")}`,
+                          "",
+                          ...(sale.items || []).map(i => `${i.name} x${i.qty} — ₹${i.price * i.qty}`),
+                          "",
+                        ];
+                        if (sale.discount_amount > 0) {
+                          lines.push(`Subtotal: ₹${sale.subtotal}`);
+                          lines.push(`Discount: -₹${sale.discount_amount}`);
+                        }
+                        lines.push(`*Total: ₹${sale.total}*`);
+                        lines.push(`Payment: ${sale.payment_method}`);
+                        if (sale.customer_name) lines.push(`Customer: ${sale.customer_name}`);
+                        if (sale.customer_phone) lines.push(`Phone: ${sale.customer_phone}`);
+                        window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+                      }}
+                        className="h-6 w-6 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 flex items-center justify-center transition-colors"
+                        title="Share via WhatsApp">
+                        <Share2 className="h-3 w-3 text-emerald-400" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))
@@ -634,21 +892,40 @@ function POSTerminal({ user }) {
       {/* ─── Receipt Dialog ─── */}
       <Dialog open={showReceipt} onOpenChange={setShowReceipt}>
         <DialogContent className="bg-card border-border max-w-sm">
-          <DialogHeader>
+          <DialogHeader className="print:hidden">
             <DialogTitle className="font-display flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-emerald-400" /> Sale Complete
             </DialogTitle>
           </DialogHeader>
           {lastSale && (
             <div className="space-y-4">
-              <div className="glass-card rounded-lg p-4 space-y-2">
+              {/* Printable receipt */}
+              <div id="pos-receipt" ref={receiptRef} className="glass-card rounded-lg p-4 space-y-2">
+                <div className="receipt-header text-center">
+                  <p className="font-display font-black text-sm">{selectedVenue?.name || "Venue"}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {new Date(lastSale.created_at || lastSale.offline_at).toLocaleString("en-IN")}
+                  </p>
+                </div>
+                <div className="receipt-divider border-t border-dashed border-border my-2" />
                 {lastSale.items?.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span>{item.name} × {item.qty}</span>
                     <span className="font-bold">₹{item.price * item.qty}</span>
                   </div>
                 ))}
-                <div className="border-t border-border pt-2 flex justify-between">
+                <div className="receipt-divider border-t border-dashed border-border my-2" />
+                {lastSale.discount_amount > 0 && (
+                  <>
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>Subtotal</span><span>₹{lastSale.subtotal}</span>
+                    </div>
+                    <div className="flex justify-between text-xs text-emerald-400">
+                      <span>Discount</span><span>-₹{lastSale.discount_amount}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between pt-1">
                   <span className="font-bold">Total</span>
                   <span className="font-display font-black text-xl text-primary">₹{lastSale.total}</span>
                 </div>
@@ -656,9 +933,25 @@ function POSTerminal({ user }) {
                   <span>Payment</span>
                   <span className="capitalize font-medium">{lastSale.payment_method}</span>
                 </div>
-                {lastSale.offline && <div className="text-xs text-amber-400 text-center">📴 Saved offline — will sync automatically</div>}
+                {(lastSale.customer_name || lastSale.customer_phone) && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Customer</span>
+                    <span className="font-medium">{[lastSale.customer_name, lastSale.customer_phone].filter(Boolean).join(" — ")}</span>
+                  </div>
+                )}
+                {lastSale.offline && <div className="text-xs text-amber-400 text-center mt-2">📴 Saved offline — will sync automatically</div>}
+                <p className="text-[10px] text-muted-foreground/50 text-center mt-2">Thank you!</p>
               </div>
-              <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={() => setShowReceipt(false)} data-testid="new-sale-btn">
+              {/* Action buttons */}
+              <div className="flex gap-2 print:hidden">
+                <Button className="flex-1 bg-secondary text-foreground font-bold text-xs" onClick={handlePrintReceipt}>
+                  <Printer className="h-4 w-4 mr-1" /> Print
+                </Button>
+                <Button className="flex-1 bg-emerald-600 text-white font-bold text-xs" onClick={handleShareWhatsApp}>
+                  <Share2 className="h-4 w-4 mr-1" /> WhatsApp
+                </Button>
+              </div>
+              <Button className="w-full bg-primary text-primary-foreground font-bold print:hidden" onClick={() => setShowReceipt(false)} data-testid="new-sale-btn">
                 New Sale
               </Button>
             </div>

@@ -75,10 +75,6 @@ export async function addToOfflineQueue(sale) {
   };
 
   await withStore(STORE_QUEUE, "readwrite", (store) => store.put(entry));
-
-  // Migrate from localStorage if any exist
-  await migrateFromLocalStorage();
-
   return entry;
 }
 

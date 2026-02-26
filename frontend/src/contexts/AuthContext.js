@@ -13,14 +13,24 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (token) {
       authAPI.getMe()
-        .then(res => setUser(res.data))
+        .then(res => {
+          setUser(res.data);
+          // Cache user for offline fallback
+          try { localStorage.setItem("horizon_user", JSON.stringify(res.data)); } catch {}
+        })
         .catch((err) => {
           // HIGH FIX: Only logout on 401 (invalid/expired token), not on network errors or 5xx
-          // Previously: ANY error (network timeout, 500, DNS failure) would log users out
           if (err?.response?.status === 401) {
             localStorage.removeItem("horizon_token");
             localStorage.removeItem("horizon_refresh_token");
+            localStorage.removeItem("horizon_user");
             setToken(null);
+          } else if (!err.response) {
+            // Network error (offline) — use cached user so app doesn't logout
+            try {
+              const cached = JSON.parse(localStorage.getItem("horizon_user"));
+              if (cached) setUser(cached);
+            } catch {}
           }
         })
         .finally(() => setLoading(false));
@@ -59,6 +69,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(() => {
     localStorage.removeItem("horizon_token");
     localStorage.removeItem("horizon_refresh_token");
+    localStorage.removeItem("horizon_user");
     setToken(null);
     setUser(null);
   }, []);

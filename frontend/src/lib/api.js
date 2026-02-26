@@ -259,6 +259,7 @@ export const posAPI = {
   syncBatch: (venueId, batch) => api.post("/pos/sales", { venue_id: venueId, batch }),
   listSales: (venueId, limit) => api.get("/pos/sales", { params: { venue_id: venueId, limit } }),
   summary: (venueId) => api.get("/pos/summary", { params: { venue_id: venueId } }),
+  report: (venueId, date) => api.get("/pos/report", { params: { venue_id: venueId, date } }),
 };
 
 export const uploadAPI = {

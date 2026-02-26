@@ -89,6 +89,19 @@ if (config.enableVisualEdits && babelMetadataPlugin) {
 }
 
 webpackConfig.devServer = (devServerConfig) => {
+  // Suppress "Failed to fetch" overlay errors when offline (PostHog, extensions, etc.)
+  devServerConfig.client = {
+    ...devServerConfig.client,
+    overlay: {
+      ...(devServerConfig.client?.overlay || {}),
+      runtimeErrors: (error) => {
+        if (error?.message && /Failed to fetch|Load failed|NetworkError/i.test(error.message)) return false;
+        if (error?.message && /posthog/i.test(error.message)) return false;
+        return true;
+      },
+    },
+  };
+
   // Apply visual edits dev server setup only if enabled
   if (config.enableVisualEdits && setupDevServer) {
     devServerConfig = setupDevServer(devServerConfig);

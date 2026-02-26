@@ -5,6 +5,10 @@
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#000000" />
         <meta name="description" content="Horizon - Sports Facility Operating System" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+        <link rel="apple-touch-icon" href="%PUBLIC_URL%/pos-icon-192.png" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600&display=swap" rel="stylesheet" />
@@ -22,7 +26,7 @@
         Learn how to configure a non-root public URL by running `npm run build`.
         -->
         <title>Horizon | Sports Facility Operating System</title>
-        <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
+        <script>window.addEventListener("error",function(e){if(e.error instanceof DOMException&&e.error.name==="DataCloneError"&&e.message&&e.message.includes("PerformanceServerTiming")){e.stopImmediatePropagation();e.preventDefault()}if(!navigator.onLine&&e.message&&/fetch|network|posthog|Failed to load/i.test(e.message)){e.stopImmediatePropagation();e.preventDefault()}},true);</script>
         
         <!--
         These two scripts have been added for the Visual Edits, please do not edit or remove them
@@ -61,7 +65,24 @@
       To begin the development, run `npm start` or `yarn start`.
       To create a production bundle, use `npm run build` or `yarn build`.
     -->
+        <!-- Suppress fetch errors when offline (PostHog, extensions, etc.) -->
         <script>
+            window.addEventListener("unhandledrejection",function(e){
+                if(e.reason && (e.reason instanceof TypeError) && /fetch|network|load/i.test(e.reason.message)){
+                    e.preventDefault();
+                }
+            });
+            // Disable PostHog when going offline, re-enable when back online
+            window.addEventListener("offline",function(){
+                if(window.posthog && window.posthog.opt_out_capturing) window.posthog.opt_out_capturing();
+            });
+            window.addEventListener("online",function(){
+                if(window.posthog && window.posthog.opt_in_capturing) window.posthog.opt_in_capturing();
+            });
+        </script>
+        <script>
+            // Only load PostHog analytics when online
+            if (navigator.onLine) {
             !(function (t, e) {
                 var o, n, p, r;
                 e.__SV ||
@@ -125,12 +146,13 @@
             })(document, window.posthog || []);
             posthog.init("phc_xAvL2Iq4tFmANRE7kzbKwaSqp1HJjN7x48s3vr0CMjs", {
                 api_host: "https://us.i.posthog.com",
-                person_profiles: "identified_only", // or 'always' to create profiles for anonymous users as well,
+                person_profiles: "identified_only",
                 session_recording: {
                     recordCrossOriginIframes: true,
                     capturePerformance: false,
                 },
             });
+            } // end if (navigator.onLine)
         </script>
     </body>
 </html>
