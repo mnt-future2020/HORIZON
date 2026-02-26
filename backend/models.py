@@ -142,6 +142,7 @@ class MessageCreate(BaseModel):
     file_name: Optional[str] = ""
     duration: Optional[int] = None  # seconds, for voice/audio
     reply_to: Optional[str] = ""
+    shared_post: Optional[dict] = None  # {id, user_name, content, media_url}
 
 
 # ─── Organization & Performance Models ────────────────────────────────────────

@@ -1172,10 +1172,13 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
         "read": False,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
+    if inp.shared_post:
+        msg["shared_post"] = inp.shared_post
     await db.direct_messages.insert_one(msg)
     msg.pop("_id", None)
 
     preview = plaintext_content[:100] if plaintext_content else (
+        "🔗 Shared a post" if inp.shared_post else
         "🎤 Voice message" if inp.media_type == "voice" else
         f"📎 {inp.file_name or 'File'}" if inp.media_type else ""
     )

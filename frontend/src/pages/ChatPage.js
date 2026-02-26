@@ -956,7 +956,27 @@ export default function ChatPage() {
                             <span className="text-xs">{"\uD83D\uDEAB"} This message was deleted</span>
                           ) : (
                             <>
-                              {msg.content && <span>{msg.content}</span>}
+                              {msg.content && !msg.shared_post && <span>{msg.content}</span>}
+                              {/* Shared post card */}
+                              {msg.shared_post && (
+                                <button onClick={() => window.location.href = `/feed?post=${msg.shared_post.id}`}
+                                  className={`block w-full text-left rounded-lg overflow-hidden mt-0.5 mb-0.5 ${isMe ? "bg-white/10" : "bg-secondary/30"}`}>
+                                  {msg.shared_post.media_url && (
+                                    <img src={mediaUrl(msg.shared_post.media_url)} alt="" className="w-full h-28 object-cover" />
+                                  )}
+                                  <div className="px-2.5 py-2">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      {msg.shared_post.user_avatar
+                                        ? <img src={mediaUrl(msg.shared_post.user_avatar)} alt="" className="h-4 w-4 rounded-full object-cover" />
+                                        : <User className="h-3.5 w-3.5 text-muted-foreground" />}
+                                      <span className="text-[10px] font-bold">{msg.shared_post.user_name}</span>
+                                    </div>
+                                    {msg.shared_post.content && (
+                                      <p className="text-[11px] opacity-80 line-clamp-2">{msg.shared_post.content}</p>
+                                    )}
+                                  </div>
+                                </button>
+                              )}
                               {/* Image */}
                               {msg.media_url && (!msg.media_type || msg.media_type === "image") && !msg.media_type?.startsWith("voice") && !msg.media_type?.startsWith("audio") && !msg.media_type?.startsWith("document") && (
                                 <img src={mediaUrl(msg.media_url)} alt="" className="rounded-lg mt-1 max-h-52 object-cover cursor-pointer" onClick={() => window.open(mediaUrl(msg.media_url), "_blank")} />

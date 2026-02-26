@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { socialAPI, recommendationAPI, uploadAPI } from "@/lib/api";
+import { socialAPI, recommendationAPI, uploadAPI, chatAPI, userSearchAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -298,6 +298,53 @@ export default function SocialFeedPage() {
       await navigator.clipboard.writeText(url);
       toast.success("Link copied!");
     }
+  };
+
+  // ─── Share to DM ────────────────────────────────────────────────────────
+  const [sharePost, setSharePost] = useState(null);
+  const [shareFollowing, setShareFollowing] = useState([]);
+  const [shareSearch, setShareSearch] = useState("");
+  const [shareResults, setShareResults] = useState([]);
+  const [shareSending, setShareSending] = useState(null); // user id being sent to
+
+  useEffect(() => {
+    if (sharePost && user?.id) {
+      socialAPI.getFollowing(user.id).then(r => setShareFollowing(r.data || [])).catch(() => {});
+    }
+  }, [sharePost, user?.id]);
+
+  const handleShareSearch = async (q) => {
+    setShareSearch(q);
+    if (q.length < 2) { setShareResults([]); return; }
+    try {
+      const res = await userSearchAPI.search(q);
+      setShareResults((res.data || []).filter(u2 => u2.id !== user?.id));
+    } catch {}
+  };
+
+  const handleSendPost = async (targetUser) => {
+    if (!sharePost || shareSending) return;
+    setShareSending(targetUser.id);
+    try {
+      const convo = await chatAPI.startConversation(targetUser.id);
+      await chatAPI.sendMessage(convo.data.id, {
+        content: `🔗 Shared a post by ${sharePost.user_name}`,
+        shared_post: {
+          id: sharePost.id,
+          user_name: sharePost.user_name,
+          user_avatar: sharePost.user_avatar,
+          content: (sharePost.content || "").slice(0, 200),
+          media_url: sharePost.media_url || "",
+        },
+      });
+      const isRequest = convo.data.status === "request";
+      toast.success(isRequest ? `Sent as request to ${targetUser.name}` : `Sent to ${targetUser.name}`);
+      setSharePost(null);
+      setShareSearch("");
+      setShareResults([]);
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Failed to send");
+    } finally { setShareSending(null); }
   };
 
   // ─── Pull to refresh ────────────────────────────────────────────────────
@@ -1051,6 +1098,68 @@ export default function SocialFeedPage() {
                   ))
                 )}
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ SHARE TO DM MODAL ═══ */}
+      <AnimatePresence>
+        {sharePost && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
+            onClick={() => { setSharePost(null); setShareSearch(""); setShareResults([]); }}>
+            <motion.div initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[70vh] flex flex-col"
+              onClick={e => e.stopPropagation()}>
+              {/* Drag handle */}
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
+
+              {/* Header + post preview */}
+              <h3 className="font-bold text-sm mb-1 flex items-center gap-2"><Send className="h-4 w-4" /> Send to</h3>
+              <p className="text-[10px] text-muted-foreground mb-3 truncate">
+                {sharePost.user_name}: {sharePost.content?.slice(0, 80) || "📷 Photo"}
+              </p>
+
+              {/* Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input value={shareSearch} onChange={e => handleShareSearch(e.target.value)}
+                  placeholder="Search people..." className="pl-9 bg-secondary/30 border-border/50 rounded-xl" autoFocus />
+              </div>
+
+              {/* User list */}
+              <div className="flex-1 overflow-y-auto space-y-1">
+                {(shareSearch.length >= 2 ? shareResults : shareFollowing).length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">
+                    {shareSearch.length >= 2 ? "No users found" : "Follow people to share posts with them"}
+                  </p>
+                ) : (shareSearch.length >= 2 ? shareResults : shareFollowing).map(u2 => (
+                  <button key={u2.id} onClick={() => handleSendPost(u2)}
+                    disabled={shareSending === u2.id}
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors text-left disabled:opacity-50">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      {u2.avatar
+                        ? <img src={mediaUrl(u2.avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
+                        : <User className="h-5 w-5 text-primary" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-bold truncate block">{u2.name}</span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{u2.role === "player" ? "lobbian" : u2.role}</span>
+                    </div>
+                    {shareSending === u2.id
+                      ? <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      : <Send className="h-4 w-4 text-primary" />}
+                  </button>
+                ))}
+              </div>
+
+              {/* Copy link fallback */}
+              <button onClick={() => { handleShare(sharePost); setSharePost(null); }}
+                className="mt-3 w-full py-2.5 rounded-xl bg-secondary/30 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2">
+                <Share2 className="h-4 w-4" /> Copy Link
+              </button>
             </motion.div>
           </motion.div>
         )}
