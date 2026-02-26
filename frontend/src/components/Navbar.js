@@ -137,16 +137,16 @@ export default function Navbar() {
       <header className="hidden md:flex fixed top-0 left-0 w-full z-50 h-[72px] items-center justify-between px-8 bg-card/90 backdrop-blur-xl border-b border-border shadow-sm"
         data-testid="desktop-navbar">
         <div className="flex items-center flex-1 pr-8">
-          <div className="w-[280px] mr-8 shrink-0">
+          <div className="w-64 mr-6 shrink-0">
             <Link to="/feed" className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700">
               Lobbi
             </Link>
           </div>
-          
-          {/* Search Bar - Decorative matching Stitch */}
-          <div className="relative w-80 hidden lg:block">
-             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-             <input className="w-full bg-secondary/20 border-2 border-emerald-600/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-emerald-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text"/>
+
+          {/* Search Bar */}
+          <div className="relative flex-1 max-w-md hidden lg:block">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+            <input className="w-full bg-secondary/20 border-2 border-emerald-600/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-emerald-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text" />
           </div>
         </div>
 

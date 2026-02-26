@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Heart, MessageCircle, Send, Trash2, Loader2, Plus,
+  Heart, MessageSquare, Send, Trash2, Loader2, Plus,
   ChevronDown, ChevronUp, User, Flame, X, TrendingUp,
-  UserPlus, Users, Shield, Zap, Eye, Bookmark, Share2, Image, Search, RefreshCw
+  UserPlus, Users, Shield, Zap, Eye, Bookmark, Share2, Image, Search, RefreshCw, Trophy, Star
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -656,8 +656,14 @@ export default function SocialFeedPage() {
                 <div className="relative select-none" onClick={() => handleDoubleTap(post.id)}>
                   {post.content && <div className="px-6 pb-4"><p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">{post.content}</p></div>}
                   {post.media_url && (
-                    <div className="px-6 pb-2 relative max-h-[500px] overflow-hidden">
-                      <img src={mediaUrl(post.media_url)} alt="Post media" className="w-full h-full object-cover rounded-2xl" draggable={false} />
+                    <div className="w-full overflow-hidden bg-black/5">
+                      <img
+                        src={mediaUrl(post.media_url)}
+                        alt="Post media"
+                        className="w-full h-auto block object-contain"
+                        style={{ maxHeight: "620px" }}
+                        draggable={false}
+                      />
                     </div>
                   )}
                   {/* Heart animation on double-tap */}
@@ -691,10 +697,10 @@ export default function SocialFeedPage() {
                 <div className="px-6 py-4 flex items-center justify-between border-t border-border/30 bg-muted/5">
                   <div className="flex items-center gap-6">
                     {/* Like */}
-                    <button className="flex items-center gap-2 group transition-colors text-muted-foreground"
+                    <button className="flex items-center gap-2 group transition-colors"
                       onClick={() => handleLike(post.id)}>
-                      <Heart className={`h-[18px] w-[18px] transition-all group-hover:text-pink-500 ${post.liked_by_me ? "fill-pink-500 text-pink-500 scale-110" : "text-muted-foreground"}`} />
-                      <span className={`font-bold text-xs group-hover:text-pink-500 ${post.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
+                      <Heart className={`h-5 w-5 transition-all group-hover:text-emerald-600 ${post.liked_by_me ? "fill-pink-500 text-pink-500" : "text-muted-foreground"}`} />
+                      <span className={`font-bold text-xs group-hover:text-emerald-600 ${post.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
                         {post.likes_count || 0}
                       </span>
                     </button>
@@ -702,7 +708,7 @@ export default function SocialFeedPage() {
                     {/* Reaction Picker */}
                     <div className="relative" ref={reactionPickerRef}>
                       <button onClick={() => setReactionPickerPost(reactionPickerPost === post.id ? null : post.id)}
-                        className={`flex items-center gap-1 group transition-colors ${post.my_reaction ? "" : "text-muted-foreground"}`}>
+                        className={`flex items-center gap-1 group transition-colors text-muted-foreground hover:text-emerald-600 ${post.my_reaction ? "text-emerald-600" : ""}`}>
                         <span className="text-base group-hover:scale-110 transition-transform">{post.my_reaction ? REACTION_EMOJI[post.my_reaction] : "+"}</span>
                       </button>
                     <AnimatePresence>
@@ -722,31 +728,35 @@ export default function SocialFeedPage() {
                   </div>
 
                   {/* Comments */}
-                  <div className="flex items-center gap-6">
-                    <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
-                      onClick={() => toggleComments(post.id)}>
-                      <MessageCircle className="h-[18px] w-[18px] group-hover:scale-110 transition-transform" />
-                      <span className="font-bold text-xs">{post.comments_count || 0}</span>
-                    </button>
+                  <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
+                    onClick={() => toggleComments(post.id)}>
+                    <MessageSquare className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                    <span className="font-bold text-xs">{post.comments_count || 0}</span>
+                  </button>
 
-                    {/* Share — opens Send to DM sheet */}
-                    <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
-                      onClick={() => setSharePost(post)} title="Share">
-                      <Send className="h-[18px] w-[18px] group-hover:scale-110 transition-transform" />
-                    </button>
+                  {/* Share — opens DM sheet */}
+                  <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
+                    onClick={() => setSharePost(post)} title="Share">
+                    <Share2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  </button>
                   </div>
 
                   {/* Spacer to push bookmarks to right */}
                   <div className="flex-1" />
 
+                  {/* Message author */}
+                  {post.user_id !== user?.id && (
+                    <button className="text-muted-foreground hover:text-emerald-600 transition-colors group"
+                      onClick={() => navigate(`/chat?user=${post.user_id}`)} title="Message">
+                      <MessageSquare className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                    </button>
+                  )}
+
                   {/* Bookmark */}
-                  <button className="text-muted-foreground hover:text-emerald-600 transition-colors group"
+                  <button className="text-muted-foreground hover:text-emerald-600 transition-colors group ml-2"
                     onClick={() => handleBookmark(post.id)} title={post.bookmarked_by_me ? "Unsave" : "Save"}>
-                    <Bookmark className={`h-[18px] w-[18px] group-hover:scale-110 transition-transform ${post.bookmarked_by_me ? "fill-emerald-600 text-emerald-600" : "text-muted-foreground"}`} />
+                    <Bookmark className={`h-5 w-5 group-hover:scale-110 transition-transform ${post.bookmarked_by_me ? "fill-emerald-600 text-emerald-600" : "text-muted-foreground"}`} />
                   </button>
-
-                </div>
-
                 </div>
 
                 {/* Comments Section */}
@@ -795,7 +805,7 @@ export default function SocialFeedPage() {
 
         {posts.length === 0 && (
           <div className="text-center py-20">
-            <MessageCircle className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+            <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="font-display text-xl font-bold text-muted-foreground">
               {feedTab === "following" ? "Follow people to see their posts" : "No posts yet"}
             </h3>
@@ -843,24 +853,25 @@ export default function SocialFeedPage() {
           )}
 
           {/* Daily Prompt Widget */}
-          {engagement?.daily_prompt && !engagement.posted_today && (
-            <div className="bg-emerald-600 p-6 rounded-3xl text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden">
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-4 text-emerald-50">
-                  <Zap className="h-4 w-4" opacity={0.8} />
-                  <p className="text-[10px] uppercase font-bold tracking-widest opacity-90">Daily Prompt</p>
-                </div>
-                <p className="text-[15px] font-bold leading-tight mb-6 text-white/95">
-                  {engagement.daily_prompt}
-                </p>
-                <button onClick={() => { setShowComposer(true); setNewContent(engagement.daily_prompt + " "); window.scrollTo({top: 0, behavior: "smooth"}); }}
-                  className="w-full bg-white text-emerald-600 py-3 rounded-full font-bold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
-                  Answer Prompt
-                </button>
+          <div className="bg-emerald-600 p-6 rounded-3xl text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="flex items-center gap-2 mb-4">
+                <p className="text-[10px] uppercase font-bold tracking-widest text-emerald-100/80">Daily Prompt</p>
               </div>
-              <Flame className="absolute -bottom-6 -right-6 h-32 w-32 text-white/10 rotate-12" />
+              <p className="text-lg font-bold leading-tight mb-6 max-w-[240px]">
+                {engagement?.daily_prompt || "What are your training goals for the upcoming season?"}
+              </p>
+              <button onClick={() => { 
+                setShowComposer(true); 
+                setNewContent((engagement?.daily_prompt || "What are your training goals for the upcoming season?") + " "); 
+                window.scrollTo({top: 0, behavior: "smooth"}); 
+              }}
+                className="w-full bg-white text-emerald-600 py-3 rounded-full font-bold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
+                Post Answer
+              </button>
             </div>
-          )}
+            <Trophy className="absolute -bottom-6 -right-6 h-32 w-32 text-white/10 rotate-12" />
+          </div>
 
           {/* Suggested Follows Widget */}
           {(algoPlayers.length > 0 || suggestedFollows.length > 0) && (
