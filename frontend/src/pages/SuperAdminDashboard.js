@@ -20,6 +20,7 @@ import {
   ImagePlus, X, MessageCircle
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AdminSkeleton } from "@/components/SkeletonLoader";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
@@ -43,7 +44,7 @@ function OverviewTab() {
   useEffect(() => {
     adminAPI.dashboard().then(r => setData(r.data)).catch(() => toast.error("Failed to load dashboard"));
   }, []);
-  if (!data) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (!data) return <AdminSkeleton />;
   return (
     <div className="space-y-6" data-testid="admin-overview-tab">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">

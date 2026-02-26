@@ -62,11 +62,8 @@ const ContactSyncPage = lazyRetry(() => import("@/pages/ContactSyncPage"));
 const NotFoundPage = lazyRetry(() => import("@/pages/NotFoundPage"));
 
 function PageLoader() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  // Return empty div - each page has its own skeleton loader
+  return <div className="min-h-screen bg-background" />;
 }
 
 const VENUE_OWNER_ALLOWED_PATHS = ["/feed", "/chat", "/communities", "/profile"];
@@ -237,7 +234,7 @@ function AppRoutes() {
           <AppRouteDefinitions />
         )}
       </Suspense>
-      <Toaster position="top-right" richColors />
+      <Toaster position="bottom-right" richColors />
     </div>
   );
 }

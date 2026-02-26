@@ -13,6 +13,7 @@ import {
   UserPlus, Users, Shield, Zap, Eye, Bookmark, Share2, Image, Search, RefreshCw, Trophy, Star
 } from "lucide-react";
 import { toast } from "sonner";
+import { FeedSkeleton } from "@/components/SkeletonLoader";
 
 const REACTION_EMOJI = {
   fire: "\uD83D\uDD25",
@@ -460,7 +461,7 @@ export default function SocialFeedPage() {
   const totalReactions = (reactions) => Object.values(reactions || {}).reduce((s, v) => s + v, 0);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <FeedSkeleton />;
   }
 
   return (
@@ -824,7 +825,7 @@ export default function SocialFeedPage() {
             <div className="bg-card rounded-3xl p-6 border border-border/40 shadow-sm">
               <h3 className="font-display font-bold text-foreground mb-6 text-sm flex items-center justify-between">
                 Performance Stats
-                {engScore && <Badge className="bg-emerald-600/10 text-emerald-600 border-none shadow-none uppercase text-[9px] tracking-wider"><Zap className="h-3 w-3 mr-1"/> Level {engScore.level}</Badge>}
+                {engScore && <Badge className="bg-emerald-600 text-white border-none shadow-none uppercase text-[9px] tracking-wider hover:bg-emerald-700"><Zap className="h-3 w-3 mr-1"/> Level {engScore.level}</Badge>}
               </h3>
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20">

@@ -18,6 +18,7 @@ import {
   Activity, DollarSign, TrendingDown, Loader2, Radio
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { IoTSkeleton } from "@/components/SkeletonLoader";
 
 const TYPE_LABELS = { floodlight: "Floodlight", led_panel: "LED Panel", ambient: "Ambient", emergency: "Emergency" };
 const TYPE_COLORS = {
@@ -298,6 +299,11 @@ export default function IoTDashboard() {
   const activeCount = devices.filter(d => d.status === "on").length;
   const totalPower = devices.filter(d => d.status === "on").reduce((acc, d) => acc + d.power_watts, 0);
 
+  // Show skeleton during initial load
+  if (loading && devices.length === 0) {
+    return <IoTSkeleton />;
+  }
+
   if (!selectedVenue && !loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12 text-center">
@@ -397,9 +403,7 @@ export default function IoTDashboard() {
             <Button size="sm" onClick={() => openDeviceDialog()} className="bg-primary text-primary-foreground font-bold text-xs h-8"
               data-testid="add-device-btn"><Plus className="h-3.5 w-3.5 mr-1" /> Add Device</Button>
           </div>
-          {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-          ) : devices.length === 0 ? (
+          {devices.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground"><Lightbulb className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No devices registered</p></div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

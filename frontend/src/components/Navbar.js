@@ -152,9 +152,9 @@ export default function Navbar() {
 
         <div className="flex items-center gap-4">
           {/* Notification Bell */}
-          <Popover open={notifOpen} onOpenChange={handleNotifOpen}>
+          <Popover open={notifOpen} onOpenChange={handleNotifOpen} modal={false}>
             <PopoverTrigger asChild>
-              <button className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-secondary/40 text-muted-foreground transition-colors" data-testid="notification-bell">
+              <button className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-secondary/40 text-muted-foreground transition-colors outline-none" data-testid="notification-bell">
                 <Bell className="h-5 w-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 border-2 border-background"
@@ -201,9 +201,9 @@ export default function Navbar() {
 
           <div className="h-6 w-px bg-border mx-2"></div>
 
-          <DropdownMenu>
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 hover:opacity-80 transition-opacity" data-testid="user-menu-trigger">
+              <button className="flex items-center gap-3 hover:opacity-80 transition-opacity outline-none" data-testid="user-menu-trigger">
                 <div className="text-right hidden lg:block">
                   <p className="text-xs font-bold text-foreground leading-tight">{user?.name}</p>
                   <p className="text-[10px] text-muted-foreground capitalize">{user?.role?.replace("_", " ")}</p>
@@ -218,18 +218,18 @@ export default function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48 shadow-lg border-border/50 rounded-xl">
               <DropdownMenuItem onClick={() => navigate("/profile")} data-testid="menu-profile" className="py-2.5">
-                <User className="mr-2 h-4 w-4 text-muted-foreground" /> Profile
+                <User className="mr-2 h-4 w-4" /> Profile
               </DropdownMenuItem>
               {user?.role !== "super_admin" && (
                 <DropdownMenuItem onClick={() => navigate("/player-card/me")} className="py-2.5">
-                  <Trophy className="mr-2 h-4 w-4 text-muted-foreground" /> Lobbian Card
+                  <Trophy className="mr-2 h-4 w-4" /> Lobbian Card
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onClick={() => navigate("/bookmarks")} className="py-2.5">
-                <Bookmark className="mr-2 h-4 w-4 text-muted-foreground" /> Saved Posts
+                <Bookmark className="mr-2 h-4 w-4" /> Saved Posts
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/privacy")} className="py-2.5">
-                <Lock className="mr-2 h-4 w-4 text-muted-foreground" /> Privacy & Data
+                <Lock className="mr-2 h-4 w-4" /> Privacy & Data
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-border/50" />
               <DropdownMenuItem onClick={logout} className="text-red-500 py-2.5 hover:text-red-600 hover:bg-red-500/10" data-testid="menu-logout">
@@ -300,42 +300,38 @@ export function Sidebar() {
   const location = useLocation();
   const path = location.pathname;
 
-  const desktopLinks = {
-    player: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/explore", icon: Search, label: "Explore" },
-      { to: "/player", icon: LayoutDashboard, label: "Dashboard" },
-      { to: "/venues", icon: MapPin, label: "Venues" },
-      { to: "/matchmaking", icon: Swords, label: "Matches" },
-      { to: "/communities", icon: Users, label: "Groups" },
-      { to: "/teams", icon: Shield, label: "Teams" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
-      { to: "/tournaments", icon: Medal, label: "Tournaments" },
-      { to: "/coaching", icon: Dumbbell, label: "Coaching" },
-    ],
-  };
-
   const links = {
-    player: desktopLinks.player,
+    player: [
+      { to: "/feed",         ms: "rss_feed",            label: "Feed" },
+      { to: "/explore",      ms: "explore",             label: "Explore" },
+      { to: "/player",       ms: "dashboard",           label: "Dashboard" },
+      { to: "/venues",       ms: "location_on",         label: "Venues" },
+      { to: "/matchmaking",  ms: "sports_kabaddi",      label: "Matches" },
+      { to: "/communities",  ms: "groups",              label: "Groups" },
+      { to: "/teams",        ms: "shield",              label: "Teams" },
+      { to: "/chat",         ms: "forum",               label: "Chat" },
+      { to: "/tournaments",  ms: "emoji_events",        label: "Tournaments" },
+      { to: "/coaching",     ms: "fitness_center",      label: "Coaching" },
+    ],
     venue_owner: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/owner", icon: Building2, label: "Dashboard" },
-      { to: "/pos", icon: ShoppingCart, label: "POS" },
-      { to: "/iot", icon: Lightbulb, label: "IoT" },
-      { to: "/communities", icon: Users, label: "Groups" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
-      { to: "/tournaments", icon: Medal, label: "Tournaments" },
+      { to: "/feed",         ms: "rss_feed",            label: "Feed" },
+      { to: "/owner",        ms: "store",               label: "Dashboard" },
+      { to: "/pos",          ms: "point_of_sale",       label: "POS" },
+      { to: "/iot",          ms: "sensors",             label: "IoT" },
+      { to: "/communities",  ms: "groups",              label: "Groups" },
+      { to: "/chat",         ms: "forum",               label: "Chat" },
+      { to: "/tournaments",  ms: "emoji_events",        label: "Tournaments" },
     ],
     coach: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/coach", icon: GraduationCap, label: "Dashboard" },
-      { to: "/communities", icon: Users, label: "Groups" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
+      { to: "/feed",         ms: "rss_feed",            label: "Feed" },
+      { to: "/coach",        ms: "sports",              label: "Dashboard" },
+      { to: "/communities",  ms: "groups",              label: "Groups" },
+      { to: "/chat",         ms: "forum",               label: "Chat" },
     ],
     super_admin: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/admin", icon: Shield, label: "Admin Console" },
-      { to: "/iot", icon: Lightbulb, label: "IoT" },
+      { to: "/feed",         ms: "rss_feed",        label: "Feed" },
+      { to: "/admin",        ms: "admin_panel_settings", label: "Admin Console" },
+      { to: "/iot",          ms: "sensors",             label: "IoT" },
     ],
   };
 
@@ -349,11 +345,17 @@ export function Sidebar() {
            return (
              <Link key={l.to} to={l.to} data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 ${
-                 active 
-                  ? "bg-emerald-600/10 text-emerald-600 font-bold" 
+                 active
+                  ? "bg-emerald-600/10 text-emerald-600 font-bold"
                   : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                }`}>
-               <l.icon className={`h-5 w-5 ${active ? "stroke-[2.5]" : "stroke-[1.5]"}`} />
+               <span className="material-symbols-outlined"
+                 style={{ fontSize: "22px", lineHeight: 1,
+                   fontVariationSettings: active
+                     ? "'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24"
+                     : "'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24" }}>
+                 {l.ms}
+               </span>
                <span>{l.label}</span>
              </Link>
            );
