@@ -593,7 +593,7 @@ export default function SocialFeedPage() {
                       <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
                     </div>
                   </div>
-                  {post.post_type !== "text" && (
+                  {post.post_type !== "text" && post.post_type !== "photo" && (
                     <Badge className="bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/20 shadow-none border-none text-[10px] uppercase font-bold tracking-wider">{post.post_type === "match_result" ? "score" : post.post_type}</Badge>
                   )}
                   {post.user_id === user?.id && (
