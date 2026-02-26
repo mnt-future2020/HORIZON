@@ -4,7 +4,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "@/components/ui/sonner";
 import { lazy, Suspense, useState, useEffect } from "react";
-import Navbar from "@/components/Navbar";
+import Navbar, { Sidebar } from "@/components/Navbar";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -171,13 +171,9 @@ function DocVerificationPopup() {
   );
 }
 
-function AppRoutes() {
+function AppRouteDefinitions() {
   const { user } = useAuth();
   return (
-    <div className="min-h-screen bg-background">
-      {user && <Navbar />}
-      <DocVerificationPopup />
-      <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={user ? <Navigate to="/feed" /> : <LandingPage />} />
           <Route path="/auth" element={user ? <Navigate to="/feed" /> : <AuthPage />} />
@@ -220,6 +216,26 @@ function AppRoutes() {
           <Route path="/contacts" element={<ProtectedRoute><ContactSyncPage /></ProtectedRoute>} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+  );
+}
+
+function AppRoutes() {
+  const { user } = useAuth();
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {user && <Navbar />}
+      <DocVerificationPopup />
+      <Suspense fallback={<PageLoader />}>
+        {user ? (
+          <div className="flex flex-1 w-full gap-8 relative px-8">
+            <Sidebar />
+            <main className="flex-1 min-w-0 pb-24 md:pb-8">
+               <AppRouteDefinitions />
+            </main>
+          </div>
+        ) : (
+          <AppRouteDefinitions />
+        )}
       </Suspense>
       <Toaster position="top-right" richColors />
     </div>

@@ -416,38 +416,40 @@ export default function SocialFeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-20 md:pb-8">
-      <div className="max-w-2xl mx-auto px-4 py-6">
+    <div className="min-h-screen bg-transparent pb-20 md:pb-8">
+      <div className="w-full py-6 flex flex-col lg:flex-row gap-8 items-start">
+        {/* MAIN FEED COLUMN */}
+        <div className="flex-1 min-w-0 w-full">
 
         {/* ═══ STORIES BAR ═══ */}
         <div className="mb-6">
           <div ref={storiesRef} className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {/* Create Story */}
             <button onClick={() => setShowStoryCreate(true)}
-              className="flex flex-col items-center gap-1 flex-shrink-0">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/40 flex items-center justify-center border-2 border-dashed border-primary/40 hover:border-primary transition-colors">
-                <Plus className="h-6 w-6 text-primary" />
+              className="flex flex-col items-center gap-2 min-w-[80px] flex-shrink-0">
+              <div className="relative w-16 h-16 rounded-full border-2 border-dashed border-emerald-600/40 flex items-center justify-center cursor-pointer hover:bg-emerald-600/5 transition-colors">
+                <Plus className="h-6 w-6 text-emerald-600" />
               </div>
-              <span className="text-[10px] font-bold text-muted-foreground">Your Story</span>
+              <span className="text-[11px] font-medium text-muted-foreground">Add Story</span>
             </button>
 
             {/* Story Bubbles */}
             {storyGroups.map((group) => (
               <button key={group.user_id} onClick={() => openStoryGroup(group)}
-                className="flex flex-col items-center gap-1 flex-shrink-0">
-                <div className={`h-16 w-16 rounded-full p-[2px] ${
+                className="flex flex-col items-center gap-2 min-w-[80px] flex-shrink-0">
+                <div className={`w-16 h-16 rounded-full p-[2px] ${
                   group.has_unviewed
-                    ? "bg-gradient-to-br from-primary via-green-400 to-emerald-500"
-                    : "bg-gradient-to-br from-muted-foreground/30 to-muted-foreground/20"
+                    ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
+                    : "bg-muted-foreground/20"
                 }`}>
-                  <div className="h-full w-full rounded-full bg-card flex items-center justify-center border-2 border-card overflow-hidden">
+                  <div className="w-full h-full rounded-full border-2 border-background overflow-hidden relative">
                     {group.user_avatar
-                      ? <img src={mediaUrl(group.user_avatar)} alt="" className="h-full w-full object-cover" />
-                      : <User className="h-5 w-5 text-muted-foreground" />
+                      ? <img src={mediaUrl(group.user_avatar)} alt="" className="w-full h-full object-cover" />
+                      : <div className="w-full h-full bg-muted flex items-center justify-center"><User className="h-5 w-5 text-muted-foreground" /></div>
                     }
                   </div>
                 </div>
-                <span className="text-[10px] font-semibold text-muted-foreground truncate max-w-[64px]">
+                <span className="text-[11px] font-medium text-foreground truncate max-w-[70px]">
                   {group.user_id === user?.id ? "You" : group.user_name?.split(" ")[0]}
                 </span>
               </button>
@@ -455,140 +457,20 @@ export default function SocialFeedPage() {
           </div>
         </div>
 
-        {/* ═══ ENGAGEMENT CARD ═══ */}
-        {engagement && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="mb-6 p-4 rounded-2xl border-2 border-border/50 bg-card">
-            <div className="flex items-center gap-4">
-              {/* Streak */}
-              <div className="flex items-center gap-2">
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
-                  engagement.current_streak > 0 ? "bg-orange-500/10" : "bg-secondary/50"
-                }`}>
-                  <Flame className={`h-5 w-5 ${engagement.current_streak > 0 ? "text-orange-500" : "text-muted-foreground"}`} />
-                </div>
-                <div>
-                  <div className="font-display font-black text-lg leading-none">
-                    {engagement.current_streak}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-semibold">day streak</div>
-                </div>
-              </div>
-
-              <div className="h-8 w-px bg-border" />
-
-              {/* Stats */}
-              <div className="flex gap-4 text-center">
-                <button onClick={() => openFollowModal("followers")} className="hover:bg-secondary/50 rounded-lg px-2 py-1 transition-colors">
-                  <div className="font-bold text-sm">{engagement.followers_count}</div>
-                  <div className="text-[10px] text-muted-foreground">followers</div>
-                </button>
-                <button onClick={() => openFollowModal("following")} className="hover:bg-secondary/50 rounded-lg px-2 py-1 transition-colors">
-                  <div className="font-bold text-sm">{engagement.following_count}</div>
-                  <div className="text-[10px] text-muted-foreground">following</div>
-                </button>
-                <div className="px-2 py-1">
-                  <div className="font-bold text-sm">{engagement.total_posts}</div>
-                  <div className="text-[10px] text-muted-foreground">posts</div>
-                </div>
-              </div>
-
-              {/* Engagement Score Level */}
-              {engScore && (
-                <>
-                  <div className="h-8 w-px bg-border" />
-                  <div className="flex items-center gap-1.5">
-                    <Zap className="h-4 w-4 text-primary" />
-                    <div>
-                      <div className="font-bold text-xs text-primary">{engScore.level}</div>
-                      <div className="text-[9px] text-muted-foreground">{engScore.score}/100</div>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <div className="ml-auto flex gap-1">
-                <button onClick={loadTrending}
-                  className="h-8 w-8 rounded-lg bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors"
-                  title="Trending">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                </button>
-              </div>
-            </div>
-
-            {/* Daily prompt */}
-            {!engagement.posted_today && engagement.daily_prompt && (
-              <button onClick={() => { setShowComposer(true); setNewContent(engagement.daily_prompt + " "); }}
-                className="mt-3 w-full text-left p-3 rounded-xl bg-primary/5 border border-primary/10 hover:bg-primary/10 transition-colors">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-primary flex-shrink-0" />
-                  <span className="text-xs text-muted-foreground">
-                    <span className="font-bold text-foreground">Daily prompt:</span> {engagement.daily_prompt}
-                  </span>
-                </div>
-              </button>
-            )}
-            {engagement.posted_today && (
-              <div className="mt-3 flex items-center gap-2 text-[11px] text-green-500 font-bold">
-                <Zap className="h-3.5 w-3.5" /> You've posted today! Keep the streak going tomorrow.
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* ═══ ALGORITHM-POWERED SUGGESTED FOLLOWS ═══ */}
-        {(algoPlayers.length > 0 || suggestedFollows.length > 0) && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
-                {algoPlayers.length > 0 ? "Recommended Lobbians" : "Suggested for you"}
-              </span>
-              {algoPlayers.length > 0 && (
-                <span className="text-[9px] text-muted-foreground/60 font-mono">AI-powered</span>
-              )}
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {(algoPlayers.length > 0 ? algoPlayers : suggestedFollows).slice(0, 10).map((s) => (
-                <div key={s.id} className="flex-shrink-0 w-36 p-3 rounded-2xl border border-border/50 bg-card text-center">
-                  <div className="h-12 w-12 mx-auto rounded-full bg-primary/10 flex items-center justify-center mb-2 cursor-pointer overflow-hidden"
-                    onClick={() => navigate(`/player-card/${s.id}`)}>
-                    {s.avatar ? <img src={mediaUrl(s.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
-                      : <User className="h-6 w-6 text-primary" />}
-                  </div>
-                  <div className="text-xs font-bold truncate">{s.name}</div>
-                  <div className="text-[10px] text-muted-foreground capitalize mb-1">
-                    {s.rec_reason === "played_together" ? "Played together" :
-                     s.rec_reason === "mutual_friends" ? "Mutual friends" :
-                     s.reason === "played_together" ? "Co-Lobbian" : "Suggested"}
-                  </div>
-                  {s.rec_score > 0 && (
-                    <div className="text-[9px] text-primary/70 font-bold mb-1">
-                      {Math.round(s.rec_score)} match score
-                    </div>
-                  )}
-                  {s.games_together > 0 && (
-                    <div className="text-[9px] text-muted-foreground mb-1">
-                      {s.games_together} games together
-                    </div>
-                  )}
-                  <Button variant={followedUsers.has(s.id) ? "outline" : "athletic"} size="sm" className="w-full h-7 text-[10px]" onClick={() => handleFollow(s.id)}>
-                    {followedUsers.has(s.id) ? <><Users className="h-3 w-3 mr-1" /> Following</> : <><UserPlus className="h-3 w-3 mr-1" /> Follow</>}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        {/* WIDGETS MOVED TO SIDEBAR */}
 
         {/* ═══ NAV PILLS ═══ */}
-        <div className="flex items-center gap-2 mb-4">
-          <div className="flex gap-1 bg-secondary/30 rounded-lg p-1">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-6">
+          <div className="flex gap-8">
             {[{ id: "for_you", label: "For You" }, { id: "following", label: "Following" }].map((t) => (
               <button key={t.id} onClick={() => handleTabChange(t.id)}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
-                  feedTab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                className={`relative pb-2 text-sm font-bold transition-colors ${
+                  feedTab === t.id ? "text-emerald-600" : "text-muted-foreground hover:text-foreground"
                 }`}>
                 {t.label}
+                {feedTab === t.id && (
+                  <div className="absolute bottom-0 left-0 w-full h-[3px] bg-emerald-600 rounded-t-full"></div>
+                )}
               </button>
             ))}
           </div>
@@ -614,28 +496,28 @@ export default function SocialFeedPage() {
         {/* ═══ POST COMPOSER ═══ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="mb-6 p-4 rounded-2xl border-2 border-border/50 bg-card cursor-text"
+          className="mb-6 p-6 rounded-[24px] bg-card border border-border/40 shadow-sm cursor-text"
           onClick={() => !showComposer && setShowComposer(true)}>
           {!showComposer ? (
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <User className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-4">
+              <div className="h-10 w-10 rounded-full bg-secondary/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                {user?.avatar ? <img src={mediaUrl(user.avatar)} className="w-full h-full object-cover" /> : <User className="h-5 w-5 text-muted-foreground" />}
               </div>
-              <span className="text-sm text-muted-foreground">What's happening on the field?</span>
-              <Button variant="athletic" size="sm" className="ml-auto" onClick={(e) => { e.stopPropagation(); setShowComposer(true); }}>
-                <Plus className="h-3.5 w-3.5 mr-1" /> Post
+              <span className="text-lg text-muted-foreground/60 flex-1">Share a training tip or update...</span>
+              <Button size="sm" className="ml-auto bg-emerald-600 text-white rounded-full px-5 hover:bg-emerald-700 shadow-md shadow-emerald-600/20" onClick={(e) => { e.stopPropagation(); setShowComposer(true); }}>
+                Post
               </Button>
             </div>
           ) : (
             <div>
-              <div className="flex items-start gap-3">
-                <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0 mt-1">
-                  <User className="h-4 w-4 text-primary" />
+              <div className="flex items-start gap-4">
+                <div className="h-10 w-10 rounded-full bg-secondary/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {user?.avatar ? <img src={mediaUrl(user.avatar)} className="w-full h-full object-cover" /> : <User className="h-5 w-5 text-muted-foreground" />}
                 </div>
                 <div className="flex-1">
                   <textarea
-                    className="w-full bg-transparent border-none outline-none resize-none text-sm placeholder:text-muted-foreground min-h-[80px]"
-                    placeholder={engagement?.daily_prompt || "What's happening on the field?"}
+                    className="w-full border-none focus:ring-0 p-0 text-lg text-foreground bg-transparent resize-none h-12 outline-none"
+                    placeholder={engagement?.daily_prompt || "Share a training tip or update..."}
                     value={newContent}
                     onChange={(e) => setNewContent(e.target.value)}
                     rows={3}
@@ -652,30 +534,24 @@ export default function SocialFeedPage() {
                     </div>
                   )}
                   <input type="file" ref={fileInputRef} accept="image/*" className="hidden" onChange={handleImageSelect} />
-                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/30">
-                    <div className="flex gap-1 items-center">
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/30">
+                    <div className="flex gap-4 text-muted-foreground">
                       <button onClick={() => fileInputRef.current?.click()}
-                        className="p-1.5 rounded-md hover:bg-secondary/50 text-muted-foreground hover:text-primary transition-colors" title="Add photo">
-                        <Image className="h-4 w-4" />
+                        className="hover:text-emerald-600 transition-colors flex items-center gap-1.5" title="Add photo">
+                        <Image className="h-5 w-5" /><span className="text-xs font-bold">Media</span>
                       </button>
-                      <div className="w-px h-4 bg-border/50 mx-1" />
-                      {["text", "highlight", "photo", "match_result"].map((t) => (
-                        <button key={t} onClick={() => setPostType(t)}
-                          className={`px-2 py-1 rounded-md text-[10px] uppercase tracking-wide font-bold transition-all ${
-                            postType === t ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"
-                          }`}>
-                          {t === "match_result" ? "Score" : t}
-                        </button>
-                      ))}
+                      <button className="hover:text-emerald-600 transition-colors flex items-center gap-1.5">
+                        <Zap className="h-5 w-5" /><span className="text-xs font-bold">Score</span>
+                      </button>
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => setShowComposer(false)} className="h-7 text-xs text-muted-foreground">
+                    <div className="flex gap-2 items-center">
+                      <button onClick={() => setShowComposer(false)} className="text-xs text-muted-foreground hover:text-foreground px-3 font-semibold">
                         Cancel
-                      </Button>
-                      <Button variant="athletic" size="sm" onClick={handleCreatePost}
-                        disabled={!newContent.trim() || posting} className="h-7">
-                        {posting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Send className="h-3 w-3 mr-1" /> Post</>}
-                      </Button>
+                      </button>
+                      <button onClick={handleCreatePost} disabled={!newContent.trim() || posting}
+                        className="bg-emerald-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2">
+                        {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -691,32 +567,34 @@ export default function SocialFeedPage() {
               <motion.div key={post.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.02 }}
-                className="p-5 rounded-2xl border-2 border-border/50 bg-card hover:border-border transition-colors">
+                className="bg-card rounded-[24px] overflow-hidden border border-border/40 shadow-sm transition-all hover:shadow-md">
                 {/* Post Header */}
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center cursor-pointer hover:bg-primary/30 transition-colors overflow-hidden"
-                    onClick={() => navigate(`/player-card/${post.user_id}`)}>
-                    {post.user_avatar
-                      ? <img src={mediaUrl(post.user_avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
-                      : <User className="h-5 w-5 text-primary" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-display font-bold text-sm cursor-pointer hover:text-primary transition-colors truncate"
-                        onClick={() => navigate(`/player-card/${post.user_id}`)}>
-                        {post.user_name}
-                      </span>
-                      {post.user_id !== user?.id && (
-                        <button onClick={() => handleFollow(post.user_id)}
-                          className={`text-[10px] font-bold hover:underline ${post.is_following ? "text-muted-foreground" : "text-primary"}`}>
-                          {post.is_following ? "Following" : "Follow"}
-                        </button>
-                      )}
+                <div className="p-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-full bg-secondary/30 flex items-center justify-center cursor-pointer overflow-hidden border border-border/20"
+                      onClick={() => navigate(`/player-card/${post.user_id}`)}>
+                      {post.user_avatar
+                        ? <img src={mediaUrl(post.user_avatar)} alt="" className="h-full w-full object-cover" />
+                        : <User className="h-5 w-5 text-muted-foreground" />}
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{timeAgo(post.created_at)}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-display font-bold text-[15px] cursor-pointer hover:text-emerald-600 transition-colors truncate"
+                          onClick={() => navigate(`/player-card/${post.user_id}`)}>
+                          {post.user_name}
+                        </span>
+                        {post.user_id !== user?.id && (
+                          <button onClick={() => handleFollow(post.user_id)}
+                            className={`text-[11px] font-bold hover:underline ml-2 ${post.is_following ? "text-muted-foreground" : "text-emerald-600"}`}>
+                            {post.is_following ? "Following" : "Follow"}
+                          </button>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">{timeAgo(post.created_at)}</span>
+                    </div>
                   </div>
                   {post.post_type !== "text" && (
-                    <Badge variant="sport" className="text-[10px]">{post.post_type === "match_result" ? "score" : post.post_type}</Badge>
+                    <Badge className="bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/20 shadow-none border-none text-[10px] uppercase font-bold tracking-wider">{post.post_type === "match_result" ? "score" : post.post_type}</Badge>
                   )}
                   {post.user_id === user?.id && (
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
@@ -728,9 +606,11 @@ export default function SocialFeedPage() {
 
                 {/* Content — double tap to like */}
                 <div className="relative select-none" onClick={() => handleDoubleTap(post.id)}>
-                  {post.content && <p className="text-sm leading-relaxed whitespace-pre-wrap mb-3">{post.content}</p>}
+                  {post.content && <div className="px-6 pb-4"><p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">{post.content}</p></div>}
                   {post.media_url && (
-                    <img src={mediaUrl(post.media_url)} alt="Post media" className="rounded-xl w-full max-h-96 object-cover mb-3" draggable={false} />
+                    <div className="px-6 pb-2 relative max-h-[500px] overflow-hidden">
+                      <img src={mediaUrl(post.media_url)} alt="Post media" className="w-full h-full object-cover rounded-2xl" draggable={false} />
+                    </div>
                   )}
                   {/* Heart animation on double-tap */}
                   <AnimatePresence>
@@ -749,7 +629,7 @@ export default function SocialFeedPage() {
 
                 {/* Reaction Summary */}
                 {totalReactions(post.reactions) > 0 && (
-                  <div className="flex items-center gap-1 mb-2 text-[11px] text-muted-foreground">
+                  <div className="flex items-center gap-1 px-6 mb-3 text-[11px] text-muted-foreground">
                     {Object.entries(post.reactions || {}).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a).slice(0, 4).map(([k, v]) => (
                       <span key={k} className="flex items-center gap-0.5">
                         <span className="text-sm">{REACTION_EMOJI[k]}</span>
@@ -760,22 +640,23 @@ export default function SocialFeedPage() {
                 )}
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 pt-2 border-t border-border/30">
-                  {/* Like */}
-                  <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
-                    onClick={() => handleLike(post.id)}>
-                    <Heart className={`h-4 w-4 transition-all ${post.liked_by_me ? "fill-red-500 text-red-500 scale-110" : "text-muted-foreground"}`} />
-                    <span className={`font-bold text-xs ${post.liked_by_me ? "text-red-500" : "text-muted-foreground"}`}>
-                      {post.likes_count || 0}
-                    </span>
-                  </button>
-
-                  {/* Reaction Picker */}
-                  <div className="relative" ref={reactionPickerRef}>
-                    <button onClick={() => setReactionPickerPost(reactionPickerPost === post.id ? null : post.id)}
-                      className={`flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors ${post.my_reaction ? "" : "text-muted-foreground"}`}>
-                      <span className="text-base">{post.my_reaction ? REACTION_EMOJI[post.my_reaction] : "+"}</span>
+                <div className="px-6 py-4 flex items-center justify-between border-t border-border/30 bg-muted/5">
+                  <div className="flex items-center gap-6">
+                    {/* Like */}
+                    <button className="flex items-center gap-2 group transition-colors text-muted-foreground"
+                      onClick={() => handleLike(post.id)}>
+                      <Heart className={`h-[18px] w-[18px] transition-all group-hover:text-pink-500 ${post.liked_by_me ? "fill-pink-500 text-pink-500 scale-110" : "text-muted-foreground"}`} />
+                      <span className={`font-bold text-xs group-hover:text-pink-500 ${post.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
+                        {post.likes_count || 0}
+                      </span>
                     </button>
+
+                    {/* Reaction Picker */}
+                    <div className="relative" ref={reactionPickerRef}>
+                      <button onClick={() => setReactionPickerPost(reactionPickerPost === post.id ? null : post.id)}
+                        className={`flex items-center gap-1 group transition-colors ${post.my_reaction ? "" : "text-muted-foreground"}`}>
+                        <span className="text-base group-hover:scale-110 transition-transform">{post.my_reaction ? REACTION_EMOJI[post.my_reaction] : "+"}</span>
+                      </button>
                     <AnimatePresence>
                       {reactionPickerPost === post.id && (
                         <motion.div initial={{ opacity: 0, scale: 0.9, y: 5 }} animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -783,7 +664,7 @@ export default function SocialFeedPage() {
                           className="absolute bottom-full left-0 mb-1 flex gap-1 p-1.5 rounded-xl bg-card border-2 border-border shadow-lg z-10">
                           {Object.entries(REACTION_EMOJI).map(([key, emoji]) => (
                             <button key={key} onClick={() => handleReaction(post.id, key)}
-                              className={`h-8 w-8 rounded-lg flex items-center justify-center text-lg hover:bg-secondary/50 transition-all hover:scale-110 ${post.my_reaction === key ? "bg-primary/10 ring-2 ring-primary" : ""}`}>
+                              className={`h-8 w-8 rounded-full flex items-center justify-center text-lg hover:bg-secondary/50 transition-all hover:scale-110 ${post.my_reaction === key ? "bg-emerald-600/10 ring-2 ring-emerald-600" : ""}`}>
                               {emoji}
                             </button>
                           ))}
@@ -793,26 +674,27 @@ export default function SocialFeedPage() {
                   </div>
 
                   {/* Comments */}
-                  <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors"
-                    onClick={() => toggleComments(post.id)}>
-                    <MessageCircle className="h-4 w-4" />
-                    <span className="font-bold text-xs">{post.comments_count || 0}</span>
-                    {expandedComments.has(post.id) ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-                  </button>
+                  <div className="flex items-center gap-6">
+                    <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
+                      onClick={() => toggleComments(post.id)}>
+                      <MessageCircle className="h-[18px] w-[18px] group-hover:scale-110 transition-transform" />
+                      <span className="font-bold text-xs">{post.comments_count || 0}</span>
+                    </button>
 
-                  {/* Spacer */}
+                    {/* Share */}
+                    <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
+                      onClick={() => handleShare(post)} title="Share">
+                      <Share2 className="h-[18px] w-[18px] group-hover:scale-110 transition-transform" />
+                    </button>
+                  </div>
+                  
+                  {/* Spacer to push bookmarks to right */}
                   <div className="flex-1" />
 
-                  {/* Share */}
-                  <button className="px-2 py-1.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors"
-                    onClick={() => handleShare(post)} title="Share">
-                    <Share2 className="h-4 w-4" />
-                  </button>
-
                   {/* Bookmark */}
-                  <button className="px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors"
+                  <button className="text-muted-foreground hover:text-emerald-600 transition-colors group"
                     onClick={() => handleBookmark(post.id)} title={post.bookmarked_by_me ? "Unsave" : "Save"}>
-                    <Bookmark className={`h-4 w-4 transition-all ${post.bookmarked_by_me ? "fill-primary text-primary" : "text-muted-foreground"}`} />
+                    <Bookmark className={`h-[18px] w-[18px] group-hover:scale-110 transition-transform ${post.bookmarked_by_me ? "fill-emerald-600 text-emerald-600" : "text-muted-foreground"}`} />
                   </button>
 
                   {/* Message author */}
@@ -824,11 +706,13 @@ export default function SocialFeedPage() {
                   )}
                 </div>
 
+                </div>
+
                 {/* Comments Section */}
                 <AnimatePresence>
                   {expandedComments.has(post.id) && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }} className="mt-3 pt-3 border-t border-border/30 overflow-hidden">
+                      exit={{ opacity: 0, height: 0 }} className="px-6 pb-6 pt-2 border-t border-border/30 overflow-hidden bg-muted/5">
                       {(comments[post.id] || []).map((c) => (
                         <div key={c.id} className="flex items-start gap-2 mb-2.5">
                           <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden cursor-pointer"
@@ -843,15 +727,15 @@ export default function SocialFeedPage() {
                           </div>
                         </div>
                       ))}
-                      <div className="flex gap-2 mt-2">
-                        <Input placeholder="Write a comment..." className="h-8 text-xs bg-muted/50 border-border/30"
+                      <div className="flex gap-3 mt-4 items-center">
+                        <Input placeholder="Write a comment..." className="h-9 rounded-full text-sm bg-muted border-border/40 focus-visible:ring-emerald-600/50"
                           value={commentInputs[post.id] || ""}
                           onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
                           onKeyDown={(e) => e.key === "Enter" && handleComment(post.id)} />
-                        <Button variant="athletic" size="icon" className="h-8 w-8 flex-shrink-0"
+                        <button className="h-9 w-9 flex-shrink-0 bg-emerald-600 text-white rounded-full flex items-center justify-center hover:bg-emerald-700 transition-colors"
                           onClick={() => handleComment(post.id)} disabled={!commentInputs[post.id]?.trim()}>
-                          <Send className="h-3.5 w-3.5" />
-                        </Button>
+                          <Send className="h-4 w-4" />
+                        </button>
                       </div>
                     </motion.div>
                   )}
@@ -864,7 +748,7 @@ export default function SocialFeedPage() {
         {/* Load More */}
         {page < totalPages && (
           <div className="text-center mt-8">
-            <Button variant="athletic-outline" onClick={() => loadFeed(page + 1)}>Load More</Button>
+            <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline px-6 py-2 transition-all" onClick={() => loadFeed(page + 1)}>Load More</button>
           </div>
         )}
 
@@ -879,6 +763,95 @@ export default function SocialFeedPage() {
             </p>
           </div>
         )}
+        </div> {/* END MAIN FEED COLUMN */}
+
+        {/* ═══ RIGHT SIDEBAR (WIDGETS) ═══ */}
+        <aside className="hidden lg:flex w-[320px] flex-shrink-0 flex-col gap-6 sticky top-24">
+          
+          {/* Engagement Stats Widget */}
+          {engagement && (
+            <div className="bg-card rounded-3xl p-6 border border-border/40 shadow-sm">
+              <h3 className="font-display font-bold text-foreground mb-6 text-sm flex items-center justify-between">
+                Performance Stats
+                {engScore && <Badge className="bg-emerald-600/10 text-emerald-600 border-none shadow-none uppercase text-[9px] tracking-wider"><Zap className="h-3 w-3 mr-1"/> Level {engScore.level}</Badge>}
+              </h3>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-orange-500 text-white flex items-center justify-center">
+                      <Flame className="opacity-90" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-orange-600 dark:text-orange-400 tracking-wider">Streak</p>
+                      <p className="text-lg font-bold text-orange-900 dark:text-orange-200">{engagement.current_streak} {engagement.current_streak === 1 ? 'Day' : 'Days'}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-4">
+                  <button onClick={() => openFollowModal("followers")} className="flex-1 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-center hover:scale-[1.03] transition-transform">
+                    <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Followers</p>
+                    <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200">{engagement.followers_count}</p>
+                  </button>
+                  <button onClick={() => openFollowModal("following")} className="flex-1 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-center hover:scale-[1.03] transition-transform">
+                    <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Following</p>
+                    <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200">{engagement.following_count}</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Daily Prompt Widget */}
+          {engagement?.daily_prompt && !engagement.posted_today && (
+            <div className="bg-emerald-600 p-6 rounded-3xl text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden">
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-4 text-emerald-50">
+                  <Zap className="h-4 w-4" opacity={0.8} />
+                  <p className="text-[10px] uppercase font-bold tracking-widest opacity-90">Daily Prompt</p>
+                </div>
+                <p className="text-[15px] font-bold leading-tight mb-6 text-white/95">
+                  {engagement.daily_prompt}
+                </p>
+                <button onClick={() => { setShowComposer(true); setNewContent(engagement.daily_prompt + " "); window.scrollTo({top: 0, behavior: "smooth"}); }}
+                  className="w-full bg-white text-emerald-600 py-3 rounded-full font-bold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
+                  Answer Prompt
+                </button>
+              </div>
+              <Flame className="absolute -bottom-6 -right-6 h-32 w-32 text-white/10 rotate-12" />
+            </div>
+          )}
+
+          {/* Suggested Follows Widget */}
+          {(algoPlayers.length > 0 || suggestedFollows.length > 0) && (
+            <div className="bg-card rounded-3xl p-6 border border-border/40 shadow-sm">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-display font-bold text-foreground text-sm">Suggested for you</h3>
+                {algoPlayers.length > 0 && <span className="text-[9px] bg-emerald-600/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">AI Ranked</span>}
+              </div>
+              <div className="flex flex-col gap-5">
+                {(algoPlayers.length > 0 ? algoPlayers : suggestedFollows).slice(0, 5).map((s) => (
+                  <div key={s.id} className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate(`/player-card/${s.id}`)}>
+                      <div className="w-10 h-10 rounded-full bg-secondary/30 overflow-hidden border border-border/20 group-hover:border-emerald-600 transition-colors flex items-center justify-center">
+                        {s.avatar ? <img src={mediaUrl(s.avatar)} className="w-full h-full object-cover" /> : <User className="h-4 w-4 text-muted-foreground" />}
+                      </div>
+                      <div className="min-w-0 pr-2">
+                        <p className="text-sm font-bold truncate group-hover:text-emerald-600 transition-colors">{s.name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {s.rec_reason === "played_together" ? "Played together" : s.rec_reason === "mutual_friends" ? "Mutual friends" : s.reason === "played_together" ? "Co-Lobbian" : s.games_together ? `${s.games_together} games` : "Recommended"}
+                        </p>
+                      </div>
+                    </div>
+                    <button onClick={() => handleFollow(s.id)}
+                      className={`text-[11px] font-bold hover:underline ${followedUsers.has(s.id) ? "text-muted-foreground" : "text-emerald-600"}`}>
+                      {followedUsers.has(s.id) ? "Following" : "Follow"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </aside>
       </div>
 
       {/* ═══ STORY VIEWER (Full screen overlay) ═══ */}

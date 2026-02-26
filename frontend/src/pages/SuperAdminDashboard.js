@@ -23,16 +23,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
-function StatCard({ icon: Icon, label, value, sub, color = "text-primary" }) {
+function StatCard({ icon: Icon, label, value, sub, color = "-emerald-600" }) {
   return (
-    <div className="glass-card rounded-lg p-4" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
-      <div className="flex items-center gap-3">
-        <div className={`p-2 rounded-lg bg-primary/10 ${color}`}><Icon className="h-5 w-5" /></div>
-        <div>
-          <div className="text-2xl font-display font-black">{value}</div>
-          <div className="text-xs text-muted-foreground">{label}</div>
-          {sub && <div className="text-[10px] text-muted-foreground/60">{sub}</div>}
-        </div>
+    <div className="bg-card text-card-foreground border border-border/40 shadow-sm rounded-2xl p-6 hover:shadow-md transition-all duration-300" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">{label}</div>
+        <div className={`p-2.5 rounded-xl border-emerald-600/5 ${color}`}><Icon className="h-4 w-4" /></div>
+      </div>
+      <div>
+        <div className="text-3xl font-display font-light tracking-tight">{value}</div>
+        {sub && <div className="text-xs text-muted-foreground mt-2 font-medium">{sub}</div>}
       </div>
     </div>
   );
@@ -43,7 +43,7 @@ function OverviewTab() {
   useEffect(() => {
     adminAPI.dashboard().then(r => setData(r.data)).catch(() => toast.error("Failed to load dashboard"));
   }, []);
-  if (!data) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (!data) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>;
   return (
     <div className="space-y-6" data-testid="admin-overview-tab">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -55,23 +55,23 @@ function OverviewTab() {
         <StatCard icon={GraduationCap} label="Coaching Revenue" value={`\u20B9${(data.coaching_revenue || 0).toLocaleString()}`} sub={`${data.coaching_commission_pct || 10}% = \u20B9${(data.coaching_earnings || 0).toLocaleString()}`} />
         <StatCard icon={Trophy} label="Tournament Revenue" value={`\u20B9${(data.tournament_revenue || 0).toLocaleString()}`} sub={`${data.tournament_commission_pct || 10}% = \u20B9${(data.tournament_earnings || 0).toLocaleString()}`} />
         <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} />
-        <StatCard icon={Clock} label="Pending Approvals" value={(data.pending_owners || 0) + (data.pending_coaches || 0)} color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-400" : "text-primary"} />
+        <StatCard icon={Clock} label="Pending Approvals" value={(data.pending_owners || 0) + (data.pending_coaches || 0)} color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-400" : "-emerald-600"} />
       </div>
       <div>
-        <h3 className="text-sm font-bold mb-3">Recent Registrations</h3>
-        <div className="space-y-2">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Recent Registrations</h3>
+        <div className="space-y-3">
           {data.recent_users.map(u => (
-            <div key={u.id} className="glass-card rounded-lg p-3 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">{u.name?.[0]}</div>
+            <div key={u.id} className="bg-card border border-border/40 shadow-sm rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-all">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 rounded-full border-emerald-600/10 flex items-center justify-center text-sm font-bold border-emerald-600">{u.name?.[0]}</div>
                 <div>
                   <div className="text-sm font-semibold">{u.name}</div>
-                  <div className="text-xs text-muted-foreground">{u.email}</div>
+                  <div className="text-xs text-muted-foreground font-medium mt-0.5">{u.email}</div>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-[10px]">{u.role.replace("_", " ")}</Badge>
-                <Badge className={`text-[10px] ${u.account_status === "active" ? "bg-emerald-500/20 text-emerald-400" : u.account_status === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-destructive/20 text-destructive"}`}>
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="text-[10px] font-semibold tracking-wider uppercase bg-secondary/50 px-2 py-0.5">{u.role.replace("_", " ")}</Badge>
+                <Badge className={`text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 ${u.account_status === "active" ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" : u.account_status === "pending" ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}>
                   {u.account_status}
                 </Badge>
               </div>
@@ -161,49 +161,52 @@ function UsersTab() {
 
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
-            className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-            {f === "all" ? "All" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
+            className={`px-4 py-2 rounded-full text-[11px] font-bold tracking-widest transition-all duration-300 uppercase ${filter === f ? "bg-foreground text-background shadow-md" : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+            {f === "all" ? "All Users" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
           </button>
         ))}
       </div>
       {loading ? (
-        <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>
       ) : users.length === 0 ? (
-        <div className="glass-card rounded-lg p-8 text-center text-muted-foreground text-sm">No users found</div>
+        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[200px]">
+          <Users className="h-8 w-8 text-muted-foreground/30 mb-3" />
+          <div className="text-muted-foreground text-sm font-medium">No users found matching this filter</div>
+        </div>
       ) : (
         <div className="space-y-2">
           {users.map(u => (
-            <div key={u.id} className="glass-card rounded-lg p-4" data-testid={`user-row-${u.id}`}>
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-full bg-primary/20 flex items-center justify-center text-sm font-bold text-primary shrink-0">{u.name?.[0]}</div>
+            <div key={u.id} className="bg-card border border-border/40 shadow-sm rounded-xl p-5 hover:shadow-md transition-all duration-300 group" data-testid={`user-row-${u.id}`}>
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="h-11 w-11 rounded-full border-emerald-600/10 flex items-center justify-center text-base font-bold border-emerald-600 shrink-0 border border-emerald-600/20">{u.name?.[0]}</div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate">{u.name}</div>
-                    <div className="text-xs text-muted-foreground truncate">{u.email} {u.phone && `| ${u.phone}`}</div>
-                    {u.business_name && <div className="text-[10px] text-muted-foreground/70">Business: {u.business_name} {u.gst_number && `| GST: ${u.gst_number}`}</div>}
+                    <div className="text-base font-semibold truncate text-foreground tracking-tight">{u.name}</div>
+                    <div className="text-xs text-muted-foreground font-medium truncate mt-0.5">{u.email} {u.phone && <span className="opacity-60 px-1.5">•</span>} {u.phone}</div>
+                    {u.business_name && <div className="text-[11px] text-muted-foreground/80 font-medium mt-1.5 inline-flex items-center bg-secondary/50 px-2 py-0.5 rounded-md">Business: {u.business_name} {u.gst_number && <span className="opacity-60 mx-1.5">|</span>} {u.gst_number && `GST: ${u.gst_number}`}</div>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <Badge variant="secondary" className="text-[10px]">{u.role.replace("_", " ")}</Badge>
+                <div className="flex items-center gap-2 shrink-0 flex-wrap opacity-95 group-hover:opacity-100 transition-opacity">
+                  <Badge variant="secondary" className="text-[10px] font-bold tracking-wider uppercase bg-secondary/60 px-2.5 py-1">{u.role.replace("_", " ")}</Badge>
                   {u.role === "venue_owner" && u.subscription_plan && (
-                    <Badge className="text-[10px] bg-purple-500/20 text-purple-400">{u.subscription_plan}</Badge>
+                    <Badge className="text-[10px] font-bold tracking-wider uppercase bg-purple-500/10 text-purple-600 border border-purple-500/20 px-2.5 py-1">{u.subscription_plan}</Badge>
                   )}
-                  <Badge className={`text-[10px] ${u.account_status === "active" ? "bg-emerald-500/20 text-emerald-400" : u.account_status === "pending" ? "bg-amber-500/20 text-amber-400" : "bg-destructive/20 text-destructive"}`}>
+                  <Badge className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 ${u.account_status === "active" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : u.account_status === "pending" ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>
                     {u.account_status}
                   </Badge>
                   {/* Venue owner: doc icon */}
                   {u.role === "venue_owner" && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
                     <Button size="sm" variant="ghost"
-                      className={`h-7 px-2 ${
-                        u.doc_verification_status === "pending_review" ? "text-amber-400 hover:bg-amber-500/10" :
-                        u.doc_verification_status === "verified" ? "text-emerald-400 hover:bg-emerald-500/10" :
-                        "text-destructive hover:bg-destructive/10"
+                      className={`h-8 px-3 rounded-lg font-semibold text-xs transition-colors ${
+                        u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/5 hover:bg-amber-500/15" :
+                        u.doc_verification_status === "verified" ? "text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/15" :
+                        "text-destructive bg-destructive/5 hover:bg-destructive/15"
                       }`}
                       onClick={() => openDocViewer(u.id)} data-testid={`docs-${u.id}`}>
-                      <FileText className="h-3.5 w-3.5 mr-1" /> Docs
+                      <FileText className="h-4 w-4 mr-1.5" /> Docs
                     </Button>
                   )}
                   {/* Pending: Approve/Reject for non-venue_owners */}
@@ -221,7 +224,7 @@ function UsersTab() {
                   )}
                   {/* Pending venue_owner: show doc status badge */}
                   {u.account_status === "pending" && u.role === "venue_owner" && (
-                    <Badge className={`text-[10px] ${u.doc_verification_status === "pending_review" ? "bg-amber-500/20 text-amber-400" : "bg-blue-500/20 text-blue-400"}`}>
+                    <Badge className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 ${u.doc_verification_status === "pending_review" ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-blue-500/10 text-blue-600 border border-blue-500/20"}`}>
                       {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
                     </Badge>
                   )}
@@ -232,14 +235,14 @@ function UsersTab() {
                     </Button>
                   )}
                   {u.role === "coach" && u.account_status === "active" && (
-                    <Button size="sm" variant="ghost" className={`h-7 px-2 ${u.is_verified ? "text-blue-400 hover:bg-blue-500/10" : "text-muted-foreground hover:bg-primary/10"}`}
+                    <Button size="sm" variant="ghost" className={`h-7 px-2 ${u.is_verified ? "text-blue-400 hover:bg-blue-500/10" : "text-muted-foreground hover:border-emerald-600/10"}`}
                       onClick={() => handleVerify(u.id)} data-testid={`verify-${u.id}`}>
                       <CheckCircle2 className={`h-3.5 w-3.5 mr-1 ${u.is_verified ? "" : "opacity-40"}`} />
                       {u.is_verified ? "Verified" : "Verify"}
                     </Button>
                   )}
                   {(u.account_status === "suspended" || u.account_status === "rejected") && (
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-primary hover:bg-primary/10"
+                    <Button size="sm" variant="ghost" className="h-7 px-2 border-emerald-600 hover:border-emerald-600/10"
                       onClick={() => handleAction(u.id, "activate")} data-testid={`activate-${u.id}`}>
                       <RotateCcw className="h-3.5 w-3.5 mr-1" /> Activate
                     </Button>
@@ -254,15 +257,15 @@ function UsersTab() {
       {/* Document Viewer Dialog */}
       <Dialog open={!!docViewUserId} onOpenChange={(open) => { if (!open) setDocViewUserId(null); }}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Verification Documents</DialogTitle>
-            <DialogDescription>
-              {docViewData?.name} {docViewData?.business_name && `— ${docViewData.business_name}`}
+          <DialogHeader className="border-b border-border/40 pb-4">
+            <DialogTitle className="text-xl font-display font-light">Verification Documents</DialogTitle>
+            <DialogDescription className="text-sm font-medium mt-1">
+              {docViewData?.name} {docViewData?.business_name && <span className="text-foreground"> — {docViewData.business_name}</span>}
             </DialogDescription>
           </DialogHeader>
 
           {docViewLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin border-emerald-600" /></div>
           ) : docViewData ? (
             <div className="space-y-4">
               <Badge className={`text-[10px] ${
@@ -279,17 +282,17 @@ function UsersTab() {
               )}
 
               {/* Document grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {Object.entries(DOC_LABELS).map(([key, label]) => {
                   const doc = docViewData.verification_documents?.[key];
                   const isPdf = doc?.url?.toLowerCase().endsWith(".pdf");
                   return (
-                    <div key={key} className="border border-border rounded-lg p-3">
-                      <Label className="text-[10px] font-bold uppercase text-muted-foreground">{label}</Label>
+                    <div key={key} className="bg-secondary/20 border border-border/50 rounded-xl p-4 transition-colors hover:bg-secondary/40">
+                      <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</Label>
                       {doc?.url ? (
                         isPdf ? (
                           <a href={mediaUrl(doc.url)} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 mt-2 p-2 rounded-md bg-background/50 text-xs text-primary hover:underline">
+                            className="flex items-center gap-2 mt-2 p-2 rounded-md bg-background/50 text-xs border-emerald-600 hover:underline">
                             <FileText className="h-4 w-4" /> View PDF
                           </a>
                         ) : (
@@ -458,54 +461,63 @@ function VenuesTab() {
     finally { setAssigning(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>;
   return (
     <div className="space-y-3" data-testid="admin-venues-tab">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm text-muted-foreground font-semibold">{venues.length} venues</span>
-        <Button size="sm" className="gap-1.5 h-8 text-xs font-bold" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-3.5 w-3.5" /> Add Venue
+      <div className="flex items-center justify-between mb-6">
+        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{venues.length} venues</span>
+        <Button size="sm" className="gap-2 h-9 px-5 text-xs font-bold tracking-wide rounded-full shadow-md hover:shadow-lg transition-all" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" /> Add Venue
         </Button>
       </div>
 
+      <div className="grid gap-4">
       {venues.map(v => (
-        <div key={v.id} className="glass-card rounded-lg p-4 flex items-center justify-between flex-wrap gap-3" data-testid={`venue-row-${v.id}`}>
+        <div key={v.id} className="bg-card border border-border/40 shadow-sm rounded-xl p-5 flex items-center justify-between flex-wrap gap-4 hover:shadow-md transition-all duration-300" data-testid={`venue-row-${v.id}`}>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">{v.name}</span>
-              <Badge className={`text-[9px] px-1.5 py-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+            <div className="flex items-center gap-3 mb-1.5">
+              <span className="text-base font-semibold tracking-tight text-foreground">{v.name}</span>
+              <Badge className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 ${v.badge === "bookable" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"}`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
               </Badge>
-              <Badge className={`text-[9px] px-1.5 py-0 ${v.owner_id ? "bg-blue-500/20 text-blue-400" : "bg-orange-500/20 text-orange-400"}`}>
+              <Badge className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 ${v.owner_id ? "bg-blue-500/10 text-blue-600 border border-blue-500/20" : "bg-orange-500/10 text-orange-600 border border-orange-500/20"}`}>
                 {v.owner_id ? "Owner Linked" : "Manual Entry"}
               </Badge>
             </div>
-            <div className="text-xs text-muted-foreground">{v.address}{v.address && ", "}{v.city}</div>
-            <div className="flex items-center gap-2 mt-1 flex-wrap">
-              <Badge variant="secondary" className="text-[10px]">{v.sports?.join(", ")}</Badge>
-              <span className="text-[10px] text-muted-foreground">{v.turfs} turfs | {v.total_bookings} bookings</span>
-              {!v.owner_id && <span className="text-[10px] text-amber-400 font-semibold">No owner</span>}
-              {v.contact_phone && <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Phone className="h-2.5 w-2.5" />{v.contact_phone}</span>}
+            <div className="text-sm text-muted-foreground font-medium mb-3">{v.address}{v.address && ", "}{v.city}</div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <Badge variant="secondary" className="text-[10px] font-bold tracking-wider uppercase bg-secondary/60 px-2.5 py-1">{v.sports?.join(", ")}</Badge>
+              <span className="text-xs text-muted-foreground font-medium">{v.turfs} turfs <span className="opacity-50 mx-1.5">•</span> {v.total_bookings} bookings</span>
+              {!v.owner_id && <span className="text-[11px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">No owner</span>}
+              {v.contact_phone && <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 bg-secondary/30 border border-border/50 px-2 py-1 rounded-md"><Phone className="h-3 w-3 opacity-70" />{v.contact_phone}</span>}
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-5 shrink-0">
             {!v.owner_id && (
-              <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 font-semibold" onClick={() => openAssignDialog(v)}>
-                <UserPlus className="h-3 w-3" /> Assign Owner
+              <Button size="sm" variant="outline" className="h-9 px-3.5 text-xs gap-2 font-bold rounded-lg border-border/60 hover:bg-secondary/50" onClick={() => openAssignDialog(v)}>
+                <UserPlus className="h-4 w-4 border-emerald-600" /> Assign Owner
               </Button>
             )}
-            <Badge className={`text-[10px] ${v.status === "active" ? "bg-emerald-500/20 text-emerald-400" : "bg-destructive/20 text-destructive"}`}>{v.status}</Badge>
-            <Switch checked={v.status === "active"} onCheckedChange={() => toggleVenue(v.id, v.status)} data-testid={`toggle-venue-${v.id}`} />
+            <div className="flex items-center gap-3 border-l border-border/40 pl-5">
+              <Badge className={`text-[10px] font-bold tracking-wider uppercase px-2 py-1 ${v.status === "active" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>{v.status}</Badge>
+              <Switch checked={v.status === "active"} onCheckedChange={() => toggleVenue(v.id, v.status)} data-testid={`toggle-venue-${v.id}`} />
+            </div>
           </div>
         </div>
       ))}
+      </div>
 
       {/* Create Venue Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Building2 className="h-5 w-5 text-primary" /> Add Venue (Enquiry)</DialogTitle>
-            <DialogDescription>This venue will be in Enquiry mode until an owner is assigned.</DialogDescription>
+          <DialogHeader className="border-b border-border/40 pb-4">
+            <DialogTitle className="flex items-center gap-3 text-xl font-display font-light">
+              <div className="p-2 rounded-xl border-emerald-600/10">
+                <Building2 className="h-5 w-5 border-emerald-600" />
+              </div> 
+              Add Venue <span className="text-muted-foreground font-sans text-sm mt-1 border border-border/60 bg-secondary/50 px-2 py-0.5 rounded-md ml-2 hidden sm:inline-block">Enquiry Mode</span>
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium mt-2">This venue will be in Enquiry mode until an owner is assigned.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
@@ -536,7 +548,7 @@ function VenuesTab() {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {SPORTS_OPTIONS.map(s => (
                   <button key={s} type="button" onClick={() => toggleFormArray("sports", s.toLowerCase())}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "-emerald-600 border-emerald-600-foreground border-emerald-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-emerald-600/50"}`}>
                     {s}
                   </button>
                 ))}
@@ -548,7 +560,7 @@ function VenuesTab() {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {AMENITIES_OPTIONS.map(a => (
                   <button key={a} type="button" onClick={() => toggleFormArray("amenities", a)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "-emerald-600 border-emerald-600-foreground border-emerald-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-emerald-600/50"}`}>
                     {a}
                   </button>
                 ))}
@@ -602,12 +614,12 @@ function VenuesTab() {
                   ))}
                 </div>
               )}
-              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-primary/40 hover:border-primary hover:bg-primary/5 text-muted-foreground hover:text-primary"}`}>
-                {uploading ? <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />Uploading...</> : <><ImagePlus className="h-4 w-4" />{venueForm.images.length > 0 ? "Add more images" : "Upload venue images"}</>}
+              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "-emerald-600/40 hover:border-emerald-600 hover:border-emerald-600/5 text-muted-foreground hover:border-emerald-600"}`}>
+                {uploading ? <><div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />Uploading...</> : <><ImagePlus className="h-4 w-4" />{venueForm.images.length > 0 ? "Add more images" : "Upload venue images"}</>}
                 <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleImageUpload(e.target.files)} disabled={uploading} />
               </label>
             </div>
-            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateVenue} disabled={creating}>
+            <Button className="w-full border-emerald-600 border-emerald-600-foreground font-bold" onClick={handleCreateVenue} disabled={creating}>
               {creating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : "Create Venue"}
             </Button>
           </div>
@@ -617,9 +629,14 @@ function VenuesTab() {
       {/* Assign Owner Dialog */}
       <Dialog open={!!assignDialog} onOpenChange={(o) => !o && setAssignDialog(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><UserPlus className="h-5 w-5 text-primary" /> Assign Owner</DialogTitle>
-            <DialogDescription>Assign a verified venue owner to "{assignDialog?.name}". This will change the badge from Enquiry to Bookable.</DialogDescription>
+          <DialogHeader className="border-b border-border/40 pb-4">
+            <DialogTitle className="flex items-center gap-3 text-xl font-display font-light">
+              <div className="p-2 rounded-xl border-emerald-600/10">
+                <UserPlus className="h-5 w-5 border-emerald-600" />
+              </div> 
+              Assign Owner
+            </DialogTitle>
+            <DialogDescription className="text-sm font-medium mt-2">Assign a verified venue owner to <span className="text-foreground font-semibold">"{assignDialog?.name}"</span>. This will change the badge from Enquiry to Bookable.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             {venueOwners.length === 0 ? (
@@ -779,7 +796,7 @@ function SettingsTab() {
     return { ...s, subscription_plans: plans };
   });
 
-  if (!settings) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (!settings) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>;
 
   const s3 = settings.s3_storage || {};
   const s3Configured = !!(s3.access_key_id && s3.secret_access_key && s3.bucket_name && s3.region);
@@ -787,12 +804,14 @@ function SettingsTab() {
   return (
     <div className="space-y-8 max-w-2xl" data-testid="admin-settings-tab">
       {/* Payment Gateway */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <CreditCard className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">Payment Gateway</h3>
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2.5 rounded-xl border-emerald-600/10">
+            <CreditCard className="h-5 w-5 border-emerald-600" />
+          </div>
+          <h3 className="text-lg font-display font-semibold tracking-tight">Payment Gateway</h3>
         </div>
-        <div className="glass-card rounded-lg p-4 space-y-4">
+        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
           <div>
             <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Provider</Label>
             <Input value={settings.payment_gateway.provider} readOnly className="mt-1.5 bg-background border-border h-10 text-sm" />
@@ -815,32 +834,34 @@ function SettingsTab() {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 pt-2">
             <Switch checked={settings.payment_gateway.is_live} onCheckedChange={v => updateGateway("is_live", v)} data-testid="gateway-live-toggle" />
-            <Label className="text-sm">{settings.payment_gateway.is_live ? "Live Mode" : "Test Mode"}</Label>
+            <Label className="text-sm font-semibold">{settings.payment_gateway.is_live ? "Live Mode Active" : "Test Mode Active"}</Label>
           </div>
         </div>
       </section>
 
       {/* ─── AWS S3 Storage ─── */}
-      <section>
-        <div className="flex items-center gap-2 mb-1">
-          <Cloud className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">AWS S3 Storage</h3>
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 rounded-xl border-emerald-600/10">
+            <Cloud className="h-5 w-5 border-emerald-600" />
+          </div>
+          <h3 className="text-lg font-display font-semibold tracking-tight">AWS S3 Storage</h3>
           {s3Configured ? (
-            <span className="ml-auto flex items-center gap-1 text-xs text-green-500 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Configured
+            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-emerald-600 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1" /> Configured
             </span>
           ) : (
-            <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" /> Not configured
+            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground font-bold bg-secondary/50 border border-border px-2.5 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block mr-1" /> Not Configured
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mb-4">
+        <p className="text-sm text-muted-foreground font-medium mb-5 px-1">
           Venue images, profile photos, and match videos will be stored in your S3 bucket.
         </p>
-        <div className="glass-card rounded-lg p-4 space-y-4">
+        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Access Key ID</Label>
@@ -876,7 +897,7 @@ function SettingsTab() {
               <select
                 value={s3.region || "ap-south-1"}
                 onChange={e => updateS3("region", e.target.value)}
-                className="mt-1.5 w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="mt-1.5 w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:border-emerald-600/50"
               >
                 <option value="ap-south-1">ap-south-1 (Mumbai)</option>
                 <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
@@ -899,7 +920,7 @@ function SettingsTab() {
           )}
 
           <Button variant="outline" onClick={handleTestS3} disabled={testingS3 || !s3Configured} className="w-full h-9 text-sm gap-2">
-            {testingS3 ? <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" /> Testing...</>
+            {testingS3 ? <><div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /> Testing...</>
               : <><Wifi className="h-4 w-4" /> Test S3 Connection</>}
           </Button>
 
@@ -910,24 +931,26 @@ function SettingsTab() {
       </section>
 
       {/* WhatsApp Business Cloud API */}
-      <section>
-        <div className="flex items-center gap-2 mb-1">
-          <MessageCircle className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">WhatsApp Business API</h3>
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="p-2.5 rounded-xl border-emerald-600/10">
+            <MessageCircle className="h-5 w-5 border-emerald-600" />
+          </div>
+          <h3 className="text-lg font-display font-semibold tracking-tight">WhatsApp Business API</h3>
           {settings.whatsapp?.phone_number_id && settings.whatsapp?.access_token ? (
-            <span className="ml-auto flex items-center gap-1 text-xs text-green-500 font-semibold">
-              <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Configured
+            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-emerald-600 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1" /> Configured
             </span>
           ) : (
-            <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-              <span className="w-2 h-2 rounded-full bg-muted-foreground inline-block" /> Not configured
+            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground font-bold bg-secondary/50 border border-border px-2.5 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block mr-1" /> Not Configured
             </span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mb-4">
-          Enquiry messages are sent from your business number to venue owners automatically via Meta's WhatsApp Cloud API.
+        <p className="text-sm text-muted-foreground font-medium mb-5 px-1">
+          Enquiry messages are sent from your business number to venue owners automatically.
         </p>
-        <div className="glass-card rounded-lg p-4 space-y-4">
+        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
           <div>
             <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Phone Number ID</Label>
             <Input value={settings.whatsapp?.phone_number_id || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, phone_number_id: e.target.value } }))}
@@ -958,12 +981,14 @@ function SettingsTab() {
       </section>
 
       {/* Platform Commissions */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Percent className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">Platform Commissions</h3>
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2.5 rounded-xl border-emerald-600/10">
+            <Percent className="h-5 w-5 border-emerald-600" />
+          </div>
+          <h3 className="text-lg font-display font-semibold tracking-tight">Platform Commissions</h3>
         </div>
-        <div className="glass-card rounded-lg p-4 space-y-4">
+        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
           <div>
             <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Booking Commission</Label>
             <div className="flex items-center gap-3 mt-1.5">
@@ -995,17 +1020,19 @@ function SettingsTab() {
       </section>
 
       {/* Subscription Plans */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <Crown className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">SaaS Subscription Plans</h3>
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2.5 rounded-xl border-emerald-600/10">
+            <Crown className="h-5 w-5 border-emerald-600" />
+          </div>
+          <h3 className="text-lg font-display font-semibold tracking-tight">SaaS Subscription Plans</h3>
         </div>
-        <div className="space-y-3">
+        <div className="space-y-4">
           {settings.subscription_plans.map((plan, idx) => (
-            <div key={plan.id} className="glass-card rounded-lg p-4 space-y-3" data-testid={`plan-${plan.id}`}>
+            <div key={plan.id} className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-4 hover:shadow-md transition-all duration-300" data-testid={`plan-${plan.id}`}>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold">{plan.name}</span>
-                <Badge variant="secondary" className="text-[10px]">{plan.id}</Badge>
+                <span className="text-base font-bold tracking-tight">{plan.name}</span>
+                <Badge variant="secondary" className="text-[10px] font-bold tracking-widest uppercase bg-secondary/60 px-2.5 py-1">{plan.id}</Badge>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1029,17 +1056,19 @@ function SettingsTab() {
         </div>
       </section>
 
-      <Button onClick={saveSettings} disabled={saving} className="bg-primary text-primary-foreground font-bold w-full h-11" data-testid="save-settings-btn">
+      <Button onClick={saveSettings} disabled={saving} className="-emerald-600 border-emerald-600-foreground font-bold text-sm tracking-wide w-full h-12 rounded-xl shadow-md hover:shadow-lg transition-all mb-10" data-testid="save-settings-btn">
         {saving ? "Saving..." : <><Save className="h-4 w-4 mr-2" /> Save All Settings</>}
       </Button>
 
       {/* Change Password */}
-      <section>
-        <div className="flex items-center gap-2 mb-4">
-          <KeyRound className="h-5 w-5 text-primary" />
-          <h3 className="text-base font-bold">Change Admin Password</h3>
+      <section className="mb-10">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="p-2.5 rounded-xl border-emerald-600/10">
+            <KeyRound className="h-5 w-5 border-emerald-600" />
+          </div>
+          <h3 className="text-lg font-display font-semibold tracking-tight">Change Admin Password</h3>
         </div>
-        <div className="glass-card rounded-lg p-4">
+        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 hover:shadow-md transition-all duration-300">
           <div className="flex gap-3">
             <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
               placeholder="New password (min 6 chars)" className="bg-background border-border h-10 text-sm" data-testid="new-password-input" />
@@ -1055,27 +1084,31 @@ function SettingsTab() {
 
 export default function SuperAdminDashboard() {
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="super-admin-dashboard">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-3 mb-6">
-          <Shield className="h-6 w-6 text-primary" />
-          <div>
-            <h1 className="font-display text-2xl font-black tracking-tight">Admin Console</h1>
-            <p className="text-xs text-muted-foreground">Horizon Platform Management</p>
+    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12 pb-24 md:pb-12" data-testid="super-admin-dashboard" style={{ "--primary": "160 84% 39%", "--ring": "160 84% 39%" }}>
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="flex items-center gap-5">
+            <div className="h-14 w-14 rounded-2xl border-emerald-600/5 flex items-center justify-center border border-emerald-600/10">
+              <Shield className="h-7 w-7 border-emerald-600" />
+            </div>
+            <div>
+              <h1 className="font-display text-3xl md:text-4xl font-light tracking-tight text-foreground">Admin Console</h1>
+              <p className="text-sm text-muted-foreground font-medium mt-1">Horizon Platform Management</p>
+            </div>
           </div>
         </div>
 
-        <Tabs defaultValue="overview" data-testid="admin-tabs">
-          <TabsList className="bg-secondary/50 mb-6">
-            <TabsTrigger value="overview" className="text-xs font-bold" data-testid="tab-overview">Overview</TabsTrigger>
-            <TabsTrigger value="users" className="text-xs font-bold" data-testid="tab-users">Users</TabsTrigger>
-            <TabsTrigger value="venues" className="text-xs font-bold" data-testid="tab-venues">Venues</TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs font-bold" data-testid="tab-settings">Settings</TabsTrigger>
+        <Tabs defaultValue="overview" className="w-full" data-testid="admin-tabs">
+          <TabsList className="bg-transparent border-b border-border/40 w-full justify-start h-auto p-0 rounded-none mb-8 space-x-6 overflow-x-auto hide-scrollbar">
+            <TabsTrigger value="overview" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="users" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-users">Users</TabsTrigger>
+            <TabsTrigger value="venues" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-venues">Venues</TabsTrigger>
+            <TabsTrigger value="settings" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-settings">Settings</TabsTrigger>
           </TabsList>
-          <TabsContent value="overview"><OverviewTab /></TabsContent>
-          <TabsContent value="users"><UsersTab /></TabsContent>
-          <TabsContent value="venues"><VenuesTab /></TabsContent>
-          <TabsContent value="settings"><SettingsTab /></TabsContent>
+          <TabsContent value="overview" className="mt-0 outline-none"><OverviewTab /></TabsContent>
+          <TabsContent value="users" className="mt-0 outline-none"><UsersTab /></TabsContent>
+          <TabsContent value="venues" className="mt-0 outline-none"><VenuesTab /></TabsContent>
+          <TabsContent value="settings" className="mt-0 outline-none"><SettingsTab /></TabsContent>
         </Tabs>
       </motion.div>
     </div>
