@@ -16,9 +16,12 @@ const CTA_IMAGE = "https://images.unsplash.com/photo-1461896836934-bd45ba8d7459?
 const CITY_IMAGES = {
   madurai: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80",
   vilupuram: "https://images.unsplash.com/photo-1629807496522-83ecd8af4152?auto=format&fit=crop&w=800&q=80",
-  chennai: "https://images.unsplash.com/photo-1581458920197-21fb9be9d257?auto=format&fit=crop&w=800&q=80",
+  chennai: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/0j7/x20/oav/360_F_275034287_RwBdkQQIvoYjxvHPocTR5MBrgQXFaZqr.jpg",
   coimbatore: "https://images.unsplash.com/photo-1621689032733-4df4249a0225?auto=format&fit=crop&w=800&q=80",
-  bangalore: "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?auto=format&fit=crop&w=800&q=80",
+  bangalore: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/ifp/8jh/ak3/istockphoto-1192261427-612x612.jpg",
+  bengaluru: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/ifp/8jh/ak3/istockphoto-1192261427-612x612.jpg",
+  delhi: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/9kj/gle/h29/istockphoto-505239248-612x612.jpg",
+  mumbai: "https://6dfa0433ff.imgdist.com/pub/bfra/9ghkfuy7/ebv/o6u/qsu/istockphoto-1307189136-612x612.jpg",
   default: "https://images.unsplash.com/photo-1518605368461-1e1292237fac?auto=format&fit=crop&w=800&q=80"
 };
 
