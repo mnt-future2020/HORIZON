@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="inline-block mb-6">
-              <span className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-400">LOBBI</span>
+              <span className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-400">Lobbi</span>
             </Link>
             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Sports Facility Operating System</p>
             <p className="text-xs text-slate-500 font-medium">

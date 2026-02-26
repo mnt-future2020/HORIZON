@@ -182,7 +182,7 @@ export default function VenueDiscovery() {
       {/* Top bar for non-logged-in users */}
       {!user && (
         <nav className="fixed top-0 w-full z-40 h-16 flex items-center justify-between px-6 md:px-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
-          <Link to="/" className="font-display font-black text-2xl tracking-tighter uppercase text-emerald-700">Lobbi</Link>
+          <Link to="/" className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700">Lobbi</Link>
           <div className="flex items-center gap-6">
             <Button variant="link" size="sm" onClick={() => navigate("/auth")} className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600">Log in</Button>
             <Button size="sm" onClick={() => navigate("/auth")} className="bg-emerald-600 text-white rounded-full h-10 px-6 text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700">Get Started</Button>

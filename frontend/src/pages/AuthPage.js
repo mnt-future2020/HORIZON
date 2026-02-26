@@ -94,7 +94,7 @@ export default function AuthPage() {
         </div>
         
         <ul className="space-y-4 z-10">
-          <li className="font-display font-black text-4xl tracking-tighter uppercase text-emerald-400">LOBBI</li>
+          <li className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-400">Lobbi</li>
         </ul>
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="z-10 mt-auto">
           <h2 className="font-display text-5xl lg:text-7xl font-black uppercase text-white leading-[0.9] tracking-tighter">
@@ -124,7 +124,7 @@ export default function AuthPage() {
             className="w-full my-auto pb-8">
 
             <div className="md:hidden text-center mb-8">
-              <h1 className="font-display text-4xl font-black tracking-tighter uppercase text-emerald-700">LOBBI</h1>
+              <h1 className="font-display text-3xl font-black tracking-tighter uppercase text-emerald-700">Lobbi</h1>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Sports Facility OS</p>
             </div>
 

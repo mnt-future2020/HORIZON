@@ -138,11 +138,8 @@ export default function Navbar() {
         data-testid="desktop-navbar">
         <div className="flex items-center flex-1 pr-8">
           <div className="w-[280px] mr-8 shrink-0">
-            <Link to="/feed" className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700 flex items-center gap-3">
-              <div className="bg-emerald-600 p-1.5 rounded-lg text-white shrink-0">
-                <Shield className="h-6 w-6" strokeWidth={2.5} />
-              </div>
-              <span className="truncate">LOBBI</span>
+            <Link to="/feed" className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700">
+              Lobbi
             </Link>
           </div>
           
