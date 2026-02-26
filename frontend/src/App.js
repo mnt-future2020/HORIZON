@@ -242,6 +242,11 @@ function AppRoutes() {
   );
 }
 
+// Dev mode: unregister any stale Service Workers so they don't cache old bundles
+if (process.env.NODE_ENV !== "production" && "serviceWorker" in navigator) {
+  navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
+}
+
 function App() {
   return (
     <ErrorBoundary>

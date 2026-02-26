@@ -325,6 +325,7 @@ export const reviewSentimentAPI = {
 
 export const socialAPI = {
   getFeed: (page, tab) => api.get("/feed", { params: { page, tab } }),
+  getPost: (postId) => api.get(`/feed/${postId}`),
   createPost: (data) => api.post("/feed", data),
   toggleLike: (postId) => api.post(`/feed/${postId}/like`),
   react: (postId, reaction) => api.post(`/feed/${postId}/react`, { reaction }),

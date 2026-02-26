@@ -5,7 +5,7 @@
  * POST requests pass through (offline sales handled by IndexedDB).
  */
 
-const CACHE_NAME = "horizon-pos-v2";
+const CACHE_NAME = "horizon-pos-v3";
 
 // App shell — index.html is enough; CRA injects JS/CSS bundles as <script>/<link>
 // and the browser will request them, which we cache dynamically on first load.

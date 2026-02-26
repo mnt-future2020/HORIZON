@@ -149,7 +149,7 @@ function POSTerminal({ user }) {
     migrateFromLocalStorage().then(() => getQueueCountAsync()).then(setPendingCount);
     // Register POS Service Worker ONLY in production (dev uses hot reload, SW would cache stale bundles)
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/pos-sw.js").then((reg) => {
+      navigator.serviceWorker.register("/pos-sw.js", { scope: "/pos" }).then((reg) => {
         registerBackgroundSync();
         // Auto-update: check for new SW every 5 minutes
         setInterval(() => reg.update(), 5 * 60 * 1000);

@@ -140,6 +140,7 @@ export default function SocialFeedPage() {
     Promise.all([loadFeed(1), loadStories(), loadEngagement(), loadSuggested(), loadAlgoPlayers(), loadEngScore()]);
   }, [loadFeed, loadStories, loadEngagement, loadSuggested, loadAlgoPlayers, loadEngScore]);
 
+
   const handleTabChange = (tab) => {
     setFeedTab(tab);
     setLoading(true);
@@ -728,13 +729,13 @@ export default function SocialFeedPage() {
                       <span className="font-bold text-xs">{post.comments_count || 0}</span>
                     </button>
 
-                    {/* Share */}
+                    {/* Share — opens Send to DM sheet */}
                     <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
-                      onClick={() => handleShare(post)} title="Share">
-                      <Share2 className="h-[18px] w-[18px] group-hover:scale-110 transition-transform" />
+                      onClick={() => setSharePost(post)} title="Share">
+                      <Send className="h-[18px] w-[18px] group-hover:scale-110 transition-transform" />
                     </button>
                   </div>
-                  
+
                   {/* Spacer to push bookmarks to right */}
                   <div className="flex-1" />
 
@@ -744,13 +745,6 @@ export default function SocialFeedPage() {
                     <Bookmark className={`h-[18px] w-[18px] group-hover:scale-110 transition-transform ${post.bookmarked_by_me ? "fill-emerald-600 text-emerald-600" : "text-muted-foreground"}`} />
                   </button>
 
-                  {/* Message author */}
-                  {post.user_id !== user?.id && (
-                    <button className="px-2 py-1.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors"
-                      onClick={() => navigate(`/chat?user=${post.user_id}`)} title="Message">
-                      <Send className="h-3.5 w-3.5" />
-                    </button>
-                  )}
                 </div>
 
                 </div>

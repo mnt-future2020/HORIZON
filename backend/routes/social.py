@@ -764,6 +764,27 @@ async def get_user_posts(user_id: str, user=Depends(get_current_user), page: int
     return {"posts": posts, "total": total, "page": page, "pages": math.ceil(total / limit) if total else 1}
 
 
+# Single post by ID — MUST be after all /feed/xxx static routes to avoid conflicts
+@router.get("/feed/{post_id}")
+async def get_single_post(post_id: str, user=Depends(get_current_user)):
+    post = await db.social_posts.find_one({"id": post_id}, {"_id": 0})
+    if not post:
+        raise HTTPException(404, "Post not found")
+    like = await db.social_likes.find_one({"post_id": post_id, "user_id": user["id"]})
+    post["liked_by_me"] = like is not None
+    bm = await db.bookmarks.find_one({"post_id": post_id, "user_id": user["id"]})
+    post["bookmarked_by_me"] = bm is not None
+    # Fetch user's reaction
+    reaction = await db.social_reactions.find_one({"post_id": post_id, "user_id": user["id"]})
+    post["my_reaction"] = reaction["reaction"] if reaction else None
+    # Fetch user info
+    u = await db.users.find_one({"id": post.get("user_id")}, {"_id": 0, "name": 1, "avatar": 1})
+    if u:
+        post["user_name"] = u.get("name", "Unknown")
+        post["user_avatar"] = u.get("avatar", "")
+    return post
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # EXPLORE / SEARCH
 # ═══════════════════════════════════════════════════════════════════════════════

@@ -13,12 +13,13 @@ import {
   MoreVertical, Phone, Video, Users, UserPlus, ContactRound, Share2,
   Paperclip, FileText, Mic, Play, Pause, Square,
   Pin, PinOff, BarChart3, Image, BellOff, Bell, Forward, Vote, Eraser,
-  Inbox, ShieldCheck, ShieldX
+  Inbox, ShieldCheck, ShieldX, Heart, Bookmark
 } from "lucide-react";
 import { toast } from "sonner";
 
 const EMOJI_MAP = { thumbsup: "\uD83D\uDC4D", heart: "\u2764\uFE0F", laugh: "\uD83D\uDE02", wow: "\uD83D\uDE2E", fire: "\uD83D\uDD25", clap: "\uD83D\uDC4F" };
 const EMOJI_LIST = Object.entries(EMOJI_MAP);
+const REACTION_EMOJI = { fire: "\uD83D\uDD25", trophy: "\uD83C\uDFC6", clap: "\uD83D\uDC4F", heart: "\u2764\uFE0F", "100": "\uD83D\uDCAF", muscle: "\uD83D\uDCAA" };
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -82,6 +83,23 @@ export default function ChatPage() {
   const [showForwardModal, setShowForwardModal] = useState(false);
   const [forwardMsg, setForwardMsg] = useState(null);
   const [forwardConvos, setForwardConvos] = useState([]);
+
+  // Shared post detail modal
+  const [viewPost, setViewPost] = useState(null);
+  const [viewPostComments, setViewPostComments] = useState([]);
+  const [showComments, setShowComments] = useState(false);
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false);
+  const openSharedPost = useCallback(async (postId) => {
+    try {
+      const res = await socialAPI.getPost(postId);
+      if (res.data) {
+        setViewPost(res.data);
+        socialAPI.getComments(postId).then(r => setViewPostComments(r.data || [])).catch(() => {});
+      }
+    } catch (err) {
+      toast.error("Post not found or deleted");
+    }
+  }, []);
 
   const reactionPickerRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -959,7 +977,7 @@ export default function ChatPage() {
                               {msg.content && !msg.shared_post && <span>{msg.content}</span>}
                               {/* Shared post card */}
                               {msg.shared_post && (
-                                <button onClick={() => window.location.href = `/feed?post=${msg.shared_post.id}`}
+                                <button onClick={() => openSharedPost(msg.shared_post.id)}
                                   className={`block w-full text-left rounded-lg overflow-hidden mt-0.5 mb-0.5 ${isMe ? "bg-white/10" : "bg-secondary/30"}`}>
                                   {msg.shared_post.media_url && (
                                     <img src={mediaUrl(msg.shared_post.media_url)} alt="" className="w-full h-28 object-cover" />
@@ -1463,6 +1481,167 @@ export default function ChatPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* ═══ SHARED POST DETAIL MODAL ═══ */}
+        {viewPost && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center p-4" style={{ zIndex: 99999 }}
+            onClick={() => { setViewPost(null); setViewPostComments([]); setShowComments(false); setReactionPickerOpen(false); }}>
+            <div className="bg-card rounded-2xl border border-border w-full max-w-lg max-h-[85vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}>
+              {/* Header */}
+              <div className="flex items-center gap-3 p-4 pb-2">
+                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden cursor-pointer"
+                  onClick={() => { setViewPost(null); navigate(`/player-card/${viewPost.user_id}`); }}>
+                  {viewPost.user_avatar
+                    ? <img src={mediaUrl(viewPost.user_avatar)} alt="" className="h-full w-full object-cover" />
+                    : <User className="h-5 w-5 text-primary" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <button className="font-bold text-sm hover:underline text-left"
+                    onClick={() => { setViewPost(null); navigate(`/player-card/${viewPost.user_id}`); }}>
+                    {viewPost.user_name}
+                  </button>
+                  <p className="text-[11px] text-muted-foreground">{new Date(viewPost.created_at).toLocaleString()}</p>
+                </div>
+                <button onClick={() => setViewPost(null)} className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              {/* Content */}
+              {viewPost.content && (
+                <p className="px-4 pb-3 text-sm whitespace-pre-wrap">{viewPost.content}</p>
+              )}
+              {/* Media */}
+              {viewPost.media_url && (
+                <img src={mediaUrl(viewPost.media_url)} alt="" className="w-full max-h-[50vh] object-contain bg-black/20" />
+              )}
+              {/* Reaction summary */}
+              {viewPost.reactions && Object.entries(viewPost.reactions).filter(([, v]) => v > 0).length > 0 && (
+                <div className="flex items-center gap-1 px-3 pt-2 text-[11px] text-muted-foreground">
+                  {Object.entries(viewPost.reactions).filter(([, v]) => v > 0).sort(([, a], [, b]) => b - a).slice(0, 4).map(([k, v]) => (
+                    <span key={k} className="flex items-center gap-0.5">
+                      <span className="text-sm">{REACTION_EMOJI[k]}</span>
+                      <span className="font-bold">{v}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              {/* Actions row */}
+              <div className="flex items-center gap-1 px-3 py-2 border-t border-border/50">
+                {/* Like */}
+                <button className={`flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors ${viewPost.liked_by_me ? "text-red-500" : "text-muted-foreground"}`}
+                  onClick={async () => {
+                    try {
+                      const res = await socialAPI.toggleLike(viewPost.id);
+                      setViewPost(p => p ? { ...p, liked_by_me: res.data.liked, likes_count: (p.likes_count || 0) + (res.data.liked ? 1 : -1) } : p);
+                    } catch (e) { toast.error("Failed"); }
+                  }}>
+                  <Heart className={`h-4 w-4 transition-all ${viewPost.liked_by_me ? "fill-red-500 scale-110" : ""}`} />
+                  <span className="font-bold text-xs">{viewPost.likes_count || 0}</span>
+                </button>
+                {/* Reaction Picker */}
+                <div className="relative">
+                  <button onClick={() => setReactionPickerOpen(prev => !prev)}
+                    className={`flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors ${viewPost.my_reaction ? "" : "text-muted-foreground"}`}>
+                    <span className="text-base">{viewPost.my_reaction ? REACTION_EMOJI[viewPost.my_reaction] : "+"}</span>
+                  </button>
+                  <AnimatePresence>
+                    {reactionPickerOpen && (
+                      <motion.div initial={{ opacity: 0, scale: 0.9, y: 5 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="absolute bottom-full left-0 mb-1 flex gap-1 p-1.5 rounded-xl bg-card border-2 border-border shadow-lg z-10">
+                        {Object.entries(REACTION_EMOJI).map(([key, emoji]) => (
+                          <button key={key} onClick={async () => {
+                            setReactionPickerOpen(false);
+                            const prev = viewPost.my_reaction;
+                            const reactions = { ...(viewPost.reactions || {}) };
+                            if (prev === key) {
+                              reactions[key] = Math.max(0, (reactions[key] || 1) - 1);
+                              setViewPost(p => p ? { ...p, my_reaction: null, reactions } : p);
+                            } else {
+                              if (prev) reactions[prev] = Math.max(0, (reactions[prev] || 1) - 1);
+                              reactions[key] = (reactions[key] || 0) + 1;
+                              setViewPost(p => p ? { ...p, my_reaction: key, reactions } : p);
+                            }
+                            try { await socialAPI.react(viewPost.id, key); } catch (e) { toast.error("Failed"); }
+                          }}
+                            className={`h-8 w-8 rounded-lg flex items-center justify-center text-lg hover:bg-secondary/50 transition-all hover:scale-110 ${viewPost.my_reaction === key ? "bg-primary/10 ring-2 ring-primary" : ""}`}>
+                            {emoji}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+                {/* Comment toggle */}
+                <button className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-muted-foreground hover:bg-secondary/50 transition-colors"
+                  onClick={() => setShowComments(prev => !prev)}>
+                  <MessageCircle className="h-4 w-4" />
+                  <span className="font-bold text-xs">{viewPost.comments_count || 0}</span>
+                </button>
+                <div className="flex-1" />
+                {/* Bookmark */}
+                <button className={`px-2 py-1.5 rounded-lg hover:bg-secondary/50 transition-colors ${viewPost.bookmarked_by_me ? "text-primary" : "text-muted-foreground"}`}
+                  onClick={async () => {
+                    try {
+                      const res = await socialAPI.toggleBookmark(viewPost.id);
+                      setViewPost(p => p ? { ...p, bookmarked_by_me: res.data.bookmarked } : p);
+                      toast.success(res.data.bookmarked ? "Saved" : "Removed from saved");
+                    } catch (e) { toast.error("Failed"); }
+                  }}>
+                  <Bookmark className={`h-4 w-4 transition-all ${viewPost.bookmarked_by_me ? "fill-primary" : ""}`} />
+                </button>
+              </div>
+              {/* Comments section — toggled by comment button */}
+              {showComments && (
+                <>
+                  {viewPostComments.length > 0 && (
+                    <div className="px-3 max-h-48 overflow-y-auto space-y-2 py-2 border-t border-border/50">
+                      {viewPostComments.map(c => (
+                        <div key={c.id} className="flex items-start gap-2">
+                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden cursor-pointer"
+                            onClick={() => { setViewPost(null); navigate(`/player-card/${c.user_id}`); }}>
+                            {c.user_avatar
+                              ? <img src={mediaUrl(c.user_avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                              : <User className="h-3 w-3 text-primary" />}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-bold mr-1.5 cursor-pointer hover:text-primary"
+                              onClick={() => { setViewPost(null); navigate(`/player-card/${c.user_id}`); }}>{c.user_name}</span>
+                            <span className="text-[10px] text-muted-foreground ml-1">{timeAgo(c.created_at)}</span>
+                            <p className="text-xs text-muted-foreground mt-0.5">{c.content}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {viewPostComments.length === 0 && (
+                    <p className="text-xs text-muted-foreground text-center py-3 border-t border-border/50">No comments yet</p>
+                  )}
+                  {/* Comment input */}
+                  <form className="flex items-center gap-2 px-3 py-2 border-t border-border/50" onSubmit={async (e) => {
+                    e.preventDefault();
+                    const input = e.target.elements.comment;
+                    const text = input.value.trim();
+                    if (!text) return;
+                    try {
+                      const res = await socialAPI.addComment(viewPost.id, { content: text });
+                      input.value = "";
+                      setViewPost(p => p ? { ...p, comments_count: (p.comments_count || 0) + 1 } : p);
+                      setViewPostComments(prev => [...prev, res.data || { id: Date.now(), user_name: user?.name, user_avatar: user?.avatar, content: text, created_at: new Date().toISOString() }]);
+                    } catch (err) { toast.error("Failed to comment"); }
+                  }}>
+                    <input name="comment" placeholder="Add a comment..." autoComplete="off"
+                      className="flex-1 bg-secondary/30 border border-border/50 rounded-full px-3 py-1.5 text-sm outline-none focus:border-primary/50" />
+                    <button type="submit" className="p-1.5 text-primary hover:text-primary/80">
+                      <Send className="h-4 w-4" />
+                    </button>
+                  </form>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1782,7 +1961,9 @@ export default function ChatPage() {
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
+
     </div>
   );
 }
