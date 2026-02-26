@@ -22,7 +22,7 @@ const FORMATS = [
   { id: "league", label: "League", desc: "Points-based league table" },
 ];
 const STATUS_COLORS = {
-  registration: "bg-emerald-500/15 text-emerald-400",
+  registration: "bg-brand-500/15 text-brand-400",
   in_progress: "bg-sky-500/15 text-sky-400",
   completed: "bg-violet-500/15 text-violet-400",
   cancelled: "bg-destructive/15 text-destructive",

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 function CompatBadge({ score }) {
-  const color = score >= 80 ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"
+  const color = score >= 80 ? "bg-brand-500/15 text-brand-400 border-brand-500/20"
     : score >= 50 ? "bg-amber-500/15 text-amber-400 border-amber-500/20"
     : "bg-red-500/15 text-red-400 border-red-500/20";
   return (
@@ -58,7 +58,7 @@ function MatchCard({ match, onJoin, userId, showCompat }) {
       </div>
 
       {hasResult && (
-        <div className={`rounded-lg p-3 mb-3 text-xs ${resultConfirmed ? "bg-emerald-500/10 border border-emerald-500/20" : "bg-amber-500/10 border border-amber-500/20"}`}>
+        <div className={`rounded-lg p-3 mb-3 text-xs ${resultConfirmed ? "bg-brand-500/10 border border-brand-500/20" : "bg-amber-500/10 border border-amber-500/20"}`}>
           <div className="flex items-center gap-1.5 font-semibold mb-1">
             <FileCheck className="h-3 w-3" />
             {resultConfirmed ? "Result Confirmed" : "Result Pending Confirmation"}
@@ -130,7 +130,7 @@ function MercenaryCard({ post, userId, onApply, onAccept, onReject, onPay, payin
                 </div>
               </div>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="ghost" className="h-7 px-2 text-emerald-400 hover:bg-emerald-500/10"
+                <Button size="sm" variant="ghost" className="h-7 px-2 text-brand-400 hover:bg-brand-500/10"
                   onClick={() => onAccept(post.id, a.id)} data-testid={`accept-${a.id}`}>
                   <CheckCircle className="h-3.5 w-3.5 mr-1" /> Accept
                 </Button>
@@ -151,10 +151,10 @@ function MercenaryCard({ post, userId, onApply, onAccept, onReject, onPay, payin
             return (
               <div key={a.id} className="flex items-center justify-between bg-secondary/20 rounded-lg p-2">
                 <div className="flex items-center gap-2">
-                  <UserCheck className="h-3.5 w-3.5 text-emerald-400" />
+                  <UserCheck className="h-3.5 w-3.5 text-brand-400" />
                   <span className="text-xs font-semibold">{a.name}</span>
                 </div>
-                <Badge className={`text-[10px] ${paid ? "bg-emerald-500/20 text-emerald-400" : "bg-amber-500/20 text-amber-400"}`}>
+                <Badge className={`text-[10px] ${paid ? "bg-brand-500/20 text-brand-400" : "bg-amber-500/20 text-amber-400"}`}>
                   {paid ? "Paid" : "Awaiting Payment"}
                 </Badge>
               </div>
@@ -173,12 +173,12 @@ function MercenaryCard({ post, userId, onApply, onAccept, onReject, onPay, payin
         {isAccepted && !hasPaid && (
           <Button size="sm" onClick={() => onPay(post.id)} disabled={paying === post.id}
             data-testid={`pay-mercenary-${post.id}`}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs h-8">
+            className="bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs h-8">
             {paying === post.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CreditCard className="h-3.5 w-3.5 mr-1" />}
             Pay {"\u20B9"}{post.amount_per_player}
           </Button>
         )}
-        {hasPaid && <Badge className="bg-emerald-500/20 text-emerald-400">Confirmed — You're In!</Badge>}
+        {hasPaid && <Badge className="bg-brand-500/20 text-brand-400">Confirmed — You're In!</Badge>}
       </div>
     </motion.div>
   );
@@ -273,13 +273,13 @@ function ResultDialog({ match, onSubmit, userId }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-emerald-400 font-mono uppercase">Team A</Label>
+              <Label className="text-xs text-brand-400 font-mono uppercase">Team A</Label>
               <div className="space-y-1.5 mt-2">
                 {players.map(p => (
                   <button key={p.id} onClick={() => togglePlayer(p.id, "a")}
                     data-testid={`team-a-${p.id}`}
                     className={`w-full text-left rounded-lg p-2 text-xs transition-all ${
-                      teamA.includes(p.id) ? "bg-emerald-500/15 border border-emerald-500/30 text-emerald-400" : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
+                      teamA.includes(p.id) ? "bg-brand-500/15 border border-brand-500/30 text-brand-400" : "bg-secondary/30 text-muted-foreground hover:bg-secondary/50"
                     }`}>
                     <span className="font-semibold">{p.name}</span>
                     <span className="text-[10px] ml-1 opacity-70">({p.rating})</span>
@@ -354,7 +354,7 @@ function ConfirmResultBar({ match, userId, onConfirm }) {
         </span>
       </div>
       <div className="flex gap-1.5">
-        <Button size="sm" variant="ghost" className="h-7 px-2 text-emerald-400 hover:bg-emerald-500/10"
+        <Button size="sm" variant="ghost" className="h-7 px-2 text-brand-400 hover:bg-brand-500/10"
           onClick={() => onConfirm(match.id, true)} data-testid={`confirm-yes-${match.id}`}>
           <ThumbsUp className="h-3.5 w-3.5 mr-1" /> Confirm
         </Button>

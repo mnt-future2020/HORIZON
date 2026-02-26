@@ -404,7 +404,7 @@ function VenueOwnerDashboardContent() {
   };
 
   const statusConfig = {
-    confirmed: { color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", label: "Confirmed" },
+    confirmed: { color: "bg-brand-500/15 text-brand-400 border-brand-500/20", label: "Confirmed" },
     pending: { color: "bg-amber-500/15 text-amber-400 border-amber-500/20", label: "Pending" },
     payment_pending: { color: "bg-sky-500/15 text-sky-400 border-sky-500/20", label: "Awaiting Payment" },
     cancelled: { color: "bg-destructive/15 text-destructive border-destructive/20", label: "Cancelled" },
@@ -667,7 +667,7 @@ function VenueOwnerDashboardContent() {
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
             {[
               { label: "Total", value: bookingStats.total, color: "text-foreground" },
-              { label: "Confirmed", value: bookingStats.confirmed, color: "text-emerald-400" },
+              { label: "Confirmed", value: bookingStats.confirmed, color: "text-brand-400" },
               { label: "Pending", value: bookingStats.pending, color: "text-amber-400" },
               { label: "Cancelled", value: bookingStats.cancelled, color: "text-destructive" },
               { label: "Upcoming", value: bookingStats.upcoming, color: "text-sky-400" },
@@ -882,7 +882,7 @@ function VenueOwnerDashboardContent() {
                       <div>
                         <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Paid</span>
                         <p className="text-sm font-bold mt-0.5">
-                          <span className={selectedBooking.split_config.shares_paid >= selectedBooking.split_config.total_shares ? "text-emerald-400" : "text-amber-400"}>
+                          <span className={selectedBooking.split_config.shares_paid >= selectedBooking.split_config.total_shares ? "text-brand-400" : "text-amber-400"}>
                             {selectedBooking.split_config.shares_paid}
                           </span>
                           /{selectedBooking.split_config.total_shares}
@@ -1055,7 +1055,7 @@ function VenueOwnerDashboardContent() {
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Total</div>
                         </div>
                         <div className="glass-card rounded-lg p-3 text-center">
-                          <div className="font-display font-black text-xl text-emerald-400">{r5}</div>
+                          <div className="font-display font-black text-xl text-brand-400">{r5}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">5-Star</div>
                         </div>
                       </>
@@ -1122,13 +1122,13 @@ function VenueOwnerDashboardContent() {
                 const isUp = diff > 0;
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isUp ? "border-l-amber-500" : "border-l-emerald-500") : "border-l-muted-foreground/30 opacity-60"}`}
+                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isUp ? "border-l-amber-500" : "border-l-brand-500") : "border-l-muted-foreground/30 opacity-60"}`}
                     data-testid={`rule-card-${r.id}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-sm text-foreground">{r.name}</span>
-                          <Badge className={`text-[10px] ${r.action?.type === "multiplier" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/20"} border`}>
+                          <Badge className={`text-[10px] ${r.action?.type === "multiplier" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : "bg-brand-500/15 text-brand-400 border-brand-500/20"} border`}>
                             {r.action?.type === "multiplier" ? `${r.action.value}x` : `-${Math.round((r.action.value || 0) * 100)}%`}
                           </Badge>
                           <span className="text-[10px] text-muted-foreground">P{r.priority}</span>
@@ -1149,8 +1149,8 @@ function VenueOwnerDashboardContent() {
                             <span className="text-muted-foreground">Effect: </span>
                             <span className="text-muted-foreground">{"\u20B9"}{basePrice}</span>
                             <span className="text-muted-foreground mx-1">{"\u2192"}</span>
-                            <span className={`font-bold ${isUp ? "text-amber-400" : "text-emerald-400"}`}>{"\u20B9"}{effectivePrice}</span>
-                            <span className={`ml-1 text-[10px] ${isUp ? "text-amber-400" : "text-emerald-400"}`}>
+                            <span className={`font-bold ${isUp ? "text-amber-400" : "text-brand-400"}`}>{"\u20B9"}{effectivePrice}</span>
+                            <span className={`ml-1 text-[10px] ${isUp ? "text-amber-400" : "text-brand-400"}`}>
                               ({isUp ? "+" : ""}{"\u20B9"}{diff})
                             </span>
                           </div>
@@ -1249,7 +1249,7 @@ function VenueOwnerDashboardContent() {
                     {(() => {
                       const d = previewPrice(ruleForm) - basePrice;
                       return d !== 0 && (
-                        <Badge className={`text-[10px] ${d > 0 ? "bg-amber-500/15 text-amber-400" : "bg-emerald-500/15 text-emerald-400"}`}>
+                        <Badge className={`text-[10px] ${d > 0 ? "bg-amber-500/15 text-amber-400" : "bg-brand-500/15 text-brand-400"}`}>
                           {d > 0 ? "+" : ""}{"\u20B9"}{d}
                         </Badge>
                       );
@@ -1590,7 +1590,7 @@ function MLPricingPanel({ venueId, venueName }) {
   };
 
   const demandColor = (level) => {
-    if (level === "high") return "text-emerald-400 bg-emerald-500/15";
+    if (level === "high") return "text-brand-400 bg-brand-500/15";
     if (level === "medium") return "text-amber-400 bg-amber-500/15";
     return "text-muted-foreground bg-secondary/50";
   };
@@ -1644,7 +1644,7 @@ function MLPricingPanel({ venueId, venueName }) {
           </Button>
         </div>
         {trainResult && (
-          <div className={`mt-3 p-3 rounded-lg text-xs ${trainResult.status === "trained" ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"}`}>
+          <div className={`mt-3 p-3 rounded-lg text-xs ${trainResult.status === "trained" ? "bg-brand-500/10 text-brand-400" : "bg-amber-500/10 text-amber-400"}`}>
             {trainResult.message}
           </div>
         )}
@@ -1825,7 +1825,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
             <div className="text-center">
               <div id="venue-qr-reader" ref={scannerRef} className="w-full max-w-sm mx-auto rounded-xl overflow-hidden mb-4" />
               <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
                 <span className="text-xs text-muted-foreground font-bold">Scanning... point at QR code</span>
               </div>
               <Button variant="outline" size="sm" onClick={stopCamera} className="text-xs">
@@ -1915,9 +1915,9 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
                 </div>
               ))}
               {checkedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <UserCheck className="h-4 w-4 text-emerald-400" />
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20">
+                  <div className="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center shrink-0">
+                    <UserCheck className="h-4 w-4 text-brand-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -1927,13 +1927,13 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
                     <div className="text-[10px] text-muted-foreground">
                       {b.start_time} - {b.end_time} · Turf #{b.turf_number || 1}
                       {b.checkin_time && (
-                        <span className="ml-2 text-emerald-400">
+                        <span className="ml-2 text-brand-400">
                           at {new Date(b.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                         </span>
                       )}
                     </div>
                   </div>
-                  <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px] shrink-0">
+                  <Badge className="bg-brand-500/15 text-brand-400 text-[10px] shrink-0">
                     <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Present
                   </Badge>
                 </div>
@@ -1948,7 +1948,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
         <div className={`rounded-xl border-2 p-6 text-center ${
           result.error ? "border-destructive/50 bg-destructive/5"
             : result.already_checked_in ? "border-amber-500/50 bg-amber-500/5"
-            : "border-emerald-500/50 bg-emerald-500/5"
+            : "border-brand-500/50 bg-brand-500/5"
         }`}>
           {result.error ? (
             <>
@@ -1964,8 +1964,8 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
             </>
           ) : (
             <>
-              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-emerald-400" />
-              <p className="font-display font-bold text-lg text-emerald-400">Check-in Successful!</p>
+              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-brand-400" />
+              <p className="font-display font-bold text-lg text-brand-400">Check-in Successful!</p>
               <p className="text-sm text-muted-foreground mt-2">
                 <span className="font-bold text-foreground">{result.player_name}</span> is checked in
               </p>

@@ -25,7 +25,7 @@ const REACTION_EMOJI = {
 };
 
 const STORY_COLORS = [
-  "from-green-500 to-emerald-600",
+  "from-green-500 to-brand-600",
   "from-blue-500 to-indigo-600",
   "from-purple-500 to-pink-600",
   "from-orange-500 to-red-600",
@@ -476,8 +476,8 @@ export default function SocialFeedPage() {
             {/* Create Story */}
             <button onClick={() => setShowStoryCreate(true)}
               className="flex flex-col items-center gap-2 min-w-[80px] flex-shrink-0">
-              <div className="relative w-16 h-16 rounded-full border-2 border-dashed border-emerald-600/40 flex items-center justify-center cursor-pointer hover:bg-emerald-600/5 transition-colors">
-                <Plus className="h-6 w-6 text-emerald-600" />
+              <div className="relative w-16 h-16 rounded-full border-2 border-dashed border-brand-600/40 flex items-center justify-center cursor-pointer hover:bg-brand-600/5 transition-colors">
+                <Plus className="h-6 w-6 text-brand-600" />
               </div>
               <span className="text-[11px] font-medium text-muted-foreground">Add Story</span>
             </button>
@@ -488,7 +488,7 @@ export default function SocialFeedPage() {
                 className="flex flex-col items-center gap-2 min-w-[80px] flex-shrink-0">
                 <div className={`w-16 h-16 rounded-full p-[2px] ${
                   group.has_unviewed
-                    ? "bg-gradient-to-br from-emerald-400 to-emerald-600"
+                    ? "bg-gradient-to-br from-brand-400 to-brand-600"
                     : "bg-muted-foreground/20"
                 }`}>
                   <div className="w-full h-full rounded-full border-2 border-background overflow-hidden relative">
@@ -514,11 +514,11 @@ export default function SocialFeedPage() {
             {[{ id: "for_you", label: "For You" }, { id: "following", label: "Following" }].map((t) => (
               <button key={t.id} onClick={() => handleTabChange(t.id)}
                 className={`relative pb-2 text-sm font-bold transition-colors ${
-                  feedTab === t.id ? "text-emerald-600" : "text-muted-foreground hover:text-foreground"
+                  feedTab === t.id ? "text-brand-600" : "text-muted-foreground hover:text-foreground"
                 }`}>
                 {t.label}
                 {feedTab === t.id && (
-                  <div className="absolute bottom-0 left-0 w-full h-[3px] bg-emerald-600 rounded-t-full"></div>
+                  <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full"></div>
                 )}
               </button>
             ))}
@@ -553,7 +553,7 @@ export default function SocialFeedPage() {
                 {user?.avatar ? <img src={mediaUrl(user.avatar)} className="w-full h-full object-cover" /> : <User className="h-5 w-5 text-muted-foreground" />}
               </div>
               <span className="text-lg text-muted-foreground/60 flex-1">Share a training tip or update...</span>
-              <Button size="sm" className="ml-auto bg-emerald-600 text-white rounded-full px-5 hover:bg-emerald-700 shadow-md shadow-emerald-600/20" onClick={(e) => { e.stopPropagation(); setShowComposer(true); }}>
+              <Button size="sm" className="ml-auto bg-brand-600 text-white rounded-full px-5 hover:bg-brand-700 shadow-md shadow-brand-600/20" onClick={(e) => { e.stopPropagation(); setShowComposer(true); }}>
                 Post
               </Button>
             </div>
@@ -586,10 +586,10 @@ export default function SocialFeedPage() {
                   <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/30">
                     <div className="flex gap-4 text-muted-foreground">
                       <button onClick={() => fileInputRef.current?.click()}
-                        className="hover:text-emerald-600 transition-colors flex items-center gap-1.5" title="Add photo">
+                        className="hover:text-brand-600 transition-colors flex items-center gap-1.5" title="Add photo">
                         <Image className="h-5 w-5" /><span className="text-xs font-bold">Media</span>
                       </button>
-                      <button className="hover:text-emerald-600 transition-colors flex items-center gap-1.5">
+                      <button className="hover:text-brand-600 transition-colors flex items-center gap-1.5">
                         <Zap className="h-5 w-5" /><span className="text-xs font-bold">Score</span>
                       </button>
                     </div>
@@ -598,7 +598,7 @@ export default function SocialFeedPage() {
                         Cancel
                       </button>
                       <button onClick={handleCreatePost} disabled={!newContent.trim() || posting}
-                        className="bg-emerald-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-emerald-600/20 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2">
+                        className="bg-brand-600 text-white px-6 py-2 rounded-full font-bold text-sm shadow-lg shadow-brand-600/20 hover:scale-105 transition-transform disabled:opacity-50 disabled:hover:scale-100 flex items-center gap-2">
                         {posting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Post"}
                       </button>
                     </div>
@@ -628,13 +628,13 @@ export default function SocialFeedPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-display font-bold text-[15px] cursor-pointer hover:text-emerald-600 transition-colors truncate"
+                        <span className="font-display font-bold text-[15px] cursor-pointer hover:text-brand-600 transition-colors truncate"
                           onClick={() => navigate(`/player-card/${post.user_id}`)}>
                           {post.user_name}
                         </span>
                         {post.user_id !== user?.id && (
                           <button onClick={() => handleFollow(post.user_id)}
-                            className={`text-[11px] font-bold hover:underline ml-2 ${post.is_following ? "text-muted-foreground" : "text-emerald-600"}`}>
+                            className={`text-[11px] font-bold hover:underline ml-2 ${post.is_following ? "text-muted-foreground" : "text-brand-600"}`}>
                             {post.is_following ? "Following" : "Follow"}
                           </button>
                         )}
@@ -643,7 +643,7 @@ export default function SocialFeedPage() {
                     </div>
                   </div>
                   {post.post_type !== "text" && post.post_type !== "photo" && (
-                    <Badge className="bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/20 shadow-none border-none text-[10px] uppercase font-bold tracking-wider">{post.post_type === "match_result" ? "score" : post.post_type}</Badge>
+                    <Badge className="bg-brand-600/10 text-brand-600 hover:bg-brand-600/20 shadow-none border-none text-[10px] uppercase font-bold tracking-wider">{post.post_type === "match_result" ? "score" : post.post_type}</Badge>
                   )}
                   {post.user_id === user?.id && (
                     <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive"
@@ -700,8 +700,8 @@ export default function SocialFeedPage() {
                     {/* Like */}
                     <button className="flex items-center gap-2 group transition-colors"
                       onClick={() => handleLike(post.id)}>
-                      <Heart className={`h-5 w-5 transition-all group-hover:text-emerald-600 ${post.liked_by_me ? "fill-pink-500 text-pink-500" : "text-muted-foreground"}`} />
-                      <span className={`font-bold text-xs group-hover:text-emerald-600 ${post.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
+                      <Heart className={`h-5 w-5 transition-all group-hover:text-brand-600 ${post.liked_by_me ? "fill-pink-500 text-pink-500" : "text-muted-foreground"}`} />
+                      <span className={`font-bold text-xs group-hover:text-brand-600 ${post.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
                         {post.likes_count || 0}
                       </span>
                     </button>
@@ -709,7 +709,7 @@ export default function SocialFeedPage() {
                     {/* Reaction Picker */}
                     <div className="relative" ref={reactionPickerRef}>
                       <button onClick={() => setReactionPickerPost(reactionPickerPost === post.id ? null : post.id)}
-                        className={`flex items-center gap-1 group transition-colors text-muted-foreground hover:text-emerald-600 ${post.my_reaction ? "text-emerald-600" : ""}`}>
+                        className={`flex items-center gap-1 group transition-colors text-muted-foreground hover:text-brand-600 ${post.my_reaction ? "text-brand-600" : ""}`}>
                         <span className="text-base group-hover:scale-110 transition-transform">{post.my_reaction ? REACTION_EMOJI[post.my_reaction] : "+"}</span>
                       </button>
                     <AnimatePresence>
@@ -719,7 +719,7 @@ export default function SocialFeedPage() {
                           className="absolute bottom-full left-0 mb-1 flex gap-1 p-1.5 rounded-xl bg-card border-2 border-border shadow-lg z-10">
                           {Object.entries(REACTION_EMOJI).map(([key, emoji]) => (
                             <button key={key} onClick={() => handleReaction(post.id, key)}
-                              className={`h-8 w-8 rounded-full flex items-center justify-center text-lg hover:bg-secondary/50 transition-all hover:scale-110 ${post.my_reaction === key ? "bg-emerald-600/10 ring-2 ring-emerald-600" : ""}`}>
+                              className={`h-8 w-8 rounded-full flex items-center justify-center text-lg hover:bg-secondary/50 transition-all hover:scale-110 ${post.my_reaction === key ? "bg-brand-600/10 ring-2 ring-brand-600" : ""}`}>
                               {emoji}
                             </button>
                           ))}
@@ -729,14 +729,14 @@ export default function SocialFeedPage() {
                   </div>
 
                   {/* Comments */}
-                  <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
+                  <button className="flex items-center gap-2 text-muted-foreground hover:text-brand-600 transition-colors group"
                     onClick={() => toggleComments(post.id)}>
                     <MessageSquare className="h-5 w-5 group-hover:scale-110 transition-transform" />
                     <span className="font-bold text-xs">{post.comments_count || 0}</span>
                   </button>
 
                   {/* Share — opens DM sheet */}
-                  <button className="flex items-center gap-2 text-muted-foreground hover:text-emerald-600 transition-colors group"
+                  <button className="flex items-center gap-2 text-muted-foreground hover:text-brand-600 transition-colors group"
                     onClick={() => setSharePost(post)} title="Share">
                     <Share2 className="h-5 w-5 group-hover:scale-110 transition-transform" />
                   </button>
@@ -747,16 +747,16 @@ export default function SocialFeedPage() {
 
                   {/* Message author */}
                   {post.user_id !== user?.id && (
-                    <button className="text-muted-foreground hover:text-emerald-600 transition-colors group"
+                    <button className="text-muted-foreground hover:text-brand-600 transition-colors group"
                       onClick={() => navigate(`/chat?user=${post.user_id}`)} title="Message">
                       <MessageSquare className="h-5 w-5 group-hover:scale-110 transition-transform" />
                     </button>
                   )}
 
                   {/* Bookmark */}
-                  <button className="text-muted-foreground hover:text-emerald-600 transition-colors group ml-2"
+                  <button className="text-muted-foreground hover:text-brand-600 transition-colors group ml-2"
                     onClick={() => handleBookmark(post.id)} title={post.bookmarked_by_me ? "Unsave" : "Save"}>
-                    <Bookmark className={`h-5 w-5 group-hover:scale-110 transition-transform ${post.bookmarked_by_me ? "fill-emerald-600 text-emerald-600" : "text-muted-foreground"}`} />
+                    <Bookmark className={`h-5 w-5 group-hover:scale-110 transition-transform ${post.bookmarked_by_me ? "fill-brand-600 text-brand-600" : "text-muted-foreground"}`} />
                   </button>
                 </div>
 
@@ -780,11 +780,11 @@ export default function SocialFeedPage() {
                         </div>
                       ))}
                       <div className="flex gap-3 mt-4 items-center">
-                        <Input placeholder="Write a comment..." className="h-9 rounded-full text-sm bg-muted border-border/40 focus-visible:ring-emerald-600/50"
+                        <Input placeholder="Write a comment..." className="h-9 rounded-full text-sm bg-muted border-border/40 focus-visible:ring-brand-600/50"
                           value={commentInputs[post.id] || ""}
                           onChange={(e) => setCommentInputs((prev) => ({ ...prev, [post.id]: e.target.value }))}
                           onKeyDown={(e) => e.key === "Enter" && handleComment(post.id)} />
-                        <button className="h-9 w-9 flex-shrink-0 bg-emerald-600 text-white rounded-full flex items-center justify-center hover:bg-emerald-700 transition-colors"
+                        <button className="h-9 w-9 flex-shrink-0 bg-brand-600 text-white rounded-full flex items-center justify-center hover:bg-brand-700 transition-colors"
                           onClick={() => handleComment(post.id)} disabled={!commentInputs[post.id]?.trim()}>
                           <Send className="h-4 w-4" />
                         </button>
@@ -800,7 +800,7 @@ export default function SocialFeedPage() {
         {/* Load More */}
         {page < totalPages && (
           <div className="text-center mt-8">
-            <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700 hover:underline px-6 py-2 transition-all" onClick={() => loadFeed(page + 1)}>Load More</button>
+            <button className="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline px-6 py-2 transition-all" onClick={() => loadFeed(page + 1)}>Load More</button>
           </div>
         )}
 
@@ -825,7 +825,7 @@ export default function SocialFeedPage() {
             <div className="bg-card rounded-3xl p-6 border border-border/40 shadow-sm">
               <h3 className="font-display font-bold text-foreground mb-6 text-sm flex items-center justify-between">
                 Performance Stats
-                {engScore && <Badge className="bg-emerald-600 text-white border-none shadow-none uppercase text-[9px] tracking-wider hover:bg-emerald-700"><Zap className="h-3 w-3 mr-1"/> Level {engScore.level}</Badge>}
+                {engScore && <Badge className="bg-brand-600 text-white border-none shadow-none uppercase text-[9px] tracking-wider hover:bg-brand-700"><Zap className="h-3 w-3 mr-1"/> Level {engScore.level}</Badge>}
               </h3>
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between p-3 rounded-2xl bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20">
@@ -840,13 +840,13 @@ export default function SocialFeedPage() {
                   </div>
                 </div>
                 <div className="flex gap-4">
-                  <button onClick={() => openFollowModal("followers")} className="flex-1 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-center hover:scale-[1.03] transition-transform">
-                    <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Followers</p>
-                    <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200">{engagement.followers_count}</p>
+                  <button onClick={() => openFollowModal("followers")} className="flex-1 p-3 rounded-2xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-center hover:scale-[1.03] transition-transform">
+                    <p className="text-[10px] uppercase font-bold text-brand-600 dark:text-brand-400">Followers</p>
+                    <p className="text-lg font-bold text-brand-900 dark:text-brand-200">{engagement.followers_count}</p>
                   </button>
-                  <button onClick={() => openFollowModal("following")} className="flex-1 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-center hover:scale-[1.03] transition-transform">
-                    <p className="text-[10px] uppercase font-bold text-emerald-600 dark:text-emerald-400">Following</p>
-                    <p className="text-lg font-bold text-emerald-900 dark:text-emerald-200">{engagement.following_count}</p>
+                  <button onClick={() => openFollowModal("following")} className="flex-1 p-3 rounded-2xl bg-brand-50 dark:bg-brand-500/10 border border-brand-100 dark:border-brand-500/20 text-center hover:scale-[1.03] transition-transform">
+                    <p className="text-[10px] uppercase font-bold text-brand-600 dark:text-brand-400">Following</p>
+                    <p className="text-lg font-bold text-brand-900 dark:text-brand-200">{engagement.following_count}</p>
                   </button>
                 </div>
               </div>
@@ -854,10 +854,10 @@ export default function SocialFeedPage() {
           )}
 
           {/* Daily Prompt Widget */}
-          <div className="bg-emerald-600 p-6 rounded-3xl text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden">
+          <div className="bg-brand-600 p-6 rounded-3xl text-white shadow-xl shadow-brand-600/20 relative overflow-hidden">
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
-                <p className="text-[10px] uppercase font-bold tracking-widest text-emerald-100/80">Daily Prompt</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-brand-100/80">Daily Prompt</p>
               </div>
               <p className="text-lg font-bold leading-tight mb-6 max-w-[240px]">
                 {engagement?.daily_prompt || "What are your training goals for the upcoming season?"}
@@ -867,7 +867,7 @@ export default function SocialFeedPage() {
                 setNewContent((engagement?.daily_prompt || "What are your training goals for the upcoming season?") + " "); 
                 window.scrollTo({top: 0, behavior: "smooth"}); 
               }}
-                className="w-full bg-white text-emerald-600 py-3 rounded-full font-bold text-sm hover:bg-emerald-50 transition-colors shadow-sm">
+                className="w-full bg-white text-brand-600 py-3 rounded-full font-bold text-sm hover:bg-brand-50 transition-colors shadow-sm">
                 Post Answer
               </button>
             </div>
@@ -879,24 +879,24 @@ export default function SocialFeedPage() {
             <div className="bg-card rounded-3xl p-6 border border-border/40 shadow-sm">
               <div className="flex items-center justify-between mb-6">
                 <h3 className="font-display font-bold text-foreground text-sm">Suggested for you</h3>
-                {algoPlayers.length > 0 && <span className="text-[9px] bg-emerald-600/10 text-emerald-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">AI Ranked</span>}
+                {algoPlayers.length > 0 && <span className="text-[9px] bg-brand-600/10 text-brand-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">AI Ranked</span>}
               </div>
               <div className="flex flex-col gap-5">
                 {(algoPlayers.length > 0 ? algoPlayers : suggestedFollows).slice(0, 5).map((s) => (
                   <div key={s.id} className="flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer group" onClick={() => navigate(`/player-card/${s.id}`)}>
-                      <div className="w-10 h-10 rounded-full bg-secondary/30 overflow-hidden border border-border/20 group-hover:border-emerald-600 transition-colors flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-secondary/30 overflow-hidden border border-border/20 group-hover:border-brand-600 transition-colors flex items-center justify-center">
                         {s.avatar ? <img src={mediaUrl(s.avatar)} className="w-full h-full object-cover" /> : <User className="h-4 w-4 text-muted-foreground" />}
                       </div>
                       <div className="min-w-0 pr-2">
-                        <p className="text-sm font-bold truncate group-hover:text-emerald-600 transition-colors">{s.name}</p>
+                        <p className="text-sm font-bold truncate group-hover:text-brand-600 transition-colors">{s.name}</p>
                         <p className="text-[11px] text-muted-foreground truncate">
                           {s.rec_reason === "played_together" ? "Played together" : s.rec_reason === "mutual_friends" ? "Mutual friends" : s.reason === "played_together" ? "Co-Lobbian" : s.games_together ? `${s.games_together} games` : "Recommended"}
                         </p>
                       </div>
                     </div>
                     <button onClick={() => handleFollow(s.id)}
-                      className={`text-[11px] font-bold hover:underline ${followedUsers.has(s.id) ? "text-muted-foreground" : "text-emerald-600"}`}>
+                      className={`text-[11px] font-bold hover:underline ${followedUsers.has(s.id) ? "text-muted-foreground" : "text-brand-600"}`}>
                       {followedUsers.has(s.id) ? "Following" : "Follow"}
                     </button>
                   </div>

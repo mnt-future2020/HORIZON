@@ -19,7 +19,7 @@ import {
 const PlayIcon = Play;
 
 const STATUS_COLORS = {
-  registration: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  registration: "bg-brand-500/15 text-brand-400 border-brand-500/30",
   in_progress: "bg-sky-500/15 text-sky-400 border-sky-500/30",
   completed: "bg-violet-500/15 text-violet-400 border-violet-500/30",
   cancelled: "bg-destructive/15 text-destructive border-destructive/30",
@@ -311,7 +311,7 @@ export default function TournamentDetailPage() {
               </Button>
             )}
             {isOrganizer && tournament.status === "registration" && (
-              <Button onClick={handleStart} className="bg-emerald-600 text-white font-bold text-xs h-9"
+              <Button onClick={handleStart} className="bg-brand-600 text-white font-bold text-xs h-9"
                 data-testid="start-tournament-btn">
                 <Play className="h-4 w-4 mr-1" /> Start Tournament
               </Button>
@@ -421,7 +421,7 @@ export default function TournamentDetailPage() {
                       </td>
                       <td className="p-3 font-bold">{s.name}</td>
                       <td className="p-3 text-center">{s.played}</td>
-                      <td className="p-3 text-center text-emerald-400">{s.won}</td>
+                      <td className="p-3 text-center text-brand-400">{s.won}</td>
                       <td className="p-3 text-center text-muted-foreground">{s.drawn}</td>
                       <td className="p-3 text-center text-destructive">{s.lost}</td>
                       <td className="p-3 text-center">{s.goals_for}</td>
@@ -478,7 +478,7 @@ export default function TournamentDetailPage() {
                   </p>
                 </div>
                 {tournament.entry_fee > 0 && p.payment_status && (
-                  <Badge className={p.payment_status === "paid" ? "bg-emerald-500/15 text-emerald-400 text-[10px]" : "bg-amber-500/15 text-amber-400 text-[10px]"}>
+                  <Badge className={p.payment_status === "paid" ? "bg-brand-500/15 text-brand-400 text-[10px]" : "bg-amber-500/15 text-amber-400 text-[10px]"}>
                     {p.payment_status === "paid" ? <><CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Paid</> : <><Clock className="h-2.5 w-2.5 mr-0.5" /> Pending</>}
                   </Badge>
                 )}
@@ -568,7 +568,7 @@ export default function TournamentDetailPage() {
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
             <DialogTitle className="font-display flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-emerald-400" /> Submit Result
+              <CheckCircle className="h-5 w-5 text-brand-400" /> Submit Result
             </DialogTitle>
           </DialogHeader>
           {resultDialog && (
@@ -777,7 +777,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
               <span className="text-xs text-muted-foreground ml-2">{displayData.period_label || displayData.match_label}</span>
             </div>
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {connected && <span className="text-emerald-400">{"\u25cf"} Connected</span>}
+              {connected && <span className="text-brand-400">{"\u25cf"} Connected</span>}
               <Eye className="w-3.5 h-3.5" />
               <span>{spectatorCount || displayData.spectator_count || 0}</span>
             </div>
@@ -872,7 +872,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                 {[...displayEvents].reverse().map(ev => (
                   <div key={ev.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 text-sm">
                     <span className="text-muted-foreground text-xs w-8 shrink-0">{ev.minute > 0 ? `${ev.minute}'` : ""}</span>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.team === "home" ? "bg-primary" : "bg-emerald-500"}`} />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.team === "home" ? "bg-primary" : "bg-brand-500"}`} />
                     <span className="font-medium">{ev.player_name || ev.team}</span>
                     <span className="text-muted-foreground">{ev.description || ev.type}</span>
                   </div>
@@ -912,7 +912,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                     {displayData?.home?.name || "Home"}
                   </button>
                   <button onClick={() => setEventForm(f => ({ ...f, team: "away" }))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${eventForm.team === "away" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-secondary"}`}>
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${eventForm.team === "away" ? "bg-brand-500/20 text-brand-400 border border-brand-500/30" : "bg-secondary"}`}>
                     {displayData?.away?.name || "Away"}
                   </button>
                 </div>
@@ -986,7 +986,7 @@ function MatchCard({ match, nameMap, isOrganizer, onSubmitResult, horizontal }) 
         <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
           <Hash className="h-2.5 w-2.5" />{match.match_number}
         </span>
-        {isDone && <CheckCircle className="h-3 w-3 text-emerald-400" />}
+        {isDone && <CheckCircle className="h-3 w-3 text-brand-400" />}
         {isBye && <Badge className="text-[9px] bg-secondary text-muted-foreground">BYE</Badge>}
       </div>
       {/* Player A */}

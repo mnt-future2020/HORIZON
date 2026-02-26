@@ -30,7 +30,7 @@ const SIGNIFICANCE_COLORS = {
   save: "text-sky-400 bg-sky-500/15",
   rally: "text-violet-400 bg-violet-500/15",
   foul: "text-red-400 bg-red-500/15",
-  celebration: "text-emerald-400 bg-emerald-500/15",
+  celebration: "text-brand-400 bg-brand-500/15",
   turning_point: "text-orange-400 bg-orange-500/15",
   skill_move: "text-cyan-400 bg-cyan-500/15",
   other: "text-muted-foreground bg-secondary/50",
@@ -50,7 +50,7 @@ function StatusBadge({ status }) {
   const map = {
     uploaded: { color: "bg-sky-500/15 text-sky-400 border-sky-500/20", label: "Ready" },
     analyzing: { color: "bg-amber-500/15 text-amber-400 border-amber-500/20", label: "Analyzing..." },
-    completed: { color: "bg-emerald-500/15 text-emerald-400 border-emerald-500/20", label: "Complete" },
+    completed: { color: "bg-brand-500/15 text-brand-400 border-brand-500/20", label: "Complete" },
     failed: { color: "bg-red-500/15 text-red-400 border-red-500/20", label: "Failed" },
   };
   const s = map[status] || map.uploaded;

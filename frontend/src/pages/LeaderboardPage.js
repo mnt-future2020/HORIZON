@@ -160,7 +160,7 @@ export default function LeaderboardPage() {
                   <div className={`font-display font-bold text-sm ${tier.color}`}>{p.skill_rating}</div>
                 </div>
                 <div className="w-20 text-center hidden sm:flex items-center justify-center gap-1 text-xs">
-                  <span className="text-emerald-400">{p.wins}</span>
+                  <span className="text-brand-400">{p.wins}</span>
                   <Minus className="h-2 w-2 text-muted-foreground" />
                   <span className="text-red-400">{p.losses}</span>
                   <Minus className="h-2 w-2 text-muted-foreground" />

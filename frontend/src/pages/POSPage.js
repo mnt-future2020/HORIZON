@@ -42,7 +42,7 @@ const CATEGORIES = [
 ];
 
 const PAYMENT_METHODS = [
-  { id: "cash", label: "Cash", icon: Banknote, color: "text-emerald-400" },
+  { id: "cash", label: "Cash", icon: Banknote, color: "text-brand-400" },
   { id: "card", label: "Card", icon: CreditCard, color: "text-sky-400" },
   { id: "upi", label: "UPI", icon: Smartphone, color: "text-violet-400" },
 ];
@@ -494,7 +494,7 @@ function POSTerminal({ user }) {
           <h1 className="font-display text-xl font-black tracking-tight">⚽ Venue POS</h1>
         </div>
         <div className="flex items-center gap-2">
-          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isOnline ? "bg-emerald-500/15 text-emerald-400" : "bg-destructive/15 text-destructive"}`}>
+          <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isOnline ? "bg-brand-500/15 text-brand-400" : "bg-destructive/15 text-destructive"}`}>
             {isOnline ? <Wifi className="h-3 w-3" /> : <WifiOff className="h-3 w-3" />}
             {isOnline ? "Online" : "Offline"}
           </div>
@@ -628,7 +628,7 @@ function POSTerminal({ user }) {
                       </div>
                     )}
                     {discountAmount > 0 && (
-                      <div className="flex items-center justify-between text-xs text-emerald-400">
+                      <div className="flex items-center justify-between text-xs text-brand-400">
                         <span>Discount ({discountType === "percent" ? `${discountNumeric}%` : `₹${discountNumeric}`})</span>
                         <span>-₹{discountAmount}</span>
                       </div>
@@ -798,7 +798,7 @@ function POSTerminal({ user }) {
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{sale.items?.map(i => `${i.name} ×${i.qty}`).join(", ")}</p>
                     {sale.discount_amount > 0 && (
-                      <span className="text-[10px] text-emerald-400">Discount: -₹{sale.discount_amount}</span>
+                      <span className="text-[10px] text-brand-400">Discount: -₹{sale.discount_amount}</span>
                     )}
                     {(sale.customer_name || sale.customer_phone) && (
                       <p className="text-[10px] text-muted-foreground/70 mt-0.5">
@@ -835,9 +835,9 @@ function POSTerminal({ user }) {
                         if (sale.customer_phone) lines.push(`Phone: ${sale.customer_phone}`);
                         window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
                       }}
-                        className="h-6 w-6 rounded-md bg-emerald-500/15 hover:bg-emerald-500/25 flex items-center justify-center transition-colors"
+                        className="h-6 w-6 rounded-md bg-brand-500/15 hover:bg-brand-500/25 flex items-center justify-center transition-colors"
                         title="Share via WhatsApp">
-                        <Share2 className="h-3 w-3 text-emerald-400" />
+                        <Share2 className="h-3 w-3 text-brand-400" />
                       </button>
                     </div>
                   </div>
@@ -899,7 +899,7 @@ function POSTerminal({ user }) {
         <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader className="print:hidden">
             <DialogTitle className="font-display flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-emerald-400" /> Sale Complete
+              <CheckCircle className="h-5 w-5 text-brand-400" /> Sale Complete
             </DialogTitle>
           </DialogHeader>
           {lastSale && (
@@ -925,7 +925,7 @@ function POSTerminal({ user }) {
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>Subtotal</span><span>₹{lastSale.subtotal}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-emerald-400">
+                    <div className="flex justify-between text-xs text-brand-400">
                       <span>Discount</span><span>-₹{lastSale.discount_amount}</span>
                     </div>
                   </>
@@ -952,7 +952,7 @@ function POSTerminal({ user }) {
                 <Button className="flex-1 bg-secondary text-foreground font-bold text-xs" onClick={handlePrintReceipt}>
                   <Printer className="h-4 w-4 mr-1" /> Print
                 </Button>
-                <Button className="flex-1 bg-emerald-600 text-white font-bold text-xs" onClick={handleShareWhatsApp}>
+                <Button className="flex-1 bg-brand-600 text-white font-bold text-xs" onClick={handleShareWhatsApp}>
                   <Share2 className="h-4 w-4 mr-1" /> WhatsApp
                 </Button>
               </div>

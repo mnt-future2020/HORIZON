@@ -178,14 +178,14 @@ export default function VenueDiscovery() {
   const sports = ["football", "cricket", "badminton", "basketball", "tennis", "table_tennis"];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 selection:bg-emerald-600 selection:text-white" data-testid="venue-discovery-page">
+    <div className="min-h-screen bg-slate-50 text-slate-800 selection:bg-brand-600 selection:text-white" data-testid="venue-discovery-page">
       {/* Top bar for non-logged-in users */}
       {!user && (
         <nav className="fixed top-0 w-full z-40 h-16 flex items-center justify-between px-6 md:px-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
-          <Link to="/" className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700">Lobbi</Link>
+          <Link to="/" className="font-display font-black text-3xl tracking-tighter uppercase text-brand-700">Lobbi</Link>
           <div className="flex items-center gap-6">
-            <Button variant="link" size="sm" onClick={() => navigate("/auth")} className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-emerald-600">Log in</Button>
-            <Button size="sm" onClick={() => navigate("/auth")} className="bg-emerald-600 text-white rounded-full h-10 px-6 text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700">Get Started</Button>
+            <Button variant="link" size="sm" onClick={() => navigate("/auth")} className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-brand-600">Log in</Button>
+            <Button size="sm" onClick={() => navigate("/auth")} className="bg-brand-600 text-white rounded-full h-10 px-6 text-[11px] font-black uppercase tracking-widest hover:bg-brand-700">Get Started</Button>
           </div>
         </nav>
       )}
@@ -200,7 +200,7 @@ export default function VenueDiscovery() {
               <Input
                 placeholder="Search venue, area, city..."
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                className="pl-16 pr-12 bg-slate-50 border-2 border-slate-200 rounded-xl h-14 text-lg font-bold focus-visible:ring-0 focus-visible:border-emerald-500 placeholder:text-slate-400 placeholder:font-medium transition-all"
+                className="pl-16 pr-12 bg-slate-50 border-2 border-slate-200 rounded-xl h-14 text-lg font-bold focus-visible:ring-0 focus-visible:border-brand-500 placeholder:text-slate-400 placeholder:font-medium transition-all"
                 data-testid="search-input"
               />
               {searchText && (
@@ -209,11 +209,11 @@ export default function VenueDiscovery() {
                 </button>
               )}
             </div>
-            <Button variant="outline" size="icon" className={`h-14 w-14 shrink-0 relative rounded-xl border-2 transition-all ${filtersOpen ? "border-emerald-600 bg-emerald-50 text-emerald-700" : "border-slate-200 text-slate-500 hover:text-emerald-600 hover:border-emerald-400"}`}
+            <Button variant="outline" size="icon" className={`h-14 w-14 shrink-0 relative rounded-xl border-2 transition-all ${filtersOpen ? "border-brand-600 bg-brand-50 text-brand-700" : "border-slate-200 text-slate-500 hover:text-brand-600 hover:border-brand-400"}`}
               onClick={() => setFiltersOpen(!filtersOpen)} data-testid="filters-toggle">
               <SlidersHorizontal className="h-5 w-5" />
               {activeFilterCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-emerald-600 text-white text-[10px] w-6 h-6 flex items-center justify-center font-black rounded-full">
+                <span className="absolute -top-2 -right-2 bg-brand-600 text-white text-[10px] w-6 h-6 flex items-center justify-center font-black rounded-full">
                   {activeFilterCount}
                 </span>
               )}
@@ -224,24 +224,24 @@ export default function VenueDiscovery() {
           <div className="flex gap-3 mt-6 overflow-x-auto pb-2 scrollbar-hide" data-testid="city-pills">
             <button onClick={handleNearMe} data-testid="near-me-btn"
               disabled={locatingUser}
-              className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 rounded-full ${nearMeActive ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-slate-200 hover:border-emerald-500 hover:text-emerald-600"}`}>
+              className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 rounded-full ${nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-white text-slate-500 border-slate-200 hover:border-brand-500 hover:text-brand-600"}`}>
               {locatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
               {locatingUser ? "Locating..." : "Near Me"}
             </button>
             {nearMeActive && (
               <button onClick={() => setDriveTimeMode(!driveTimeMode)} data-testid="drive-time-toggle"
-                className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 rounded-full ${driveTimeMode ? "bg-emerald-50 text-emerald-700 border-emerald-600" : "bg-transparent text-slate-400 border-transparent hover:text-emerald-600"}`}>
+                className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all flex items-center gap-2 border-2 rounded-full ${driveTimeMode ? "bg-brand-50 text-brand-700 border-brand-600" : "bg-transparent text-slate-400 border-transparent hover:text-brand-600"}`}>
                 <Car className="h-4 w-4" />
                 Drive Time
               </button>
             )}
             <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false); }} data-testid="city-pill-all"
-              className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 rounded-full ${selectedCity === "all" && !nearMeActive ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-slate-200 hover:border-emerald-500 hover:text-emerald-600"}`}>
+              className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 rounded-full ${selectedCity === "all" && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-white text-slate-500 border-slate-200 hover:border-brand-500 hover:text-brand-600"}`}>
               All Cities
             </button>
             {cities.map(c => (
               <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
-                className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 rounded-full ${selectedCity === c.city && !nearMeActive ? "bg-emerald-600 text-white border-emerald-600" : "bg-white text-slate-500 border-slate-200 hover:border-emerald-500 hover:text-emerald-600"}`}>
+                className={`px-5 py-2.5 text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border-2 rounded-full ${selectedCity === c.city && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-white text-slate-500 border-slate-200 hover:border-brand-500 hover:text-brand-600"}`}>
                 {c.city} <span className="opacity-50 ml-1">({c.count})</span>
               </button>
             ))}
@@ -257,7 +257,7 @@ export default function VenueDiscovery() {
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Area</label>
                     <Select value={selectedArea} onValueChange={setSelectedArea}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="area-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-brand-500" data-testid="area-filter">
                         <SelectValue placeholder="All Areas" />
                       </SelectTrigger>
                       <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
@@ -270,7 +270,7 @@ export default function VenueDiscovery() {
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Sport</label>
                     <Select value={selectedSport} onValueChange={setSelectedSport}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="sport-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-brand-500" data-testid="sport-filter">
                         <SelectValue placeholder="All Sports" />
                       </SelectTrigger>
                       <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
@@ -283,7 +283,7 @@ export default function VenueDiscovery() {
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Price</label>
                     <Select value={priceRange} onValueChange={setPriceRange}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="price-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-brand-500" data-testid="price-filter">
                         <SelectValue placeholder="Any Price" />
                       </SelectTrigger>
                       <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
@@ -298,7 +298,7 @@ export default function VenueDiscovery() {
                   <div>
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 block">Amenity</label>
                     <Select value={selectedAmenity} onValueChange={setSelectedAmenity}>
-                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="amenity-filter">
+                      <SelectTrigger className="h-12 text-sm font-bold bg-slate-50 border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-brand-500" data-testid="amenity-filter">
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
                       <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
@@ -312,7 +312,7 @@ export default function VenueDiscovery() {
                   <div className="flex items-center gap-4">
                     <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Sort By</label>
                     <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="h-10 w-[160px] text-xs font-bold bg-white border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-emerald-500" data-testid="sort-select">
+                      <SelectTrigger className="h-10 w-[160px] text-xs font-bold bg-white border-2 border-slate-200 rounded-lg focus:ring-0 focus:border-brand-500" data-testid="sort-select">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-lg border-2 border-slate-200 shadow-lg">
@@ -325,7 +325,7 @@ export default function VenueDiscovery() {
                     </Select>
                   </div>
                   {activeFilterCount > 0 && (
-                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg h-10 px-4"
+                    <Button variant="ghost" size="sm" onClick={clearFilters} className="text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-brand-600 hover:bg-brand-50 rounded-lg h-10 px-4"
                       data-testid="clear-filters-btn">
                       <X className="h-3 w-3 mr-2" /> Clear Fields
                     </Button>
@@ -342,7 +342,7 @@ export default function VenueDiscovery() {
         <div className="flex items-center justify-between mb-8">
           <p className="text-sm font-bold text-slate-500 uppercase tracking-widest" data-testid="results-count">
             <span className="font-black text-slate-800">{venues.length}</span> venue{venues.length !== 1 ? "s" : ""} found
-            {nearMeActive && <> <span className="text-emerald-700 font-black">near you</span> <span className="text-[10px]">(within 50 km)</span></>}
+            {nearMeActive && <> <span className="text-brand-700 font-black">near you</span> <span className="text-[10px]">(within 50 km)</span></>}
             {!nearMeActive && selectedCity !== "all" && <> in <span className="text-slate-800 font-black">{selectedCity}</span></>}
             {selectedArea !== "all" && <>, <span className="text-slate-800">{selectedArea}</span></>}
           </p>
@@ -364,7 +364,7 @@ export default function VenueDiscovery() {
                 <p className="font-display text-4xl font-black mb-4 tracking-tighter uppercase text-slate-800">Zero Results</p>
                 <p className="text-sm text-slate-500 font-bold mb-8 uppercase tracking-widest leading-relaxed">Adjust your filters or broaden your search criteria to discover facilities.</p>
                 <Button
-                  className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl h-14 px-8 font-black uppercase tracking-[0.1em] text-sm transition-all"
+                  className="bg-brand-600 text-white hover:bg-brand-700 rounded-xl h-14 px-8 font-black uppercase tracking-[0.1em] text-sm transition-all"
                   onClick={clearFilters}
                 >
                   Reset Parameters
@@ -386,7 +386,7 @@ export default function VenueDiscovery() {
                 <motion.div key={venue.id} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                   onClick={() => venue.slug ? navigate(`/venue/${venue.slug}`) : navigate(`/venues/${venue.id}`)}
-                  className="group cursor-pointer flex flex-col h-full bg-white border border-slate-200 hover:border-emerald-400 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+                  className="group cursor-pointer flex flex-col h-full bg-white border border-slate-200 hover:border-brand-400 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
                   data-testid={`venue-card-${venue.id}`}>
                   {/* Image */}
                   <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 p-2">
@@ -405,11 +405,11 @@ export default function VenueDiscovery() {
                     {(distanceMap[venue.id] != null || venue.distance_km != null) && (
                       <div className="absolute top-4 left-4 flex gap-2" data-testid={`distance-badge-${venue.id}`}>
                         <div className="bg-white text-slate-800 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
-                          <Navigation className="h-3 w-3 mr-1.5 text-emerald-600" />
+                          <Navigation className="h-3 w-3 mr-1.5 text-brand-600" />
                           {(distanceMap[venue.id] ?? venue.distance_km).toFixed(1)} km
                         </div>
                         {driveTimeMap[venue.id]?.duration_minutes != null && (
-                          <div className="bg-emerald-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
+                          <div className="bg-brand-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
                             <Clock className="h-3 w-3 mr-1.5" />
                             {driveTimeMap[venue.id].duration_minutes} min
                           </div>
@@ -420,7 +420,7 @@ export default function VenueDiscovery() {
                     {/* Sport badge */}
                     {venue.sports?.[0] && (
                       <div className="absolute top-4 right-4">
-                        <div className="bg-emerald-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md rounded-full">
+                        <div className="bg-brand-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md rounded-full">
                           {venue.sports[0].replace("_", " ")}
                         </div>
                       </div>
@@ -430,12 +430,12 @@ export default function VenueDiscovery() {
                   {/* Info */}
                   <div className="p-5 flex flex-col flex-grow">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 truncate group-hover:text-emerald-700 transition-colors duration-300"
+                      <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 truncate group-hover:text-brand-700 transition-colors duration-300"
                         data-testid={`venue-name-${venue.id}`}>
                         {venue.name}
                       </h3>
                       {venue.badge === "bookable" && (
-                        <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Bookable</Badge>
+                        <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-brand-500/20 text-brand-400 border border-brand-500/30">Bookable</Badge>
                       )}
                       {venue.badge === "enquiry" && (
                         <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-amber-500/20 text-amber-500 border border-amber-500/30">Enquiry</Badge>
@@ -444,7 +444,7 @@ export default function VenueDiscovery() {
 
                     {/* Location */}
                     <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-5">
-                      <MapPin className="h-3.5 w-3.5 text-emerald-500" />
+                      <MapPin className="h-3.5 w-3.5 text-brand-500" />
                       <span className="truncate">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
                     </div>
 
@@ -458,7 +458,7 @@ export default function VenueDiscovery() {
                         )}
                       </div>
 
-                      <div className="font-black text-lg text-emerald-700">
+                      <div className="font-black text-lg text-brand-700">
                         ₹{venue.base_price || venue.price_per_hour}
                         <span className="text-[10px] text-slate-400 uppercase tracking-widest ml-1">/HR</span>
                       </div>

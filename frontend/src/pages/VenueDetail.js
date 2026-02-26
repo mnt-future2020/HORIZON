@@ -43,8 +43,8 @@ function EnquiryForm({ venue }) {
   if (sent) {
     return (
       <div className="max-w-xl mx-auto px-4 md:px-6 py-12 text-center">
-        <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/5 p-8">
-          <Check className="h-12 w-12 text-emerald-400 mx-auto mb-4" />
+        <div className="rounded-2xl border-2 border-brand-500/30 bg-brand-500/5 p-8">
+          <Check className="h-12 w-12 text-brand-400 mx-auto mb-4" />
           <h3 className="font-display text-xl font-black mb-2">Enquiry Sent!</h3>
           <p className="text-sm text-muted-foreground mb-4">Your enquiry has been sent to the venue owner. They will contact you soon.</p>
           <Button variant="outline" onClick={() => { setSent(false); setForm({ name: "", phone: "", sport: venue.sports?.[0] || "", date: "", time: "", message: "" }); }}>
@@ -102,7 +102,7 @@ function EnquiryForm({ venue }) {
             <Label className="text-xs text-muted-foreground">Message (optional)</Label>
             <Input value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Looking for a regular slot..." className="mt-1" />
           </div>
-          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-11 gap-2" onClick={handleSubmit} disabled={submitting}>
+          <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold h-11 gap-2" onClick={handleSubmit} disabled={submitting}>
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Sending...</> : <><Send className="h-4 w-4" />Send Enquiry via WhatsApp</>}
           </Button>
         </div>
@@ -500,7 +500,7 @@ export default function VenueDetail() {
                     {s}
                   </Badge>
                 ))}
-                <Badge className={`text-xs px-3 py-1 ${venue.badge === "bookable" ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
+                <Badge className={`text-xs px-3 py-1 ${venue.badge === "bookable" ? "bg-brand-500/20 text-brand-300 border border-brand-500/30" : "bg-amber-500/20 text-amber-300 border border-amber-500/30"}`}>
                   {venue.badge === "bookable" ? "Bookable" : "Enquiry Only"}
                 </Badge>
               </div>

@@ -59,7 +59,7 @@ function DeviceCard({ device, onControl, onEdit, onDelete }) {
             <div className="flex items-center gap-1.5 mt-0.5">
               <Badge className={`text-[9px] ${typeColor} border-0 px-1.5 py-0`}>{TYPE_LABELS[device.device_type]}</Badge>
               {isOnline ? (
-                <span className="flex items-center gap-0.5 text-[9px] text-emerald-400"><Wifi className="h-2.5 w-2.5" />Online</span>
+                <span className="flex items-center gap-0.5 text-[9px] text-brand-400"><Wifi className="h-2.5 w-2.5" />Online</span>
               ) : (
                 <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground"><WifiOff className="h-2.5 w-2.5" />Offline</span>
               )}
@@ -117,7 +117,7 @@ function ZoneCard({ zone, onControl, onEdit, onDelete }) {
         <div className="flex items-center gap-1 shrink-0">
           <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold"
             onClick={() => onControl(zone.id, { action: "on" })} data-testid={`zone-on-${zone.id}`}>
-            <Power className="h-3 w-3 mr-1 text-emerald-400" /> All On
+            <Power className="h-3 w-3 mr-1 text-brand-400" /> All On
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px] font-bold"
             onClick={() => onControl(zone.id, { action: "off" })} data-testid={`zone-off-${zone.id}`}>
@@ -323,8 +323,8 @@ export default function IoTDashboard() {
           </h1>
           {mqttStatus && (
             <div className="flex items-center gap-1.5 mt-1" data-testid="mqtt-status">
-              <Radio className={`h-3 w-3 ${mqttStatus.connected ? "text-emerald-400" : "text-muted-foreground"}`} />
-              <span className={`text-[10px] font-mono ${mqttStatus.connected ? "text-emerald-400" : "text-muted-foreground"}`}>
+              <Radio className={`h-3 w-3 ${mqttStatus.connected ? "text-brand-400" : "text-muted-foreground"}`} />
+              <span className={`text-[10px] font-mono ${mqttStatus.connected ? "text-brand-400" : "text-muted-foreground"}`}>
                 MQTT {mqttStatus.connected ? "Connected" : "Disconnected"} &bull; {mqttStatus.broker}
               </span>
             </div>
@@ -352,7 +352,7 @@ export default function IoTDashboard() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
         <div className="glass-card rounded-lg p-3 sm:p-4">
           <div className="flex items-center gap-2">
-            <Wifi className="h-4 w-4 text-emerald-400" />
+            <Wifi className="h-4 w-4 text-brand-400" />
             <div>
               <div className="text-lg sm:text-xl font-display font-black">{onlineCount}<span className="text-xs text-muted-foreground font-normal">/{devices.length}</span></div>
               <div className="text-[9px] font-mono uppercase text-muted-foreground">Online</div>
@@ -532,7 +532,7 @@ export default function IoTDashboard() {
                     <div className="text-[10px] text-muted-foreground">{s.host_name} &bull; {s.sport}</div>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="text-[9px] text-emerald-400 flex items-center gap-0.5"><Sun className="h-2.5 w-2.5" />{s.lights_on}</div>
+                    <div className="text-[9px] text-brand-400 flex items-center gap-0.5"><Sun className="h-2.5 w-2.5" />{s.lights_on}</div>
                     <div className="text-[9px] text-muted-foreground flex items-center gap-0.5"><Moon className="h-2.5 w-2.5" />{s.lights_off}</div>
                   </div>
                 </motion.div>

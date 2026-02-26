@@ -26,7 +26,7 @@ const badgeVariants = cva(
           "border-primary bg-primary/20 text-primary shadow-glow-sm animate-glow-pulse",
         // Role-specific badges (dark: -400, light: -600 for readability)
         player:
-          "border-emerald-400 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 backdrop-blur-sm",
+          "border-brand-400 bg-brand-500/10 text-brand-600 dark:text-brand-400 backdrop-blur-sm",
         owner:
           "border-violet-400 bg-violet-500/10 text-violet-600 dark:text-violet-400 backdrop-blur-sm",
         coach:

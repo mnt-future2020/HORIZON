@@ -790,7 +790,7 @@ export default function GroupDetailPage() {
                           {m.avatar ? <img src={mediaUrl(m.avatar)} alt="" className="h-8 w-8 rounded-full object-cover" />
                             : <User className="h-4 w-4 text-primary" />}
                         </div>
-                        {isOnline && <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 border-2 border-card" />}
+                        {isOnline && <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-brand-400 border-2 border-card" />}
                       </div>
                       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/player-card/${m.id}`)}>
                         <div className="flex items-center gap-1 flex-wrap">

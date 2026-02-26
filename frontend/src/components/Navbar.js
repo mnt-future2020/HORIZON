@@ -138,7 +138,7 @@ export default function Navbar() {
         data-testid="desktop-navbar">
         <div className="flex items-center flex-1 pr-8">
           <div className="w-64 mr-6 shrink-0">
-            <Link to="/feed" className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700">
+            <Link to="/feed" className="font-display font-black text-3xl tracking-tighter uppercase text-brand-700">
               Lobbi
             </Link>
           </div>
@@ -146,7 +146,7 @@ export default function Navbar() {
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md hidden lg:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-            <input className="w-full bg-secondary/20 border-2 border-emerald-600/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-emerald-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text" />
+            <input className="w-full bg-secondary/20 border-2 border-brand-600/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-brand-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text" />
           </div>
         </div>
 
@@ -166,7 +166,7 @@ export default function Navbar() {
               <div className="flex items-center justify-between px-4 py-3 border-b border-border">
                 <span className="text-sm font-bold">Notifications</span>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} className="text-[10px] text-emerald-600 hover:underline flex items-center gap-1"
+                  <button onClick={handleMarkAllRead} className="text-[10px] text-brand-600 hover:underline flex items-center gap-1"
                     data-testid="mark-all-read-btn"><CheckCheck className="h-3 w-3" /> Mark all read</button>
                 )}
               </div>
@@ -177,9 +177,9 @@ export default function Navbar() {
                   notifications.map(n => (
                     <button key={n.id} onClick={() => handleNotifClick(n)}
                       data-testid={`notification-item-${n.id}`}
-                      className={`w-full text-left px-4 py-3 border-b border-border/40 hover:bg-secondary/30 transition-colors ${!n.is_read ? "bg-emerald-600/5" : ""}`}>
+                      className={`w-full text-left px-4 py-3 border-b border-border/40 hover:bg-secondary/30 transition-colors ${!n.is_read ? "bg-brand-600/5" : ""}`}>
                       <div className="flex items-start gap-2">
-                        {!n.is_read && <div className="h-2 w-2 rounded-full bg-emerald-600 mt-1.5 shrink-0" />}
+                        {!n.is_read && <div className="h-2 w-2 rounded-full bg-brand-600 mt-1.5 shrink-0" />}
                         <div className={!n.is_read ? "" : "ml-4"}>
                           <div className="text-xs font-semibold text-foreground">{n.title}</div>
                           <div className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">{n.message}</div>
@@ -193,7 +193,7 @@ export default function Navbar() {
                 )}
               </div>
               <Link to="/notifications" onClick={() => setNotifOpen(false)}
-                className="block text-center text-xs font-bold text-emerald-600 hover:bg-emerald-600/5 transition-colors py-2.5 border-t border-border/50">
+                className="block text-center text-xs font-bold text-brand-600 hover:bg-brand-600/5 transition-colors py-2.5 border-t border-border/50">
                 View All Notifications
               </Link>
             </PopoverContent>
@@ -208,9 +208,9 @@ export default function Navbar() {
                   <p className="text-xs font-bold text-foreground leading-tight">{user?.name}</p>
                   <p className="text-[10px] text-muted-foreground capitalize">{user?.role?.replace("_", " ")}</p>
                 </div>
-                <Avatar className="h-9 w-9 border-2 border-emerald-600/20">
+                <Avatar className="h-9 w-9 border-2 border-brand-600/20">
                   {user?.avatar && <AvatarImage src={mediaUrl(user.avatar)} alt={user?.name} className="object-cover" />}
-                  <AvatarFallback className="bg-emerald-600/10 text-emerald-600 text-xs font-bold">
+                  <AvatarFallback className="bg-brand-600/10 text-brand-600 text-xs font-bold">
                     {user?.name?.[0]?.toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -248,7 +248,7 @@ export default function Navbar() {
           <Link key={l.to} to={l.to} data-testid={`mobile-nav-${l.label.toLowerCase()}`}
             className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
               path === l.to || path.startsWith(l.to + "/")
-                ? "text-emerald-600"
+                ? "text-brand-600"
                 : "text-muted-foreground active:text-foreground"
             }`}>
             <l.icon className={`h-[22px] w-[22px] shrink-0 ${path === l.to || path.startsWith(l.to + "/") ? "stroke-[2.5]" : ""}`} />
@@ -258,7 +258,7 @@ export default function Navbar() {
         {/* Notification tab */}
         <Link to="/notifications" data-testid="mobile-nav-alerts"
           className={`relative flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
-            path === "/notifications" ? "text-emerald-600" : "text-muted-foreground active:text-foreground"
+            path === "/notifications" ? "text-brand-600" : "text-muted-foreground active:text-foreground"
           }`}>
           <div className="relative">
             <Bell className={`h-[22px] w-[22px] shrink-0 ${path === "/notifications" ? "stroke-[2.5]" : ""}`} />
@@ -274,11 +274,11 @@ export default function Navbar() {
         <Link to="/profile" data-testid="mobile-nav-profile"
           className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
             path === "/profile" || path.startsWith("/player-card/")
-              ? "text-emerald-600"
+              ? "text-brand-600"
               : "text-muted-foreground active:text-foreground"
           }`}>
           <div className={`h-6 w-6 rounded-full flex items-center justify-center overflow-hidden ${
-            path === "/profile" ? "ring-2 ring-emerald-600 border border-background" : "border border-border"
+            path === "/profile" ? "ring-2 ring-brand-600 border border-background" : "border border-border"
           }`}>
             {user?.avatar
               ? <img src={mediaUrl(user.avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
@@ -346,7 +346,7 @@ export function Sidebar() {
              <Link key={l.to} to={l.to} data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 ${
                  active
-                  ? "bg-emerald-600/10 text-emerald-600 font-bold"
+                  ? "bg-brand-600/10 text-brand-600 font-bold"
                   : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                }`}>
                <span className="material-symbols-outlined"

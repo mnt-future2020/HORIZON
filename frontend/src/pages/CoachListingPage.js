@@ -484,7 +484,7 @@ export default function CoachListingPage() {
                         <div className="text-right shrink-0 ml-3">
                           <p className="text-sm font-bold text-primary">₹{pkg.price}/mo</p>
                           {pkg.subscribed ? (
-                            <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px] mt-1">
+                            <Badge className="bg-brand-500/15 text-brand-400 text-[10px] mt-1">
                               {pkg.sessions_remaining} left
                             </Badge>
                           ) : (
@@ -627,7 +627,7 @@ function SessionReviewCard({ session, onReview }) {
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-bold text-sm">{session.coach_name}</span>
             <Badge variant="secondary" className="text-[10px] capitalize">{session.sport}</Badge>
-            <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px]">Completed</Badge>
+            <Badge className="bg-brand-500/15 text-brand-400 text-[10px]">Completed</Badge>
           </div>
           <div className="text-xs text-muted-foreground">
             {session.date} · {session.start_time} · ₹{session.price}

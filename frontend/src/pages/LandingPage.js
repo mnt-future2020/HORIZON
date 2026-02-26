@@ -66,21 +66,21 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-800 selection:bg-emerald-600 selection:text-white" data-testid="landing-page">
+    <div className="min-h-screen bg-white text-slate-800 selection:bg-brand-600 selection:text-white" data-testid="landing-page">
       {/* ═══ NAVBAR ═══ */}
       <nav className="fixed top-0 w-full z-50 h-20 flex items-center justify-between px-6 md:px-12 bg-white/80 backdrop-blur-xl border-b border-slate-100 shadow-sm">
-        <span className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-700">Lobbi</span>
+        <span className="font-display font-black text-3xl tracking-tighter uppercase text-brand-700">Lobbi</span>
         <div className="hidden lg:flex items-center gap-12">
           {["Features", "Locations", "Community"].map(label => (
             <button key={label} onClick={() => scrollTo(label.toLowerCase())}
-              className="text-[13px] font-bold tracking-[0.1em] text-slate-400 hover:text-emerald-600 transition-colors uppercase">
+              className="text-[13px] font-bold tracking-[0.1em] text-slate-400 hover:text-brand-600 transition-colors uppercase">
               {label}
             </button>
           ))}
         </div>
         <div className="flex items-center">
           <Button size="lg" onClick={() => navigate("/auth")}
-            className="bg-emerald-600 text-white hover:bg-emerald-700 rounded-full h-12 px-8 font-black uppercase tracking-[0.1em] text-[13px] transition-all"
+            className="bg-brand-600 text-white hover:bg-brand-700 rounded-full h-12 px-8 font-black uppercase tracking-[0.1em] text-[13px] transition-all"
             data-testid="nav-get-started">
             Get Started
           </Button>
@@ -89,18 +89,18 @@ export default function LandingPage() {
 
       {/* ═══ HERO ═══ */}
       <section className="relative flex flex-col lg:flex-row pt-20 min-h-screen items-stretch">
-        <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-24 order-2 lg:order-1 bg-gradient-to-br from-emerald-800 via-emerald-900 to-slate-900">
+        <div className="w-full lg:w-1/2 flex flex-col justify-center p-8 lg:p-24 order-2 lg:order-1 bg-gradient-to-br from-brand-800 via-brand-900 to-slate-900">
           <div className="max-w-2xl w-full mx-auto lg:mx-0">
-            <motion.div initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} transition={{ duration: 0.8, originY: 0 }} className="w-16 h-1.5 bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full mb-12" />
+            <motion.div initial={{ opacity: 0, scaleY: 0 }} animate={{ opacity: 1, scaleY: 1 }} transition={{ duration: 0.8, originY: 0 }} className="w-16 h-1.5 bg-gradient-to-r from-brand-500 to-brand-400 rounded-full mb-12" />
             <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }}
               className="font-display text-[4rem] md:text-[6rem] lg:text-[7rem] font-black leading-[0.85] tracking-tighter text-white uppercase">
               The <br/>
               Standard <br/>
-              <span className="text-emerald-400">For Play.</span>
+              <span className="text-brand-400">For Play.</span>
             </motion.h1>
 
             <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.3 }}
-              className="mt-10 text-emerald-100/70 text-lg md:text-xl font-medium leading-relaxed max-w-lg">
+              className="mt-10 text-brand-100/70 text-lg md:text-xl font-medium leading-relaxed max-w-lg">
               Lobbi is the definitive operating system for amateur sports. Discover elite turfs, find competitive opponents, and manage your athletic journey.
             </motion.p>
 
@@ -108,13 +108,13 @@ export default function LandingPage() {
             <motion.form onSubmit={handleSearch} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }} className="mt-14 w-full max-w-xl" data-testid="hero-search-form">
               <div className="relative group">
-                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-emerald-600" />
+                <Search className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 transition-colors group-focus-within:text-brand-600" />
                 <Input placeholder="Search venues, areas, cities..."
                   value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                  className="h-16 pl-16 pr-36 rounded-2xl border-none focus-visible:ring-2 focus-visible:ring-emerald-500 text-lg font-bold placeholder:text-slate-400 placeholder:font-medium bg-white transition-all text-slate-900"
+                  className="h-16 pl-16 pr-36 rounded-2xl border-none focus-visible:ring-2 focus-visible:ring-brand-500 text-lg font-bold placeholder:text-slate-400 placeholder:font-medium bg-white transition-all text-slate-900"
                   data-testid="hero-search-input" />
                 <Button type="submit"
-                  className="absolute right-2 top-2 bottom-2 h-12 bg-emerald-600 text-white rounded-xl px-8 font-black uppercase tracking-[0.1em] hover:bg-emerald-700 transition-all"
+                  className="absolute right-2 top-2 bottom-2 h-12 bg-brand-600 text-white rounded-xl px-8 font-black uppercase tracking-[0.1em] hover:bg-brand-700 transition-all"
                   data-testid="hero-search-btn">
                   Explore
                 </Button>
@@ -135,9 +135,9 @@ export default function LandingPage() {
           <div className="max-w-[90rem] mx-auto">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
               <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <span className="text-[11px] font-black tracking-[0.2em] text-emerald-600 uppercase block mb-6">02 — Territories</span>
+                <span className="text-[11px] font-black tracking-[0.2em] text-brand-600 uppercase block mb-6">02 — Territories</span>
                 <h2 className="font-display text-5xl md:text-7xl font-black tracking-tighter uppercase text-slate-900 leading-[0.85]">
-                  Active <span className="text-emerald-500 font-medium italic">Locations.</span>
+                  Active <span className="text-brand-500 font-medium italic">Locations.</span>
                 </h2>
               </motion.div>
             </div>
@@ -147,7 +147,7 @@ export default function LandingPage() {
                 <motion.div key={c.city} initial={{ opacity: 0, scale: 0.95, y: 20 }} whileInView={{ opacity: 1, scale: 1, y: 0 }}
                   viewport={{ once: true }} transition={{ delay: idx * 0.1, duration: 0.5 }}
                   onClick={() => goToCity(c.city)}
-                  className="group relative aspect-[3/4] rounded-[2rem] overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_20px_40px_-15px_rgba(16,185,129,0.3)] border border-slate-100 hover:border-emerald-500/30 transition-all duration-500">
+                  className="group relative aspect-[3/4] rounded-[2rem] overflow-hidden cursor-pointer shadow-lg hover:shadow-[0_20px_40px_-15px_rgba(16,185,129,0.3)] border border-slate-100 hover:border-brand-500/30 transition-all duration-500">
                   <div className="absolute inset-0 bg-slate-900">
                     <img 
                       src={getCityImage(c.city)} 
@@ -161,8 +161,8 @@ export default function LandingPage() {
                     <div className="mb-4 w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 transform -translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 shadow-xl">
                       <MapPin className="w-5 h-5 text-white" />
                     </div>
-                    <h3 className="font-display text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2 group-hover:text-emerald-300 transition-colors duration-300">{c.city}</h3>
-                    <p className="text-emerald-400 font-bold text-[11px] tracking-widest uppercase">{c.count} VENUE{c.count > 1 ? "S" : ""}</p>
+                    <h3 className="font-display text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2 group-hover:text-brand-300 transition-colors duration-300">{c.city}</h3>
+                    <p className="text-brand-400 font-bold text-[11px] tracking-widest uppercase">{c.count} VENUE{c.count > 1 ? "S" : ""}</p>
                   </div>
                 </motion.div>
               ))}
@@ -177,10 +177,10 @@ export default function LandingPage() {
           {/* Header */}
           <div className="mb-16">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <span className="text-[11px] font-black tracking-[0.2em] text-emerald-600 uppercase block mb-6">01 — The Ecosystem</span>
+              <span className="text-[11px] font-black tracking-[0.2em] text-brand-600 uppercase block mb-6">01 — The Ecosystem</span>
               <h2 className="font-display text-5xl md:text-7xl font-black tracking-tighter uppercase text-slate-900 leading-[0.85] max-w-4xl">
                 Everything you need. <br/>
-                <span className="text-emerald-500 font-medium italic">Nothing you don't.</span>
+                <span className="text-brand-500 font-medium italic">Nothing you don't.</span>
               </h2>
             </motion.div>
           </div>
@@ -192,10 +192,10 @@ export default function LandingPage() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5 }}
               className="col-span-1 md:col-span-2 lg:col-span-2 row-span-2 bg-slate-900 rounded-[2rem] p-8 md:p-12 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
               <div className="relative z-10 h-full flex flex-col justify-between">
                 <div>
-                  <Crosshair className="w-10 h-10 text-emerald-400 mb-6" />
+                  <Crosshair className="w-10 h-10 text-brand-400 mb-6" />
                   <h3 className="font-display text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-4 leading-none">Intelligent<br/>Matchmaking</h3>
                   <p className="text-slate-400 font-medium text-lg max-w-sm leading-relaxed">Find perfect opponents based on skill rating, availability, and location. Stop searching, start playing.</p>
                 </div>
@@ -203,12 +203,12 @@ export default function LandingPage() {
                 <div className="mt-12 bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 transform translate-y-8 group-hover:translate-y-0 opacity-80 group-hover:opacity-100 transition-all duration-500 shadow-2xl">
                   <div className="flex items-center justify-between mb-5 pb-5 border-b border-white/10">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
-                        <Users className="w-6 h-6 text-emerald-400" />
+                      <div className="w-12 h-12 rounded-full bg-brand-500/20 flex items-center justify-center border border-brand-500/30">
+                        <Users className="w-6 h-6 text-brand-400" />
                       </div>
                       <div>
                         <div className="text-white font-black text-base uppercase tracking-tight">FC Mavericks</div>
-                        <div className="text-emerald-400 text-xs font-bold uppercase tracking-widest mt-1">Rating: 1850</div>
+                        <div className="text-brand-400 text-xs font-bold uppercase tracking-widest mt-1">Rating: 1850</div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -217,7 +217,7 @@ export default function LandingPage() {
                     </div>
                   </div>
                   <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
-                    <div className="h-full w-[85%] bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full" />
+                    <div className="h-full w-[85%] bg-gradient-to-r from-brand-600 to-brand-400 rounded-full" />
                   </div>
                   <div className="text-[10px] text-slate-400 mt-3 font-bold uppercase tracking-[0.2em]">85% Playstyle Match</div>
                 </div>
@@ -227,22 +227,22 @@ export default function LandingPage() {
             {/* 2. Player Cards (1x2) */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.1 }}
-              className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 bg-emerald-600 rounded-[2rem] p-8 md:p-10 relative overflow-hidden group flex flex-col justify-between">
+              className="col-span-1 md:col-span-1 lg:col-span-1 row-span-2 bg-brand-600 rounded-[2rem] p-8 md:p-10 relative overflow-hidden group flex flex-col justify-between">
               <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1579952520845-ff1ca44e13ec?auto=format&fit=crop&w=800&q=80')] bg-cover bg-center opacity-20 mix-blend-overlay group-hover:scale-110 transition-transform duration-1000" />
               <div className="relative z-10">
                 <Trophy className="w-8 h-8 text-white mb-6" />
                 <h3 className="font-display text-4xl font-black text-white uppercase tracking-tighter leading-none mb-4">Player<br/>Cards</h3>
-                <p className="text-emerald-100 font-medium text-sm leading-relaxed">Your athletic identity, quantified. Track stats and climb global leaderboards.</p>
+                <p className="text-brand-100 font-medium text-sm leading-relaxed">Your athletic identity, quantified. Track stats and climb global leaderboards.</p>
               </div>
               {/* 3D Card Hover Effect */}
               <div className="relative z-10 mt-12 mx-auto w-4/5 aspect-[3/4] bg-white rounded-xl shadow-2xl p-4 rotate-12 group-hover:rotate-6 group-hover:-translate-y-4 transition-all duration-500 border border-white/50 backdrop-blur-sm bg-white/90">
                 <div className="w-full aspect-square bg-slate-100 rounded-lg mb-4 overflow-hidden relative">
-                  <div className="absolute inset-0 bg-gradient-to-tr from-emerald-100 to-slate-50" />
-                  <Users className="w-10 h-10 text-emerald-600/30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                  <div className="absolute inset-0 bg-gradient-to-tr from-brand-100 to-slate-50" />
+                  <Users className="w-10 h-10 text-brand-600/30 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
                 </div>
                 <div className="h-4 w-3/4 bg-slate-800 rounded mb-2" />
                 <div className="flex gap-2 mb-2">
-                  <div className="h-3 w-1/3 bg-emerald-500 rounded" />
+                  <div className="h-3 w-1/3 bg-brand-500 rounded" />
                   <div className="h-3 w-1/3 bg-slate-200 rounded" />
                 </div>
               </div>
@@ -251,13 +251,13 @@ export default function LandingPage() {
             {/* 3. Split Payments (1x1) */}
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.2 }}
-              className="col-span-1 md:col-span-1 lg:col-span-1 row-span-1 bg-white border border-slate-200 rounded-[2rem] p-8 hover:border-emerald-500 hover:shadow-[0_20px_40px_-15px_rgba(16,185,129,0.1)] transition-all duration-300 group flex flex-col justify-center">
+              className="col-span-1 md:col-span-1 lg:col-span-1 row-span-1 bg-white border border-slate-200 rounded-[2rem] p-8 hover:border-brand-500 hover:shadow-[0_20px_40px_-15px_rgba(16,185,129,0.1)] transition-all duration-300 group flex flex-col justify-center">
               <div className="flex justify-between items-start mb-6">
-                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
+                <div className="w-12 h-12 rounded-full bg-brand-50 text-brand-600 flex items-center justify-center group-hover:bg-brand-600 group-hover:text-white transition-colors duration-300">
                   <Wallet className="w-6 h-6" />
                 </div>
               </div>
-              <h3 className="font-display text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2 group-hover:text-emerald-600 transition-colors">Split Pay</h3>
+              <h3 className="font-display text-2xl font-black text-slate-800 uppercase tracking-tighter mb-2 group-hover:text-brand-600 transition-colors">Split Pay</h3>
               <p className="text-slate-500 text-sm font-medium leading-relaxed">Divide turf costs instantly among your squad seamlessly.</p>
             </motion.div>
 
@@ -274,16 +274,16 @@ export default function LandingPage() {
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.5, delay: 0.4 }}
               className="col-span-1 md:col-span-2 lg:col-span-2 row-span-1 bg-slate-900 rounded-[2rem] p-8 md:p-10 relative overflow-hidden group flex items-center border border-slate-800">
-              <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-gradient-to-l from-emerald-900/60 to-transparent" />
+              <div className="absolute right-0 top-0 bottom-0 w-2/3 bg-gradient-to-l from-brand-900/60 to-transparent" />
               <div className="relative z-10 w-full flex justify-between items-center gap-6">
                 <div className="max-w-xs">
-                  <Zap className="w-8 h-8 text-emerald-400 mb-6 group-hover:animate-pulse" />
+                  <Zap className="w-8 h-8 text-brand-400 mb-6 group-hover:animate-pulse" />
                   <h3 className="font-display text-3xl font-black text-white uppercase tracking-tighter mb-3 leading-none">IoT Control</h3>
                   <p className="text-slate-400 text-sm font-medium leading-relaxed">Automate stadium lighting and access gates directly from your venue dashboard.</p>
                 </div>
                 {/* Glowing switch */}
                 <div className="hidden sm:flex w-24 h-12 bg-slate-800/80 rounded-full p-1 shadow-inner relative items-center cursor-pointer border border-white/5">
-                  <motion.div animate={{ x: [0, 48, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="w-10 h-10 bg-emerald-400 rounded-full shadow-[0_0_20px_rgba(52,211,153,0.5)]" />
+                  <motion.div animate={{ x: [0, 48, 0] }} transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }} className="w-10 h-10 bg-brand-400 rounded-full shadow-[0_0_20px_rgba(52,211,153,0.5)]" />
                 </div>
               </div>
             </motion.div>
@@ -327,14 +327,14 @@ export default function LandingPage() {
 
       {/* ═══ FEATURED VENUES ═══ */}
       {featuredVenues.length > 0 && (
-        <section className="py-24 md:py-32 bg-gradient-to-br from-emerald-900 via-emerald-950 to-slate-900 text-white" data-testid="featured-venues">
+        <section className="py-24 md:py-32 bg-gradient-to-br from-brand-900 via-brand-950 to-slate-900 text-white" data-testid="featured-venues">
           <div className="max-w-[90rem] mx-auto px-6 md:px-12">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-20 gap-8">
               <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                 <h2 className="font-display text-5xl md:text-6xl font-black tracking-tighter uppercase">Curated<br/>Collection.</h2>
-                <p className="text-emerald-300/70 font-medium mt-6 text-xl">The highest-rated facilities on the platform.</p>
+                <p className="text-brand-300/70 font-medium mt-6 text-xl">The highest-rated facilities on the platform.</p>
               </motion.div>
-              <Button variant="link" className="text-emerald-300 hover:text-white font-bold uppercase tracking-widest text-sm"
+              <Button variant="link" className="text-brand-300 hover:text-white font-bold uppercase tracking-widest text-sm"
                 onClick={() => navigate("/venues")} data-testid="view-all-venues-btn">
                 View All Venues <ArrowRight className="h-4 w-4 ml-3" />
               </Button>
@@ -345,26 +345,26 @@ export default function LandingPage() {
                 <motion.div key={v.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }} transition={{ delay: idx * 0.1 }}
                   onClick={() => navigate(v.slug ? `/venue/${v.slug}` : "/venues")}
-                  className="group cursor-pointer bg-white/5 rounded-2xl overflow-hidden backdrop-blur-sm border border-white/10 hover:border-emerald-400/40 transition-all duration-300 hover:shadow-xl">
+                  className="group cursor-pointer bg-white/5 rounded-2xl overflow-hidden backdrop-blur-sm border border-white/10 hover:border-brand-400/40 transition-all duration-300 hover:shadow-xl">
                   <div className="relative aspect-[4/3] overflow-hidden">
                      {v.images?.[0] ? (
                        <img src={v.images[0]} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                      ) : (
-                       <div className="w-full h-full flex items-center justify-center bg-emerald-900/50" />
+                       <div className="w-full h-full flex items-center justify-center bg-brand-900/50" />
                      )}
-                     <div className="absolute top-4 right-4 flex items-center gap-2 bg-white text-emerald-700 px-4 py-2 rounded-full font-black text-sm shadow-md">
-                      <Star className="h-4 w-4 fill-emerald-600 text-emerald-600" />
+                     <div className="absolute top-4 right-4 flex items-center gap-2 bg-white text-brand-700 px-4 py-2 rounded-full font-black text-sm shadow-md">
+                      <Star className="h-4 w-4 fill-brand-600 text-brand-600" />
                       {v.rating?.toFixed(1)}
                     </div>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-display text-2xl font-black uppercase tracking-tighter group-hover:text-emerald-300 transition-colors">{v.name}</h3>
-                      <Badge className={`text-[9px] px-1.5 py-0 shrink-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
+                      <h3 className="font-display text-2xl font-black uppercase tracking-tighter group-hover:text-brand-300 transition-colors">{v.name}</h3>
+                      <Badge className={`text-[9px] px-1.5 py-0 shrink-0 ${v.badge === "bookable" ? "bg-brand-500/20 text-brand-400 border border-brand-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
                         {v.badge === "bookable" ? "Bookable" : "Enquiry"}
                       </Badge>
                     </div>
-                    <div className="flex items-center justify-between text-emerald-300/60 font-bold uppercase tracking-widest text-[11px]">
+                    <div className="flex items-center justify-between text-brand-300/60 font-bold uppercase tracking-widest text-[11px]">
                       <span>{v.area ? `${v.area}, ` : ""}{v.city}</span>
                       <span className="text-white">{v.base_price ? `₹${v.base_price}` : ""}</span>
                     </div>
@@ -381,10 +381,10 @@ export default function LandingPage() {
         <div className="max-w-[90rem] mx-auto">
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-20 border-b-2 border-slate-900 pb-12" id="community">
             <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-              <span className="text-[11px] font-black tracking-[0.2em] text-emerald-600 uppercase block mb-6">03 — Community</span>
+              <span className="text-[11px] font-black tracking-[0.2em] text-brand-600 uppercase block mb-6">03 — Community</span>
               <h2 className="font-display text-6xl md:text-8xl font-black tracking-tighter uppercase text-slate-900 leading-[0.85]">
                 Word <br/>
-                On The <span className="text-emerald-600 italic font-medium">Turf.</span>
+                On The <span className="text-brand-600 italic font-medium">Turf.</span>
               </h2>
             </motion.div>
             <motion.p initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="text-sm font-bold uppercase tracking-[0.2em] text-slate-400 mt-8 md:mt-0 text-left md:text-right max-w-[280px] leading-loose">
@@ -399,13 +399,13 @@ export default function LandingPage() {
                 className="group relative bg-white p-10 md:p-14 flex flex-col hover:bg-slate-900 transition-colors duration-500 overflow-hidden min-h-[420px]">
                 
                 {/* Huge Background Number */}
-                <span className="absolute -bottom-10 -right-6 font-display text-[16rem] font-black text-slate-50 group-hover:text-emerald-900/40 transition-colors duration-700 pointer-events-none select-none leading-none">
+                <span className="absolute -bottom-10 -right-6 font-display text-[16rem] font-black text-slate-50 group-hover:text-brand-900/40 transition-colors duration-700 pointer-events-none select-none leading-none">
                   0{idx + 1}
                 </span>
 
                 <div className="relative z-10 flex-grow pt-4">
                   {/* Modern Quote Icon */}
-                  <svg className="w-10 h-10 text-emerald-500 mb-10 transform -translate-x-1 group-hover:text-emerald-400 transition-colors duration-500" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-10 h-10 text-brand-500 mb-10 transform -translate-x-1 group-hover:text-brand-400 transition-colors duration-500" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
                   </svg>
                   
@@ -414,10 +414,10 @@ export default function LandingPage() {
                   </p>
                 </div>
                 
-                <div className="relative z-10 mt-16 pt-8 border-t-2 border-slate-900 group-hover:border-emerald-500 transition-colors duration-500 flex items-center justify-between">
+                <div className="relative z-10 mt-16 pt-8 border-t-2 border-slate-900 group-hover:border-brand-500 transition-colors duration-500 flex items-center justify-between">
                   <div>
                     <h3 className="font-black text-lg text-slate-900 group-hover:text-white uppercase tracking-widest">{a.name}</h3>
-                    <span className="text-emerald-600 group-hover:text-emerald-400 text-xs font-bold uppercase tracking-[0.2em] block mt-2">{a.role}</span>
+                    <span className="text-brand-600 group-hover:text-brand-400 text-xs font-bold uppercase tracking-[0.2em] block mt-2">{a.role}</span>
                   </div>
                 </div>
               </motion.div>
@@ -427,7 +427,7 @@ export default function LandingPage() {
       </section>
 
       {/* ═══ CALL TO ACTION ═══ */}
-      <section className="relative py-40 md:py-56 px-6 text-center overflow-hidden bg-gradient-to-br from-emerald-800 via-emerald-900 to-slate-900">
+      <section className="relative py-40 md:py-56 px-6 text-center overflow-hidden bg-gradient-to-br from-brand-800 via-brand-900 to-slate-900">
         <img src={CTA_IMAGE} alt="Athletic training" className="absolute inset-0 w-full h-full object-cover opacity-15 mix-blend-luminosity" />
         <div className="relative max-w-4xl mx-auto z-10">
           <h2 className="font-display text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter text-white uppercase leading-[0.9] mb-12">
@@ -435,12 +435,12 @@ export default function LandingPage() {
           </h2>
           <div className="flex flex-col sm:flex-row gap-6 justify-center mt-12">
             <Button onClick={() => navigate(user ? "/dashboard" : "/auth")}
-              className="bg-white text-emerald-800 hover:bg-emerald-50 rounded-full h-16 px-12 font-black uppercase tracking-[0.1em] text-sm transition-all"
+              className="bg-white text-brand-800 hover:bg-brand-50 rounded-full h-16 px-12 font-black uppercase tracking-[0.1em] text-sm transition-all"
               data-testid="cta-get-started">
               Access Platform
             </Button>
             <Button variant="outline" onClick={() => navigate("/venues")}
-              className="rounded-full h-16 px-12 font-black uppercase tracking-[0.1em] text-sm border-2 border-white/30 text-white hover:bg-white hover:text-emerald-900 transition-all bg-transparent"
+              className="rounded-full h-16 px-12 font-black uppercase tracking-[0.1em] text-sm border-2 border-white/30 text-white hover:bg-white hover:text-brand-900 transition-all bg-transparent"
               data-testid="cta-browse-venues">
               Explore Venues
             </Button>

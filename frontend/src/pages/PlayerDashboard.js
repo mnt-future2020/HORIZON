@@ -36,7 +36,7 @@ function BookingCard({ booking, onClick, delay = 0, onGetQR }) {
         </h3>
         <div className="flex items-center gap-2 shrink-0">
           {booking.checked_in && (
-            <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px]">Checked In</Badge>
+            <Badge className="bg-brand-500/15 text-brand-400 text-[10px]">Checked In</Badge>
           )}
           <Badge variant={badgeVariant} className="uppercase">
             {booking.status}
@@ -480,7 +480,7 @@ export default function PlayerDashboard() {
               <div className="text-[10px] text-muted-foreground font-bold uppercase mt-1">Total Bookings</div>
             </div>
             <div className="text-center p-3 bg-secondary/20 rounded-xl">
-              <div className="text-2xl font-black text-emerald-400">{stats.total_matches || user?.total_games || 0}</div>
+              <div className="text-2xl font-black text-brand-400">{stats.total_matches || user?.total_games || 0}</div>
               <div className="text-[10px] text-muted-foreground font-bold uppercase mt-1">Matches Played</div>
             </div>
             <div className="text-center p-3 bg-secondary/20 rounded-xl">

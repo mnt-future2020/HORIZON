@@ -288,7 +288,7 @@ export default function PlayerCardPage() {
                     <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/20" />
                     <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
                       strokeDasharray={`${card.overall_score * 2.64} 264`} strokeLinecap="round"
-                      className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-violet-400" : card.overall_score >= 51 ? "text-emerald-400" : card.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
+                      className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-violet-400" : card.overall_score >= 51 ? "text-brand-400" : card.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="font-display text-2xl font-black">{card.overall_score}</span>
@@ -298,7 +298,7 @@ export default function PlayerCardPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-display text-lg font-black">Overall Rating</h3>
-                    <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : card.overall_score >= 51 ? "bg-emerald-400/20 text-emerald-400" : card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                    <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : card.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" : card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
                       {card.overall_tier}
                     </Badge>
                     {isOwnProfile && (
@@ -319,7 +319,7 @@ export default function PlayerCardPage() {
                     <div className="space-y-1.5">
                       {[
                         { label: "Skill", value: card.score_breakdown.skill, color: "bg-primary", tip: card.score_breakdown.skill < 30 ? "Play rated matches" : null },
-                        { label: "Win Rate", value: card.score_breakdown.win_rate, color: "bg-emerald-500", tip: card.score_breakdown.win_rate === 0 ? "Win matches to boost" : null },
+                        { label: "Win Rate", value: card.score_breakdown.win_rate, color: "bg-brand-500", tip: card.score_breakdown.win_rate === 0 ? "Win matches to boost" : null },
                         { label: "Tournament", value: card.score_breakdown.tournament, color: "bg-amber-500", tip: card.score_breakdown.tournament === 0 ? "Join a tournament" : null },
                         { label: "Training", value: card.score_breakdown.training, color: "bg-violet-500", tip: card.score_breakdown.training === 0 ? "Book coaching sessions" : null },
                         { label: "Reliability", value: card.score_breakdown.reliability, color: "bg-sky-500", tip: card.score_breakdown.reliability < 80 ? "Don't miss bookings" : null },
@@ -369,7 +369,7 @@ export default function PlayerCardPage() {
                       <div className="space-y-3">
                         {[
                           { icon: Swords, color: "text-primary", label: "Skill", weight: "40%", items: ["Play rated matches", "Beat higher-rated players for bigger jumps", "Rating starts at 1500 (Bronze)"] },
-                          { icon: Trophy, color: "text-emerald-400", label: "Win Rate", weight: "20%", items: ["Win your matches", "Higher win % = higher score"] },
+                          { icon: Trophy, color: "text-brand-400", label: "Win Rate", weight: "20%", items: ["Win your matches", "Higher win % = higher score"] },
                           { icon: Crown, color: "text-amber-400", label: "Tournament", weight: "15%", items: ["Join tournaments on Lobbi", "Win tournaments for bonus points"] },
                           { icon: GraduationCap, color: "text-violet-400", label: "Training", weight: "10%", items: ["Book coaching sessions", "Training hours are tracked"] },
                           { icon: Shield, color: "text-sky-400", label: "Reliability", weight: "10%", items: ["Show up to your bookings", "No-shows will drop your score", "Starts at 100 — keep it there!"] },
@@ -406,7 +406,7 @@ export default function PlayerCardPage() {
                         {[
                           { tier: "Elite", range: "86-100", color: "text-amber-400 bg-amber-400/10 border-amber-400/30" },
                           { tier: "Pro", range: "71-85", color: "text-violet-400 bg-violet-400/10 border-violet-400/30" },
-                          { tier: "Advanced", range: "51-70", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/30" },
+                          { tier: "Advanced", range: "51-70", color: "text-brand-400 bg-brand-400/10 border-brand-400/30" },
                           { tier: "Intermediate", range: "31-50", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
                           { tier: "Beginner", range: "0-30", color: "text-muted-foreground bg-muted/50 border-border" },
                         ].map(t => (

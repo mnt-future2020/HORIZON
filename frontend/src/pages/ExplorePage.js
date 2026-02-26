@@ -245,7 +245,7 @@ export default function ExplorePage() {
                     <div className="p-3">
                       <div className="flex items-center gap-1.5">
                         <div className="font-bold text-xs truncate">{v.name}</div>
-                        <Badge className={`text-[8px] px-1 py-0 shrink-0 ${v.badge === "bookable" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
+                        <Badge className={`text-[8px] px-1 py-0 shrink-0 ${v.badge === "bookable" ? "bg-brand-500/20 text-brand-400 border border-brand-500/30" : "bg-amber-500/20 text-amber-400 border border-amber-500/30"}`}>
                           {v.badge === "bookable" ? "Bookable" : "Enquiry"}
                         </Badge>
                       </div>

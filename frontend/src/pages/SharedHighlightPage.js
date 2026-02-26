@@ -14,7 +14,7 @@ const SIGNIFICANCE_ICONS = {
 const SIGNIFICANCE_COLORS = {
   goal: "text-amber-400 bg-amber-500/15", save: "text-sky-400 bg-sky-500/15",
   rally: "text-violet-400 bg-violet-500/15", foul: "text-red-400 bg-red-500/15",
-  celebration: "text-emerald-400 bg-emerald-500/15", turning_point: "text-orange-400 bg-orange-500/15",
+  celebration: "text-brand-400 bg-brand-500/15", turning_point: "text-orange-400 bg-orange-500/15",
   skill_move: "text-cyan-400 bg-cyan-500/15", other: "text-muted-foreground bg-secondary/50",
 };
 

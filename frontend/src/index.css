@@ -50,6 +50,9 @@
     --chart-4: 263 70% 62%;
     --chart-5: 340 75% 55%;
     --radius: 0.5rem;
+
+    /* ── Brand green — defined in tailwind.config.js brand{} palette ── */
+
     --glass-bg: rgba(8, 15, 35, 0.7);
     --glass-border: rgba(255, 255, 255, 0.06);
     --glass-bg-hover: rgba(8, 15, 35, 0.85);
@@ -100,6 +103,8 @@
     --chart-3: 30 80% 48%;
     --chart-4: 263 70% 55%;
     --chart-5: 340 75% 50%;
+
+    /* ── Brand green — defined in tailwind.config.js brand{} palette ── */
 
     /* Light glass — frosted white with visible depth */
     --glass-bg: rgba(255, 255, 255, 0.75);

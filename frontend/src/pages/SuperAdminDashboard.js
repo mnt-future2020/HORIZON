@@ -24,16 +24,18 @@ import { AdminSkeleton } from "@/components/SkeletonLoader";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
-function StatCard({ icon: Icon, label, value, sub, color = "-emerald-600" }) {
+function StatCard({ icon: Icon, label, value, sub, color = "text-brand-600", bgColor = "bg-brand-50" }) {
   return (
-    <div className="bg-card text-card-foreground border border-border/40 shadow-sm rounded-2xl p-6 hover:shadow-md transition-all duration-300" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
+    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
       <div className="flex items-center justify-between mb-4">
-        <div className="text-xs font-semibold text-muted-foreground tracking-widest uppercase">{label}</div>
-        <div className={`p-2.5 rounded-xl border-emerald-600/5 ${color}`}><Icon className="h-4 w-4" /></div>
+        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</div>
+        <div className={`p-2 rounded-xl ${bgColor}`}>
+          <Icon className={`h-4 w-4 ${color}`} />
+        </div>
       </div>
       <div>
-        <div className="text-3xl font-display font-light tracking-tight">{value}</div>
-        {sub && <div className="text-xs text-muted-foreground mt-2 font-medium">{sub}</div>}
+        <div className="text-3xl font-light text-slate-900">{value}</div>
+        {sub && <div className="text-xs text-slate-500 mt-2 font-medium">{sub}</div>}
       </div>
     </div>
   );
@@ -46,8 +48,8 @@ function OverviewTab() {
   }, []);
   if (!data) return <AdminSkeleton />;
   return (
-    <div className="space-y-6" data-testid="admin-overview-tab">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="space-y-8" data-testid="admin-overview-tab">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <StatCard icon={Users} label="Total Users" value={data.total_users} />
         <StatCard icon={Building2} label="Active Venues" value={data.active_venues} />
         <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} />
@@ -56,28 +58,43 @@ function OverviewTab() {
         <StatCard icon={GraduationCap} label="Coaching Revenue" value={`\u20B9${(data.coaching_revenue || 0).toLocaleString()}`} sub={`${data.coaching_commission_pct || 10}% = \u20B9${(data.coaching_earnings || 0).toLocaleString()}`} />
         <StatCard icon={Trophy} label="Tournament Revenue" value={`\u20B9${(data.tournament_revenue || 0).toLocaleString()}`} sub={`${data.tournament_commission_pct || 10}% = \u20B9${(data.tournament_earnings || 0).toLocaleString()}`} />
         <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} />
-        <StatCard icon={Clock} label="Pending Approvals" value={(data.pending_owners || 0) + (data.pending_coaches || 0)} color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-400" : "-emerald-600"} />
+        <StatCard icon={Clock} label="Pending Approvals" 
+          value={(data.pending_owners || 0) + (data.pending_coaches || 0)} 
+          color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-600" : "text-brand-600"} 
+          bgColor={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "bg-amber-50" : "bg-brand-50"}
+        />
       </div>
       <div>
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">Recent Registrations</h3>
+        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Recent Registrations</h3>
         <div className="space-y-3">
-          {data.recent_users.map(u => (
-            <div key={u.id} className="bg-card border border-border/40 shadow-sm rounded-xl p-4 flex items-center justify-between hover:shadow-md transition-all">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full border-emerald-600/10 flex items-center justify-center text-sm font-bold border-emerald-600">{u.name?.[0]}</div>
-                <div>
-                  <div className="text-sm font-semibold">{u.name}</div>
-                  <div className="text-xs text-muted-foreground font-medium mt-0.5">{u.email}</div>
+          {data.recent_users.map(u => {
+            const initialsColor = u.role === "venue_owner" ? "bg-purple-100 text-purple-700" : u.role === "coach" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700";
+            return (
+              <div key={u.id} className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-base ${initialsColor}`}>
+                    {u.name?.[0]?.toUpperCase()}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">{u.name}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{u.email}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+                    {u.role.replace("_", " ")}
+                  </span>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
+                    u.account_status === "active" ? "bg-brand-50 text-brand-600 border-brand-200" : 
+                    u.account_status === "pending" ? "bg-amber-50 text-amber-600 border-amber-200" : 
+                    "bg-red-50 text-red-600 border-red-200"
+                  }`}>
+                    {u.account_status}
+                  </span>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Badge variant="secondary" className="text-[10px] font-semibold tracking-wider uppercase bg-secondary/50 px-2 py-0.5">{u.role.replace("_", " ")}</Badge>
-                <Badge className={`text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 ${u.account_status === "active" ? "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20" : u.account_status === "pending" ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20" : "bg-destructive/10 text-destructive hover:bg-destructive/20"}`}>
-                  {u.account_status}
-                </Badge>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -171,7 +188,7 @@ function UsersTab() {
         ))}
       </div>
       {loading ? (
-        <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
       ) : users.length === 0 ? (
         <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[200px]">
           <Users className="h-8 w-8 text-muted-foreground/30 mb-3" />
@@ -180,30 +197,36 @@ function UsersTab() {
       ) : (
         <div className="space-y-2">
           {users.map(u => (
-            <div key={u.id} className="bg-card border border-border/40 shadow-sm rounded-xl p-5 hover:shadow-md transition-all duration-300 group" data-testid={`user-row-${u.id}`}>
+            <div key={u.id} className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group" data-testid={`user-row-${u.id}`}>
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="h-11 w-11 rounded-full border-emerald-600/10 flex items-center justify-center text-base font-bold border-emerald-600 shrink-0 border border-emerald-600/20">{u.name?.[0]}</div>
+                  <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-base shrink-0 ${u.role === "venue_owner" ? "bg-purple-100 text-purple-700" : u.role === "coach" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700"}`}>
+                    {u.name?.[0]?.toUpperCase()}
+                  </div>
                   <div className="min-w-0">
-                    <div className="text-base font-semibold truncate text-foreground tracking-tight">{u.name}</div>
-                    <div className="text-xs text-muted-foreground font-medium truncate mt-0.5">{u.email} {u.phone && <span className="opacity-60 px-1.5">•</span>} {u.phone}</div>
-                    {u.business_name && <div className="text-[11px] text-muted-foreground/80 font-medium mt-1.5 inline-flex items-center bg-secondary/50 px-2 py-0.5 rounded-md">Business: {u.business_name} {u.gst_number && <span className="opacity-60 mx-1.5">|</span>} {u.gst_number && `GST: ${u.gst_number}`}</div>}
+                    <div className="text-sm font-semibold truncate text-slate-900 tracking-tight">{u.name}</div>
+                    <div className="text-xs text-slate-500 font-medium truncate mt-0.5">{u.email} {u.phone && <span className="opacity-60 px-1.5">•</span>} {u.phone}</div>
+                    {u.business_name && <div className="text-[11px] text-slate-400 font-medium mt-1.5 inline-flex items-center bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">Business: {u.business_name} {u.gst_number && <span className="opacity-60 mx-1.5">|</span>} {u.gst_number && `GST: ${u.gst_number}`}</div>}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap opacity-95 group-hover:opacity-100 transition-opacity">
-                  <Badge variant="secondary" className="text-[10px] font-bold tracking-wider uppercase bg-secondary/60 px-2.5 py-1">{u.role.replace("_", " ")}</Badge>
+                <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">{u.role.replace("_", " ")}</span>
                   {u.role === "venue_owner" && u.subscription_plan && (
-                    <Badge className="text-[10px] font-bold tracking-wider uppercase bg-purple-500/10 text-purple-600 border border-purple-500/20 px-2.5 py-1">{u.subscription_plan}</Badge>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-md">{u.subscription_plan}</span>
                   )}
-                  <Badge className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 ${u.account_status === "active" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : u.account_status === "pending" ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
+                    u.account_status === "active" ? "bg-brand-50 text-brand-600 border-brand-200" : 
+                    u.account_status === "pending" ? "bg-amber-50 text-amber-600 border-amber-200" : 
+                    "bg-red-50 text-red-600 border-red-200"
+                  }`}>
                     {u.account_status}
-                  </Badge>
+                  </span>
                   {/* Venue owner: doc icon */}
                   {u.role === "venue_owner" && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
                     <Button size="sm" variant="ghost"
                       className={`h-8 px-3 rounded-lg font-semibold text-xs transition-colors ${
                         u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/5 hover:bg-amber-500/15" :
-                        u.doc_verification_status === "verified" ? "text-emerald-500 bg-emerald-500/5 hover:bg-emerald-500/15" :
+                        u.doc_verification_status === "verified" ? "text-brand-500 bg-brand-500/5 hover:bg-brand-500/15" :
                         "text-destructive bg-destructive/5 hover:bg-destructive/15"
                       }`}
                       onClick={() => openDocViewer(u.id)} data-testid={`docs-${u.id}`}>
@@ -213,11 +236,11 @@ function UsersTab() {
                   {/* Pending: Approve/Reject for non-venue_owners */}
                   {u.account_status === "pending" && u.role !== "venue_owner" && (
                     <>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10"
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-brand-600 hover:bg-brand-50"
                         onClick={() => handleAction(u.id, "approve")} data-testid={`approve-${u.id}`}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive hover:bg-destructive/10"
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600 hover:bg-red-50"
                         onClick={() => handleAction(u.id, "reject")} data-testid={`reject-${u.id}`}>
                         <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
                       </Button>
@@ -225,9 +248,9 @@ function UsersTab() {
                   )}
                   {/* Pending venue_owner: show doc status badge */}
                   {u.account_status === "pending" && u.role === "venue_owner" && (
-                    <Badge className={`text-[10px] font-bold tracking-wider uppercase px-2.5 py-1 ${u.doc_verification_status === "pending_review" ? "bg-amber-500/10 text-amber-600 border border-amber-500/20" : "bg-blue-500/10 text-blue-600 border border-blue-500/20"}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
                       {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
-                    </Badge>
+                    </span>
                   )}
                   {u.account_status === "active" && (
                     <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:bg-amber-500/10"
@@ -236,14 +259,14 @@ function UsersTab() {
                     </Button>
                   )}
                   {u.role === "coach" && u.account_status === "active" && (
-                    <Button size="sm" variant="ghost" className={`h-7 px-2 ${u.is_verified ? "text-blue-400 hover:bg-blue-500/10" : "text-muted-foreground hover:border-emerald-600/10"}`}
+                    <Button size="sm" variant="ghost" className={`h-7 px-2 ${u.is_verified ? "text-blue-400 hover:bg-blue-500/10" : "text-muted-foreground hover:border-brand-600/10"}`}
                       onClick={() => handleVerify(u.id)} data-testid={`verify-${u.id}`}>
                       <CheckCircle2 className={`h-3.5 w-3.5 mr-1 ${u.is_verified ? "" : "opacity-40"}`} />
                       {u.is_verified ? "Verified" : "Verify"}
                     </Button>
                   )}
                   {(u.account_status === "suspended" || u.account_status === "rejected") && (
-                    <Button size="sm" variant="ghost" className="h-7 px-2 border-emerald-600 hover:border-emerald-600/10"
+                    <Button size="sm" variant="ghost" className="h-7 px-2 border-brand-600 hover:border-brand-600/10"
                       onClick={() => handleAction(u.id, "activate")} data-testid={`activate-${u.id}`}>
                       <RotateCcw className="h-3.5 w-3.5 mr-1" /> Activate
                     </Button>
@@ -266,12 +289,12 @@ function UsersTab() {
           </DialogHeader>
 
           {docViewLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin border-emerald-600" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin border-brand-600" /></div>
           ) : docViewData ? (
             <div className="space-y-4">
               <Badge className={`text-[10px] ${
                 docViewData.doc_verification_status === "pending_review" ? "bg-amber-500/20 text-amber-400" :
-                docViewData.doc_verification_status === "verified" ? "bg-emerald-500/20 text-emerald-400" :
+                docViewData.doc_verification_status === "verified" ? "bg-brand-500/20 text-brand-400" :
                 docViewData.doc_verification_status === "rejected" ? "bg-destructive/20 text-destructive" :
                 "bg-secondary text-muted-foreground"
               }`}>{docViewData.doc_verification_status?.replace("_", " ") || "unknown"}</Badge>
@@ -293,7 +316,7 @@ function UsersTab() {
                       {doc?.url ? (
                         isPdf ? (
                           <a href={mediaUrl(doc.url)} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 mt-2 p-2 rounded-md bg-background/50 text-xs border-emerald-600 hover:underline">
+                            className="flex items-center gap-2 mt-2 p-2 rounded-md bg-background/50 text-xs border-brand-600 hover:underline">
                             <FileText className="h-4 w-4" /> View PDF
                           </a>
                         ) : (
@@ -340,7 +363,7 @@ function UsersTab() {
                 <div className="border-t border-border pt-4 space-y-3">
                   {!rejectMode ? (
                     <div className="flex gap-3">
-                      <Button className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      <Button className="flex-1 bg-brand-600 hover:bg-brand-700 text-white"
                         onClick={() => handleVerifyDocs(docViewUserId)}>
                         <CheckCircle className="h-4 w-4 mr-2" /> Verify & Approve
                       </Button>
@@ -462,7 +485,7 @@ function VenuesTab() {
     finally { setAssigning(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
   return (
     <div className="space-y-3" data-testid="admin-venues-tab">
       <div className="flex items-center justify-between mb-6">
@@ -472,35 +495,39 @@ function VenuesTab() {
         </Button>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid gap-3">
       {venues.map(v => (
-        <div key={v.id} className="bg-card border border-border/40 shadow-sm rounded-xl p-5 flex items-center justify-between flex-wrap gap-4 hover:shadow-md transition-all duration-300" data-testid={`venue-row-${v.id}`}>
+        <div key={v.id} className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between flex-wrap gap-4" data-testid={`venue-row-${v.id}`}>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-base font-semibold tracking-tight text-foreground">{v.name}</span>
-              <Badge className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 ${v.badge === "bookable" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-amber-500/10 text-amber-600 border border-amber-500/20"}`}>
+              <span className="text-base font-semibold tracking-tight text-slate-900">{v.name}</span>
+              <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md border ${
+                v.badge === "bookable" ? "bg-brand-50 text-brand-600 border-brand-100" : "bg-amber-50 text-amber-600 border-amber-100"
+              }`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
-              </Badge>
-              <Badge className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 ${v.owner_id ? "bg-blue-500/10 text-blue-600 border border-blue-500/20" : "bg-orange-500/10 text-orange-600 border border-orange-500/20"}`}>
+              </span>
+              <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md border ${
+                v.owner_id ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-orange-50 text-orange-600 border-orange-100"
+              }`}>
                 {v.owner_id ? "Owner Linked" : "Manual Entry"}
-              </Badge>
+              </span>
             </div>
-            <div className="text-sm text-muted-foreground font-medium mb-3">{v.address}{v.address && ", "}{v.city}</div>
+            <div className="text-sm text-slate-500 font-medium mb-3">{v.address}{v.address && ", "}{v.city}</div>
             <div className="flex items-center gap-3 flex-wrap">
-              <Badge variant="secondary" className="text-[10px] font-bold tracking-wider uppercase bg-secondary/60 px-2.5 py-1">{v.sports?.join(", ")}</Badge>
-              <span className="text-xs text-muted-foreground font-medium">{v.turfs} turfs <span className="opacity-50 mx-1.5">•</span> {v.total_bookings} bookings</span>
-              {!v.owner_id && <span className="text-[11px] text-amber-500 font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-md">No owner</span>}
-              {v.contact_phone && <span className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 bg-secondary/30 border border-border/50 px-2 py-1 rounded-md"><Phone className="h-3 w-3 opacity-70" />{v.contact_phone}</span>}
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 text-slate-500 border border-slate-100 px-2.5 py-1 rounded-md">{v.sports?.join(", ")}</span>
+              <span className="text-xs text-slate-400 font-medium">{v.turfs} turfs <span className="opacity-50 mx-1.5">•</span> {v.total_bookings} bookings</span>
+              {!v.owner_id && <span className="text-[11px] text-amber-600 font-bold bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">No owner</span>}
+              {v.contact_phone && <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md"><Phone className="h-3 w-3 opacity-70" />{v.contact_phone}</span>}
             </div>
           </div>
           <div className="flex items-center gap-5 shrink-0">
             {!v.owner_id && (
-              <Button size="sm" variant="outline" className="h-9 px-3.5 text-xs gap-2 font-bold rounded-lg border-border/60 hover:bg-secondary/50" onClick={() => openAssignDialog(v)}>
-                <UserPlus className="h-4 w-4 border-emerald-600" /> Assign Owner
+              <Button size="sm" variant="outline" className="h-9 px-3.5 text-xs gap-2 font-bold rounded-lg border-slate-200 hover:bg-slate-50" onClick={() => openAssignDialog(v)}>
+                <UserPlus className="h-4 w-4 text-brand-600" /> Assign Owner
               </Button>
             )}
-            <div className="flex items-center gap-3 border-l border-border/40 pl-5">
-              <Badge className={`text-[10px] font-bold tracking-wider uppercase px-2 py-1 ${v.status === "active" ? "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20" : "bg-destructive/10 text-destructive border border-destructive/20"}`}>{v.status}</Badge>
+            <div className="flex items-center gap-3 border-l border-slate-100 pl-5">
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${v.status === "active" ? "bg-brand-50 text-brand-600" : "bg-red-50 text-red-600"}`}>{v.status}</span>
               <Switch checked={v.status === "active"} onCheckedChange={() => toggleVenue(v.id, v.status)} data-testid={`toggle-venue-${v.id}`} />
             </div>
           </div>
@@ -513,8 +540,8 @@ function VenuesTab() {
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader className="border-b border-border/40 pb-4">
             <DialogTitle className="flex items-center gap-3 text-xl font-display font-light">
-              <div className="p-2 rounded-xl border-emerald-600/10">
-                <Building2 className="h-5 w-5 border-emerald-600" />
+              <div className="p-2 rounded-xl border-brand-600/10">
+                <Building2 className="h-5 w-5 border-brand-600" />
               </div> 
               Add Venue <span className="text-muted-foreground font-sans text-sm mt-1 border border-border/60 bg-secondary/50 px-2 py-0.5 rounded-md ml-2 hidden sm:inline-block">Enquiry Mode</span>
             </DialogTitle>
@@ -549,7 +576,7 @@ function VenuesTab() {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {SPORTS_OPTIONS.map(s => (
                   <button key={s} type="button" onClick={() => toggleFormArray("sports", s.toLowerCase())}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "-emerald-600 border-emerald-600-foreground border-emerald-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-emerald-600/50"}`}>
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "-brand-600 border-brand-600-foreground border-brand-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-brand-600/50"}`}>
                     {s}
                   </button>
                 ))}
@@ -561,7 +588,7 @@ function VenuesTab() {
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {AMENITIES_OPTIONS.map(a => (
                   <button key={a} type="button" onClick={() => toggleFormArray("amenities", a)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "-emerald-600 border-emerald-600-foreground border-emerald-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-emerald-600/50"}`}>
+                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "-brand-600 border-brand-600-foreground border-brand-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-brand-600/50"}`}>
                     {a}
                   </button>
                 ))}
@@ -615,12 +642,12 @@ function VenuesTab() {
                   ))}
                 </div>
               )}
-              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "-emerald-600/40 hover:border-emerald-600 hover:border-emerald-600/5 text-muted-foreground hover:border-emerald-600"}`}>
-                {uploading ? <><div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />Uploading...</> : <><ImagePlus className="h-4 w-4" />{venueForm.images.length > 0 ? "Add more images" : "Upload venue images"}</>}
+              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "-brand-600/40 hover:border-brand-600 hover:border-brand-600/5 text-muted-foreground hover:border-brand-600"}`}>
+                {uploading ? <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />Uploading...</> : <><ImagePlus className="h-4 w-4" />{venueForm.images.length > 0 ? "Add more images" : "Upload venue images"}</>}
                 <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleImageUpload(e.target.files)} disabled={uploading} />
               </label>
             </div>
-            <Button className="w-full border-emerald-600 border-emerald-600-foreground font-bold" onClick={handleCreateVenue} disabled={creating}>
+            <Button className="w-full border-brand-600 border-brand-600-foreground font-bold" onClick={handleCreateVenue} disabled={creating}>
               {creating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : "Create Venue"}
             </Button>
           </div>
@@ -632,8 +659,8 @@ function VenuesTab() {
         <DialogContent className="max-w-md">
           <DialogHeader className="border-b border-border/40 pb-4">
             <DialogTitle className="flex items-center gap-3 text-xl font-display font-light">
-              <div className="p-2 rounded-xl border-emerald-600/10">
-                <UserPlus className="h-5 w-5 border-emerald-600" />
+              <div className="p-2 rounded-xl border-brand-600/10">
+                <UserPlus className="h-5 w-5 border-brand-600" />
               </div> 
               Assign Owner
             </DialogTitle>
@@ -698,7 +725,7 @@ function VenuesTab() {
                     <p>Venue: <span className="text-foreground font-medium">{assignDialog?.name}</span></p>
                     <p>Owner: <span className="text-foreground font-medium">{owner?.name} ({owner?.email})</span></p>
                     <p>Phone: <span className="text-foreground font-medium">{useOwnerPhone ? (owner?.phone || "Not set") + " (owner)" : (assignDialog?.contact_phone || owner?.phone || "Not set") + (!useOwnerPhone && assignDialog?.contact_phone ? " (by admin)" : "")}</span></p>
-                    <p>Badge will change from <span className="text-amber-400 font-medium">Enquiry</span> to <span className="text-emerald-400 font-medium">Bookable</span></p>
+                    <p>Badge will change from <span className="text-amber-400 font-medium">Enquiry</span> to <span className="text-brand-400 font-medium">Bookable</span></p>
                   </div>
                 </div>
               );
@@ -797,7 +824,7 @@ function SettingsTab() {
     return { ...s, subscription_plans: plans };
   });
 
-  if (!settings) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (!settings) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
 
   const s3 = settings.s3_storage || {};
   const s3Configured = !!(s3.access_key_id && s3.secret_access_key && s3.bucket_name && s3.region);
@@ -807,8 +834,8 @@ function SettingsTab() {
       {/* Payment Gateway */}
       <section className="mb-10">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-emerald-600/10">
-            <CreditCard className="h-5 w-5 border-emerald-600" />
+          <div className="p-2.5 rounded-xl border-brand-600/10">
+            <CreditCard className="h-5 w-5 border-brand-600" />
           </div>
           <h3 className="text-lg font-display font-semibold tracking-tight">Payment Gateway</h3>
         </div>
@@ -845,13 +872,13 @@ function SettingsTab() {
       {/* ─── AWS S3 Storage ─── */}
       <section className="mb-10">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl border-emerald-600/10">
-            <Cloud className="h-5 w-5 border-emerald-600" />
+          <div className="p-2.5 rounded-xl border-brand-600/10">
+            <Cloud className="h-5 w-5 border-brand-600" />
           </div>
           <h3 className="text-lg font-display font-semibold tracking-tight">AWS S3 Storage</h3>
           {s3Configured ? (
-            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-emerald-600 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1" /> Configured
+            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-brand-600 font-bold bg-brand-500/10 border border-brand-500/20 px-2.5 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 inline-block mr-1" /> Configured
             </span>
           ) : (
             <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground font-bold bg-secondary/50 border border-border px-2.5 py-1 rounded-md">
@@ -898,7 +925,7 @@ function SettingsTab() {
               <select
                 value={s3.region || "ap-south-1"}
                 onChange={e => updateS3("region", e.target.value)}
-                className="mt-1.5 w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:border-emerald-600/50"
+                className="mt-1.5 w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:border-brand-600/50"
               >
                 <option value="ap-south-1">ap-south-1 (Mumbai)</option>
                 <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
@@ -921,7 +948,7 @@ function SettingsTab() {
           )}
 
           <Button variant="outline" onClick={handleTestS3} disabled={testingS3 || !s3Configured} className="w-full h-9 text-sm gap-2">
-            {testingS3 ? <><div className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" /> Testing...</>
+            {testingS3 ? <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /> Testing...</>
               : <><Wifi className="h-4 w-4" /> Test S3 Connection</>}
           </Button>
 
@@ -934,13 +961,13 @@ function SettingsTab() {
       {/* WhatsApp Business Cloud API */}
       <section className="mb-10">
         <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl border-emerald-600/10">
-            <MessageCircle className="h-5 w-5 border-emerald-600" />
+          <div className="p-2.5 rounded-xl border-brand-600/10">
+            <MessageCircle className="h-5 w-5 border-brand-600" />
           </div>
           <h3 className="text-lg font-display font-semibold tracking-tight">WhatsApp Business API</h3>
           {settings.whatsapp?.phone_number_id && settings.whatsapp?.access_token ? (
-            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-emerald-600 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block mr-1" /> Configured
+            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-brand-600 font-bold bg-brand-500/10 border border-brand-500/20 px-2.5 py-1 rounded-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 inline-block mr-1" /> Configured
             </span>
           ) : (
             <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground font-bold bg-secondary/50 border border-border px-2.5 py-1 rounded-md">
@@ -984,8 +1011,8 @@ function SettingsTab() {
       {/* Platform Commissions */}
       <section className="mb-10">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-emerald-600/10">
-            <Percent className="h-5 w-5 border-emerald-600" />
+          <div className="p-2.5 rounded-xl border-brand-600/10">
+            <Percent className="h-5 w-5 border-brand-600" />
           </div>
           <h3 className="text-lg font-display font-semibold tracking-tight">Platform Commissions</h3>
         </div>
@@ -1023,8 +1050,8 @@ function SettingsTab() {
       {/* Subscription Plans */}
       <section className="mb-10">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-emerald-600/10">
-            <Crown className="h-5 w-5 border-emerald-600" />
+          <div className="p-2.5 rounded-xl border-brand-600/10">
+            <Crown className="h-5 w-5 border-brand-600" />
           </div>
           <h3 className="text-lg font-display font-semibold tracking-tight">SaaS Subscription Plans</h3>
         </div>
@@ -1057,15 +1084,15 @@ function SettingsTab() {
         </div>
       </section>
 
-      <Button onClick={saveSettings} disabled={saving} className="-emerald-600 border-emerald-600-foreground font-bold text-sm tracking-wide w-full h-12 rounded-xl shadow-md hover:shadow-lg transition-all mb-10" data-testid="save-settings-btn">
+      <Button onClick={saveSettings} disabled={saving} className="-brand-600 border-brand-600-foreground font-bold text-sm tracking-wide w-full h-12 rounded-xl shadow-md hover:shadow-lg transition-all mb-10" data-testid="save-settings-btn">
         {saving ? "Saving..." : <><Save className="h-4 w-4 mr-2" /> Save All Settings</>}
       </Button>
 
       {/* Change Password */}
       <section className="mb-10">
         <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-emerald-600/10">
-            <KeyRound className="h-5 w-5 border-emerald-600" />
+          <div className="p-2.5 rounded-xl border-brand-600/10">
+            <KeyRound className="h-5 w-5 border-brand-600" />
           </div>
           <h3 className="text-lg font-display font-semibold tracking-tight">Change Admin Password</h3>
         </div>
@@ -1085,26 +1112,33 @@ function SettingsTab() {
 
 export default function SuperAdminDashboard() {
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12 pb-24 md:pb-12" data-testid="super-admin-dashboard" style={{ "--primary": "160 84% 39%", "--ring": "160 84% 39%" }}>
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div className="flex items-center gap-5">
-            <div className="h-14 w-14 rounded-2xl border-emerald-600/5 flex items-center justify-center border border-emerald-600/10">
-              <Shield className="h-7 w-7 border-emerald-600" />
-            </div>
-            <div>
-              <h1 className="font-display text-3xl md:text-4xl font-light tracking-tight text-foreground">Admin Console</h1>
-              <p className="text-sm text-muted-foreground font-medium mt-1">Horizon Platform Management</p>
-            </div>
-          </div>
+    <div className="max-w-[1400px] mx-auto px-8 py-8 min-h-screen bg-slate-50/50" data-testid="super-admin-dashboard">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+        
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">Admin Console</h1>
+          <p className="text-sm text-slate-500">Horizon Platform Management</p>
         </div>
 
         <Tabs defaultValue="overview" className="w-full" data-testid="admin-tabs">
-          <TabsList className="bg-transparent border-b border-border/40 w-full justify-start h-auto p-0 rounded-none mb-8 space-x-6 overflow-x-auto hide-scrollbar">
-            <TabsTrigger value="overview" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-overview">Overview</TabsTrigger>
-            <TabsTrigger value="users" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-users">Users</TabsTrigger>
-            <TabsTrigger value="venues" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-venues">Venues</TabsTrigger>
-            <TabsTrigger value="settings" className="text-sm font-semibold tracking-wide px-0 py-3 rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-foreground text-muted-foreground mb-[-1px] whitespace-nowrap" data-testid="tab-settings">Settings</TabsTrigger>
+          <TabsList className="bg-transparent border-b border-slate-200 w-full justify-start h-auto p-0 rounded-none mb-8 space-x-8 overflow-x-auto hide-scrollbar">
+            <TabsTrigger value="overview" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data-[state=active]:bg-transparent transition-all" data-testid="tab-overview">
+              Overview
+              <TabsIndicator value="overview" />
+            </TabsTrigger>
+            <TabsTrigger value="users" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data task-[state=active]:bg-transparent transition-all" data-testid="tab-users">
+              Users
+              <TabsIndicator value="users" />
+            </TabsTrigger>
+            <TabsTrigger value="venues" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data-[state=active]:bg-transparent transition-all" data-testid="tab-venues">
+              Venues
+              <TabsIndicator value="venues" />
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data-[state=active]:bg-transparent transition-all" data-testid="tab-settings">
+              Settings
+              <TabsIndicator value="settings" />
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="mt-0 outline-none"><OverviewTab /></TabsContent>
           <TabsContent value="users" className="mt-0 outline-none"><UsersTab /></TabsContent>
@@ -1113,5 +1147,11 @@ export default function SuperAdminDashboard() {
         </Tabs>
       </motion.div>
     </div>
+  );
+}
+
+function TabsIndicator({ value }) {
+  return (
+    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-600 opacity-0 transition-opacity [[data-state=active]_&]:opacity-100" />
   );
 }

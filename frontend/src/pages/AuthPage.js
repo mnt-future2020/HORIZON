@@ -84,7 +84,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="h-screen bg-white flex flex-col md:flex-row selection:bg-emerald-600 selection:text-white overflow-hidden">
+    <div className="h-screen bg-white flex flex-col md:flex-row selection:bg-brand-600 selection:text-white overflow-hidden">
       {/* Left Column / Split Screen Visual */}
       <div className="hidden md:flex flex-col md:w-1/2 h-full relative p-12 overflow-hidden items-start justify-between bg-slate-900">
         <div className="absolute inset-0 z-0">
@@ -94,7 +94,7 @@ export default function AuthPage() {
         </div>
         
         <ul className="space-y-4 z-10">
-          <li className="font-display font-black text-3xl tracking-tighter uppercase text-emerald-400">Lobbi</li>
+          <li className="font-display font-black text-3xl tracking-tighter uppercase text-brand-400">Lobbi</li>
         </ul>
         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8 }} className="z-10 mt-auto">
           <h2 className="font-display text-5xl lg:text-7xl font-black uppercase text-white leading-[0.9] tracking-tighter">
@@ -115,7 +115,7 @@ export default function AuthPage() {
         <div className="w-full max-w-md mx-auto min-h-full flex flex-col relative py-2 md:py-8">
           <div className="w-full flex justify-start pb-8">
             <button onClick={() => navigate("/")} data-testid="auth-back-btn"
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-emerald-600 transition-colors md:-ml-4">
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-brand-600 transition-colors md:-ml-4">
               <ArrowLeft className="h-4 w-4" /> Back to Home
             </button>
           </div>
@@ -124,7 +124,7 @@ export default function AuthPage() {
             className="w-full my-auto pb-8">
 
             <div className="md:hidden text-center mb-8">
-              <h1 className="font-display text-3xl font-black tracking-tighter uppercase text-emerald-700">Lobbi</h1>
+              <h1 className="font-display text-3xl font-black tracking-tighter uppercase text-brand-700">Lobbi</h1>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Sports Facility OS</p>
             </div>
 
@@ -140,18 +140,18 @@ export default function AuthPage() {
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Email Address</Label>
                     <Input type="email" required value={loginData.email}
                       onChange={e => setLoginData(p => ({ ...p, email: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                       placeholder="you@example.com" data-testid="login-email-input" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Password</Label>
                     <Input type="password" required value={loginData.password}
                       onChange={e => setLoginData(p => ({ ...p, password: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                       placeholder="Enter password" data-testid="login-password-input" />
                   </div>
                   <Button type="submit" disabled={loading} data-testid="login-submit-btn"
-                    className="w-full h-12 bg-emerald-600 rounded-xl text-white font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-colors mt-6">
+                    className="w-full h-12 bg-brand-600 rounded-xl text-white font-black uppercase tracking-widest text-xs hover:bg-brand-700 transition-colors mt-6">
                     {loading ? "Authenticating..." : "Sign In"}
                   </Button>
                 </form>
@@ -185,21 +185,21 @@ export default function AuthPage() {
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Full Name</Label>
                     <Input required value={regData.name}
                       onChange={e => setRegData(p => ({ ...p, name: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                       placeholder="Your name" data-testid="register-name-input" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Email</Label>
                     <Input type="email" required value={regData.email}
                       onChange={e => setRegData(p => ({ ...p, email: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                       placeholder="you@example.com" data-testid="register-email-input" />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Password</Label>
                     <Input type="password" required value={regData.password}
                       onChange={e => setRegData(p => ({ ...p, password: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                       placeholder="Min 8 chars, uppercase, lowercase, number" data-testid="register-password-input"
                       minLength={8} />
                     {regData.password && regData.password.length > 0 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(regData.password) && (
@@ -209,7 +209,7 @@ export default function AuthPage() {
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Profile Type</Label>
                     <Select value={regData.role} onValueChange={v => setRegData(p => ({ ...p, role: v }))}>
-                      <SelectTrigger className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900" data-testid="register-role-select">
+                      <SelectTrigger className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900" data-testid="register-role-select">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl border-2 border-slate-200 shadow-lg">
@@ -225,7 +225,7 @@ export default function AuthPage() {
                       <span className="inline-flex items-center px-3 h-12 bg-slate-100 border-2 border-r-0 border-slate-200 rounded-l-xl text-sm font-bold text-slate-500 select-none">+91</span>
                       <Input value={regData.phone}
                         onChange={e => setRegData(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
-                        className="h-12 bg-white border-2 border-slate-200 rounded-l-none rounded-r-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900 flex-1"
+                        className="h-12 bg-white border-2 border-slate-200 rounded-l-none rounded-r-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900 flex-1"
                         placeholder="98765 43210" data-testid="register-phone-input" maxLength={10} />
                     </div>
                   </div>
@@ -236,30 +236,30 @@ export default function AuthPage() {
                         <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Business Name</Label>
                         <Input value={regData.business_name}
                           onChange={e => setRegData(p => ({ ...p, business_name: e.target.value }))}
-                          className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                          className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                           placeholder="Your sports facility name" data-testid="register-business-name" />
                       </div>
                       <div className="space-y-1.5">
                         <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">GST Number (optional)</Label>
                         <Input value={regData.gst_number}
                           onChange={e => setRegData(p => ({ ...p, gst_number: e.target.value }))}
-                          className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-emerald-500 shadow-none text-sm font-bold text-slate-900"
+                          className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
                           placeholder="29AABCR1234F1Z5" data-testid="register-gst-number" />
                       </div>
-                      <div className="p-3 bg-emerald-50 border-l-4 border-emerald-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-emerald-700" data-testid="pending-notice">
+                      <div className="p-3 bg-brand-50 border-l-4 border-brand-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-brand-700" data-testid="pending-notice">
                         Venue owner accounts require admin verification.
                       </div>
                     </div>
                   )}
 
                   {regData.role === "coach" && (
-                    <div className="p-3 bg-emerald-50 border-l-4 border-emerald-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-emerald-700 mt-3" data-testid="coach-pending-notice">
+                    <div className="p-3 bg-brand-50 border-l-4 border-brand-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-brand-700 mt-3" data-testid="coach-pending-notice">
                       Coach accounts require admin verification.
                     </div>
                   )}
 
                   <Button type="submit" disabled={loading} data-testid="register-submit-btn"
-                    className="w-full h-12 bg-emerald-600 rounded-xl text-white font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-colors mt-6">
+                    className="w-full h-12 bg-brand-600 rounded-xl text-white font-black uppercase tracking-widest text-xs hover:bg-brand-700 transition-colors mt-6">
                     {loading ? "Creating..." : "Create Account"}
                   </Button>
                 </form>

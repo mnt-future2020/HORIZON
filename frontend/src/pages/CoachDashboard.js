@@ -617,7 +617,7 @@ export default function CoachDashboard() {
                     {s.notes && <p className="text-xs text-muted-foreground mt-1">{s.notes}</p>}
                   </div>
                   <div className="flex gap-2 shrink-0">
-                    <Button size="sm" className="bg-emerald-600 text-white font-bold text-[10px] h-7"
+                    <Button size="sm" className="bg-brand-600 text-white font-bold text-[10px] h-7"
                       onClick={() => handleCompleteSession(s.id)}>
                       <CheckCircle className="h-3 w-3 mr-1" />Done
                     </Button>
@@ -1776,7 +1776,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                 className="w-full max-w-sm mx-auto rounded-xl overflow-hidden mb-4"
               />
               <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
                 <span className="text-xs text-muted-foreground font-bold">Scanning... point at QR code</span>
               </div>
               <Button variant="outline" size="sm" onClick={stopCamera} className="text-xs">
@@ -1895,9 +1895,9 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
 
                 {/* Checked in */}
                 {checkedIn.map(s => (
-                  <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
-                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                      <UserCheck className="h-4 w-4 text-emerald-400" />
+                  <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20">
+                    <div className="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center shrink-0">
+                      <UserCheck className="h-4 w-4 text-brand-400" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -1907,13 +1907,13 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                       <div className="text-[10px] text-muted-foreground">
                         {s.start_time} - {s.end_time}
                         {s.checkin_time && (
-                          <span className="ml-2 text-emerald-400">
+                          <span className="ml-2 text-brand-400">
                             Checked in at {new Date(s.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </span>
                         )}
                       </div>
                     </div>
-                    <Badge className="bg-emerald-500/15 text-emerald-400 text-[10px] shrink-0">
+                    <Badge className="bg-brand-500/15 text-brand-400 text-[10px] shrink-0">
                       <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Present
                     </Badge>
                   </div>
@@ -1934,7 +1934,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
               ? "border-destructive/50 bg-destructive/5"
               : result.already_checked_in
                 ? "border-amber-500/50 bg-amber-500/5"
-                : "border-emerald-500/50 bg-emerald-500/5"
+                : "border-brand-500/50 bg-brand-500/5"
           }`}
           data-testid="checkin-result"
         >
@@ -1954,8 +1954,8 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
             </>
           ) : (
             <>
-              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-emerald-400" />
-              <p className="font-display font-bold text-lg text-emerald-400">Check-in Successful!</p>
+              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-brand-400" />
+              <p className="font-display font-bold text-lg text-brand-400">Check-in Successful!</p>
               <p className="text-sm text-muted-foreground mt-2">
                 <span className="font-bold text-foreground">{result.player_name}</span> checked in
               </p>

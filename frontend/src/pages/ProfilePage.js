@@ -333,8 +333,8 @@ export default function ProfilePage() {
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Win Rate</div>
               </div>
               <div className="text-center p-3 rounded-lg bg-background/50">
-                <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-emerald-400" />
-                <div className="text-lg font-display font-black text-emerald-400">{stats?.wins || 0}</div>
+                <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-brand-400" />
+                <div className="text-lg font-display font-black text-brand-400">{stats?.wins || 0}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Wins</div>
               </div>
               <div className="text-center p-3 rounded-lg bg-background/50">
@@ -370,7 +370,7 @@ export default function ProfilePage() {
                   <div className="text-[10px] text-muted-foreground font-mono uppercase">Venues</div>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-background/50">
-                  <Calendar className="h-5 w-5 mx-auto mb-1 text-emerald-400" />
+                  <Calendar className="h-5 w-5 mx-auto mb-1 text-brand-400" />
                   <div className="text-lg font-display font-black">{totalBookings}</div>
                   <div className="text-[10px] text-muted-foreground font-mono uppercase">Bookings</div>
                 </div>
@@ -396,7 +396,7 @@ export default function ProfilePage() {
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Sessions</div>
               </div>
               <div className="text-center p-3 rounded-lg bg-background/50">
-                <DollarSign className="h-5 w-5 mx-auto mb-1 text-emerald-400" />
+                <DollarSign className="h-5 w-5 mx-auto mb-1 text-brand-400" />
                 <div className="text-lg font-display font-black">{"\u20B9"}{(coachStats?.total_revenue || 0).toLocaleString("en-IN")}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Revenue</div>
               </div>
@@ -420,7 +420,7 @@ export default function ProfilePage() {
                   <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="7" className="text-muted-foreground/20" />
                   <circle cx="50" cy="50" r="42" fill="none" strokeWidth="7"
                     strokeDasharray={`${playerCard.overall_score * 2.64} 264`} strokeLinecap="round"
-                    className={playerCard.overall_score >= 86 ? "text-amber-400" : playerCard.overall_score >= 71 ? "text-violet-400" : playerCard.overall_score >= 51 ? "text-emerald-400" : playerCard.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
+                    className={playerCard.overall_score >= 86 ? "text-amber-400" : playerCard.overall_score >= 71 ? "text-violet-400" : playerCard.overall_score >= 51 ? "text-brand-400" : playerCard.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="font-display text-xl font-black">{playerCard.overall_score}</span>
@@ -434,7 +434,7 @@ export default function ProfilePage() {
                     <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
                   </button>
                 </div>
-                <Badge className={`text-[10px] mt-1 ${playerCard.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : playerCard.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : playerCard.overall_score >= 51 ? "bg-emerald-400/20 text-emerald-400" : playerCard.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                <Badge className={`text-[10px] mt-1 ${playerCard.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : playerCard.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : playerCard.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" : playerCard.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
                   {playerCard.overall_tier}
                 </Badge>
                 {playerCard.overall_score < 50 && (
@@ -789,7 +789,7 @@ export default function ProfilePage() {
                       <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Tournaments</div>
                     </div>
                     <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
-                      <Building2 className="h-5 w-5 mx-auto mb-2 text-emerald-400" />
+                      <Building2 className="h-5 w-5 mx-auto mb-2 text-brand-400" />
                       <div className="text-2xl font-display font-black text-foreground">
                         {career.organizations ? (Array.isArray(career.organizations) ? career.organizations.length : career.organizations) : 0}
                       </div>
@@ -804,7 +804,7 @@ export default function ProfilePage() {
                         {career.recent_records.map((record, idx) => {
                           const typeColors = {
                             training: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-                            match_result: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+                            match_result: "bg-brand-500/15 text-brand-400 border-brand-500/30",
                             assessment: "bg-violet-500/15 text-violet-400 border-violet-500/30",
                             tournament_result: "bg-amber-500/15 text-amber-400 border-amber-500/30",
                             achievement: "bg-rose-500/15 text-rose-400 border-rose-500/30",
@@ -893,7 +893,7 @@ export default function ProfilePage() {
                             {slot.label}
                             {slot.required && <span className="text-destructive">*</span>}
                           </Label>
-                          {doc?.url && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                          {doc?.url && <CheckCircle2 className="h-4 w-4 text-brand-400" />}
                         </div>
                         {doc?.url ? (
                           <div className="space-y-2">

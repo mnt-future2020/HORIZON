@@ -104,7 +104,7 @@ function VerificationBadge({ verification }) {
   return (
     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
       className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${
-        ok ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-red-500/10 border-red-500/30 text-red-400"
+        ok ? "bg-brand-500/10 border-brand-500/30 text-brand-400" : "bg-red-500/10 border-red-500/30 text-red-400"
       }`} data-testid="verification-badge">
       {ok ? <ShieldCheck className="h-3.5 w-3.5" /> : <ShieldAlert className="h-3.5 w-3.5" />}
       {ok ? "Verified Rating" : "Chain Broken"}
@@ -124,7 +124,7 @@ function RecordRow({ record, index }) {
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-[10px] font-mono text-muted-foreground w-6">#{record.seq}</span>
           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${
-            isWin ? "bg-emerald-500/15 text-emerald-400" : isLoss ? "bg-red-500/15 text-red-400" : "bg-slate-400/15 text-slate-400"
+            isWin ? "bg-brand-500/15 text-brand-400" : isLoss ? "bg-red-500/15 text-red-400" : "bg-slate-400/15 text-slate-400"
           }`}>
             {isWin ? "W" : isLoss ? "L" : "D"}
           </div>
@@ -139,7 +139,7 @@ function RecordRow({ record, index }) {
         </div>
         <div className="text-right shrink-0 flex items-center gap-3">
           <div>
-            <div className={`text-sm font-display font-bold ${isWin ? "text-emerald-400" : isLoss ? "text-red-400" : "text-slate-400"}`}>
+            <div className={`text-sm font-display font-bold ${isWin ? "text-brand-400" : isLoss ? "text-red-400" : "text-slate-400"}`}>
               {record.delta > 0 ? "+" : ""}{record.delta}
             </div>
             <div className="text-[10px] text-muted-foreground">{record.previous_rating} &rarr; {record.new_rating}</div>
@@ -286,7 +286,7 @@ export default function RatingProfilePage() {
           </div>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <div className="text-lg font-display font-bold text-emerald-400">{j.total_wins || 0}</div>
+              <div className="text-lg font-display font-bold text-brand-400">{j.total_wins || 0}</div>
               <div className="text-[10px] font-mono text-muted-foreground">WINS</div>
             </div>
             <div>
@@ -306,7 +306,7 @@ export default function RatingProfilePage() {
         </div>
 
         <div className="flex items-center justify-between mt-4 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3 text-emerald-400" /> Peak: {j.peak_rating || p.skill_rating || 1500}</span>
+          <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3 text-brand-400" /> Peak: {j.peak_rating || p.skill_rating || 1500}</span>
           <span className="flex items-center gap-1"><TrendingDown className="h-3 w-3 text-red-400" /> Lowest: {j.lowest_rating || p.skill_rating || 1500}</span>
           <span className="flex items-center gap-1"><Swords className="h-3 w-3" /> {v.total_matches_recorded || 0} recorded matches</span>
         </div>
@@ -328,13 +328,13 @@ export default function RatingProfilePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
           <div className="bg-secondary/30 rounded-lg p-3">
             <span className="text-muted-foreground block mb-1">Chain Status</span>
-            <span className={`font-bold ${v.chain_intact ? "text-emerald-400" : "text-red-400"}`}>
+            <span className={`font-bold ${v.chain_intact ? "text-brand-400" : "text-red-400"}`}>
               {v.chain_intact ? "Intact" : "Broken"}
             </span>
           </div>
           <div className="bg-secondary/30 rounded-lg p-3">
             <span className="text-muted-foreground block mb-1">Rating Match</span>
-            <span className={`font-bold ${v.rating_consistent ? "text-emerald-400" : "text-red-400"}`}>
+            <span className={`font-bold ${v.rating_consistent ? "text-brand-400" : "text-red-400"}`}>
               {v.rating_consistent ? "Consistent" : "Mismatch"}
             </span>
           </div>
