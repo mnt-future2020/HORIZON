@@ -24,38 +24,75 @@ import { AdminSkeleton } from "@/components/SkeletonLoader";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
-function StatCard({ icon: Icon, label, value, sub, color = "text-brand-600", bgColor = "bg-brand-600/10" }) {
+function StatCard({ icon: Icon, label, value, sub, colorClass = "text-brand-600", bgClass = "bg-brand-600/10", index = 0 }) {
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -5, transition: { duration: 0.2 } }}
-      className="glass-premium rounded-[32px] p-7 border border-white/10 shadow-xl overflow-hidden relative group"
-      data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}
+      transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="bg-card rounded-[28px] p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
     >
-      {/* Decorative gradient glow */}
-      <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-10 blur-3xl transition-opacity group-hover:opacity-20 ${bgColor}`} />
-      
       <div className="flex items-center justify-between mb-6 relative z-10">
         <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</div>
-        <div className={`p-3 rounded-2xl ${bgColor} flex items-center justify-center shadow-inner`}>
-          <Icon className={`h-5 w-5 ${color} drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]`} />
+        <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
+          <Icon className={`h-5 w-5 ${colorClass}`} />
         </div>
       </div>
 
       <div className="relative z-10">
-        <div className="text-4xl font-black font-display text-foreground tracking-tight mb-1 animate-count-slide">
+        <div className="text-4xl font-black font-display text-foreground tracking-tight mb-2 flex items-baseline">
           {value}
         </div>
         {sub && (
-          <div className="text-[11px] text-muted-foreground/80 font-semibold flex items-center gap-1.5 mt-2 bg-white/5 py-1 px-3 rounded-full w-fit">
+          <div className="text-[11px] text-muted-foreground font-black flex items-center gap-1.5 mt-2 bg-secondary/20 py-1.5 px-3 rounded-full w-fit border border-border/40">
             {sub}
           </div>
         )}
       </div>
-      
-      {/* Bottom accent line */}
-      <div className={`absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-transparent via-${color.replace('text-', '')} to-transparent w-full opacity-30`} />
+    </motion.div>
+  );
+}
+
+function RecentUserItem({ user: u, index }) {
+  const roleColors = {
+    venue_owner: "bg-purple-500/10 text-purple-600",
+    coach: "bg-blue-500/10 text-blue-600",
+    player: "bg-emerald-500/10 text-emerald-600",
+    admin: "bg-brand-600/10 text-brand-600"
+  };
+
+  const statusColors = {
+    active: "bg-green-500/10 text-green-600",
+    pending: "bg-amber-500/10 text-amber-600",
+    suspended: "bg-red-500/10 text-red-600",
+    rejected: "bg-red-500/10 text-red-600"
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -10 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: 0.5 + index * 0.05 }}
+      className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group rounded-2xl"
+    >
+      <div className="flex items-center gap-4">
+        <div className={`h-11 w-11 rounded-full flex items-center justify-center font-black text-base shrink-0 border border-white/5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+          {u.name?.[0]?.toUpperCase()}
+        </div>
+        <div>
+          <div className="text-sm font-black text-foreground tracking-tight">{u.name}</div>
+          <div className="text-[11px] text-muted-foreground font-semibold opacity-70 truncate max-w-[150px] md:max-w-[200px]">{u.email}</div>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-none ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+          {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
+        </Badge>
+        <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
+          {u.account_status}
+        </Badge>
+      </div>
     </motion.div>
   );
 }
@@ -67,55 +104,46 @@ function OverviewTab() {
   }, []);
   if (!data) return <AdminSkeleton />;
   return (
-    <div className="space-y-8" data-testid="admin-overview-tab">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <StatCard icon={Users} label="Total Users" value={data.total_users} />
-        <StatCard icon={Building2} label="Active Venues" value={data.active_venues} />
-        <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} />
-        <StatCard icon={IndianRupee} label="Booking Revenue" value={`\u20B9${data.total_revenue.toLocaleString()}`} />
-        <StatCard icon={Percent} label="Booking Commission" value={`${data.commission_pct}%`} sub={`\u20B9${(data.platform_earnings || 0).toLocaleString()}`} />
-        <StatCard icon={GraduationCap} label="Coaching Revenue" value={`\u20B9${(data.coaching_revenue || 0).toLocaleString()}`} sub={`${data.coaching_commission_pct || 10}% = \u20B9${(data.coaching_earnings || 0).toLocaleString()}`} />
-        <StatCard icon={Trophy} label="Tournament Revenue" value={`\u20B9${(data.tournament_revenue || 0).toLocaleString()}`} sub={`${data.tournament_commission_pct || 10}% = \u20B9${(data.tournament_earnings || 0).toLocaleString()}`} />
-        <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} />
-        <StatCard icon={Clock} label="Pending Approvals" 
+    <div className="space-y-10" data-testid="admin-overview-tab">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <StatCard icon={Users} label="Total Users" value={data.total_users} index={0} />
+        <StatCard icon={Building2} label="Active Venues" value={data.active_venues} index={1} />
+        <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} index={2} />
+        <StatCard icon={IndianRupee} label="Booking Revenue" value={`\u20B9${data.total_revenue.toLocaleString()}`} index={3} />
+        
+        <StatCard icon={Percent} label="Booking Share" value={`${data.commission_pct}%`} sub={`\u20B9${(data.platform_earnings || 0).toLocaleString()}`} index={4} />
+        <StatCard icon={GraduationCap} label="Coach Revenue" value={`\u20B9${(data.coaching_revenue || 0).toLocaleString()}`} sub={`${data.coaching_commission_pct || 10}% = \u20B9${(data.coaching_earnings || 0).toLocaleString()}`} index={5} />
+        <StatCard icon={Trophy} label="Tournament" value={`\u20B9${(data.tournament_revenue || 0).toLocaleString()}`} sub={`${data.tournament_commission_pct || 10}% = \u20B9${(data.tournament_earnings || 0).toLocaleString()}`} index={6} />
+        
+        <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} index={7} />
+        <StatCard 
+          icon={Clock} 
+          label="Pending Approvals" 
           value={(data.pending_owners || 0) + (data.pending_coaches || 0)} 
-          color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-500" : "text-brand-600"} 
-          bgColor={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "bg-amber-500/10" : "bg-brand-600/10"}
+          index={8}
+          colorClass={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-500" : "text-brand-600"} 
+          bgClass={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "bg-amber-500/10" : "bg-brand-600/10"}
         />
       </div>
-      <div>
-        <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-4 px-1">Recent Registrations</h3>
-        <div className="bg-card rounded-[24px] border border-border/40 shadow-sm overflow-hidden">
-          {data.recent_users.map((u, i) => {
-            const initialsColor = u.role === "venue_owner" ? "bg-purple-500/10 text-purple-600" : u.role === "coach" ? "bg-blue-500/10 text-blue-600" : "bg-brand-600/10 text-brand-600";
-            return (
-              <div key={u.id} className={`p-5 hover:bg-muted/50 transition-colors flex items-center justify-between ${i !== data.recent_users.length - 1 ? "border-b border-border/30" : ""}`}>
-                <div className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${initialsColor}`}>
-                    {u.name?.[0]?.toUpperCase()}
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-foreground tracking-tight">{u.name}</div>
-                    <div className="text-xs text-muted-foreground mt-0.5">{u.email}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-secondary text-muted-foreground px-2.5 py-1 rounded-md">
-                    {u.role.replace("_", " ")}
-                  </span>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border-none shadow-none ${
-                    u.account_status === "active" ? "bg-green-500/10 text-green-600" : 
-                    u.account_status === "pending" ? "bg-amber-500/10 text-amber-600" : 
-                    "bg-red-500/10 text-red-600"
-                  }`}>
-                    {u.account_status}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1, duration: 0.5 }}
+      >
+        <div className="flex items-center justify-between mb-6 px-2">
+          <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Recent Registrations</h3>
+          <div className="h-[1px] flex-1 bg-border/40 ml-6" />
         </div>
-      </div>
+        
+        <div className="bg-card border border-border/40 rounded-[28px] p-2 shadow-sm">
+          <div className="p-2 space-y-1">
+            {data.recent_users.map((u, i) => (
+              <RecentUserItem key={u.id} user={u} index={i} />
+            ))}
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
@@ -207,103 +235,177 @@ function UsersTab() {
     qualification_proof: "Qualification Proof",
   };
 
+function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
+  const roleColors = {
+    venue_owner: "bg-purple-500/10 text-purple-600",
+    coach: "bg-blue-500/10 text-blue-600",
+    player: "bg-brand-500/10 text-brand-600",
+    admin: "bg-brand-600/10 text-brand-600"
+  };
+
+  const statusColors = {
+    active: "bg-green-500/10 text-green-600",
+    pending: "bg-amber-500/10 text-amber-600",
+    suspended: "bg-red-500/10 text-red-600",
+    rejected: "bg-red-500/10 text-red-600"
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+      whileHover={{ y: -3, borderColor: "rgba(var(--brand-600), 0.2)", transition: { duration: 0.2 } }}
+      className="bg-card rounded-[28px] p-6 mb-4 border border-border/40 shadow-sm group relative overflow-hidden transition-all duration-300"
+    >
+      <div className="flex items-center justify-between flex-wrap gap-6 relative z-10">
+        <div className="flex items-center gap-5 min-w-0">
+          <div className={`h-14 w-14 rounded-full flex items-center justify-center font-black text-xl shrink-0 border border-border/40 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+            {u.name?.[0]?.toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-3 mb-1">
+              <h4 className="text-base font-black tracking-tight text-foreground truncate">{u.name}</h4>
+              <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-[0.2em] h-5 rounded-full border-none px-3 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+                {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
+              </Badge>
+            </div>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold opacity-80">
+                <span className="truncate">{u.email}</span>
+                {u.phone && (
+                  <>
+                    <span className="opacity-40">•</span>
+                    <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {u.phone}</span>
+                  </>
+                )}
+              </div>
+              {u.business_name && (
+                <div className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1.5 mt-1">
+                  <Building2 className="w-3 h-3" />
+                  <span className="bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
+                    {u.business_name} {u.gst_number && `(GST: ${u.gst_number})`}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <Badge variant="outline" className={`text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border-none shadow-sm ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
+            {u.account_status}
+          </Badge>
+
+          {u.role === "venue_owner" && u.subscription_plan && (
+            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-600 border-none px-4 py-1.5 rounded-full">
+              {u.subscription_plan}
+            </Badge>
+          )}
+
+          <div className="h-8 w-[1px] bg-white/10 mx-2 hidden sm:block" />
+
+          <div className="flex items-center gap-2">
+            {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
+              <Button size="sm" variant="outline"
+                className={`h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all border-white/10 shadow-lg ${
+                  u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white" :
+                  u.doc_verification_status === "verified" ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" :
+                  "text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white"
+                }`}
+                onClick={() => onOpenDocs(u.id)}>
+                <FileText className="h-4 w-4 mr-2" /> Docs
+              </Button>
+            )}
+
+            {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-brand-500 bg-brand-500/10 border-white/5 hover:bg-brand-500 hover:text-white transition-all shadow-lg"
+                  onClick={() => onAction(u.id, "approve")}>
+                  <CheckCircle className="h-4 w-4 mr-2" /> Approve
+                </Button>
+                <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-rose-500 bg-rose-500/10 border-white/5 hover:bg-rose-500 hover:text-white transition-all shadow-lg"
+                  onClick={() => onAction(u.id, "reject")}>
+                  <XCircle className="h-4 w-4 mr-2" /> Reject
+                </Button>
+              </div>
+            )}
+
+            {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
+                {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
+              </span>
+            )}
+
+            {u.account_status === "active" && (
+              <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-amber-500 bg-amber-500/10 border-white/5 hover:bg-amber-500 hover:text-white transition-all shadow-lg"
+                onClick={() => onAction(u.id, "suspend")}>
+                <Ban className="h-4 w-4 mr-2" /> Suspend
+              </Button>
+            )}
+
+            {u.role === "coach" && u.account_status === "active" && (
+              <Button size="sm" variant="outline" className={`h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border-white/5 shadow-lg transition-all ${u.is_verified ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" : "text-muted-foreground bg-white/5 hover:bg-white/10 hover:text-foreground"}`}
+                onClick={() => onVerify(u.id)}>
+                <CheckCircle2 className={`h-4 w-4 mr-2 ${u.is_verified ? "" : "opacity-40"}`} />
+                {u.is_verified ? "Verified" : "Verify"}
+              </Button>
+            )}
+
+            {(u.account_status === "suspended" || u.account_status === "rejected") && (
+              <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-brand-600 bg-brand-600/10 border-white/5 hover:bg-brand-600 hover:text-white transition-all shadow-lg"
+                onClick={() => onAction(u.id, "activate")}>
+                <RotateCcw className="h-4 w-4 mr-2" /> Activate
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Background accent */}
+      <div className={`absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+    </motion.div>
+  );
+}
+
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-3 mb-10">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
-            className={`px-4 py-2 rounded-full text-[11px] font-bold tracking-widest transition-all duration-300 uppercase ${filter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"}`}>
+            className={`px-6 py-2.5 rounded-full text-[10px] font-black tracking-[0.2em] transition-all duration-300 uppercase shadow-lg active:scale-95 ${
+              filter === f 
+                ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" 
+                : "glass-premium border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20"
+            }`}>
             {f === "all" ? "All Users" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
           </button>
         ))}
       </div>
       {loading ? (
-        <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
+        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-brand-600 animate-spin" /></div>
       ) : users.length === 0 ? (
-        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[200px]">
-          <Users className="h-8 w-8 text-muted-foreground/30 mb-3" />
-          <div className="text-muted-foreground text-sm font-medium">No users found matching this filter</div>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-premium border-white/10 shadow-xl rounded-[32px] p-20 text-center flex flex-col items-center justify-center min-h-[300px]"
+        >
+          <div className="p-6 rounded-3xl bg-white/5 mb-6">
+            <Users className="h-10 w-10 text-muted-foreground/20" />
+          </div>
+          <div className="text-muted-foreground text-sm font-bold tracking-tight uppercase opacity-60">No users found matching this filter</div>
+        </motion.div>
       ) : (
-        <div className="bg-card rounded-[24px] border border-border/40 shadow-sm overflow-hidden">
+        <div className="grid grid-cols-1 gap-1">
           {users.map((u, i) => (
-            <div key={u.id} className={`p-5 transition-colors duration-300 group hover:bg-muted/50 ${i !== users.length - 1 ? "border-b border-border/30" : ""}`} data-testid={`user-row-${u.id}`}>
-              <div className="flex items-center justify-between flex-wrap gap-4">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-base shrink-0 ${u.role === "venue_owner" ? "bg-purple-500/10 text-purple-600" : u.role === "coach" ? "bg-blue-500/10 text-blue-600" : "bg-brand-600/10 text-brand-600"}`}>
-                    {u.name?.[0]?.toUpperCase()}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate text-foreground tracking-tight">{u.name}</div>
-                    <div className="text-xs text-muted-foreground font-medium truncate mt-0.5">{u.email} {u.phone && <span className="opacity-60 px-1.5">•</span>} {u.phone}</div>
-                    {u.business_name && <div className="text-[11px] text-muted-foreground font-medium mt-1.5 inline-flex items-center bg-secondary px-2 py-0.5 rounded-md border-none shadow-none">Business: {u.business_name} {u.gst_number && <span className="opacity-60 mx-1.5">|</span>} {u.gst_number && `GST: ${u.gst_number}`}</div>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-secondary text-muted-foreground px-2.5 py-1 rounded-md">{u.role.replace("_", " ")}</span>
-                  {u.role === "venue_owner" && u.subscription_plan && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-600 border-none px-2.5 py-1 rounded-md">{u.subscription_plan}</span>
-                  )}
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border-none shadow-none ${
-                    u.account_status === "active" ? "bg-green-500/10 text-green-600" : 
-                    u.account_status === "pending" ? "bg-amber-500/10 text-amber-600" : 
-                    "bg-red-500/10 text-red-600"
-                  }`}>
-                    {u.account_status}
-                  </span>
-                  {/* Venue owner / Coach: doc icon */}
-                  {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
-                    <Button size="sm" variant="ghost"
-                      className={`h-8 px-3 rounded-full font-semibold text-xs transition-colors border-none ${
-                        u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20" :
-                        u.doc_verification_status === "verified" ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600/20" :
-                        "text-destructive bg-destructive/10 hover:bg-destructive/20"
-                      }`}
-                      onClick={() => openDocViewer(u.id)} data-testid={`docs-${u.id}`}>
-                      <FileText className="h-4 w-4 mr-1.5" /> Docs
-                    </Button>
-                  )}
-                  {/* Pending: Approve/Reject for non-venue_owners and non-coaches */}
-                  {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
-                    <>
-                      <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-brand-600 bg-brand-600/10 hover:bg-brand-600/20"
-                        onClick={() => handleAction(u.id, "approve")} data-testid={`approve-${u.id}`}>
-                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-red-600 bg-red-500/10 hover:bg-red-500/20"
-                        onClick={() => handleAction(u.id, "reject")} data-testid={`reject-${u.id}`}>
-                        <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
-                      </Button>
-                    </>
-                  )}
-                  {/* Pending venue_owner/coach: show doc status badge */}
-                  {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
-                      {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
-                    </span>
-                  )}
-                  {u.account_status === "active" && (
-                    <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
-                      onClick={() => handleAction(u.id, "suspend")} data-testid={`suspend-${u.id}`}>
-                      <Ban className="h-3.5 w-3.5 mr-1" /> Suspend
-                    </Button>
-                  )}
-                  {u.role === "coach" && u.account_status === "active" && (
-                    <Button size="sm" variant="ghost" className={`h-7 px-3 rounded-full ${u.is_verified ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600/20" : "text-muted-foreground bg-secondary hover:bg-muted"}`}
-                      onClick={() => handleVerify(u.id)} data-testid={`verify-${u.id}`}>
-                      <CheckCircle2 className={`h-3.5 w-3.5 mr-1 ${u.is_verified ? "" : "opacity-40"}`} />
-                      {u.is_verified ? "Verified" : "Verify"}
-                    </Button>
-                  )}
-                  {(u.account_status === "suspended" || u.account_status === "rejected") && (
-                    <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-brand-600 bg-brand-600/10 hover:bg-brand-600/20"
-                      onClick={() => handleAction(u.id, "activate")} data-testid={`activate-${u.id}`}>
-                      <RotateCcw className="h-3.5 w-3.5 mr-1" /> Activate
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </div>
+            <UserItem
+              key={u.id}
+              user={u}
+              index={i}
+              onAction={handleAction}
+              onVerify={handleVerify}
+              onOpenDocs={openDocViewer}
+            />
           ))}
         </div>
       )}
@@ -454,14 +556,14 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
-      className="glass-premium rounded-[32px] p-6 mb-4 border border-white/5 shadow-lg group relative overflow-hidden"
+      whileHover={{ y: -3, borderColor: "rgba(var(--brand-600), 0.2)", transition: { duration: 0.2 } }}
+      className="bg-card rounded-[28px] p-6 mb-4 border border-border/40 shadow-sm group relative overflow-hidden transition-all duration-300"
     >
       <div className="flex items-start gap-6 relative z-10">
         {/* Venue Thumbnail */}
-        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-white/10 shadow-inner bg-muted/20">
+        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-border/40 bg-muted/20">
           {mainImage ? (
-            <img src={mediaUrl(mainImage)} alt={v.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+            <img src={mediaUrl(mainImage)} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-brand-600/5">
               <Building2 className="h-8 w-8 text-brand-600/30" />
@@ -474,16 +576,16 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             <h4 className="text-lg font-black tracking-tight text-foreground truncate">{v.name}</h4>
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none ${
-                v.badge === "bookable" ? "bg-emerald-500/10 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.15)]" : "bg-amber-500/10 text-amber-500"
+                v.badge === "bookable" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-600"
               }`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
               </Badge>
               {v.owner_id ? (
-                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-blue-500/10 text-blue-500">
+                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-brand-600/10 text-brand-600">
                   Linked
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-orange-500/10 text-orange-500">
+                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-secondary/30 text-muted-foreground">
                   Manual
                 </Badge>
               )}
@@ -494,11 +596,11 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
           
           <div className="flex items-center gap-2 flex-wrap">
             {v.sports?.map(sport => (
-              <span key={sport} className="text-[9px] font-black uppercase tracking-widest bg-white/5 text-muted-foreground py-1 px-3 rounded-full border border-white/5">
+              <span key={sport} className="text-[9px] font-black uppercase tracking-widest bg-secondary/20 text-muted-foreground py-1 px-3 rounded-full border border-border/40">
                 {sport}
               </span>
             ))}
-            <div className="h-4 w-[1px] bg-white/10 mx-1" />
+            <div className="h-4 w-[1px] bg-border/40 mx-1" />
             <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
               <Crown className="w-3 h-3" /> {v.turfs} Turfs
             </span>
@@ -516,7 +618,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
         {/* Actions Section */}
         <div className="flex flex-col items-end justify-between self-stretch gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-black uppercase tracking-tighter ${v.status === "active" ? "text-emerald-500" : "text-rose-500"}`}>
+            <span className={`text-[10px] font-black uppercase tracking-tighter ${v.status === "active" ? "text-brand-600" : "text-rose-500"}`}>
               {v.status === "active" ? "Live" : "Inactive"}
             </span>
             <Switch checked={v.status === "active"} onCheckedChange={() => onToggle(v.id, v.status)} />
@@ -526,7 +628,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-9 px-4 text-[11px] font-black uppercase tracking-wider rounded-full border-white/10 bg-white/5 hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all"
+              className="h-9 px-4 text-[11px] font-black uppercase tracking-wider rounded-full border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all shadow-sm"
               onClick={() => onAssign(v)}
             >
               <UserPlus className="h-3.5 w-3.5 mr-2" /> Assign Owner
@@ -534,9 +636,6 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
           )}
         </div>
       </div>
-
-      {/* Background patterns */}
-      <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-brand-600/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
     </motion.div>
   );
 }
@@ -1278,7 +1377,7 @@ function SettingsTab() {
                     <div key={plan.id} className="glass-premium rounded-[32px] p-6 border border-white/5 shadow-xl space-y-6 relative overflow-hidden group">
                       <div className="flex items-center justify-between relative z-10">
                         <span className="text-sm font-black tracking-tight uppercase text-brand-600">{plan.name}</span>
-                        <Badge className="text-[8px] font-black uppercase tracking-widest bg-white/10 text-white border-none py-1 px-2 rounded-full">{plan.id}</Badge>
+                        <Badge className="text-[8px] font-black uppercase tracking-widest bg-brand-600/10 text-brand-600 border-none py-1 px-2 rounded-full transition-colors hover:bg-brand-600 hover:text-white pointer-events-none">{plan.id}</Badge>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4 relative z-10">

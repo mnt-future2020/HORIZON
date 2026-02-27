@@ -91,3 +91,9 @@ android-sdk/
 
 # Docker
 docker-compose.override.yml
+
+# Agent Skills
+.agent/skills/
+.agents/skills/
+.kiro/skills/
+.claude/
