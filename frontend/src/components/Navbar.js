@@ -334,7 +334,8 @@ export function Sidebar() {
     coach: [
       { to: "/feed",         ms: "rss_feed",            label: "Feed" },
       { to: "/explore",      ms: "explore",             label: "Explore" },
-      { to: "/coach",        ms: "sports",              label: "Dashboard" },
+      { to: "/coach",        ms: "sports",              label: "Dashboard", exact: true },
+      { to: "/coach/manage", ms: "assignment",           label: "Coach Management" },
       { to: "/venues",       ms: "location_on",         label: "Venues" },
       { to: "/tournaments",  ms: "emoji_events",        label: "Tournaments" },
       { to: "/communities",  ms: "groups",              label: "Groups" },
@@ -354,7 +355,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex sticky top-[96px] h-[calc(100vh-120px)] w-64 flex-shrink-0 flex-col bg-card rounded-[24px] border border-border/40 shadow-sm p-5 overflow-y-auto no-scrollbar">
       <nav className="flex flex-col gap-1.5 mb-8">
         {navLinks.map(l => {
-           const active = path === l.to || path.startsWith(l.to + "/");
+           const active = l.exact ? path === l.to : (path === l.to || path.startsWith(l.to + "/"));
            return (
              <Link key={l.to} to={l.to} data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 ${

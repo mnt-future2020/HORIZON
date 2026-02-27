@@ -186,6 +186,7 @@ function AppRouteDefinitions() {
           <Route path="/rating-profile/:userId" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
           <Route path="/owner" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard /></ProtectedRoute>} />
           <Route path="/coach" element={<ProtectedRoute roles={["coach"]}><CoachDashboard /></ProtectedRoute>} />
+          <Route path="/coach/manage" element={<ProtectedRoute roles={["coach"]}><CoachDashboard defaultView="coach_mgmt" /></ProtectedRoute>} />
           <Route path="/coach/settings" element={<ProtectedRoute roles={["coach"]}><CoachSettingsPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute roles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
           <Route path="/split/:token" element={<SplitPaymentPage />} />

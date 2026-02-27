@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { academyAPI, coachingAPI, organizationAPI, performanceAPI, trainingAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -41,16 +41,26 @@ const ORG_TYPES = ["academy", "school", "college"];
 const RECORD_TYPES = ["assessment", "achievement", "match_result", "training"];
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
-export default function CoachDashboard() {
+export default function CoachDashboard({ defaultView }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const isIndividualCoach = user?.coach_type === "individual";
   const coachSports = user?.coaching_sports?.length ? user.coaching_sports : SPORTS;
+
+  // Derive view from route for individual coaches
+  const routeView = location.pathname === "/coach/manage" ? "coach_mgmt" : (isIndividualCoach ? "home" : "coaching");
   const [activeView, setActiveView] = useState(() => {
+    if (location.pathname === "/coach/manage") return "coach_mgmt";
     const saved = sessionStorage.getItem("coachDashReturnTab");
     if (saved) { sessionStorage.removeItem("coachDashReturnTab"); return saved; }
     return isIndividualCoach ? "home" : "coaching";
   });
+
+  // Sync activeView when route changes
+  useEffect(() => {
+    setActiveView(routeView);
+  }, [routeView]);
   const [coachingSubTab, setCoachingSubTab] = useState("sessions");
   // Academy state
   const [academies, setAcademies] = useState([]);
@@ -154,6 +164,7 @@ export default function CoachDashboard() {
   const [paymentForm, setPaymentForm] = useState({ client_id: "", amount: "", mode: "cash", reference: "", period: new Date().toISOString().slice(0, 7), notes: "" });
   const [revenueData, setRevenueData] = useState(null);
   const [onboardingData, setOnboardingData] = useState(null);
+  const [mgmtTab, setMgmtTab] = useState("schedule");
   const [indScheduleTab, setIndScheduleTab] = useState("upcoming");
   // ─── Schedule filters ───
   const [sessionStatusFilter, setSessionStatusFilter] = useState("all"); // all | today | upcoming | completed | cancelled
@@ -429,7 +440,7 @@ export default function CoachDashboard() {
 
   // Load finance data when switching to finance tab
   useEffect(() => {
-    if (activeView === "finance" && isIndividualCoach) {
+    if (activeView === "coach_mgmt" && mgmtTab === "finance") {
       loadFinanceSummary();
       loadExpenses();
       loadClientOutstanding();
@@ -437,7 +448,7 @@ export default function CoachDashboard() {
       loadInvoices({ month: invoiceMonth, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined });
       loadGstSettings();
     }
-  }, [activeView, isIndividualCoach]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeView, mgmtTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Academy handlers
   const handleCreate = async () => {
@@ -1137,13 +1148,8 @@ export default function CoachDashboard() {
 
   const VIEWS = isIndividualCoach
     ? [
-        { id: "home", icon: TrendingUp, label: "Home" },
-        { id: "schedule", icon: Calendar, label: "Schedule" },
-        { id: "clients", icon: Users, label: "Clients" },
-        { id: "packages", icon: Package, label: "Packages" },
-        { id: "finance", icon: IndianRupee, label: "Finance" },
-        { id: "reviews", icon: Star, label: "Reviews" },
-        { id: "whatsapp", icon: Activity, label: "WhatsApp" },
+        { id: "home", icon: TrendingUp, label: "Dashboard" },
+        { id: "coach_mgmt", icon: ClipboardList, label: "Coach Management" },
       ]
     : [
         { id: "coaching", icon: Play, label: "Coaching" },
@@ -1158,9 +1164,19 @@ export default function CoachDashboard() {
     { id: "records", icon: FileText, label: "Records" },
   ];
 
+  const MGMT_SUB_TABS = [
+    { id: "schedule", icon: Calendar, label: "Schedule" },
+    { id: "clients", icon: Users, label: "Clients" },
+    { id: "packages", icon: Package, label: "Packages" },
+    { id: "finance", icon: IndianRupee, label: "Finance" },
+    { id: "reviews", icon: Star, label: "Reviews" },
+    { id: "whatsapp", icon: MessageCircle, label: "WhatsApp" },
+  ];
+
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6" data-testid="coach-dashboard">
-      {/* Welcome Hero */}
+      {/* Welcome Hero, Verification, Stats — only on Dashboard home */}
+      {activeView !== "coach_mgmt" && (<>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
         className="mb-8 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden">
         <div className="grid md:grid-cols-3 gap-0 relative">
@@ -1239,17 +1255,20 @@ export default function CoachDashboard() {
           <AthleticStatCard icon={IndianRupee} label="Package Revenue" value={`₹${(sessionStats.package_revenue || 0).toLocaleString()}`} iconColor="amber" delay={0.6} />
         </div>
       )}
+      </>)}
 
       {/* View Tabs */}
-      <div className="flex gap-1 mb-6 bg-secondary/30 p-1 rounded-lg w-fit flex-wrap">
-        {VIEWS.map(({ id, icon: Icon, label }) => (
-          <button key={id} onClick={() => setActiveView(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeView === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-            data-testid={`coach-tab-${id}`}>
-            <Icon className="h-3.5 w-3.5" />{label}
-          </button>
-        ))}
-      </div>
+      {!isIndividualCoach && (
+        <div className="flex gap-1 mb-6 bg-secondary/30 p-1 rounded-lg w-fit flex-wrap">
+          {VIEWS.map(({ id, icon: Icon, label }) => (
+            <button key={id} onClick={() => setActiveView(id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeView === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              data-testid={`coach-tab-${id}`}>
+              <Icon className="h-3.5 w-3.5" />{label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ─── Coaching View (with sub-tabs) ─── */}
       {activeView === "coaching" && (
@@ -2541,7 +2560,7 @@ export default function CoachDashboard() {
                 {[
                   { key: "profile_completed", label: "Complete Profile", action: () => navigate("/profile") },
                   { key: "availability_set", label: "Set Availability", action: () => navigate("/coach/settings") },
-                  { key: "first_package_created", label: "Create First Package", action: () => setActiveView("packages") },
+                  { key: "first_package_created", label: "Create First Package", action: () => { setActiveView("coach_mgmt"); setMgmtTab("packages"); } },
                   { key: "documents_uploaded", label: "Upload Documents", action: () => navigate("/profile") },
                 ].map(step => (
                   <button key={step.key} onClick={step.action}
@@ -2628,7 +2647,7 @@ export default function CoachDashboard() {
                         <p className="font-bold text-sm">{pendingPayments.length} Unpaid Sessions</p>
                         <p className="text-xs text-muted-foreground">₹{pendingPayments.reduce((sum, s) => sum + (s.amount || 0), 0).toLocaleString()} pending</p>
                       </div>
-                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => setActiveView("finance")}>View</Button>
+                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => { setActiveView("coach_mgmt"); setMgmtTab("finance"); }}>View</Button>
                     </div>
                   )}
                   {unconfirmed.length > 0 && (
@@ -2638,7 +2657,7 @@ export default function CoachDashboard() {
                         <p className="font-bold text-sm">{unconfirmed.length} Pending Bookings</p>
                         <p className="text-xs text-muted-foreground">Awaiting confirmation</p>
                       </div>
-                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => setActiveView("schedule")}>View</Button>
+                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => { setActiveView("coach_mgmt"); setMgmtTab("schedule"); }}>View</Button>
                     </div>
                   )}
                 </div>
@@ -2648,8 +2667,20 @@ export default function CoachDashboard() {
         </motion.div>
       )}
 
+      {/* ─── COACH MANAGEMENT ─── */}
+      {activeView === "coach_mgmt" && isIndividualCoach && (
+        <>
+          <div className="flex gap-1 mb-6 bg-secondary/20 p-1 rounded-lg w-fit flex-wrap">
+            {MGMT_SUB_TABS.map(({ id, icon: Icon, label }) => (
+              <button key={id} onClick={() => setMgmtTab(id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${mgmtTab === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                <Icon className="h-3.5 w-3.5" />{label}
+              </button>
+            ))}
+          </div>
+
       {/* ─── SCHEDULE Tab ─── */}
-      {activeView === "schedule" && isIndividualCoach && (
+      {mgmtTab === "schedule" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex gap-1 bg-secondary/20 p-1 rounded-lg">
@@ -3006,7 +3037,7 @@ export default function CoachDashboard() {
       )}
 
       {/* ─── CLIENTS Tab ─── */}
-      {activeView === "clients" && isIndividualCoach && (
+      {mgmtTab === "clients" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
           {/* Row 1: Source filter tabs + Add button */}
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -3543,7 +3574,7 @@ export default function CoachDashboard() {
       )}
 
       {/* ─── PACKAGES Tab (Individual Coach) ─── */}
-      {activeView === "packages" && isIndividualCoach && (
+      {mgmtTab === "packages" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
@@ -3765,7 +3796,7 @@ export default function CoachDashboard() {
       )}
 
       {/* ─── FINANCE Tab ─── */}
-      {activeView === "finance" && isIndividualCoach && (
+      {mgmtTab === "finance" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
 
           {/* ── P&L Summary Cards ── */}
@@ -4450,7 +4481,7 @@ export default function CoachDashboard() {
       )}
 
       {/* ─── REVIEWS Tab ─── */}
-      {activeView === "reviews" && isIndividualCoach && (
+      {mgmtTab === "reviews" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center gap-4 mb-2">
             <div className="glass-card rounded-xl p-5 text-center min-w-[120px]">
@@ -4502,7 +4533,7 @@ export default function CoachDashboard() {
       )}
 
       {/* ─── WHATSAPP Tab ─── */}
-      {activeView === "whatsapp" && isIndividualCoach && (() => {
+      {mgmtTab === "whatsapp" && (() => {
         const AUTOMATIONS = [
           { key: "welcome",              icon: "📱", title: "Welcome Message",        desc: "Sent automatically when you add a new offline client with a phone number", config: null },
           { key: "booking_confirmation", icon: "✅", title: "Booking Confirmation",   desc: "Sent when an online session is confirmed (payment or package)", config: null },
@@ -4606,6 +4637,9 @@ export default function CoachDashboard() {
           </motion.div>
         );
       })()}
+
+        </>
+      )}
 
       {/* Create Academy Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
