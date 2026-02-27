@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { adminAPI, uploadAPI } from "@/lib/api";
+import { adminAPI, uploadAPI, payoutAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,7 +18,7 @@ import {
   Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy,
   FileText, Loader2, Star, Video, Plus, UserPlus, Phone,
   ImagePlus, X, MessageCircle, ShieldCheck,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, Search
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminSkeleton } from "@/components/SkeletonLoader";
@@ -1545,6 +1545,356 @@ function SettingsTab() {
   );
 }
 
+function PayoutsTab() {
+  // State
+  const [loading, setLoading] = useState(true);
+  const [pendingPayouts, setPendingPayouts] = useState([]);
+  const [settlements, setSettlements] = useState([]);
+  const [subTab, setSubTab] = useState("pending"); // pending | history | accounts
+  const [processing, setProcessing] = useState(null); // user_id being processed
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [linkedAccounts, setLinkedAccounts] = useState([]);
+  const [detailDialog, setDetailDialog] = useState(null); // settlement object or null
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Load data
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [pendingRes, settlementsRes] = await Promise.all([
+        payoutAPI.pending(),
+        payoutAPI.settlements(),
+      ]);
+      setPendingPayouts(pendingRes.data || []);
+      const sData = settlementsRes.data;
+      setSettlements(Array.isArray(sData) ? sData : sData?.settlements || []);
+    } catch { toast.error("Failed to load payouts"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Process single payout
+  const handleProcessPayout = async (userId) => {
+    setProcessing(userId);
+    try {
+      await payoutAPI.createSettlement({ user_id: userId });
+      toast.success("Payout processed successfully");
+      load();
+    } catch (err) { toast.error(err?.response?.data?.detail || "Failed to process payout"); }
+    finally { setProcessing(null); }
+  };
+
+  // Bulk process
+  const handleBulkProcess = async () => {
+    setBulkProcessing(true);
+    try {
+      const res = await payoutAPI.bulkSettle();
+      toast.success(`Processed ${res.data?.processed || 0} payouts`);
+      load();
+    } catch (err) { toast.error(err?.response?.data?.detail || "Bulk process failed"); }
+    finally { setBulkProcessing(false); }
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
+
+  // Filtered lists
+  const filteredPending = searchQuery
+    ? pendingPayouts.filter(p => p.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) || p.user_role?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : pendingPayouts;
+
+  const filteredSettlements = searchQuery
+    ? settlements.filter(s => s.user_name?.toLowerCase().includes(searchQuery.toLowerCase()) || s.id?.toLowerCase().includes(searchQuery.toLowerCase()))
+    : settlements;
+
+  const totalPendingAmount = pendingPayouts.reduce((sum, p) => sum + (p.net_amount || 0), 0);
+  const totalSettledAmount = settlements.filter(s => s.status === "completed").reduce((sum, s) => sum + (s.net_amount || 0), 0);
+
+  const statusColors = {
+    completed: "bg-green-500/10 text-green-600",
+    processing: "bg-blue-500/10 text-blue-600",
+    failed: "bg-red-500/10 text-red-600",
+    draft: "bg-gray-500/10 text-gray-600",
+  };
+  const roleColors = {
+    coach: "bg-blue-500/10 text-blue-600",
+    venue_owner: "bg-purple-500/10 text-purple-600",
+  };
+
+  const subTabs = [
+    { id: "pending", label: "Pending", icon: Clock },
+    { id: "history", label: "History", icon: FileText },
+    { id: "accounts", label: "Linked Accounts", icon: CreditCard },
+  ];
+
+  return (
+    <div className="space-y-6" data-testid="admin-payouts-tab">
+      {/* Header with stat cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={IndianRupee} label="Total Settled" value={`₹${totalSettledAmount.toLocaleString()}`} index={0} />
+        <StatCard icon={Clock} label="Pending Payouts" value={pendingPayouts.length} sub={`₹${totalPendingAmount.toLocaleString()}`} index={1} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+        <StatCard icon={CheckCircle} label="Completed" value={settlements.filter(s => s.status === "completed").length} index={2} />
+        <StatCard icon={CreditCard} label="Active Accounts" value={settlements.length > 0 ? "—" : "0"} index={3} />
+      </div>
+
+      {/* Sub-tab navigation + search */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex gap-2">
+          {subTabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => { setSubTab(tab.id); setSearchQuery(""); }}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                subTab === tab.id
+                  ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20"
+                  : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
+              }`}
+            >
+              <tab.icon className={`w-3.5 h-3.5 ${subTab === tab.id ? "text-white" : "text-muted-foreground"}`} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="pl-9 h-10 w-48 rounded-full text-sm"
+            />
+          </div>
+          {subTab === "pending" && pendingPayouts.length > 0 && (
+            <Button
+              size="sm"
+              onClick={handleBulkProcess}
+              disabled={bulkProcessing}
+              className="gap-2 h-10 px-5 text-xs font-semibold rounded-full bg-brand-600 text-white"
+            >
+              {bulkProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <IndianRupee className="h-4 w-4" />}
+              Process All
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Pending Payouts */}
+      <AnimatePresence mode="wait">
+        {subTab === "pending" && (
+          <motion.div key="pending" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            {filteredPending.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500/50" />
+                <p className="text-sm font-medium">All payouts are settled!</p>
+              </div>
+            ) : (
+              <div className="bg-card border border-border/40 rounded-[28px] overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/40">
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">User</th>
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Role</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Items</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gross</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Commission</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Net Payout</th>
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredPending.map((p, i) => (
+                        <motion.tr
+                          key={p.user_id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.03 }}
+                          className="border-b border-border/20 hover:bg-white/5 transition-colors"
+                        >
+                          <td className="p-4 font-medium text-foreground">{p.user_name || "—"}</td>
+                          <td className="p-4">
+                            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${roleColors[p.user_role] || "bg-secondary text-muted-foreground"}`}>
+                              {p.user_role === "venue_owner" ? "Venue Owner" : p.user_role}
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-right text-muted-foreground">{p.pending_items_count || 0}</td>
+                          <td className="p-4 text-right font-medium">₹{(p.gross_amount || 0).toLocaleString()}</td>
+                          <td className="p-4 text-right text-muted-foreground">₹{(p.commission_amount || 0).toLocaleString()}</td>
+                          <td className="p-4 text-right font-bold text-brand-600">₹{(p.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-4">
+                            {p.has_linked_account ? (
+                              <Badge variant="outline" className="text-xs font-semibold px-3 py-1 rounded-full border-none bg-green-500/10 text-green-600">Linked</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs font-semibold px-3 py-1 rounded-full border-none bg-red-500/10 text-red-600">Not Linked</Badge>
+                            )}
+                          </td>
+                          <td className="p-4 text-right">
+                            <Button
+                              size="sm"
+                              onClick={() => handleProcessPayout(p.user_id)}
+                              disabled={processing === p.user_id || !p.has_linked_account}
+                              className="gap-1.5 h-9 px-4 text-xs font-semibold rounded-full bg-brand-600 text-white disabled:opacity-50"
+                            >
+                              {processing === p.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <IndianRupee className="h-3.5 w-3.5" />}
+                              Pay
+                            </Button>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Settlement History */}
+        {subTab === "history" && (
+          <motion.div key="history" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            {filteredSettlements.length === 0 ? (
+              <div className="text-center py-16 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+                <p className="text-sm font-medium">No settlements yet</p>
+              </div>
+            ) : (
+              <div className="bg-card border border-border/40 rounded-[28px] overflow-hidden shadow-sm">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border/40">
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Payee</th>
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Role</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Amount</th>
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Transfer ID</th>
+                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Details</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredSettlements.map((s, i) => (
+                        <motion.tr
+                          key={s.id}
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.03 }}
+                          className="border-b border-border/20 hover:bg-white/5 transition-colors"
+                        >
+                          <td className="p-4 text-muted-foreground text-xs">{s.created_at ? new Date(s.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
+                          <td className="p-4 font-medium text-foreground">{s.user_name || "—"}</td>
+                          <td className="p-4">
+                            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${roleColors[s.user_role] || "bg-secondary text-muted-foreground"}`}>
+                              {s.user_role === "venue_owner" ? "Venue Owner" : s.user_role}
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-right font-bold text-brand-600">₹{(s.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-4">
+                            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${statusColors[s.status] || "bg-secondary text-muted-foreground"}`}>
+                              {s.status}
+                            </Badge>
+                          </td>
+                          <td className="p-4 text-xs text-muted-foreground font-mono">{s.razorpay_transfer_id || "—"}</td>
+                          <td className="p-4 text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setDetailDialog(s)}
+                              className="h-8 px-3 text-xs rounded-full"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </Button>
+                          </td>
+                        </motion.tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Linked Accounts placeholder */}
+        {subTab === "accounts" && (
+          <motion.div key="accounts" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+            <div className="text-center py-16 text-muted-foreground">
+              <CreditCard className="h-12 w-12 mx-auto mb-4 text-muted-foreground/30" />
+              <p className="text-sm font-medium">Linked accounts are managed by coaches and venue owners from their dashboards.</p>
+              <p className="text-xs text-muted-foreground mt-2">Bank account status is visible in the Pending Payouts table.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Settlement Detail Dialog */}
+      <Dialog open={!!detailDialog} onOpenChange={() => setDetailDialog(null)}>
+        <DialogContent className="max-w-lg rounded-[28px]">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold">Settlement Details</DialogTitle>
+            <DialogDescription className="text-sm text-muted-foreground">
+              {detailDialog?.id}
+            </DialogDescription>
+          </DialogHeader>
+          {detailDialog && (
+            <div className="space-y-4 mt-2">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Payee</p>
+                  <p className="font-semibold">{detailDialog.user_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Role</p>
+                  <p className="font-semibold capitalize">{detailDialog.user_role?.replace("_", " ")}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Period</p>
+                  <p className="font-semibold">{detailDialog.period_start || "—"} → {detailDialog.period_end || "—"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Status</p>
+                  <Badge variant="outline" className={`text-xs font-semibold uppercase px-3 py-1 rounded-full border-none ${statusColors[detailDialog.status] || "bg-secondary text-muted-foreground"}`}>
+                    {detailDialog.status}
+                  </Badge>
+                </div>
+              </div>
+              <div className="bg-secondary/30 rounded-2xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Gross Amount</span><span className="font-medium">₹{(detailDialog.gross_amount || 0).toLocaleString()}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Commission ({detailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(detailDialog.commission_amount || 0).toLocaleString()}</span></div>
+                <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-semibold">Net Payout</span><span className="font-bold text-brand-600">₹{(detailDialog.net_amount || 0).toLocaleString()}</span></div>
+              </div>
+              {detailDialog.razorpay_transfer_id && (
+                <div className="text-xs text-muted-foreground">
+                  <p>Transfer ID: <span className="font-mono">{detailDialog.razorpay_transfer_id}</span></p>
+                  {detailDialog.transfer_utr && <p>UTR: <span className="font-mono">{detailDialog.transfer_utr}</span></p>}
+                </div>
+              )}
+              {detailDialog.line_items?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Line Items ({detailDialog.line_items.length})</p>
+                  <div className="max-h-48 overflow-y-auto space-y-1">
+                    {detailDialog.line_items.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between py-2 px-3 bg-secondary/20 rounded-xl text-xs">
+                        <div>
+                          <span className="font-medium text-foreground">{item.description || item.type}</span>
+                          <span className="text-muted-foreground ml-2">{item.date}</span>
+                        </div>
+                        <span className="font-semibold">₹{(item.net || 0).toLocaleString()}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-transparent pb-20 md:pb-8" data-testid="super-admin-dashboard">
@@ -1560,7 +1910,7 @@ export default function SuperAdminDashboard() {
           <Tabs defaultValue="overview" className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
             <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-6">
               <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
-                {["overview", "users", "venues", "settings"].map((tab) => (
+                {["overview", "users", "venues", "payouts", "settings"].map((tab) => (
                   <TabsTrigger key={tab} value={tab} 
                     className="relative pb-2 text-sm font-bold text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" 
                     data-testid={`tab-${tab}`}>
@@ -1574,6 +1924,7 @@ export default function SuperAdminDashboard() {
             <TabsContent value="overview" className="mt-0 outline-none w-full"><OverviewTab /></TabsContent>
             <TabsContent value="users" className="mt-0 outline-none w-full"><UsersTab /></TabsContent>
             <TabsContent value="venues" className="mt-0 outline-none w-full"><VenuesTab /></TabsContent>
+            <TabsContent value="payouts" className="mt-0 outline-none w-full"><PayoutsTab /></TabsContent>
             <TabsContent value="settings" className="mt-0 outline-none w-full"><SettingsTab /></TabsContent>
           </Tabs>
         </motion.div>

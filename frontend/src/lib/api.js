@@ -656,4 +656,23 @@ export const liveAPI = {
   end: (id) => api.post(`/live/${id}/end`),
 };
 
+// ─── Payouts / Settlements ───────────────────────────────────────────────────
+
+export const payoutAPI = {
+  getLinkedAccount: () => api.get("/payouts/linked-account"),
+  createLinkedAccount: (data) => api.post("/payouts/linked-account", data),
+  updateLinkedAccount: (data) => api.put("/payouts/linked-account", data),
+  mySummary: () => api.get("/payouts/my-summary"),
+  myPayouts: (params) => api.get("/payouts/my-payouts", { params }),
+  myPayoutDetail: (id) => api.get(`/payouts/my-payouts/${id}`),
+  // Admin
+  pending: (params) => api.get("/payouts/pending", { params }),
+  pendingDetail: (userId) => api.get(`/payouts/pending/${userId}`),
+  createSettlement: (data) => api.post("/payouts/settlements", data),
+  bulkSettle: () => api.post("/payouts/settlements/bulk"),
+  settlements: (params) => api.get("/payouts/settlements", { params }),
+  settlementDetail: (id) => api.get(`/payouts/settlements/${id}`),
+  adminLinkedAccount: (userId) => api.get(`/payouts/linked-account/${userId}`),
+};
+
 export default api;

@@ -53,6 +53,7 @@ from routes.coach_reminders import (
 )
 from routes.coach_whatsapp import router as coach_whatsapp_router
 from routes.coach_invoices import router as coach_invoices_router
+from routes.payouts import router as payouts_router
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
@@ -107,7 +108,7 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           coach_offline_router, coach_finance_router, communities_router,
           recommendations_router, organizations_router, performance_router,
           training_router, live_scoring_router, coach_reminders_router,
-          coach_whatsapp_router, coach_invoices_router]:
+          coach_whatsapp_router, coach_invoices_router, payouts_router]:
     app.include_router(r, prefix=API_PREFIX)
 
 

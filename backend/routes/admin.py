@@ -62,6 +62,14 @@ async def admin_dashboard(user=Depends(get_current_user)):
 
     total_platform_earnings = platform_earnings + coaching_earnings + tournament_earnings
 
+    # Payout summary
+    settled_docs = await db.settlements.find(
+        {"status": {"$in": ["completed", "processing"]}}, {"_id": 0, "net_amount": 1}
+    ).to_list(10000)
+    total_settled = sum(s.get("net_amount", 0) for s in settled_docs)
+    pending_settlements = await db.settlements.count_documents({"status": "processing"})
+    linked_count = await db.linked_accounts.count_documents({})
+
     recent_users = await db.users.find(
         {"role": {"$ne": "super_admin"}}, {"_id": 0, "password_hash": 0}
     ).sort("created_at", -1).to_list(5)
@@ -76,6 +84,9 @@ async def admin_dashboard(user=Depends(get_current_user)):
         "tournament_revenue": tournament_revenue, "tournament_earnings": tournament_earnings,
         "tournament_commission_pct": tournament_commission_pct,
         "total_platform_earnings": total_platform_earnings,
+        "total_settled": total_settled,
+        "pending_settlements": pending_settlements,
+        "linked_accounts_count": linked_count,
         "recent_users": recent_users
     }
 
