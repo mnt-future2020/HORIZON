@@ -331,8 +331,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
         "current_period_end": {"$gte": now_ist().isoformat()},
         "$or": [
             {"sports": booked_sport},       # subscription covers this sport
-            {"sports": {"$size": 0}},        # or subscription has no sport restriction
-            {"sports": {"$exists": False}},  # or legacy sub without sports field
+            {"sports": {"$size": 0}},        # or subscription has no sport restriction (all-sports package)
         ],
     })
 
