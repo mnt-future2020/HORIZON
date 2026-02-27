@@ -134,6 +134,49 @@ async def get_platform_settings():
     return settings or {}
 
 
+async def create_razorpay_payment_link(
+    amount: int,
+    description: str,
+    name: str = "",
+    phone: str = "",
+    email: str = "",
+    expire_days: int = 7,
+) -> dict:
+    """Create a Razorpay Payment Link (rzp.io/...) and return {ok, url, id}."""
+    import time
+    rzp = await get_razorpay_client()
+    if not rzp:
+        return {"ok": False, "detail": "Razorpay not configured"}
+
+    # Clean phone to E.164 format (default India +91)
+    clean_phone = phone.replace("+", "").replace(" ", "").replace("-", "")
+    if clean_phone and len(clean_phone) == 10 and clean_phone.isdigit():
+        clean_phone = "+91" + clean_phone
+    elif clean_phone and not clean_phone.startswith("+"):
+        clean_phone = "+" + clean_phone
+
+    payload = {
+        "amount": amount * 100,  # paise
+        "currency": "INR",
+        "accept_partial": False,
+        "description": description,
+        "customer": {
+            "name": name,
+            "contact": clean_phone,
+            "email": email,
+        },
+        "notify": {"sms": False, "email": False},
+        "reminder_enable": False,
+        "expire_by": int(time.time()) + expire_days * 86400,
+    }
+    try:
+        link = rzp.payment_link.create(payload)
+        return {"ok": True, "url": link["short_url"], "id": link["id"]}
+    except Exception as e:
+        _auth_logger.error(f"Razorpay payment link creation failed: {e}")
+        return {"ok": False, "detail": str(e)}
+
+
 async def invalidate_user_tokens(user_id: str):
     """Revoke all existing tokens for a user by setting token_invalidated_at.
     Call this after password change, forced logout, account suspension, etc."""

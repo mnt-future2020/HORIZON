@@ -70,6 +70,147 @@ async def send_message(settings: dict, to_phone: str, body: str) -> dict:
         return {"ok": False, "detail": str(e)}
 
 
+def build_client_welcome_message(coach_name: str, client_name: str, app_link: str) -> str:
+    """Welcome message sent to a new offline client to download the app."""
+    return (
+        f"Hi {client_name}! 👋\n\n"
+        f"Welcome to *{coach_name}*'s coaching program! 🎯\n\n"
+        f"Download the Lobbi app to:\n"
+        f"✅ View your session schedule\n"
+        f"✅ Track your performance\n"
+        f"✅ Book sessions online\n\n"
+        f"📱 *Download:* {app_link}\n\n"
+        f"See you on the field! 💪"
+    )
+
+
+def build_payment_reminder_message(
+    client_name: str,
+    coach_name: str,
+    package_name: str,
+    amount: int,
+    payment_link: str,
+    due_date: str,
+    attempt: int = 1,
+) -> str:
+    """Payment reminder with Razorpay link for monthly coaching fee."""
+    prefix = "Friendly reminder" if attempt == 1 else f"Reminder #{attempt}"
+    return (
+        f"*{prefix}* — {client_name} 👋\n\n"
+        f"Your monthly coaching fee is due.\n\n"
+        f"📦 *Package:* {package_name}\n"
+        f"💰 *Amount:* ₹{amount:,}\n"
+        f"📅 *Due:* {due_date}\n\n"
+        f"👉 *Pay now:* {payment_link}\n\n"
+        f"— {coach_name}\n"
+        f"_Powered by Lobbi_"
+    )
+
+
+def build_session_reminder_message(
+    client_name: str,
+    coach_name: str,
+    sport: str,
+    date: str,
+    start_time: str,
+    location: str = "",
+) -> str:
+    """Reminder sent the day before an upcoming session."""
+    loc_line = f"📍 *Venue:* {location}\n" if location else ""
+    return (
+        f"Hi {client_name}! 🔔\n\n"
+        f"Reminder — your *{sport.title()}* session is tomorrow!\n\n"
+        f"📅 *Date:* {date}\n"
+        f"⏰ *Time:* {start_time}\n"
+        f"{loc_line}"
+        f"\n— {coach_name}\n"
+        f"_Powered by Lobbi_"
+    )
+
+
+def build_package_expiry_message(
+    client_name: str,
+    coach_name: str,
+    package_name: str,
+    days_left: int,
+    sessions_remaining: int,
+) -> str:
+    """Alert sent N days before a package expires."""
+    day_word = "day" if days_left == 1 else "days"
+    return (
+        f"Hi {client_name}! ⚠️\n\n"
+        f"Your *{package_name}* package expires in *{days_left} {day_word}*.\n\n"
+        f"📦 Sessions remaining: *{sessions_remaining}*\n\n"
+        f"Don't lose your progress — contact your coach to renew!\n\n"
+        f"— {coach_name}\n"
+        f"_Powered by Lobbi_"
+    )
+
+
+def build_booking_confirmation_message(
+    client_name: str,
+    coach_name: str,
+    sport: str,
+    date: str,
+    start_time: str,
+    location: str = "",
+) -> str:
+    """Sent when a session is confirmed (payment or package)."""
+    loc_line = f"📍 *Venue:* {location}\n" if location else ""
+    return (
+        f"Booking Confirmed! ✅\n\n"
+        f"Hi {client_name}, your *{sport.title()}* session is booked.\n\n"
+        f"👨‍🏫 *Coach:* {coach_name}\n"
+        f"📅 *Date:* {date}\n"
+        f"⏰ *Time:* {start_time}\n"
+        f"{loc_line}"
+        f"\nSee you on the field! 💪\n\n"
+        f"_Powered by Lobbi_"
+    )
+
+
+def build_monthly_progress_message(
+    client_name: str,
+    coach_name: str,
+    month: str,
+    sessions_attended: int,
+    sessions_total: int,
+    attendance_pct: float,
+) -> str:
+    """Monthly progress summary sent on the last day of the month."""
+    if attendance_pct >= 80:
+        emoji, verdict = "🔥", "Great consistency! Keep it up! 🏆"
+    elif attendance_pct >= 60:
+        emoji, verdict = "📈", "Good progress — keep pushing! 💪"
+    else:
+        emoji, verdict = "💪", "Let's aim for more sessions next month!"
+    return (
+        f"Hi {client_name}! 📊\n\n"
+        f"Here's your *{month}* training summary:\n\n"
+        f"✅ Sessions attended: *{sessions_attended}/{sessions_total}*\n"
+        f"📈 Attendance: *{attendance_pct:.0f}%* {emoji}\n\n"
+        f"{verdict}\n\n"
+        f"— {coach_name}\n"
+        f"_Powered by Lobbi_"
+    )
+
+
+def build_no_show_message(
+    client_name: str,
+    coach_name: str,
+    sport: str,
+    date: str,
+) -> str:
+    """Sent when a client misses a confirmed session."""
+    return (
+        f"Hi {client_name}! 😊\n\n"
+        f"We missed you at today's *{sport.title()}* session ({date})!\n\n"
+        f"If you need to reschedule or had any issues, just reply here.\n\n"
+        f"— {coach_name}\n"
+        f"_Powered by Lobbi_"
+    )
+
+
 def build_enquiry_message(venue_name: str, enquiry: dict) -> str:
     """Build a formatted enquiry message."""
     lines = [

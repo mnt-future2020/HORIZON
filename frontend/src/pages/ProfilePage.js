@@ -13,9 +13,26 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, Video, Image, Info, Lock, Minus, Eye, EyeOff } from "lucide-react";
+import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, AlertTriangle, Video, Image, Info, Lock, Minus, Eye, EyeOff, Plus, X, ShieldCheck, Trash2 } from "lucide-react";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
+
+const normalizeItems = (arr) => (arr || []).map(item =>
+  typeof item === "string" ? { text: item, image: "" } : item
+);
+
+const COACH_DOC_SLOTS = [
+  { key: "government_id", label: "Government ID (Aadhaar / PAN / Passport)", type: "document", required: true },
+  { key: "coaching_certification", label: "Coaching Certification (NIS / AIFF / NCA / ICC)", type: "document", required: true },
+  { key: "federation_membership", label: "Sport Federation Membership Card", type: "document", required: true },
+  { key: "profile_photo", label: "Professional Photo", type: "image", required: true },
+  { key: "playing_experience", label: "Playing Experience Proof", type: "document", required: false },
+  { key: "first_aid_certificate", label: "First Aid / CPR Certificate", type: "document", required: false },
+  { key: "fitness_certificate", label: "Fitness Certificate", type: "document", required: false },
+  { key: "background_check", label: "Background / Police Check", type: "document", required: false },
+  { key: "qualification_proof", label: "Qualification Proof (10+2 / Graduation)", type: "document", required: false },
+  { key: "experience_letters", label: "Previous Coaching Experience Letters", type: "document", multiple: true, required: false },
+];
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -49,6 +66,16 @@ export default function ProfilePage() {
   const [pwForm, setPwForm] = useState({ current: "", new_pw: "", confirm: "" });
   const [changingPw, setChangingPw] = useState(false);
   const [showPw, setShowPw] = useState(false);
+  // Coach experience & credentials state
+  const [experienceForm, setExperienceForm] = useState({
+    years_of_experience: "0", specializations: [],
+    achievements: [], awards: [], certifications_list: [],
+    playing_history: "",
+  });
+  const [newSpecialization, setNewSpecialization] = useState("");
+  const [newAchievement, setNewAchievement] = useState("");
+  const [newAward, setNewAward] = useState("");
+  const [newCertification, setNewCertification] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -72,6 +99,17 @@ export default function ProfilePage() {
         coaching_bio: user.coaching_bio || "", coaching_sports: (user.coaching_sports || []).join(", "),
         session_price: user.session_price || "", session_duration_minutes: user.session_duration_minutes || 60,
         city: user.city || "", coaching_venue: user.coaching_venue || "",
+      });
+      // Initialize coach verification documents
+      setDocs(user.coach_verification_documents || {});
+      // Initialize experience form
+      setExperienceForm({
+        years_of_experience: String(user.years_of_experience || 0),
+        specializations: user.specializations || [],
+        achievements: normalizeItems(user.achievements),
+        awards: normalizeItems(user.awards),
+        certifications_list: normalizeItems(user.certifications_list),
+        playing_history: user.playing_history || "",
       });
     } else {
       setForm({ name: user.name || "", phone: user.phone || "" });
@@ -253,7 +291,97 @@ export default function ProfilePage() {
   };
 
   const allRequiredDocsUploaded = DOC_SLOTS.filter(s => s.required).every(s => docs[s.key]?.url);
+  const allRequiredCoachDocsUploaded = COACH_DOC_SLOTS.filter(s => s.required).every(s => docs[s.key]?.url);
   const docStatus = user?.doc_verification_status || "not_uploaded";
+
+  // Coach document handlers
+  const handleCoachDocUpload = async (slotKey, files) => {
+    if (!files || files.length === 0) return;
+    setUploadingDoc(slotKey);
+    setUploadProgress(0);
+    try {
+      const onProgress = (e) => { if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100)); };
+      const slotDef = COACH_DOC_SLOTS.find(s => s.key === slotKey);
+      if (slotDef?.multiple) {
+        const existing = Array.isArray(docs[slotKey]) ? docs[slotKey] : [];
+        const uploaded = [];
+        for (const file of files) {
+          const res = await uploadAPI.document(file, onProgress);
+          uploaded.push({ url: res.data.url, uploaded_at: new Date().toISOString() });
+        }
+        const merged = [...existing, ...uploaded];
+        const newDocs = { ...docs, [slotKey]: merged };
+        setDocs(newDocs);
+        await authAPI.updateCoachVerificationDocs({ [slotKey]: merged });
+      } else {
+        const file = files[0];
+        const res = slotDef?.type === "image"
+          ? await uploadAPI.image(file, onProgress)
+          : await uploadAPI.document(file, onProgress);
+        const docData = { url: res.data.url, uploaded_at: new Date().toISOString() };
+        const newDocs = { ...docs, [slotKey]: docData };
+        setDocs(newDocs);
+        await authAPI.updateCoachVerificationDocs({ [slotKey]: docData });
+      }
+      toast.success("Uploaded successfully!");
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || "Upload failed");
+    } finally { setUploadingDoc(null); setUploadProgress(0); }
+  };
+
+  const handleCoachRemoveDoc = async (slotKey, index) => {
+    const slotDef = COACH_DOC_SLOTS.find(s => s.key === slotKey);
+    let newVal;
+    if (slotDef?.multiple) {
+      const current = Array.isArray(docs[slotKey]) ? docs[slotKey] : [];
+      newVal = current.filter((_, i) => i !== index);
+    } else {
+      newVal = null;
+    }
+    const newDocs = { ...docs, [slotKey]: newVal };
+    setDocs(newDocs);
+    await authAPI.updateCoachVerificationDocs({ [slotKey]: newVal }).catch(() => {});
+    toast.success("Document removed");
+  };
+
+  const handleCoachSubmitForReview = async () => {
+    setSubmittingDocs(true);
+    try {
+      const res = await authAPI.updateCoachVerificationDocs({ submit: true });
+      updateUser(res.data);
+      toast.success("Documents submitted for review!");
+    } catch (err) {
+      toast.error("Failed to submit documents");
+    } finally { setSubmittingDocs(false); }
+  };
+
+  const handleSaveExperience = async () => {
+    try {
+      await coachingAPI.updateProfile({
+        years_of_experience: parseInt(experienceForm.years_of_experience, 10) || 0,
+        specializations: experienceForm.specializations,
+        achievements: experienceForm.achievements,
+        awards: experienceForm.awards,
+        certifications_list: experienceForm.certifications_list,
+        playing_history: experienceForm.playing_history,
+      });
+      toast.success("Experience & credentials saved!");
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to save"); }
+  };
+
+  const handleExperienceImageUpload = async (field, index, files) => {
+    if (!files || !files[0]) return;
+    try {
+      const res = await uploadAPI.image(files[0]);
+      const url = res.data.url;
+      setExperienceForm(p => {
+        const items = [...p[field]];
+        items[index] = { ...items[index], image: url };
+        return { ...p, [field]: items };
+      });
+      toast.success("Image uploaded!");
+    } catch { toast.error("Image upload failed"); }
+  };
 
   const getRatingTier = (r) => {
     if (r >= 2500) return { label: "Diamond", color: "text-cyan-400", bg: "bg-cyan-500/10" };
@@ -303,7 +431,7 @@ export default function ProfilePage() {
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="font-display text-xl font-bold text-foreground">{user?.name}</h1>
-                {(user?.is_verified || playerCard?.is_verified) && (
+                {(user?.is_verified || playerCard?.is_verified || (user?.role === "coach" && user?.doc_verification_status === "verified")) && (
                   <BadgeCheck className="h-5 w-5 text-blue-400 shrink-0" />
                 )}
               </div>
@@ -477,6 +605,34 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Coach: Verification status banner */}
+        {user?.role === "coach" && user?.coach_type === "individual" && docStatus !== "verified" && (
+          <div className={`rounded-lg p-4 mb-6 border ${
+            docStatus === "rejected" ? "bg-destructive/10 border-destructive/30" :
+            docStatus === "pending_review" ? "bg-blue-500/10 border-blue-500/30" :
+            "bg-amber-500/10 border-amber-500/30"
+          }`}>
+            {docStatus === "rejected" && (<>
+              <div className="font-bold text-sm text-destructive mb-1 flex items-center gap-1.5">
+                <XCircle className="h-4 w-4" /> Verification Rejected
+              </div>
+              <div className="text-xs text-muted-foreground">{user.doc_rejection_reason || "Please re-upload corrected documents."}</div>
+            </>)}
+            {docStatus === "pending_review" && (<>
+              <div className="font-bold text-sm text-blue-400 mb-1 flex items-center gap-1.5">
+                <AlertCircle className="h-4 w-4" /> Documents Under Review
+              </div>
+              <div className="text-xs text-muted-foreground">Your documents are being reviewed by the admin. You will be notified once approved.</div>
+            </>)}
+            {(docStatus === "not_uploaded" || !docStatus) && (<>
+              <div className="font-bold text-sm text-amber-400 mb-1 flex items-center gap-1.5">
+                <AlertTriangle className="h-4 w-4" /> Complete Your Profile Verification
+              </div>
+              <div className="text-xs text-muted-foreground">Upload your documents below to get verified and start coaching.</div>
+            </>)}
+          </div>
+        )}
+
         <Tabs defaultValue="info" data-testid="profile-tabs">
           <TabsList className="bg-secondary/50 mb-6">
             <TabsTrigger value="info" className="font-bold">Info</TabsTrigger>
@@ -490,6 +646,10 @@ export default function ProfilePage() {
               <TabsTrigger value="reviews" className="font-bold">Reviews</TabsTrigger>
             </>}
             {user?.role === "coach" && <>
+              {user?.coach_type === "individual" && (
+                <TabsTrigger value="documents" className="font-bold">Documents</TabsTrigger>
+              )}
+              <TabsTrigger value="credentials" className="font-bold">Credentials</TabsTrigger>
               <TabsTrigger value="sessions" className="font-bold">Sessions</TabsTrigger>
               <TabsTrigger value="organizations" className="font-bold">Organizations</TabsTrigger>
             </>}
@@ -1130,6 +1290,329 @@ export default function ProfilePage() {
                   })}
                 </div>
               )}
+            </TabsContent>
+          )}
+
+          {/* ===== COACH: Documents Tab (Individual only) ===== */}
+          {user?.role === "coach" && user?.coach_type === "individual" && (
+            <TabsContent value="documents">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display font-bold flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-primary" /> Verification Documents
+                  </h3>
+                  {docStatus === "verified" && (
+                    <Badge className="bg-green-500/10 text-green-500 text-[10px]">Verified</Badge>
+                  )}
+                  {docStatus === "pending_review" && (
+                    <Badge className="bg-blue-500/10 text-blue-500 text-[10px]">Under Review</Badge>
+                  )}
+                  {docStatus === "rejected" && (
+                    <Badge className="bg-red-500/10 text-red-500 text-[10px]">Rejected</Badge>
+                  )}
+                </div>
+                {docStatus === "rejected" && user?.doc_rejection_reason && (
+                  <div className="p-3 bg-red-500/5 border border-red-500/20 rounded-lg text-xs text-red-500">
+                    <strong>Rejection reason:</strong> {user.doc_rejection_reason}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">Upload required documents to get verified. <span className="text-red-500">*</span> marks mandatory.</p>
+
+                <div className="space-y-3">
+                  {COACH_DOC_SLOTS.map(slot => {
+                    const doc = docs[slot.key];
+                    const isUploaded = slot.multiple ? (Array.isArray(doc) && doc.length > 0) : !!doc?.url;
+                    const isUploading = uploadingDoc === slot.key;
+                    const isPdf = !slot.multiple && doc?.url?.toLowerCase().endsWith(".pdf");
+                    return (
+                      <div key={slot.key} className={`glass-card rounded-lg p-4 ${isUploaded ? "border border-green-500/30 bg-green-500/5" : ""}`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-xs font-bold uppercase flex items-center gap-1">
+                            {slot.label} {slot.required && <span className="text-destructive">*</span>}
+                          </Label>
+                          {isUploaded && !isUploading && (
+                            <div className="flex items-center gap-2">
+                              <CheckCircle2 className="h-4 w-4 text-green-500" />
+                              {docStatus !== "pending_review" && docStatus !== "verified" && (
+                                <button onClick={() => handleCoachRemoveDoc(slot.key)} className="text-muted-foreground hover:text-red-500">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        {isUploading ? (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Uploading... {uploadProgress}%</span>
+                            </div>
+                            <Progress value={uploadProgress} className="h-1.5" />
+                          </div>
+                        ) : isUploaded && !slot.multiple ? (
+                          <div className="space-y-2">
+                            {isPdf ? (
+                              <a href={mediaUrl(doc.url)} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-3 rounded-md bg-background/50 text-sm text-primary hover:underline">
+                                <FileText className="h-5 w-5" /> View PDF
+                              </a>
+                            ) : (
+                              <img src={mediaUrl(doc.url)} alt={slot.label}
+                                className="w-full h-32 object-contain rounded-md bg-background/50 cursor-pointer"
+                                onClick={() => window.open(mediaUrl(doc.url), "_blank")} />
+                            )}
+                          </div>
+                        ) : isUploaded && slot.multiple ? (
+                          <div className="flex flex-wrap gap-2">
+                            {(Array.isArray(doc) ? doc : []).map((item, i) => (
+                              <div key={i} className="relative group">
+                                <a href={mediaUrl(item.url || item)} target="_blank" rel="noopener noreferrer"
+                                  className="flex items-center gap-1 p-2 rounded-md bg-background/50 text-xs text-primary hover:underline">
+                                  <FileText className="h-4 w-4" /> Doc {i + 1}
+                                </a>
+                                {docStatus !== "pending_review" && docStatus !== "verified" && (
+                                  <button className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={() => handleCoachRemoveDoc(slot.key, i)}>x</button>
+                                )}
+                              </div>
+                            ))}
+                            {docStatus !== "pending_review" && docStatus !== "verified" && (
+                              <label className="flex items-center gap-1 p-2 rounded-md border border-dashed border-border text-xs text-primary cursor-pointer hover:border-primary/30">
+                                <Plus className="h-3.5 w-3.5" /> Add more
+                                <input type="file" className="hidden" accept="image/*,.pdf" multiple
+                                  onChange={e => handleCoachDocUpload(slot.key, e.target.files)} />
+                              </label>
+                            )}
+                          </div>
+                        ) : (
+                          <label className={`flex flex-col items-center justify-center p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors border-border hover:border-primary/30 hover:bg-primary/5`}>
+                            <Upload className="h-6 w-6 text-muted-foreground mb-1" />
+                            <span className="text-xs text-muted-foreground">Click to upload</span>
+                            <span className="text-[10px] text-muted-foreground/60 mt-0.5">{slot.type === "image" ? "Image, max 10MB" : "Image or PDF, max 10MB"}</span>
+                            <input type="file" className="hidden"
+                              accept={slot.type === "image" ? "image/*" : "image/*,.pdf"}
+                              multiple={!!slot.multiple}
+                              onChange={e => handleCoachDocUpload(slot.key, e.target.files)} />
+                          </label>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Agreement + Submit */}
+                {docStatus !== "pending_review" && docStatus !== "verified" && (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-muted/30 p-3">
+                      <Checkbox id="coach-agree-terms" checked={agreedToTerms} onCheckedChange={setAgreedToTerms} className="mt-0.5" />
+                      <label htmlFor="coach-agree-terms" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
+                        I confirm that all uploaded documents are genuine and I agree to the{" "}
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Terms & Conditions</a>{" "}and{" "}
+                        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">Privacy Policy</a>.
+                      </label>
+                    </div>
+                    <Button onClick={handleCoachSubmitForReview}
+                      disabled={!allRequiredCoachDocsUploaded || !agreedToTerms || submittingDocs || !!uploadingDoc}
+                      className="w-full bg-primary text-primary-foreground">
+                      {submittingDocs ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Submitting...</> : (
+                        <><ShieldCheck className="h-4 w-4 mr-2" /> Submit Documents for Review</>
+                      )}
+                    </Button>
+                  </div>
+                )}
+                {!allRequiredCoachDocsUploaded && docStatus !== "pending_review" && docStatus !== "verified" && (
+                  <p className="text-[10px] text-muted-foreground text-center">Upload all required documents (<span className="text-red-500">*</span>) to submit for review</p>
+                )}
+              </div>
+            </TabsContent>
+          )}
+
+          {/* ===== COACH: Credentials Tab ===== */}
+          {user?.role === "coach" && (
+            <TabsContent value="credentials">
+              <div className="space-y-6">
+                {/* Experience & Credentials */}
+                <div className="glass-card rounded-lg p-6 space-y-4">
+                  <h3 className="font-display font-bold flex items-center gap-2">
+                    <Award className="h-4 w-4 text-primary" /> Experience & Credentials
+                  </h3>
+                  <p className="text-xs text-muted-foreground">Shown on your public profile. Add images as proof to build trust.</p>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Years of Experience</Label>
+                      <Input type="number" min="0" value={experienceForm.years_of_experience}
+                        onChange={e => setExperienceForm(p => ({ ...p, years_of_experience: e.target.value }))}
+                        className="mt-1 bg-background border-border" />
+                    </div>
+                  </div>
+
+                  {/* Specializations */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Specializations</Label>
+                    <div className="flex flex-wrap gap-1.5 mt-1 mb-2">
+                      {experienceForm.specializations.map((s, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs gap-1">
+                          {s}
+                          <button onClick={() => setExperienceForm(p => ({ ...p, specializations: p.specializations.filter((_, j) => j !== i) }))}>
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input value={newSpecialization} onChange={e => setNewSpecialization(e.target.value)}
+                        placeholder="e.g. Batting technique" className="bg-background border-border text-sm flex-1"
+                        onKeyDown={e => { if (e.key === "Enter" && newSpecialization.trim()) { e.preventDefault(); setExperienceForm(p => ({ ...p, specializations: [...p.specializations, newSpecialization.trim()] })); setNewSpecialization(""); }}} />
+                      <Button size="sm" variant="outline" onClick={() => { if (newSpecialization.trim()) { setExperienceForm(p => ({ ...p, specializations: [...p.specializations, newSpecialization.trim()] })); setNewSpecialization(""); }}}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Achievements with image support */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Achievements</Label>
+                    <div className="space-y-2 mt-1 mb-2">
+                      {experienceForm.achievements.map((a, i) => (
+                        <div key={i} className="rounded-lg border border-border bg-secondary/10 p-2.5">
+                          <div className="flex items-center gap-2 text-xs">
+                            <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                            <span className="flex-1 font-medium">{a.text}</span>
+                            <button onClick={() => setExperienceForm(p => ({ ...p, achievements: p.achievements.filter((_, j) => j !== i) }))}>
+                              <X className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                            </button>
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            {a.image ? (
+                              <div className="relative group">
+                                <img src={mediaUrl(a.image)} alt="" className="h-12 w-16 rounded object-cover" />
+                                <button onClick={() => setExperienceForm(p => { const items = [...p.achievements]; items[i] = { ...items[i], image: "" }; return { ...p, achievements: items }; })}
+                                  className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <X className="h-2.5 w-2.5 text-white" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="flex items-center gap-1 text-[10px] text-primary cursor-pointer hover:underline">
+                                <Camera className="h-3 w-3" /> Add proof image
+                                <input type="file" className="hidden" accept="image/*"
+                                  onChange={e => handleExperienceImageUpload("achievements", i, e.target.files)} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input value={newAchievement} onChange={e => setNewAchievement(e.target.value)}
+                        placeholder="e.g. State level player 2019" className="bg-background border-border text-sm flex-1"
+                        onKeyDown={e => { if (e.key === "Enter" && newAchievement.trim()) { e.preventDefault(); setExperienceForm(p => ({ ...p, achievements: [...p.achievements, { text: newAchievement.trim(), image: "" }] })); setNewAchievement(""); }}} />
+                      <Button size="sm" variant="outline" onClick={() => { if (newAchievement.trim()) { setExperienceForm(p => ({ ...p, achievements: [...p.achievements, { text: newAchievement.trim(), image: "" }] })); setNewAchievement(""); }}}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Awards with image support */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Awards</Label>
+                    <div className="space-y-2 mt-1 mb-2">
+                      {experienceForm.awards.map((a, i) => (
+                        <div key={i} className="rounded-lg border border-border bg-secondary/10 p-2.5">
+                          <div className="flex items-center gap-2 text-xs">
+                            <Award className="h-3 w-3 text-amber-500 shrink-0" />
+                            <span className="flex-1 font-medium">{a.text}</span>
+                            <button onClick={() => setExperienceForm(p => ({ ...p, awards: p.awards.filter((_, j) => j !== i) }))}>
+                              <X className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                            </button>
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            {a.image ? (
+                              <div className="relative group">
+                                <img src={mediaUrl(a.image)} alt="" className="h-12 w-16 rounded object-cover" />
+                                <button onClick={() => setExperienceForm(p => { const items = [...p.awards]; items[i] = { ...items[i], image: "" }; return { ...p, awards: items }; })}
+                                  className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <X className="h-2.5 w-2.5 text-white" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="flex items-center gap-1 text-[10px] text-primary cursor-pointer hover:underline">
+                                <Camera className="h-3 w-3" /> Add proof image
+                                <input type="file" className="hidden" accept="image/*"
+                                  onChange={e => handleExperienceImageUpload("awards", i, e.target.files)} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input value={newAward} onChange={e => setNewAward(e.target.value)}
+                        placeholder="e.g. Best Coach Award 2023" className="bg-background border-border text-sm flex-1"
+                        onKeyDown={e => { if (e.key === "Enter" && newAward.trim()) { e.preventDefault(); setExperienceForm(p => ({ ...p, awards: [...p.awards, { text: newAward.trim(), image: "" }] })); setNewAward(""); }}} />
+                      <Button size="sm" variant="outline" onClick={() => { if (newAward.trim()) { setExperienceForm(p => ({ ...p, awards: [...p.awards, { text: newAward.trim(), image: "" }] })); setNewAward(""); }}}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Certifications with image support */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Certifications</Label>
+                    <div className="space-y-2 mt-1 mb-2">
+                      {experienceForm.certifications_list.map((c, i) => (
+                        <div key={i} className="rounded-lg border border-border bg-secondary/10 p-2.5">
+                          <div className="flex items-center gap-2 text-xs">
+                            <BadgeCheck className="h-3 w-3 text-blue-500 shrink-0" />
+                            <span className="flex-1 font-medium">{c.text}</span>
+                            <button onClick={() => setExperienceForm(p => ({ ...p, certifications_list: p.certifications_list.filter((_, j) => j !== i) }))}>
+                              <X className="h-3 w-3 text-muted-foreground hover:text-red-500" />
+                            </button>
+                          </div>
+                          <div className="mt-1.5 flex items-center gap-2">
+                            {c.image ? (
+                              <div className="relative group">
+                                <img src={mediaUrl(c.image)} alt="" className="h-12 w-16 rounded object-cover" />
+                                <button onClick={() => setExperienceForm(p => { const items = [...p.certifications_list]; items[i] = { ...items[i], image: "" }; return { ...p, certifications_list: items }; })}
+                                  className="absolute -top-1 -right-1 bg-red-500 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <X className="h-2.5 w-2.5 text-white" />
+                                </button>
+                              </div>
+                            ) : (
+                              <label className="flex items-center gap-1 text-[10px] text-primary cursor-pointer hover:underline">
+                                <Camera className="h-3 w-3" /> Add proof image
+                                <input type="file" className="hidden" accept="image/*"
+                                  onChange={e => handleExperienceImageUpload("certifications_list", i, e.target.files)} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input value={newCertification} onChange={e => setNewCertification(e.target.value)}
+                        placeholder="e.g. NIS Diploma in Badminton" className="bg-background border-border text-sm flex-1"
+                        onKeyDown={e => { if (e.key === "Enter" && newCertification.trim()) { e.preventDefault(); setExperienceForm(p => ({ ...p, certifications_list: [...p.certifications_list, { text: newCertification.trim(), image: "" }] })); setNewCertification(""); }}} />
+                      <Button size="sm" variant="outline" onClick={() => { if (newCertification.trim()) { setExperienceForm(p => ({ ...p, certifications_list: [...p.certifications_list, { text: newCertification.trim(), image: "" }] })); setNewCertification(""); }}}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Playing History */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Playing History</Label>
+                    <Textarea value={experienceForm.playing_history}
+                      onChange={e => setExperienceForm(p => ({ ...p, playing_history: e.target.value }))}
+                      rows={3} placeholder="Describe your playing career..."
+                      className="mt-1 bg-background border-border" />
+                  </div>
+
+                  <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveExperience}>
+                    <Save className="h-4 w-4 mr-2" /> Save Experience & Credentials
+                  </Button>
+                </div>
+              </div>
             </TabsContent>
           )}
 

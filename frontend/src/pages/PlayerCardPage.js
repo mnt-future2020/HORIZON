@@ -1,18 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { playerCardAPI, recommendationAPI, socialAPI, careerAPI } from "@/lib/api";
+import { playerCardAPI, recommendationAPI, socialAPI, careerAPI, coachingAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { AthleticStatCard } from "@/components/ui/stat-card";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Trophy, Target, Shield, Zap, Star, Crown, Award, Medal,
   Gamepad2, Calendar, TrendingUp, Loader2, ArrowLeft, User,
   Heart, MessageCircle, UserPlus, Users, Grid3X3, Flame,
-  Dumbbell, Building2, BadgeCheck, Info, X, Swords, BarChart3,
-  GraduationCap, CheckCircle2, Footprints
+  Dumbbell, Building2, BadgeCheck, Info, X, Swords,
+  GraduationCap, CheckCircle2, Footprints, MapPin, Briefcase, Package
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -51,6 +52,17 @@ export default function PlayerCardPage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [career, setCareer] = useState(null);
   const [showLevelUpGuide, setShowLevelUpGuide] = useState(false);
+  const [coachData, setCoachData] = useState(null);
+  const [coachPackages, setCoachPackages] = useState([]);
+  // Inline booking state (coach profile)
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [coachSlots, setCoachSlots] = useState([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [bookingSport, setBookingSport] = useState("");
+  const [bookingNotes, setBookingNotes] = useState("");
+  const [booking, setBooking] = useState(false);
+  const [subscribing, setSubscribing] = useState(false);
 
   const isOwnProfile = !userId || userId === "me" || userId === currentUser?.id;
 
@@ -65,8 +77,15 @@ export default function PlayerCardPage() {
     if (isOwnProfile && currentUser?.role === "super_admin") return;
     const isMe = !userId || userId === "me" || userId === currentUser?.id;
     setLoading(true);
+    const resolvedId = isMe ? currentUser?.id : userId;
     const loadCard = (isMe ? playerCardAPI.getMyCard() : playerCardAPI.getCard(userId))
-      .then(res => setCard(res.data))
+      .then(res => {
+        setCard(res.data);
+        if (res.data?.role === "coach" && resolvedId) {
+          coachingAPI.getCoach(resolvedId).then(r => setCoachData(r.data)).catch(() => {});
+          coachingAPI.getCoachPackages(resolvedId).then(r => setCoachPackages(r.data || [])).catch(() => {});
+        }
+      })
       .catch(() => toast.error("Failed to load Lobbian card"));
 
     const loadEngagement = recommendationAPI.userEngagement(isMe ? currentUser?.id : userId)
@@ -111,6 +130,127 @@ export default function PlayerCardPage() {
       const res = await socialAPI.toggleFollow(card.user_id);
       setIsFollowing(res.data.following);
     } catch { setIsFollowing((prev) => !prev); toast.error("Failed"); }
+  };
+
+  // ── Inline coaching booking ──
+  const loadCoachSlots = useCallback(async (coachId, date) => {
+    setSlotsLoading(true);
+    try {
+      const res = await coachingAPI.getCoachSlots(coachId, date);
+      setCoachSlots(res.data?.slots || res.data || []);
+    } catch { setCoachSlots([]); }
+    setSlotsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (coachData && card?.user_id && !isOwnProfile) {
+      setBookingSport(coachData.coaching_sports?.[0] || "");
+      loadCoachSlots(card.user_id, selectedDate);
+    }
+  }, [coachData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    setSelectedSlot(null);
+    if (card?.user_id) loadCoachSlots(card.user_id, date);
+  };
+
+  const loadRazorpayScript = () => new Promise(resolve => {
+    if (document.getElementById("rzp-script")) { resolve(true); return; }
+    const s = document.createElement("script");
+    s.id = "rzp-script";
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = () => resolve(true);
+    s.onerror = () => resolve(false);
+    document.body.appendChild(s);
+  });
+
+  const handleBook = async () => {
+    if (!selectedSlot || !card) return;
+    setBooking(true);
+    try {
+      const res = await coachingAPI.bookSession({
+        coach_id: card.user_id,
+        date: selectedDate,
+        start_time: selectedSlot.start_time,
+        sport: bookingSport,
+        notes: bookingNotes,
+      });
+      const session = res.data;
+      if (session.booked_from_package) {
+        toast.success(`Booked from package! ${session.sessions_remaining} sessions remaining.`);
+        setSelectedSlot(null);
+        loadCoachSlots(card.user_id, selectedDate);
+        setBooking(false);
+        return;
+      }
+      if (session.payment_gateway === "razorpay" && session.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed"); setBooking(false); return; }
+        new window.Razorpay({
+          key: session.razorpay_key_id,
+          amount: session.price * 100,
+          currency: "INR",
+          order_id: session.razorpay_order_id,
+          name: card.name || "Coaching Session",
+          description: `${session.sport} · ${session.date} · ${session.start_time}`,
+          handler: async (response) => {
+            try {
+              await coachingAPI.verifyPayment(session.id, response);
+              toast.success("Payment successful! Session confirmed.");
+              setSelectedSlot(null);
+              loadCoachSlots(card.user_id, selectedDate);
+            } catch { toast.error("Payment verification failed"); }
+          },
+          modal: { ondismiss: () => toast.info("Payment cancelled.") },
+          theme: { color: "#10B981" },
+        }).open();
+      } else if (session.payment_gateway === "test") {
+        await coachingAPI.testConfirm(session.id);
+        toast.success("Session booked & confirmed!");
+        setSelectedSlot(null);
+        loadCoachSlots(card.user_id, selectedDate);
+      } else {
+        toast.success("Session booked!");
+        setSelectedSlot(null);
+        loadCoachSlots(card.user_id, selectedDate);
+      }
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to book"); }
+    setBooking(false);
+  };
+
+  const handleSubscribe = async (pkg) => {
+    setSubscribing(true);
+    try {
+      const res = await coachingAPI.subscribe(pkg.id);
+      const sub = res.data;
+      if (sub.payment_gateway === "razorpay" && sub.razorpay_order_id) {
+        const loaded = await loadRazorpayScript();
+        if (!loaded) { toast.error("Payment gateway failed"); setSubscribing(false); return; }
+        new window.Razorpay({
+          key: sub.razorpay_key_id,
+          amount: sub.price * 100,
+          currency: "INR",
+          order_id: sub.razorpay_order_id,
+          name: pkg.coach_name || "Coaching Package",
+          description: `${pkg.name} - ${pkg.sessions_per_month} sessions/month`,
+          handler: async (response) => {
+            try {
+              await coachingAPI.verifySubPayment(sub.id, response);
+              toast.success("Subscribed successfully!");
+              coachingAPI.getCoachPackages(card.user_id).then(r => setCoachPackages(r.data || [])).catch(() => {});
+            } catch { toast.error("Payment verification failed"); }
+          },
+          modal: { ondismiss: () => toast.info("Payment cancelled.") },
+          theme: { color: "#10B981" },
+        }).open();
+      } else if (sub.payment_gateway === "test") {
+        await coachingAPI.testConfirmSub(sub.id);
+        toast.success("Subscribed! (Test mode)");
+        coachingAPI.getCoachPackages(card.user_id).then(r => setCoachPackages(r.data || [])).catch(() => {});
+      }
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed to subscribe"); }
+    setSubscribing(false);
   };
 
   const timeAgo = (d) => {
@@ -217,24 +357,87 @@ export default function PlayerCardPage() {
               )}
             </h1>
 
-            {/* Rating */}
-            <div className="mt-3 flex items-center justify-center gap-3">
-              <span className={`font-display text-4xl font-black ${tier.color}`}>
-                {card.skill_rating}
-              </span>
-              <div className="text-left">
-                <Badge variant="glow" className="text-[10px] font-bold">
-                  {tier.name}
-                </Badge>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Skill Rating</p>
+            {/* Rating / Coach Stats */}
+            {card.role === "coach" ? (
+              <div className="mt-3">
+                {coachData ? (
+                  <div className="flex items-center justify-center gap-4">
+                    {coachData.coaching_rating > 0 && (
+                      <div className="flex items-center gap-2">
+                        <Star className="h-5 w-5 text-amber-400 shrink-0" />
+                        <span className="font-display text-4xl font-black text-amber-400">{Number(coachData.coaching_rating).toFixed(1)}</span>
+                        <div className="text-left">
+                          <Badge className="text-[10px] font-bold bg-amber-400/10 text-amber-400 border-amber-400/30">Rating</Badge>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{coachData.total_sessions || 0} sessions</p>
+                        </div>
+                      </div>
+                    )}
+                    {coachData.session_price > 0 && (
+                      <div className={`text-right ${coachData.coaching_rating > 0 ? "border-l border-border/40 pl-4" : ""}`}>
+                        <p className="font-black text-2xl text-primary">₹{coachData.session_price}</p>
+                        <p className="text-[10px] text-muted-foreground">{coachData.session_duration_minutes || 60} min / session</p>
+                      </div>
+                    )}
+                    {!coachData.coaching_rating && !coachData.session_price && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <GraduationCap className="h-5 w-5 text-primary" />
+                        <span className="font-bold text-sm text-primary">Professional Coach</span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <GraduationCap className="h-5 w-5 text-primary" />
+                    <span className="font-bold text-sm text-primary">Professional Coach</span>
+                  </div>
+                )}
               </div>
-            </div>
+            ) : (
+              <div className="mt-3 flex items-center justify-center gap-3">
+                <span className={`font-display text-4xl font-black ${tier.color}`}>
+                  {card.skill_rating}
+                </span>
+                <div className="text-left">
+                  <Badge variant="glow" className="text-[10px] font-bold">
+                    {tier.name}
+                  </Badge>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Skill Rating</p>
+                </div>
+              </div>
+            )}
 
-            {/* Primary Sport */}
-            {card.primary_sport !== "none" && (
-              <Badge variant="sport" className="mt-3 text-xs font-bold uppercase">
-                {card.primary_sport}
-              </Badge>
+            {/* Primary Sport / Coaching Sports */}
+            {card.role === "coach" ? (
+              coachData?.coaching_sports?.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5 mt-3 justify-center">
+                  {coachData.coaching_sports.slice(0, 4).map(s => (
+                    <Badge key={s} variant="secondary" className="text-xs capitalize font-bold">{s.replace(/_/g, " ")}</Badge>
+                  ))}
+                  {coachData.years_of_experience > 0 && (
+                    <Badge className="text-xs font-bold bg-violet-500/10 text-violet-400 border-violet-500/20">
+                      {coachData.years_of_experience}+ yrs exp
+                    </Badge>
+                  )}
+                </div>
+              ) : coachData?.years_of_experience > 0 ? (
+                <Badge className="mt-3 text-xs font-bold bg-violet-500/10 text-violet-400 border-violet-500/20">
+                  {coachData.years_of_experience}+ yrs exp
+                </Badge>
+              ) : null
+            ) : (
+              card.primary_sport !== "none" && (
+                <Badge variant="sport" className="mt-3 text-xs font-bold uppercase">
+                  {card.primary_sport}
+                </Badge>
+              )
+            )}
+
+            {/* City + Venue — coaches only */}
+            {card.role === "coach" && coachData?.city && (
+              <p className="mt-2 text-xs text-muted-foreground flex items-center justify-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {coachData.city}{coachData.coaching_venue && ` · ${coachData.coaching_venue}`}
+              </p>
             )}
 
             {/* Social Stats */}
@@ -261,12 +464,12 @@ export default function PlayerCardPage() {
               )}
             </div>
 
-            {/* Follow + Message Buttons */}
+            {/* Follow + Message + Book Buttons */}
             {card.user_id !== currentUser?.id && (
-              <div className="flex items-center justify-center gap-3 mt-4">
+              <div className="flex items-center justify-center gap-2 mt-4 flex-wrap">
                 <Button
                   variant={isFollowing ? "outline" : "athletic"}
-                  className="min-w-[120px]"
+                  className="min-w-[100px]"
                   onClick={handleFollow}>
                   {isFollowing ? <><Users className="h-4 w-4 mr-2" /> Following</> : <><UserPlus className="h-4 w-4 mr-2" /> Follow</>}
                 </Button>
@@ -274,12 +477,18 @@ export default function PlayerCardPage() {
                   onClick={() => navigate(`/chat?user=${card.user_id}`)}>
                   <MessageCircle className="h-4 w-4 mr-2" /> Message
                 </Button>
+                {card.role === "coach" && coachData && (
+                  <Button variant="outline" className="border-primary/40 text-primary hover:bg-primary/10"
+                    onClick={() => document.getElementById("coach-book-section")?.scrollIntoView({ behavior: "smooth" })}>
+                    <Calendar className="h-4 w-4 mr-2" /> Book
+                  </Button>
+                )}
               </div>
             )}
           </div>
 
-          {/* Overall Skill Score */}
-          {card.overall_score !== undefined && (
+          {/* Overall Skill Score — players only */}
+          {card.role !== "coach" && card.overall_score !== undefined && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
               className="rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-md p-6 mb-6">
               <div className="flex items-center gap-6">
@@ -648,6 +857,307 @@ export default function PlayerCardPage() {
             </div>
           </div>
         </motion.div>
+
+        {/* ═══ COACHING PROFILE ═══ */}
+        {card.role === "coach" && coachData && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
+            className="mt-8">
+            <div className="flex items-center gap-2 mb-4">
+              <GraduationCap className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-display font-bold text-sm">Coaching Profile</h3>
+            </div>
+
+            {/* Bio + price — only render if there's content */}
+            {(coachData.coaching_bio || coachData.city || coachData.coaching_sports?.length > 0) && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div className="flex-1 min-w-0">
+                    {coachData.coaching_bio && (
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-2">{coachData.coaching_bio}</p>
+                    )}
+                    {coachData.city && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />{coachData.city}
+                        {coachData.coaching_venue && <span> · {coachData.coaching_venue}</span>}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-black text-xl text-primary">₹{coachData.session_price || 500}</p>
+                    <p className="text-[10px] text-muted-foreground">{coachData.session_duration_minutes || 60} min</p>
+                  </div>
+                </div>
+                {coachData.coaching_sports?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {coachData.coaching_sports.map(s => (
+                      <Badge key={s} variant="secondary" className="text-[10px] capitalize font-bold">{s.replace("_", " ")}</Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Coach Stats */}
+            {(coachData.coaching_rating > 0 || coachData.total_sessions > 0 || coachData.years_of_experience > 0) && (
+              <div className="flex gap-3 mb-4">
+                {coachData.coaching_rating > 0 && (
+                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                    <Star className="h-4 w-4 mx-auto mb-1 text-amber-400" />
+                    <p className="font-black text-base text-amber-400">{Number(coachData.coaching_rating).toFixed(1)}</p>
+                    <p className="text-[10px] text-muted-foreground">Rating</p>
+                  </div>
+                )}
+                {coachData.total_sessions > 0 && (
+                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                    <Users className="h-4 w-4 mx-auto mb-1 text-primary" />
+                    <p className="font-black text-base text-primary">{coachData.total_sessions}</p>
+                    <p className="text-[10px] text-muted-foreground">Sessions</p>
+                  </div>
+                )}
+                {coachData.years_of_experience > 0 && (
+                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                    <Briefcase className="h-4 w-4 mx-auto mb-1 text-violet-400" />
+                    <p className="font-black text-base text-violet-400">{coachData.years_of_experience}+</p>
+                    <p className="text-[10px] text-muted-foreground">Yrs Exp</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Specializations */}
+            {coachData.specializations?.length > 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Specializations</h4>
+                <div className="flex flex-wrap gap-2">
+                  {coachData.specializations.map((s, i) => (
+                    <Badge key={i} className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium">{s}</Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Achievements */}
+            {coachData.achievements?.length > 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Achievements</h4>
+                <div className="space-y-2">
+                  {coachData.achievements.map((a, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Trophy className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                      <p className="text-sm">{typeof a === "string" ? a : a.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Awards */}
+            {coachData.awards?.length > 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Awards</h4>
+                <div className="space-y-2">
+                  {coachData.awards.map((a, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Award className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                      <p className="text-sm">{typeof a === "string" ? a : a.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Certifications */}
+            {coachData.certifications_list?.length > 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Certifications</h4>
+                <div className="space-y-2">
+                  {coachData.certifications_list.map((c, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <BadgeCheck className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
+                      <p className="text-sm">{typeof c === "string" ? c : c.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Playing History */}
+            {coachData.playing_history && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Playing History</h4>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{coachData.playing_history}</p>
+              </div>
+            )}
+
+            {/* Packages */}
+            {coachPackages.length > 0 && (
+              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Coaching Packages</h4>
+                <div className="space-y-3">
+                  {coachPackages.map(pkg => (
+                    <div key={pkg.id} className={`rounded-xl border-2 p-3 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 bg-secondary/20"}`}>
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-sm truncate">{pkg.name}</p>
+                          <p className="text-xs text-muted-foreground">{pkg.sessions_per_month} sessions · {pkg.duration_minutes || 60} min each</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-black text-base text-primary">₹{(pkg.price || 0).toLocaleString()}</p>
+                          <p className="text-[10px] text-muted-foreground">/month</p>
+                        </div>
+                      </div>
+                      {pkg.description && <p className="text-xs text-muted-foreground mb-2">{pkg.description}</p>}
+                      {!isOwnProfile && (
+                        pkg.subscribed ? (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span className="text-xs font-bold text-primary">{pkg.sessions_remaining} sessions remaining</span>
+                          </div>
+                        ) : (
+                          <button onClick={() => handleSubscribe(pkg)} disabled={subscribing}
+                            className="w-full h-9 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors disabled:opacity-60">
+                            {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Package className="h-3.5 w-3.5" />}
+                            Subscribe · ₹{(pkg.price || 0).toLocaleString()}/mo
+                          </button>
+                        )
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* ── Inline Book a Session ── */}
+            {!isOwnProfile && (() => {
+              const next14 = Array.from({ length: 14 }, (_, i) => {
+                const d = new Date(); d.setDate(d.getDate() + i);
+                return {
+                  value: d.toISOString().slice(0, 10),
+                  day: d.toLocaleDateString("en", { weekday: "short" }),
+                  date: d.getDate(),
+                  month: d.toLocaleDateString("en", { month: "short" }),
+                  isToday: i === 0,
+                };
+              });
+              const slotSports = selectedSlot?.sports?.length > 0
+                ? selectedSlot.sports
+                : (coachData.coaching_sports || []);
+              return (
+                <div className="rounded-2xl border-2 border-primary/20 bg-card p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <h4 className="font-bold text-sm">Book a Session</h4>
+                    </div>
+                    <span className="font-black text-primary">₹{coachData.session_price || 500}<span className="text-[10px] text-muted-foreground font-normal"> / {coachData.session_duration_minutes || 60} min</span></span>
+                  </div>
+
+                  {/* Date strip */}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Select Date</p>
+                  <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-4">
+                    {next14.map(d => (
+                      <button key={d.value} onClick={() => handleDateChange(d.value)}
+                        className={`flex flex-col items-center shrink-0 w-[50px] py-2 rounded-xl border-2 transition-all ${
+                          selectedDate === d.value
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border/50 bg-background/50 hover:border-primary/40"
+                        }`}>
+                        <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-primary" : "text-muted-foreground"}`}>{d.day}</span>
+                        <span className="text-base font-black leading-tight">{d.date}</span>
+                        <span className={`text-[9px] ${selectedDate === d.value ? "text-primary/70" : "text-muted-foreground"}`}>{d.month}</span>
+                        {d.isToday && <span className="text-[8px] font-bold text-primary mt-0.5">Today</span>}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Slots */}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Available Slots</p>
+                  {slotsLoading ? (
+                    <div className="flex justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : coachSlots.length === 0 ? (
+                    <div className="flex flex-col items-center py-8 rounded-xl bg-secondary/20 border border-dashed border-border mb-4">
+                      <Calendar className="h-7 w-7 text-muted-foreground/40 mb-2" />
+                      <p className="text-sm font-bold text-muted-foreground">No slots on this day</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Try a different date</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {coachSlots.map(slot => (
+                        <button key={slot.start_time}
+                          onClick={() => { if (slot.available) setSelectedSlot(slot); }}
+                          disabled={!slot.available}
+                          className={`flex flex-col items-center px-2 py-3 rounded-xl border-2 text-xs font-bold transition-all ${
+                            selectedSlot?.start_time === slot.start_time
+                              ? "border-primary bg-primary/10 text-primary"
+                              : slot.available
+                                ? "border-border/50 bg-background hover:border-primary/50 hover:bg-primary/5"
+                                : "border-border/20 bg-secondary/20 text-muted-foreground/40 cursor-not-allowed"
+                          }`}>
+                          <span className={slot.available ? "" : "line-through"}>{slot.start_time}</span>
+                          <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-primary/70" : "text-muted-foreground"}`}>{slot.end_time}</span>
+                          {!slot.available && <span className="text-[9px] text-red-400/70 mt-0.5">Booked</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sport + Notes after slot selected */}
+                  {selectedSlot && (
+                    <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 mb-4">
+                      {slotSports.length > 1 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {slotSports.map(s => (
+                            <button key={s} onClick={() => setBookingSport(s)}
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 capitalize transition-all ${
+                                bookingSport === s ? "border-primary bg-primary/10 text-primary" : "border-border/50 hover:border-primary/40"
+                              }`}>
+                              {s.replace("_", " ")}
+                            </button>
+                          ))}
+                        </div>
+                      ) : slotSports.length === 1 ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-primary/8 border border-primary/20 rounded-xl">
+                          <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                          <span className="text-sm font-bold capitalize text-primary">{slotSports[0].replace("_", " ")}</span>
+                        </div>
+                      ) : null}
+                      <Input value={bookingNotes} onChange={e => setBookingNotes(e.target.value)}
+                        placeholder="What do you want to work on? (optional)"
+                        className="bg-background border-border text-sm" />
+                    </motion.div>
+                  )}
+
+                  {/* Summary row */}
+                  {selectedSlot && (
+                    <div className="flex items-center justify-between text-xs mb-3 px-1">
+                      <span className="text-muted-foreground">
+                        {new Date(selectedDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                        {" · "}{selectedSlot.start_time}–{selectedSlot.end_time}
+                        {bookingSport && <> · <span className="capitalize">{bookingSport.replace("_", " ")}</span></>}
+                      </span>
+                      <span className="font-black text-primary">₹{coachData.session_price || 500}</span>
+                    </div>
+                  )}
+
+                  {/* Confirm button */}
+                  <button disabled={!selectedSlot || booking} onClick={handleBook}
+                    className={`w-full h-12 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all ${
+                      selectedSlot && !booking
+                        ? "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg"
+                        : "bg-secondary text-muted-foreground cursor-not-allowed"
+                    }`}>
+                    {booking
+                      ? <><Loader2 className="h-4 w-4 animate-spin" /> Confirming...</>
+                      : selectedSlot
+                        ? <>Confirm Booking · ₹{coachData.session_price || 500}</>
+                        : "Select a slot to book"}
+                  </button>
+                </div>
+              );
+            })()}
+          </motion.div>
+        )}
 
         {/* ═══ CAREER & PERFORMANCE ═══ */}
         {career && (

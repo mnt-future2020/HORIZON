@@ -34,12 +34,28 @@ from routes.pricing_ml import router as pricing_ml_router
 from routes.social import router as social_router
 from routes.tournaments import router as tournaments_router
 from routes.coaching import router as coaching_router
+from routes.coach_clients import router as coach_clients_router
+from routes.coach_offline import router as coach_offline_router
+from routes.coach_finance import router as coach_finance_router
 from routes.communities import router as communities_router
 from routes.recommendations import router as recommendations_router
 from routes.organizations import router as organizations_router
 from routes.performance import router as performance_router
 from routes.training import router as training_router
 from routes.live_scoring import router as live_scoring_router
+from routes.coach_reminders import (
+    router as coach_reminders_router,
+    run_daily_reminders,
+    run_session_reminders,
+    run_package_expiry_reminders,
+    run_no_show_followup,
+    run_monthly_progress,
+)
+from routes.coach_whatsapp import router as coach_whatsapp_router
+from routes.coach_invoices import router as coach_invoices_router
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
+scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
 
 from fastapi.staticfiles import StaticFiles
 
@@ -87,9 +103,11 @@ for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           notifications_router, admin_router, academies_router, analytics_router,
           ratings_router, highlights_router, iot_router, reviews_router, pos_router,
           waitlist_router, compliance_router, subscriptions_router, pricing_ml_router,
-          social_router, tournaments_router, coaching_router, communities_router,
+          social_router, tournaments_router, coaching_router, coach_clients_router,
+          coach_offline_router, coach_finance_router, communities_router,
           recommendations_router, organizations_router, performance_router,
-          training_router, live_scoring_router]:
+          training_router, live_scoring_router, coach_reminders_router,
+          coach_whatsapp_router, coach_invoices_router]:
     app.include_router(r, prefix=API_PREFIX)
 
 
@@ -206,9 +224,19 @@ async def startup():
         await mqtt_service.connect()
     except Exception as e:
         logging.warning(f"MQTT connection failed on startup: {e}")
+    # Start WhatsApp automation scheduler
+    scheduler.add_job(run_daily_reminders,         "cron", hour=9,  minute=0,  id="daily_reminders",    replace_existing=True)
+    scheduler.add_job(run_package_expiry_reminders,"cron", hour=9,  minute=30, id="package_expiry",     replace_existing=True)
+    scheduler.add_job(run_session_reminders,       "cron", hour=20, minute=0,  id="session_reminders",  replace_existing=True)
+    scheduler.add_job(run_no_show_followup,        "cron", hour=21, minute=0,  id="no_show_followup",   replace_existing=True)
+    scheduler.add_job(run_monthly_progress,        "cron", day="last", hour=20, minute=0, id="monthly_progress", replace_existing=True)
+    scheduler.start()
+    logger.info("WhatsApp automation scheduler started (5 jobs)")
 
 
 @app.on_event("shutdown")
 async def shutdown():
+    if scheduler.running:
+        scheduler.shutdown(wait=False)
     await mqtt_service.disconnect()
     await close_connections()

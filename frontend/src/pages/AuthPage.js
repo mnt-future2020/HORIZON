@@ -16,7 +16,8 @@ const DEV_ACCOUNTS = [
   { label: "Admin", email: "admin@lobbi.com", icon: ShieldCheck, color: "bg-red-500 hover:bg-red-600" },
   { label: "Player", email: "kansha@mntfuture.com", icon: Users, color: "bg-blue-500 hover:bg-blue-600" },
   { label: "Venue Owner", email: "kansha2312@mntfuture.com", icon: Building2, color: "bg-amber-500 hover:bg-amber-600" },
-  { label: "Coach", email: "coach@lobbi.com", icon: Dumbbell, color: "bg-green-500 hover:bg-green-600" },
+  { label: "Academy Coach", email: "coach@lobbi.com", icon: Dumbbell, color: "bg-green-500 hover:bg-green-600" },
+  { label: "Individual Coach", email: "priya@lobbi.com", icon: Dumbbell, color: "bg-emerald-500 hover:bg-emerald-600" },
 ];
 
 export default function AuthPage() {
@@ -25,7 +26,7 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [devLoading, setDevLoading] = useState(null);
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [regData, setRegData] = useState({ name: "", email: "", password: "", role: "player", phone: "", business_name: "", gst_number: "" });
+  const [regData, setRegData] = useState({ name: "", email: "", password: "", role: "player", phone: "", business_name: "", gst_number: "", coach_type: "" });
 
   const handleDevLogin = async (account) => {
     setDevLoading(account.email);
@@ -72,6 +73,8 @@ export default function AuthPage() {
       const res = await register(regData);
       if (res.user?.role === "venue_owner") {
         toast.success("Registration submitted! Your account needs admin approval before you can manage venues.");
+      } else if (res.user?.role === "coach") {
+        toast.success("Registration submitted! Your coach account needs admin approval.");
       } else {
         toast.success("Account created!");
       }
@@ -208,7 +211,7 @@ export default function AuthPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Profile Type</Label>
-                    <Select value={regData.role} onValueChange={v => setRegData(p => ({ ...p, role: v }))}>
+                    <Select value={regData.role} onValueChange={v => setRegData(p => ({ ...p, role: v, coach_type: v === "coach" ? p.coach_type : "" }))}>
                       <SelectTrigger className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900" data-testid="register-role-select">
                         <SelectValue />
                       </SelectTrigger>
@@ -253,8 +256,32 @@ export default function AuthPage() {
                   )}
 
                   {regData.role === "coach" && (
-                    <div className="p-3 bg-brand-50 border-l-4 border-brand-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-brand-700 mt-3" data-testid="coach-pending-notice">
-                      Coach accounts require admin verification.
+                    <div className="pt-4 space-y-4 border-t border-slate-100">
+                      <div className="space-y-1.5">
+                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Coach Type</Label>
+                        <Select value={regData.coach_type} onValueChange={v => setRegData(p => ({ ...p, coach_type: v }))}>
+                          <SelectTrigger className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900" data-testid="register-coach-type">
+                            <SelectValue placeholder="Select coach type" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-2 border-slate-200 shadow-lg">
+                            <SelectItem value="individual" className="text-sm font-bold">
+                              Individual Coach
+                            </SelectItem>
+                            <SelectItem value="academy" className="text-sm font-bold">
+                              Academy
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        {regData.coach_type === "individual" && (
+                          <p className="text-[10px] text-slate-400 font-medium">1-on-1 or small group coaching sessions</p>
+                        )}
+                        {regData.coach_type === "academy" && (
+                          <p className="text-[10px] text-slate-400 font-medium">Run a sports academy with batches, students & fees</p>
+                        )}
+                      </div>
+                      <div className="p-3 bg-brand-50 border-l-4 border-brand-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-brand-700" data-testid="coach-pending-notice">
+                        Coach accounts require admin verification.
+                      </div>
                     </div>
                   )}
 

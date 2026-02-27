@@ -99,6 +99,7 @@ async def admin_approve_user(user_id: str, user=Depends(get_current_user)):
     updates = {"account_status": "active"}
     if target.get("role") == "coach":
         updates["is_verified"] = True
+        updates["doc_verification_status"] = "verified"
         msg = "Your coach account has been approved and verified. You can now manage sessions and academies."
     elif target.get("role") == "venue_owner":
         updates["doc_verification_status"] = "verified"
@@ -129,7 +130,7 @@ async def admin_reject_user(user_id: str, request: Request, user=Depends(get_cur
     except Exception:
         pass
     update_fields = {"account_status": "rejected"}
-    if target.get("role") == "venue_owner":
+    if target.get("role") in ("venue_owner", "coach"):
         update_fields["doc_verification_status"] = "rejected"
         update_fields["doc_rejection_reason"] = reason
     await db.users.update_one({"id": user_id}, {"$set": update_fields})
@@ -425,8 +426,10 @@ async def admin_get_user_documents(user_id: str, user=Depends(get_current_user))
     return {
         "user_id": user_id,
         "name": target.get("name", ""),
+        "role": target.get("role", ""),
         "business_name": target.get("business_name", ""),
         "verification_documents": target.get("verification_documents", {}),
+        "coach_verification_documents": target.get("coach_verification_documents", {}),
         "doc_verification_status": target.get("doc_verification_status", "not_uploaded"),
         "doc_rejection_reason": target.get("doc_rejection_reason", ""),
     }

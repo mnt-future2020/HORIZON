@@ -84,6 +84,7 @@ export const authAPI = {
   updateProfile: (data) => api.put("/auth/profile", data),
   refreshToken: (token) => api.post("/auth/refresh", { refresh_token: token }),
   updateVerificationDocs: (data) => api.put("/auth/verification-documents", data),
+  updateCoachVerificationDocs: (data) => api.put("/auth/coach-verification-documents", data),
   changePassword: (data) => api.put("/auth/change-password", data),
 };
 
@@ -164,11 +165,38 @@ export const mercenaryAPI = {
 };
 
 export const academyAPI = {
-  list: () => api.get("/academies"),
+  // Core CRUD
+  list: (params) => api.get("/academies", { params }),
   create: (data) => api.post("/academies", data),
   get: (id) => api.get(`/academies/${id}`),
   addStudent: (id, data) => api.post(`/academies/${id}/students`, data),
   removeStudent: (academyId, studentId) => api.delete(`/academies/${academyId}/students/${studentId}`),
+  // Enrollment
+  enroll: (id, data) => api.post(`/academies/${id}/enroll`, data),
+  verifyEnrollment: (id, data) => api.post(`/academies/${id}/enroll/verify-payment`, data),
+  testConfirmEnrollment: (id) => api.post(`/academies/${id}/enroll/test-confirm`),
+  listEnrollments: (id, params) => api.get(`/academies/${id}/enrollments`, { params }),
+  cancelEnrollment: (enrollmentId) => api.put(`/enrollments/${enrollmentId}/cancel`),
+  // Batches
+  createBatch: (id, data) => api.post(`/academies/${id}/batches`, data),
+  listBatches: (id) => api.get(`/academies/${id}/batches`),
+  updateBatch: (batchId, data) => api.put(`/batches/${batchId}`, data),
+  deleteBatch: (batchId) => api.delete(`/batches/${batchId}`),
+  assignBatch: (batchId, data) => api.post(`/batches/${batchId}/assign`, data),
+  // Attendance
+  markAttendance: (id, data) => api.post(`/academies/${id}/attendance`, data),
+  getAttendance: (id, params) => api.get(`/academies/${id}/attendance`, { params }),
+  getAttendanceStats: (id) => api.get(`/academies/${id}/attendance/stats`),
+  // Fees
+  getFeeStatus: (id) => api.get(`/academies/${id}/fees`),
+  collectFee: (id, data) => api.post(`/academies/${id}/fees/collect`, data),
+  getFeeReport: (id, params) => api.get(`/academies/${id}/fees/report`, { params }),
+  // Progress
+  addProgress: (id, studentId, data) => api.post(`/academies/${id}/students/${studentId}/progress`, data),
+  getProgress: (id, studentId) => api.get(`/academies/${id}/students/${studentId}/progress`),
+  getProgressReport: (id) => api.get(`/academies/${id}/progress/report`),
+  // Dashboard
+  getDashboard: (id) => api.get(`/academies/${id}/dashboard`),
 };
 
 export const analyticsAPI = {
@@ -409,6 +437,57 @@ export const coachingAPI = {
   cancelSubscription: (subId) => api.post(`/coaching/subscriptions/${subId}/cancel`),
   renewSubscription: (subId) => api.post(`/coaching/subscriptions/${subId}/renew`),
   verifyRenewal: (subId, data) => api.post(`/coaching/subscriptions/${subId}/verify-renewal`, data),
+  // Offline clients
+  addClient: (data) => api.post("/coaching/clients", data),
+  listClients: (params) => api.get("/coaching/clients", { params }),
+  getClient: (id) => api.get(`/coaching/clients/${id}`),
+  updateClient: (id, data) => api.put(`/coaching/clients/${id}`, data),
+  deactivateClient: (id) => api.delete(`/coaching/clients/${id}`),
+  sendWelcomeWhatsapp: (clientId) => api.post(`/coaching/clients/${clientId}/send-welcome`),
+  // Payment reminders
+  sendPaymentReminder: (clientId) => api.post(`/coaching/reminders/send/${clientId}`),
+  listReminders: (params) => api.get("/coaching/reminders", { params }),
+  runDailyReminders: () => api.post("/coaching/reminders/run-daily"),
+  // WhatsApp automation settings
+  getWaSettings: () => api.get("/coaching/whatsapp/settings"),
+  updateWaSettings: (data) => api.put("/coaching/whatsapp/settings", data),
+  getWaLogs: () => api.get("/coaching/whatsapp/logs"),
+  // Offline sessions
+  logOfflineSession: (data) => api.post("/coaching/offline-sessions", data),
+  listOfflineSessions: (params) => api.get("/coaching/offline-sessions", { params }),
+  updateOfflineSession: (id, data) => api.put(`/coaching/offline-sessions/${id}`, data),
+  // Payments
+  recordOfflinePayment: (data) => api.post("/coaching/payments/offline", data),
+  listPayments: (params) => api.get("/coaching/payments", { params }),
+  // Analytics
+  revenueAnalytics: () => api.get("/coaching/analytics/revenue"),
+  clientAnalytics: () => api.get("/coaching/analytics/clients"),
+  // Expenses
+  createExpense: (data) => api.post("/coaching/expenses", data),
+  listExpenses: (params) => api.get("/coaching/expenses", { params }),
+  updateExpense: (id, data) => api.put(`/coaching/expenses/${id}`, data),
+  deleteExpense: (id) => api.delete(`/coaching/expenses/${id}`),
+  // Enhanced Analytics
+  financeSummary: () => api.get("/coaching/analytics/finance-summary"),
+  clientOutstanding: () => api.get("/coaching/analytics/client-outstanding"),
+  // Unified Transactions
+  listTransactions: (params) => api.get("/coaching/transactions", { params }),
+  // Plan & Onboarding
+  myPlan: () => api.get("/coaching/my-plan"),
+  onboardingStatus: () => api.get("/coaching/onboarding-status"),
+  updateOnboarding: (data) => api.put("/coaching/onboarding-status", data),
+  // GST Settings
+  getGstSettings: () => api.get("/coaching/settings/gst"),
+  saveGstSettings: (data) => api.put("/coaching/settings/gst", data),
+  // Invoices
+  createInvoice: (data) => api.post("/coaching/invoices", data),
+  listInvoices: (params) => api.get("/coaching/invoices", { params }),
+  getInvoice: (id) => api.get(`/coaching/invoices/${id}`),
+  updateInvoice: (id, data) => api.put(`/coaching/invoices/${id}`, data),
+  deleteInvoice: (id) => api.delete(`/coaching/invoices/${id}`),
+  markInvoicePaid: (id) => api.post(`/coaching/invoices/${id}/mark-paid`),
+  getInvoicePdf: (id) => api.get(`/coaching/invoices/${id}/pdf`, { responseType: "blob" }),
+  sendInvoiceWhatsapp: (id) => api.post(`/coaching/invoices/${id}/send-whatsapp`),
 };
 
 export const groupAPI = {

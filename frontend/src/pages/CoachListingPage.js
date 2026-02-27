@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link, useNavigate as useNav } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { coachingAPI, paymentAPI } from "@/lib/api";
+import { coachingAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
@@ -13,19 +13,21 @@ import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import {
   GraduationCap, Search, Star, MapPin, IndianRupee, Clock,
-  Calendar, ChevronRight, Filter, X, QrCode, Loader2
+  Calendar, ChevronRight, Filter, X, QrCode, Loader2, Package,
+  CheckCircle, Users
 } from "lucide-react";
 
 const SPORTS = ["all", "football", "cricket", "badminton", "tennis", "basketball", "volleyball", "table_tennis", "swimming"];
 const COACH_PLACEHOLDER = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
 
-function CoachCard({ coach, onSelect, delay = 0 }) {
+function CoachCard({ coach, onBook, delay = 0 }) {
+  const nav = useNav();
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
-      onClick={() => onSelect(coach)}
+      onClick={() => nav(`/player-card/${coach.id}`)}
       className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 hover:border-primary/50 hover:scale-[1.02] hover:shadow-glow-sm transition-all duration-300 cursor-pointer group"
     >
       <div className="flex items-start gap-4">
@@ -53,7 +55,7 @@ function CoachCard({ coach, onSelect, delay = 0 }) {
           )}
           <div className="flex items-center gap-3 flex-wrap">
             {coach.coaching_sports?.map(s => (
-              <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s}</Badge>
+              <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>
             ))}
             {coach.city && (
               <span className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -62,14 +64,19 @@ function CoachCard({ coach, onSelect, delay = 0 }) {
             )}
           </div>
         </div>
-        <div className="text-right shrink-0">
+        <div className="text-right shrink-0 flex flex-col items-end gap-1">
           <div className="font-display text-lg font-black text-primary">
             ₹{coach.session_price || 500}
           </div>
           <div className="text-[10px] text-muted-foreground">
             {coach.session_duration_minutes || 60} min
           </div>
-          <ChevronRight className="h-4 w-4 text-muted-foreground ml-auto mt-2 group-hover:text-primary transition-colors" />
+          <button
+            onClick={e => { e.stopPropagation(); onBook(coach); }}
+            className="mt-1 text-[11px] font-bold px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+          >
+            Book
+          </button>
         </div>
       </div>
     </motion.div>
@@ -78,6 +85,7 @@ function CoachCard({ coach, onSelect, delay = 0 }) {
 
 export default function CoachListingPage() {
   const { user } = useAuth();
+
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState("");
@@ -94,6 +102,7 @@ export default function CoachListingPage() {
   const [mySessions, setMySessions] = useState([]);
   const [showSessions, setShowSessions] = useState(false);
   const [qrData, setQrData] = useState(null);
+  const [bookingTab, setBookingTab] = useState("session"); // "session" | "packages"
   const [qrLoading, setQrLoading] = useState(false);
   // Packages & subscriptions
   const [coachPackages, setCoachPackages] = useState([]);
@@ -101,10 +110,23 @@ export default function CoachListingPage() {
   const [subscribing, setSubscribing] = useState(false);
 
   useEffect(() => {
-    coachingAPI.listCoaches({}).then(res => setCoaches(res.data || [])).catch(() => {}).finally(() => setLoading(false));
-    coachingAPI.listSessions({ role: "player" }).then(res => setMySessions(res.data || [])).catch(() => {});
+    coachingAPI.listCoaches({}).then(res => {
+      const list = res.data || [];
+      setCoaches(list);
+
+    }).catch(() => {}).finally(() => setLoading(false));
+    coachingAPI.listSessions({}).then(res => setMySessions(res.data || [])).catch(() => {});
     coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-select sport when slot changes (use slot's sports, fallback to coach sports)
+  useEffect(() => {
+    if (!selectedSlot || !selectedCoach) return;
+    const slotSports = selectedSlot.sports?.length > 0
+      ? selectedSlot.sports
+      : (selectedCoach.coaching_sports?.length > 0 ? selectedCoach.coaching_sports : []);
+    if (slotSports.length > 0) setBookingSport(slotSports[0]);
+  }, [selectedSlot]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadSlots = async (coachId, date) => {
     setSlotsLoading(true);
@@ -171,7 +193,7 @@ export default function CoachListingPage() {
             } catch { toast.error("Payment verification failed"); }
           },
           modal: { ondismiss: () => toast.info("Payment cancelled") },
-          theme: { color: "#6366f1" },
+          theme: { color: "#10B981" },
         };
         const rzp = new window.Razorpay(options);
         rzp.open();
@@ -206,18 +228,16 @@ export default function CoachListingPage() {
       });
       const session = res.data;
 
-      // Booked from package — no payment needed
       if (session.booked_from_package) {
         toast.success(`Session booked from package! ${session.sessions_remaining} sessions remaining.`);
         setSelectedCoach(null);
         setSelectedSlot(null);
-        const r = await coachingAPI.listSessions({ role: "player" });
+        const r = await coachingAPI.listSessions({});
         setMySessions(r.data || []);
         setBooking(false);
         return;
       }
 
-      // Payment flow
       if (session.payment_gateway === "razorpay" && session.razorpay_order_id) {
         const loaded = await loadRazorpayScript();
         if (!loaded) { toast.error("Payment gateway failed to load"); setBooking(false); return; }
@@ -238,30 +258,27 @@ export default function CoachListingPage() {
               toast.success("Payment successful! Session confirmed.");
               setSelectedCoach(null);
               setSelectedSlot(null);
-              const r = await coachingAPI.listSessions({ role: "player" });
+              const r = await coachingAPI.listSessions({});
               setMySessions(r.data || []);
             } catch { toast.error("Payment verification failed"); }
           },
           modal: { ondismiss: () => toast.info("Payment cancelled. Session is pending.") },
-          theme: { color: "#6366f1" },
+          theme: { color: "#10B981" },
         };
         const rzp = new window.Razorpay(options);
         rzp.open();
       } else if (session.payment_gateway === "test") {
-        // Test mode — auto-confirm
-        try {
-          await coachingAPI.testConfirm(session.id);
-          toast.success("Session booked & confirmed! (Test mode)");
-          setSelectedCoach(null);
-          setSelectedSlot(null);
-          const r = await coachingAPI.listSessions({ role: "player" });
-          setMySessions(r.data || []);
-        } catch { toast.error("Failed to confirm session"); }
+        await coachingAPI.testConfirm(session.id);
+        toast.success("Session booked & confirmed! (Test mode)");
+        setSelectedCoach(null);
+        setSelectedSlot(null);
+        const r = await coachingAPI.listSessions({});
+        setMySessions(r.data || []);
       } else {
         toast.success("Session booked! The coach has been notified.");
         setSelectedCoach(null);
         setSelectedSlot(null);
-        const r = await coachingAPI.listSessions({ role: "player" });
+        const r = await coachingAPI.listSessions({});
         setMySessions(r.data || []);
       }
     } catch (err) {
@@ -305,6 +322,13 @@ export default function CoachListingPage() {
   const upcomingSessions = mySessions.filter(s => s.status === "confirmed");
   const pastSessions = mySessions.filter(s => s.status === "completed");
 
+  // Derive bookable sports from selected slot
+  const slotSports = selectedSlot?.sports?.length > 0
+    ? selectedSlot.sports
+    : (selectedCoach?.coaching_sports?.length > 0
+        ? selectedCoach.coaching_sports
+        : SPORTS.slice(1));
+
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -332,7 +356,7 @@ export default function CoachListingPage() {
           </Button>
         </div>
         <p className="text-muted-foreground text-sm">
-          Book 1-on-1 sessions with certified coaches to level up your game.
+          Book 1-on-1 sessions or subscribe to monthly packages from certified coaches.
         </p>
       </motion.div>
 
@@ -341,7 +365,6 @@ export default function CoachListingPage() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
           className="mb-8 space-y-3">
           <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Your Coaching Sessions</h3>
-          {/* Active Subscriptions */}
           {mySubscriptions.length > 0 && (
             <div className="mb-4">
               <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-2">Active Subscriptions</h4>
@@ -388,7 +411,7 @@ export default function CoachListingPage() {
               <div className="flex gap-2 shrink-0">
                 <Button size="sm" variant="outline" className="text-[10px] h-7"
                   onClick={() => handleGetQR(s.booking_id || s.id)}>
-                  <QrCode className="h-3 w-3 mr-1" />Check-in QR
+                  <QrCode className="h-3 w-3 mr-1" />QR
                 </Button>
                 <Button size="sm" variant="outline" className="text-[10px] h-7 text-destructive border-destructive/30"
                   onClick={() => handleCancelSession(s.id)}>
@@ -437,148 +460,236 @@ export default function CoachListingPage() {
       ) : (
         <div className="space-y-4">
           {filtered.map((coach, idx) => (
-            <CoachCard key={coach.id} coach={coach} onSelect={handleSelectCoach} delay={idx * 0.05} />
+            <CoachCard key={coach.id} coach={coach} onBook={handleSelectCoach} delay={idx * 0.05} />
           ))}
         </div>
       )}
 
-      {/* Booking Dialog */}
-      <Dialog open={!!selectedCoach} onOpenChange={open => { if (!open) setSelectedCoach(null); }}>
-        <DialogContent className="bg-card border-border max-w-md">
-          <DialogHeader>
-            <DialogTitle className="font-display">
-              Book Session with {selectedCoach?.name}
-            </DialogTitle>
-          </DialogHeader>
-          {selectedCoach && (
-            <div className="space-y-4">
-              {/* Coach Info */}
-              <div className="flex items-center gap-3 p-3 bg-secondary/30 rounded-lg">
-                <div className="w-10 h-10 rounded-lg overflow-hidden bg-secondary">
-                  <img src={mediaUrl(selectedCoach.avatar) || COACH_PLACEHOLDER} alt="" className="w-full h-full object-cover" />
+      {/* ─── Booking Dialog ─── */}
+      <Dialog open={!!selectedCoach} onOpenChange={open => { if (!open) { setSelectedCoach(null); setSelectedSlot(null); setBookingTab("session"); } }}>
+        <DialogContent className="bg-card border-border max-w-lg max-h-[92vh] flex flex-col p-0 overflow-hidden gap-0">
+          {selectedCoach && (() => {
+            const next14 = Array.from({ length: 14 }, (_, i) => {
+              const d = new Date(); d.setDate(d.getDate() + i);
+              return {
+                value: d.toISOString().slice(0, 10),
+                day: d.toLocaleDateString("en", { weekday: "short" }),
+                date: d.getDate(),
+                month: d.toLocaleDateString("en", { month: "short" }),
+                isToday: i === 0,
+              };
+            });
+            return (
+              <>
+                {/* ── Coach strip ── */}
+                <div className="shrink-0 flex items-center gap-3 p-4 border-b border-border">
+                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-secondary shrink-0">
+                    <img src={mediaUrl(selectedCoach.avatar) || COACH_PLACEHOLDER} alt={selectedCoach.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="font-display text-base font-black truncate">{selectedCoach.name}</h2>
+                      {selectedCoach.avg_rating > 0 && (
+                        <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
+                          <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{selectedCoach.avg_rating.toFixed(1)}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {selectedCoach.city && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin className="h-3 w-3" />{selectedCoach.city}</span>}
+                      {selectedCoach.coaching_sports?.slice(0, 2).map(s => (
+                        <Badge key={s} variant="secondary" className="text-[9px] capitalize">{s.replace("_", " ")}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="font-black text-xl text-primary">₹{selectedCoach.session_price || 500}</p>
+                    <p className="text-[10px] text-muted-foreground">{selectedCoach.session_duration_minutes || 60} min</p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <div className="font-bold text-sm">{selectedCoach.name}</div>
-                  <div className="text-xs text-muted-foreground">{selectedCoach.city}</div>
-                </div>
-                <div className="text-right">
-                  <div className="font-bold text-primary">₹{selectedCoach.session_price || 500}</div>
-                  <div className="text-[10px] text-muted-foreground">{selectedCoach.session_duration_minutes || 60} min</div>
-                </div>
-              </div>
 
-              {/* Monthly Packages */}
-              {coachPackages.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="text-sm font-bold mb-2">Monthly Packages</h4>
-                  <div className="space-y-2">
-                    {coachPackages.map(pkg => (
-                      <div key={pkg.id} className="glass-card rounded-lg p-3 flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-bold">{pkg.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {pkg.sessions_per_month} sessions/month · {pkg.duration_minutes} min each
-                          </p>
-                          {pkg.description && <p className="text-xs text-muted-foreground mt-0.5">{pkg.description}</p>}
+                {/* ── Tab bar ── */}
+                <div className="shrink-0 flex border-b border-border">
+                  {[
+                    { id: "session", label: "Book Session", icon: Calendar },
+                    ...(coachPackages.length > 0 ? [{ id: "packages", label: `Packages (${coachPackages.length})`, icon: Package }] : []),
+                  ].map(({ id, label, icon: Icon }) => (
+                    <button key={id} onClick={() => setBookingTab(id)}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold border-b-2 transition-colors ${
+                        bookingTab === id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}>
+                      <Icon className="h-3.5 w-3.5" />{label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* ── Scrollable body ── */}
+                <div className="flex-1 overflow-y-auto">
+
+                  {/* SESSION TAB */}
+                  {bookingTab === "session" && (
+                    <div className="p-4 space-y-5">
+
+                      {/* Date strip */}
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Select Date</p>
+                        <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+                          {next14.map(d => (
+                            <button key={d.value} onClick={() => handleDateChange(d.value)}
+                              className={`flex flex-col items-center shrink-0 w-[52px] py-2.5 rounded-xl border-2 transition-all ${
+                                selectedDate === d.value
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : "border-border/50 bg-background/50 hover:border-primary/40 text-foreground"
+                              }`}>
+                              <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-primary" : "text-muted-foreground"}`}>{d.day}</span>
+                              <span className="text-lg font-black leading-tight">{d.date}</span>
+                              <span className={`text-[9px] ${selectedDate === d.value ? "text-primary/70" : "text-muted-foreground"}`}>{d.month}</span>
+                              {d.isToday && <span className="text-[8px] font-bold text-primary mt-0.5">Today</span>}
+                            </button>
+                          ))}
                         </div>
-                        <div className="text-right shrink-0 ml-3">
-                          <p className="text-sm font-bold text-primary">₹{pkg.price}/mo</p>
-                          {pkg.subscribed ? (
-                            <Badge className="bg-brand-500/15 text-brand-400 text-[10px] mt-1">
-                              {pkg.sessions_remaining} left
-                            </Badge>
+                      </div>
+
+                      {/* Slots */}
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Available Slots</p>
+                        {slotsLoading ? (
+                          <div className="flex items-center justify-center py-10">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          </div>
+                        ) : coachSlots.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 rounded-xl bg-secondary/20 border border-dashed border-border">
+                            <Calendar className="h-8 w-8 text-muted-foreground/40 mb-2" />
+                            <p className="text-sm font-bold text-muted-foreground">No slots on this day</p>
+                            <p className="text-xs text-muted-foreground/60 mt-1">Try a different date</p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-3 gap-2">
+                            {coachSlots.map(slot => (
+                              <button key={slot.start_time}
+                                onClick={() => { if (slot.available) setSelectedSlot(slot); }}
+                                disabled={!slot.available}
+                                className={`flex flex-col items-center px-2 py-3 rounded-xl border-2 text-xs font-bold transition-all ${
+                                  selectedSlot?.start_time === slot.start_time
+                                    ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                    : slot.available
+                                      ? "border-border/50 bg-background hover:border-primary/50 hover:bg-primary/5"
+                                      : "border-border/20 bg-secondary/20 text-muted-foreground/40 cursor-not-allowed"
+                                }`}>
+                                <span className={slot.available ? "" : "line-through"}>{slot.start_time}</span>
+                                <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-primary/70" : "text-muted-foreground"}`}>
+                                  {slot.end_time}
+                                </span>
+                                {!slot.available && <span className="text-[9px] text-red-400/70 mt-0.5">Booked</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Sport + Notes — expand after slot selected */}
+                      {selectedSlot && (
+                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+                          {/* Sport */}
+                          {slotSports.length === 1 ? (
+                            <div className="flex items-center gap-2 px-3 py-2.5 bg-primary/8 border border-primary/20 rounded-xl">
+                              <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                              <span className="text-sm font-bold capitalize text-primary">{slotSports[0].replace("_", " ")}</span>
+                              <span className="text-xs text-muted-foreground ml-1">Sport</span>
+                            </div>
                           ) : (
-                            <Button size="sm" className="mt-1 h-7 text-xs" onClick={() => handleSubscribe(pkg)} disabled={subscribing}>
-                              Subscribe
+                            <div>
+                              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Sport</p>
+                              <div className="flex flex-wrap gap-2">
+                                {slotSports.map(s => (
+                                  <button key={s} onClick={() => setBookingSport(s)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all capitalize ${
+                                      bookingSport === s ? "border-primary bg-primary/10 text-primary" : "border-border/50 hover:border-primary/40"
+                                    }`}>
+                                    {s.replace("_", " ")}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {/* Notes */}
+                          <Input value={bookingNotes} onChange={e => setBookingNotes(e.target.value)}
+                            placeholder="What do you want to work on? (optional)"
+                            className="bg-background border-border text-sm" />
+                        </motion.div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* PACKAGES TAB */}
+                  {bookingTab === "packages" && (
+                    <div className="p-4 space-y-3">
+                      {coachPackages.map(pkg => (
+                        <div key={pkg.id} className={`rounded-xl border-2 p-4 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 bg-card"}`}>
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="min-w-0">
+                              <p className="font-bold text-sm truncate">{pkg.name}</p>
+                              <p className="text-xs text-muted-foreground">{pkg.sessions_per_month} sessions · {pkg.duration_minutes || 60} min each</p>
+                            </div>
+                            <div className="text-right shrink-0">
+                              <p className="font-black text-lg text-primary">₹{(pkg.price || 0).toLocaleString()}</p>
+                              <p className="text-[10px] text-muted-foreground">/month</p>
+                            </div>
+                          </div>
+                          {pkg.description && <p className="text-xs text-muted-foreground mb-2">{pkg.description}</p>}
+                          {pkg.sports?.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-3">
+                              {pkg.sports.map(s => <Badge key={s} variant="secondary" className="text-[9px] capitalize">{s.replace("_", " ")}</Badge>)}
+                            </div>
+                          )}
+                          {pkg.subscribed ? (
+                            <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-primary/10">
+                              <CheckCircle className="h-4 w-4 text-primary" />
+                              <span className="text-xs font-bold text-primary">Subscribed · {pkg.sessions_remaining} sessions left</span>
+                            </div>
+                          ) : (
+                            <Button className="w-full h-9 text-xs font-bold bg-primary text-primary-foreground"
+                              onClick={() => handleSubscribe(pkg)} disabled={subscribing}>
+                              {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Package className="h-3.5 w-3.5 mr-1.5" />}
+                              Subscribe · ₹{(pkg.price || 0).toLocaleString()}/mo
                             </Button>
                           )}
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Date Picker */}
-              <div>
-                <Label className="text-xs text-muted-foreground">Date</Label>
-                <Input
-                  type="date"
-                  value={selectedDate}
-                  min={new Date().toISOString().slice(0, 10)}
-                  onChange={e => handleDateChange(e.target.value)}
-                  className="mt-1 bg-background border-border"
-                />
-              </div>
-
-              {/* Available Slots */}
-              <div>
-                <Label className="text-xs text-muted-foreground mb-2 block">Available Slots</Label>
-                {slotsLoading ? (
-                  <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                  </div>
-                ) : coachSlots.length === 0 ? (
-                  <div className="text-center py-4 text-muted-foreground text-xs bg-secondary/20 rounded-lg">
-                    No available slots on this date
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {coachSlots.map(slot => (
-                      <button
-                        key={slot.start_time}
-                        onClick={() => setSelectedSlot(slot.available ? slot : null)}
-                        disabled={!slot.available}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border-2 ${
-                          selectedSlot?.start_time === slot.start_time
-                            ? "border-primary bg-primary/10 text-primary"
-                            : slot.available
-                              ? "border-border/50 bg-background hover:border-primary/50"
-                              : "border-border/20 bg-secondary/20 text-muted-foreground/50 cursor-not-allowed line-through"
-                        }`}
-                      >
-                        {slot.start_time} - {slot.end_time}
-                      </button>
-                    ))}
+                {/* ── Sticky CTA (session tab only) ── */}
+                {bookingTab === "session" && (
+                  <div className="shrink-0 p-4 border-t border-border bg-card/95 backdrop-blur">
+                    {selectedSlot && (
+                      <div className="flex items-center justify-between text-xs mb-3 px-1">
+                        <span className="text-muted-foreground">
+                          {new Date(selectedDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
+                          {" · "}{selectedSlot.start_time} – {selectedSlot.end_time}
+                          {" · "}<span className="capitalize">{bookingSport.replace("_", " ")}</span>
+                        </span>
+                        <span className="font-black text-primary">₹{selectedCoach.session_price || 500}</span>
+                      </div>
+                    )}
+                    <Button className="w-full h-12 font-bold text-base bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover"
+                      disabled={!selectedSlot || booking} onClick={handleBook}>
+                      {booking
+                        ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Confirming...</>
+                        : selectedSlot
+                          ? <>Confirm Booking · ₹{selectedCoach.session_price || 500}</>
+                          : "Select a slot to continue"}
+                    </Button>
+                    <Link to={`/player-card/${selectedCoach.id}`}
+                      className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-primary mt-2 transition-colors">
+                      View full profile <ChevronRight className="h-3 w-3" />
+                    </Link>
                   </div>
                 )}
-              </div>
-
-              {/* Sport & Notes */}
-              <div>
-                <Label className="text-xs text-muted-foreground">Sport</Label>
-                <Select value={bookingSport} onValueChange={setBookingSport}>
-                  <SelectTrigger className="mt-1 bg-background border-border">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(selectedCoach.coaching_sports?.length > 0 ? selectedCoach.coaching_sports : SPORTS.slice(1)).map(s => (
-                      <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
-                <Input
-                  value={bookingNotes}
-                  onChange={e => setBookingNotes(e.target.value)}
-                  placeholder="What do you want to work on?"
-                  className="mt-1 bg-background border-border"
-                />
-              </div>
-
-              <Button
-                className="w-full bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover"
-                disabled={!selectedSlot || booking}
-                onClick={handleBook}
-              >
-                {booking ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-                Book Session — ₹{selectedCoach.session_price || 500}
-              </Button>
-            </div>
-          )}
+              </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

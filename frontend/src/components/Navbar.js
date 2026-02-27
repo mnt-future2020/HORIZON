@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Lightbulb, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark } from "lucide-react";
+import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Lightbulb, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark, Settings } from "lucide-react";
 
 function NavLink({ to, icon: Icon, label, active }) {
   return (
@@ -92,10 +92,10 @@ export default function Navbar() {
       { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
     coach: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/coach", icon: GraduationCap, label: "Dashboard" },
-      { to: "/communities", icon: Users, label: "Groups" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
+      { to: "/feed",        icon: MessageSquare, label: "Feed" },
+      { to: "/coach",       icon: GraduationCap, label: "Dashboard" },
+      { to: "/tournaments", icon: Medal,         label: "Tournaments" },
+      { to: "/chat",        icon: MessageCircle, label: "Chat" },
     ],
     super_admin: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
@@ -116,10 +116,14 @@ export default function Navbar() {
       { to: "/tournaments", icon: Medal, label: "Tournaments" },
     ],
     coach: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/coach", icon: GraduationCap, label: "Dashboard" },
-      { to: "/communities", icon: Users, label: "Groups" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
+      { to: "/feed",        icon: MessageSquare, label: "Feed" },
+      { to: "/explore",     icon: Search,        label: "Explore" },
+      { to: "/coach",       icon: GraduationCap, label: "Dashboard" },
+      { to: "/venues",      icon: MapPin,        label: "Venues" },
+      { to: "/tournaments", icon: Medal,         label: "Tournaments" },
+      { to: "/communities", icon: Users,         label: "Groups" },
+      { to: "/teams",       icon: Shield,        label: "Teams" },
+      { to: "/chat",        icon: MessageCircle, label: "Chat" },
     ],
     super_admin: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
@@ -231,6 +235,11 @@ export default function Navbar() {
               <DropdownMenuItem onClick={() => navigate("/privacy")} className="py-2.5">
                 <Lock className="mr-2 h-4 w-4" /> Privacy & Data
               </DropdownMenuItem>
+              {user?.role === "coach" && (
+                <DropdownMenuItem onClick={() => navigate("/coach/settings")} className="py-2.5">
+                  <Settings className="mr-2 h-4 w-4" /> Settings
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator className="bg-border/50" />
               <DropdownMenuItem onClick={logout} className="text-red-500 py-2.5 hover:text-red-600 hover:bg-red-500/10" data-testid="menu-logout">
                 <LogOut className="mr-2 h-4 w-4" /> Logout
@@ -324,8 +333,12 @@ export function Sidebar() {
     ],
     coach: [
       { to: "/feed",         ms: "rss_feed",            label: "Feed" },
+      { to: "/explore",      ms: "explore",             label: "Explore" },
       { to: "/coach",        ms: "sports",              label: "Dashboard" },
+      { to: "/venues",       ms: "location_on",         label: "Venues" },
+      { to: "/tournaments",  ms: "emoji_events",        label: "Tournaments" },
       { to: "/communities",  ms: "groups",              label: "Groups" },
+      { to: "/teams",        ms: "shield",              label: "Teams" },
       { to: "/chat",         ms: "forum",               label: "Chat" },
     ],
     super_admin: [

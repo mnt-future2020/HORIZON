@@ -195,6 +195,17 @@ function UsersTab() {
   };
 
   const DOC_LABELS = { business_license: "Business License", gst_certificate: "GST Certificate", id_proof: "ID Proof", address_proof: "Address Proof" };
+  const COACH_DOC_LABELS = {
+    government_id: "Government ID (Aadhaar/PAN/Passport)",
+    coaching_certification: "Coaching Certification",
+    federation_membership: "Federation Membership",
+    profile_photo: "Professional Photo",
+    playing_experience: "Playing Experience Proof",
+    first_aid_certificate: "First Aid / CPR Certificate",
+    fitness_certificate: "Fitness Certificate",
+    background_check: "Background / Police Check",
+    qualification_proof: "Qualification Proof",
+  };
 
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
@@ -240,8 +251,8 @@ function UsersTab() {
                   }`}>
                     {u.account_status}
                   </span>
-                  {/* Venue owner: doc icon */}
-                  {u.role === "venue_owner" && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
+                  {/* Venue owner / Coach: doc icon */}
+                  {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
                     <Button size="sm" variant="ghost"
                       className={`h-8 px-3 rounded-full font-semibold text-xs transition-colors border-none ${
                         u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20" :
@@ -252,8 +263,8 @@ function UsersTab() {
                       <FileText className="h-4 w-4 mr-1.5" /> Docs
                     </Button>
                   )}
-                  {/* Pending: Approve/Reject for non-venue_owners */}
-                  {u.account_status === "pending" && u.role !== "venue_owner" && (
+                  {/* Pending: Approve/Reject for non-venue_owners and non-coaches */}
+                  {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
                     <>
                       <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-brand-600 bg-brand-600/10 hover:bg-brand-600/20"
                         onClick={() => handleAction(u.id, "approve")} data-testid={`approve-${u.id}`}>
@@ -265,9 +276,9 @@ function UsersTab() {
                       </Button>
                     </>
                   )}
-                  {/* Pending venue_owner: show doc status badge */}
-                  {u.account_status === "pending" && u.role === "venue_owner" && (
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border-none ${u.doc_verification_status === "pending_review" ? "bg-amber-500/10 text-amber-600" : "bg-blue-500/10 text-blue-600"}`}>
+                  {/* Pending venue_owner/coach: show doc status badge */}
+                  {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
                       {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
                     </span>
                   )}
@@ -326,8 +337,10 @@ function UsersTab() {
 
               {/* Document grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {Object.entries(DOC_LABELS).map(([key, label]) => {
-                  const doc = docViewData.verification_documents?.[key];
+                {Object.entries(docViewData.role === "coach" ? COACH_DOC_LABELS : DOC_LABELS).map(([key, label]) => {
+                  const doc = docViewData.role === "coach"
+                    ? docViewData.coach_verification_documents?.[key]
+                    : docViewData.verification_documents?.[key];
                   const isPdf = doc?.url?.toLowerCase().endsWith(".pdf");
                   return (
                     <div key={key} className="bg-secondary/20 border border-border/50 rounded-xl p-4 transition-colors hover:bg-secondary/40">
@@ -372,6 +385,21 @@ function UsersTab() {
                   <div className="flex flex-wrap gap-2 mt-2">
                     {docViewData.verification_documents.turf_videos.map((vid, i) => (
                       <video key={i} src={mediaUrl(vid.url || vid)} controls className="w-40 h-28 rounded-md object-cover" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Coach: experience letters */}
+              {docViewData.role === "coach" && docViewData.coach_verification_documents?.experience_letters?.length > 0 && (
+                <div>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Experience Letters</Label>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {docViewData.coach_verification_documents.experience_letters.map((doc, i) => (
+                      <a key={i} href={mediaUrl(doc.url || doc)} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 p-2 rounded-md bg-background/50 text-xs border hover:underline">
+                        <FileText className="h-4 w-4" /> Letter {i + 1}
+                      </a>
                     ))}
                   </div>
                 </div>

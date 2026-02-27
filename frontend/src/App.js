@@ -30,6 +30,7 @@ const VenueDetail = lazyRetry(() => import("@/pages/VenueDetail"));
 const MatchmakingPage = lazyRetry(() => import("@/pages/MatchmakingPage"));
 const VenueOwnerDashboard = lazyRetry(() => import("@/pages/VenueOwnerDashboard"));
 const CoachDashboard = lazyRetry(() => import("@/pages/CoachDashboard"));
+const CoachSettingsPage = lazyRetry(() => import("@/pages/CoachSettingsPage"));
 const SplitPaymentPage = lazyRetry(() => import("@/pages/SplitPaymentPage"));
 const ProfilePage = lazyRetry(() => import("@/pages/ProfilePage"));
 const SuperAdminDashboard = lazyRetry(() => import("@/pages/SuperAdminDashboard"));
@@ -52,6 +53,7 @@ const PlayerCardPage = lazyRetry(() => import("@/pages/PlayerCardPage"));
 const TournamentsPage = lazyRetry(() => import("@/pages/TournamentsPage"));
 const TournamentDetailPage = lazyRetry(() => import("@/pages/TournamentDetailPage"));
 const CoachListingPage = lazyRetry(() => import("@/pages/CoachListingPage"));
+const AcademyDiscoveryPage = lazyRetry(() => import("@/pages/AcademyDiscoveryPage"));
 const CommunitiesPage = lazyRetry(() => import("@/pages/CommunitiesPage"));
 const GroupDetailPage = lazyRetry(() => import("@/pages/GroupDetailPage"));
 const TeamsPage = lazyRetry(() => import("@/pages/TeamsPage"));
@@ -184,6 +186,7 @@ function AppRouteDefinitions() {
           <Route path="/rating-profile/:userId" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
           <Route path="/owner" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard /></ProtectedRoute>} />
           <Route path="/coach" element={<ProtectedRoute roles={["coach"]}><CoachDashboard /></ProtectedRoute>} />
+          <Route path="/coach/settings" element={<ProtectedRoute roles={["coach"]}><CoachSettingsPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute roles={["super_admin"]}><SuperAdminDashboard /></ProtectedRoute>} />
           <Route path="/split/:token" element={<SplitPaymentPage />} />
           <Route path="/highlights" element={<ProtectedRoute><HighlightsPage /></ProtectedRoute>} />
@@ -204,6 +207,7 @@ function AppRouteDefinitions() {
           <Route path="/tournaments" element={<ProtectedRoute><TournamentsPage /></ProtectedRoute>} />
           <Route path="/tournaments/:tournamentId" element={<ProtectedRoute><TournamentDetailPage /></ProtectedRoute>} />
           <Route path="/coaching" element={<ProtectedRoute><CoachListingPage /></ProtectedRoute>} />
+          <Route path="/academies" element={<ProtectedRoute><AcademyDiscoveryPage /></ProtectedRoute>} />
           <Route path="/communities" element={<ProtectedRoute><CommunitiesPage /></ProtectedRoute>} />
           <Route path="/communities/:groupId" element={<ProtectedRoute><GroupDetailPage /></ProtectedRoute>} />
           <Route path="/teams" element={<ProtectedRoute><TeamsPage /></ProtectedRoute>} />

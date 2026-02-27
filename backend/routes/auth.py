@@ -35,6 +35,8 @@ async def register(input: RegisterInput, request: Request):
 
     if input.role == "super_admin":
         raise HTTPException(403, "Cannot register as super admin")
+    if input.role == "coach" and input.coach_type not in ("individual", "academy"):
+        raise HTTPException(400, "Coach type must be 'individual' or 'academy'")
     existing = await db.users.find_one({"email": input.email})
     if existing:
         raise HTTPException(400, "Email already registered")
@@ -47,6 +49,7 @@ async def register(input: RegisterInput, request: Request):
         "password_hash": hash_pw(input.password),
         "role": input.role,
         "account_status": account_status,
+        "coach_type": input.coach_type if input.role == "coach" else "",
         "phone": input.phone or "",
         "avatar": "",
         "sports": input.sports or [],
@@ -77,6 +80,36 @@ async def register(input: RegisterInput, request: Request):
         }
         user["doc_verification_status"] = "not_uploaded"
         user["doc_rejection_reason"] = ""
+    # Coach: add verification documents + profile fields
+    if input.role == "coach":
+        user["coach_verification_documents"] = {
+            "government_id": None,
+            "coaching_certification": None,
+            "federation_membership": None,
+            "playing_experience": None,
+            "first_aid_certificate": None,
+            "fitness_certificate": None,
+            "background_check": None,
+            "qualification_proof": None,
+            "experience_letters": [],
+            "profile_photo": None,
+        }
+        user["doc_verification_status"] = "not_uploaded"
+        user["doc_rejection_reason"] = ""
+        user["years_of_experience"] = 0
+        user["specializations"] = []
+        user["achievements"] = []
+        user["awards"] = []
+        user["certifications_list"] = []
+        user["playing_history"] = ""
+        user["coach_plan"] = "free"
+        user["onboarding_status"] = "incomplete"
+        user["onboarding_steps"] = {
+            "profile_completed": False,
+            "availability_set": False,
+            "first_package_created": False,
+            "documents_uploaded": False,
+        }
     await db.users.insert_one(user)
     user.pop("_id", None)
     token = create_token(user["id"], user["role"])
@@ -157,6 +190,30 @@ async def update_verification_documents(request: Request, user=Depends(get_curre
     return updated
 
 
+@router.put("/auth/coach-verification-documents")
+async def update_coach_verification_documents(request: Request, user=Depends(get_current_user)):
+    """Coach uploads/updates verification documents. Send submit=true to submit for review."""
+    if user.get("role") != "coach":
+        raise HTTPException(403, "Only coaches can submit coach verification documents")
+    data = await request.json()
+    allowed_keys = [
+        "government_id", "coaching_certification", "federation_membership",
+        "playing_experience", "first_aid_certificate", "fitness_certificate",
+        "background_check", "qualification_proof", "experience_letters", "profile_photo"
+    ]
+    current_docs = user.get("coach_verification_documents", {})
+    for key in allowed_keys:
+        if key in data:
+            current_docs[key] = data[key]
+    updates = {"coach_verification_documents": current_docs}
+    if data.get("submit"):
+        updates["doc_verification_status"] = "pending_review"
+        updates["doc_rejection_reason"] = ""
+    await db.users.update_one({"id": user["id"]}, {"$set": updates})
+    updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return updated
+
+
 @router.post("/auth/push-token")
 async def register_push_token(request: Request, user=Depends(get_current_user)):
     """Register a device push token for push notifications."""
@@ -204,7 +261,40 @@ async def dev_login(request: Request):
         raise HTTPException(400, "email required")
     user = await db.users.find_one({"email": email})
     if not user:
-        raise HTTPException(404, "User not found")
+        # Auto-create known dev accounts if not seeded yet
+        dev_accounts = {
+            "admin@lobbi.com": {"name": "Horizon Admin", "role": "super_admin"},
+            "priya@lobbi.com": {"name": "Coach Priya", "role": "coach", "coach_type": "individual"},
+            "coach@lobbi.com": {"name": "Coach Ravi", "role": "coach", "coach_type": "academy"},
+        }
+        if email in dev_accounts:
+            acct = dev_accounts[email]
+            now = datetime.now(timezone.utc).isoformat()
+            user = {
+                "id": str(uuid.uuid4()), "name": acct["name"], "email": email,
+                "password_hash": hash_pw("Dev12345"), "role": acct["role"],
+                "account_status": "active", "coach_type": acct.get("coach_type", ""),
+                "phone": "", "avatar": "", "sports": [], "bio": "", "preferred_position": "",
+                "skill_rating": 0, "skill_deviation": 0, "reliability_score": 100,
+                "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
+                "business_name": "", "gst_number": "", "is_verified": False,
+                "created_at": now,
+            }
+            if acct["role"] == "coach":
+                user.update({
+                    "coaching_sports": [], "coaching_bio": "", "session_price": 500, "city": "",
+                    "doc_verification_status": "verified", "doc_rejection_reason": "",
+                    "years_of_experience": 0, "specializations": [], "achievements": [],
+                    "awards": [], "certifications_list": [], "playing_history": "",
+                    "coach_plan": "free", "onboarding_status": "incomplete",
+                    "onboarding_steps": {"profile_completed": False, "availability_set": False,
+                                         "first_package_created": False, "documents_uploaded": False},
+                    "coach_verification_documents": {},
+                })
+            await db.users.insert_one(user)
+            user.pop("_id", None)
+        else:
+            raise HTTPException(404, "User not found")
     token = create_token(user["id"], user["role"])
     user.pop("_id", None)
     return {"token": token, "refresh_token": create_refresh_token(user["id"], user["role"]), "user": {k: v for k, v in user.items() if k != "password_hash"}}

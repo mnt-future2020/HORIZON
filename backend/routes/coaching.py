@@ -98,13 +98,17 @@ async def update_coach_profile(request: Request, user=Depends(get_current_user))
 
     data = await request.json()
     allowed = ["coaching_bio", "coaching_sports", "session_price",
-               "session_duration_minutes", "city", "coaching_venue"]
+               "session_duration_minutes", "city", "coaching_venue",
+               "years_of_experience", "specializations", "achievements",
+               "awards", "certifications_list", "playing_history"]
     updates = {k: v for k, v in data.items() if k in allowed}
 
     if "session_price" in updates:
         updates["session_price"] = int(updates["session_price"])
     if "session_duration_minutes" in updates:
         updates["session_duration_minutes"] = int(updates["session_duration_minutes"])
+    if "years_of_experience" in updates:
+        updates["years_of_experience"] = int(updates["years_of_experience"])
 
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})
@@ -139,6 +143,7 @@ async def set_availability(request: Request, user=Depends(get_current_user)):
         "day_of_week": int(data.get("day_of_week", 0)),  # 0=Sun..6=Sat
         "start_time": data.get("start_time", "09:00"),
         "end_time": data.get("end_time", "10:00"),
+        "sports": data.get("sports", []),  # Which sports this slot covers
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -201,10 +206,60 @@ async def get_coach_slots(
         slots.append({
             "start_time": av["start_time"],
             "end_time": av["end_time"],
+            "sports": av.get("sports", []),
             "available": av["start_time"] not in booked_times,
         })
 
     return {"date": date, "day_of_week": day_of_week, "slots": slots}
+
+
+# ─── Booking Confirmation WhatsApp helper ─────────────────────────────────────
+
+async def _fire_booking_confirmation(session: dict):
+    """Fire-and-forget: send booking confirmation WhatsApp to the player."""
+    try:
+        from routes.coach_whatsapp import get_coach_wa_settings, send_wa_with_log
+        from whatsapp_service import build_booking_confirmation_message
+
+        settings = await get_coach_wa_settings(session["coach_id"])
+        if not settings.get("booking_confirmation", {}).get("enabled", True):
+            return
+
+        # Skip if already sent
+        existing = await db.whatsapp_logs.find_one({
+            "reference_id": session["id"],
+            "automation_type": "booking_confirmation",
+            "status": "sent",
+        })
+        if existing:
+            return
+
+        player = await db.users.find_one({"id": session["player_id"]}, {"phone": 1, "name": 1})
+        if not player or not player.get("phone"):
+            return
+
+        platform_s = await db.platform_settings.find_one({"key": "platform"}, {"_id": 0})
+        wa = (platform_s or {}).get("whatsapp", {})
+
+        msg = build_booking_confirmation_message(
+            client_name=player.get("name", ""),
+            coach_name=session.get("coach_name", "Your Coach"),
+            sport=session.get("sport", ""),
+            date=session.get("date", ""),
+            start_time=session.get("start_time", ""),
+            location=session.get("location", ""),
+        )
+        await send_wa_with_log(
+            wa, player["phone"], msg,
+            coach_id=session["coach_id"],
+            client_id=session["player_id"],
+            client_name=player.get("name", ""),
+            automation_type="booking_confirmation",
+            reference_id=session["id"],
+        )
+    except Exception as e:
+        import logging as _log
+        _log.getLogger("horizon.coaching").warning(f"Booking confirmation WA failed: {e}")
 
 
 # ─── Session Booking ──────────────────────────────────────────────────────────
@@ -292,6 +347,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
 
         session["booked_from_package"] = True
         session["sessions_remaining"] = active_sub["sessions_per_month"] - active_sub.get("sessions_used", 0) - 1
+        await _fire_booking_confirmation(session)
     else:
         # Per-session payment flow — same pattern as venue bookings
         rzp_client = await get_razorpay_client()
@@ -433,6 +489,9 @@ async def verify_session_payment(session_id: str, request: Request, user=Depends
             "paid_at": datetime.now(timezone.utc).isoformat()
         }
     }})
+    confirmed_session = await db.coaching_sessions.find_one({"id": session_id}, {"_id": 0})
+    if confirmed_session:
+        await _fire_booking_confirmation(confirmed_session)
     return {"message": "Payment verified, session confirmed", "status": "confirmed"}
 
 
@@ -459,6 +518,9 @@ async def test_confirm_session(session_id: str, user=Depends(get_current_user)):
             "paid_at": datetime.now(timezone.utc).isoformat()
         }
     }})
+    confirmed_session = await db.coaching_sessions.find_one({"id": session_id}, {"_id": 0})
+    if confirmed_session:
+        await _fire_booking_confirmation(confirmed_session)
     return {"message": "Test payment confirmed", "status": "confirmed"}
 
 
@@ -585,6 +647,26 @@ async def coach_stats(user=Depends(get_current_user)):
     package_revenue = sum(s.get("price", 0) for s in package_subs)
     package_commission = sum(s.get("commission_amount", 0) for s in package_subs)
 
+    # Offline data
+    offline_sessions_count = await db.coach_offline_sessions.count_documents({"coach_id": user["id"]})
+    offline_clients_count = await db.coach_clients.count_documents({"coach_id": user["id"], "status": "active"})
+    offline_revenue = 0
+    async for p in db.coach_offline_payments.find({"coach_id": user["id"]}, {"amount": 1, "_id": 0}):
+        offline_revenue += p.get("amount", 0)
+    # Also count paid offline sessions
+    async for s in db.coach_offline_sessions.find(
+        {"coach_id": user["id"], "payment_status": "paid"}, {"amount": 1, "_id": 0}
+    ):
+        offline_revenue = max(offline_revenue, offline_revenue)  # avoid double-count; payments collection is source of truth
+
+    # Online unique clients
+    online_ids = set()
+    async for s in db.coaching_sessions.find(
+        {"coach_id": user["id"], "status": {"$in": ["confirmed", "completed"]}}, {"player_id": 1, "_id": 0}
+    ):
+        if s.get("player_id"):
+            online_ids.add(s["player_id"])
+
     return {
         "total_sessions": total,
         "completed": completed,
@@ -599,6 +681,11 @@ async def coach_stats(user=Depends(get_current_user)):
         "avg_rating": avg_rating,
         "review_count": review_count,
         "recent_sessions": recent,
+        "offline_sessions": offline_sessions_count,
+        "offline_revenue": offline_revenue,
+        "offline_clients": offline_clients_count,
+        "online_clients": len(online_ids),
+        "total_clients": len(online_ids) + offline_clients_count,
     }
 
 
@@ -743,16 +830,31 @@ async def create_package(request: Request, user=Depends(get_current_user)):
     if price < 1:
         raise HTTPException(400, "Price must be at least 1")
 
+    pkg_type = data.get("type", "monthly")
+    if pkg_type not in ("monthly", "quarterly", "one_time", "batch"):
+        pkg_type = "monthly"
+
+    max_subs = data.get("max_subscribers")
+    if max_subs is not None:
+        try:
+            max_subs = max(1, int(max_subs))
+        except (ValueError, TypeError):
+            max_subs = None
+
     package = {
         "id": str(uuid.uuid4()),
         "coach_id": user["id"],
         "coach_name": user.get("name", ""),
         "name": name,
+        "type": pkg_type,
         "sessions_per_month": sessions_per_month,
         "price": price,
         "duration_minutes": int(data.get("duration_minutes", user.get("session_duration_minutes", 60))),
         "sports": data.get("sports", user.get("coaching_sports", [])),
         "description": data.get("description", ""),
+        "features": data.get("features", []),
+        "max_subscribers": max_subs,
+        "is_public": bool(data.get("is_public", True)),
         "is_active": True,
         "created_at": datetime.now(timezone.utc).isoformat(),
     }
@@ -818,12 +920,20 @@ async def update_package(package_id: str, request: Request, user=Depends(get_cur
         raise HTTPException(404, "Package not found")
 
     data = await request.json()
-    allowed = ["name", "sessions_per_month", "price", "duration_minutes", "sports", "description", "is_active"]
+    allowed = ["name", "type", "sessions_per_month", "price", "duration_minutes", "sports",
+               "description", "features", "max_subscribers", "is_public", "is_active"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if "sessions_per_month" in updates:
         updates["sessions_per_month"] = int(updates["sessions_per_month"])
     if "price" in updates:
         updates["price"] = int(updates["price"])
+    if "max_subscribers" in updates and updates["max_subscribers"] is not None:
+        try:
+            updates["max_subscribers"] = max(1, int(updates["max_subscribers"]))
+        except (ValueError, TypeError):
+            updates["max_subscribers"] = None
+    if "type" in updates and updates["type"] not in ("monthly", "quarterly", "one_time", "batch"):
+        updates["type"] = "monthly"
 
     if updates:
         await db.coaching_packages.update_one({"id": package_id}, {"$set": updates})
@@ -1137,3 +1247,87 @@ async def verify_renewal_payment(sub_id: str, request: Request, user=Depends(get
     }})
 
     return {"message": "Renewal payment verified, subscription renewed", "status": "active"}
+
+
+# ─── SaaS Plans & Onboarding ──────────────────────────────────────────────────
+
+@router.get("/my-plan")
+async def get_my_plan(user=Depends(get_current_user)):
+    """Current coach plan + usage stats + limits."""
+    if user.get("role") != "coach":
+        raise HTTPException(403, "Only coaches can view plan info")
+
+    plan_id = user.get("coach_plan", "free")
+
+    # Get plan details from platform settings
+    settings = await get_platform_settings()
+    plans = settings.get("coach_subscription_plans", [
+        {"id": "free", "name": "Free", "price": 0, "max_clients": 10, "max_packages": 2,
+         "max_sessions_per_month": 30, "commission_pct": 15, "offline_management": False, "analytics": False},
+        {"id": "pro", "name": "Pro", "price": 999, "max_clients": 50, "max_packages": 10,
+         "max_sessions_per_month": 200, "commission_pct": 10, "offline_management": True, "analytics": True},
+        {"id": "elite", "name": "Elite", "price": 2499, "max_clients": -1, "max_packages": -1,
+         "max_sessions_per_month": -1, "commission_pct": 5, "offline_management": True, "analytics": True},
+    ])
+    current_plan = next((p for p in plans if p["id"] == plan_id), plans[0])
+
+    # Usage counts
+    client_count = await db.coach_clients.count_documents({"coach_id": user["id"], "status": "active"})
+    package_count = await db.coaching_packages.count_documents({"coach_id": user["id"], "status": "active"})
+
+    # Sessions this month
+    now = datetime.now(timezone.utc)
+    month_prefix = now.strftime("%Y-%m")
+    online_sessions = await db.coaching_sessions.count_documents(
+        {"coach_id": user["id"], "date": {"$regex": f"^{month_prefix}"}}
+    )
+    offline_sessions = await db.coach_offline_sessions.count_documents(
+        {"coach_id": user["id"], "date": {"$regex": f"^{month_prefix}"}}
+    )
+
+    return {
+        "plan": current_plan,
+        "all_plans": plans,
+        "usage": {
+            "clients": client_count,
+            "packages": package_count,
+            "sessions_this_month": online_sessions + offline_sessions,
+        },
+    }
+
+
+@router.get("/onboarding-status")
+async def get_onboarding_status(user=Depends(get_current_user)):
+    """Get coach onboarding steps."""
+    if user.get("role") != "coach":
+        raise HTTPException(403, "Only coaches can view onboarding")
+    steps = user.get("onboarding_steps", {
+        "profile_completed": False,
+        "availability_set": False,
+        "first_package_created": False,
+        "documents_uploaded": False,
+    })
+    return {
+        "status": user.get("onboarding_status", "incomplete"),
+        "steps": steps,
+    }
+
+
+@router.put("/onboarding-status")
+async def update_onboarding_status(request: Request, user=Depends(get_current_user)):
+    """Mark onboarding steps complete."""
+    if user.get("role") != "coach":
+        raise HTTPException(403, "Only coaches can update onboarding")
+    data = await request.json()
+    steps = user.get("onboarding_steps", {})
+    allowed = ["profile_completed", "availability_set", "first_package_created", "documents_uploaded"]
+    for key in allowed:
+        if key in data:
+            steps[key] = bool(data[key])
+    # Auto-complete onboarding if all steps done
+    onboarding_status = "complete" if all(steps.get(k, False) for k in allowed) else "incomplete"
+    await db.users.update_one({"id": user["id"]}, {"$set": {
+        "onboarding_steps": steps,
+        "onboarding_status": onboarding_status,
+    }})
+    return {"status": onboarding_status, "steps": steps}

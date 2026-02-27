@@ -11,6 +11,7 @@ class RegisterInput(BaseModel):
     sports: Optional[List[str]] = []
     business_name: Optional[str] = ""
     gst_number: Optional[str] = ""
+    coach_type: Optional[str] = ""  # "individual" or "academy"
 
 
 class LoginInput(BaseModel):
@@ -89,6 +90,40 @@ class AcademyCreate(BaseModel):
     location: str
     max_students: int = 50
     schedule: str
+
+
+# ─── Academy Management Models ────────────────────────────────────────────────
+
+class AcademyEnroll(BaseModel):
+    batch_id: Optional[str] = ""
+
+
+class BatchCreate(BaseModel):
+    name: str
+    max_students: int = 30
+    start_time: str          # "06:00"
+    end_time: str            # "08:00"
+    days: List[int] = []     # 0=Sun..6=Sat
+
+
+class AttendanceMark(BaseModel):
+    date: str                # "YYYY-MM-DD"
+    batch_id: Optional[str] = ""
+    present_student_ids: List[str]
+
+
+class ProgressEntry(BaseModel):
+    skill_ratings: dict = {}  # {"forehand": 7, "stamina": 8}
+    assessment_type: str = "monthly"
+    notes: str = ""
+
+
+class FeeCollect(BaseModel):
+    student_id: str
+    amount: int
+    payment_method: str = "cash"
+    period_month: str         # "2026-02"
+    notes: str = ""
 
 
 class SlotLockInput(BaseModel):
