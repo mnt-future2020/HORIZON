@@ -1223,7 +1223,6 @@ function SettingsTab() {
                   <p className="text-[10px] text-muted-foreground mt-2">Found in Razorpay Dashboard → Webhooks → Secret</p>
                 </div>
               </div>
-              </div>
             </section>
           )}
 
