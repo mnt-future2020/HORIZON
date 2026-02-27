@@ -12,6 +12,8 @@ import uuid
 import hmac
 import hashlib
 import os
+import asyncio
+from invoice_utils import generate_coaching_invoice
 
 router = APIRouter(prefix="/coaching", tags=["coaching"])
 
@@ -498,6 +500,9 @@ async def verify_session_payment(session_id: str, request: Request, user=Depends
     confirmed_session = await db.coaching_sessions.find_one({"id": session_id}, {"_id": 0})
     if confirmed_session:
         await _fire_booking_confirmation(confirmed_session)
+        asyncio.create_task(generate_coaching_invoice(confirmed_session, "coaching_session", {
+            "razorpay_payment_id": razorpay_payment_id, "razorpay_order_id": razorpay_order_id, "paid_at": now_ist().isoformat()
+        }))
     return {"message": "Payment verified, session confirmed", "status": "confirmed"}
 
 
@@ -527,6 +532,7 @@ async def test_confirm_session(session_id: str, user=Depends(get_current_user)):
     confirmed_session = await db.coaching_sessions.find_one({"id": session_id}, {"_id": 0})
     if confirmed_session:
         await _fire_booking_confirmation(confirmed_session)
+        asyncio.create_task(generate_coaching_invoice(confirmed_session, "coaching_session", confirmed_session.get("payment_details", {})))
     return {"message": "Test payment confirmed", "status": "confirmed"}
 
 
@@ -1112,6 +1118,12 @@ async def verify_subscription_payment(sub_id: str, request: Request, user=Depend
         "created_at": now_ist().isoformat(),
     })
 
+    # Auto-generate invoice
+    updated_sub = await db.coaching_subscriptions.find_one({"id": sub_id}, {"_id": 0})
+    if updated_sub:
+        asyncio.create_task(generate_coaching_invoice(updated_sub, "coaching_subscription", {
+            "razorpay_payment_id": razorpay_payment_id, "razorpay_order_id": razorpay_order_id, "paid_at": now_ist().isoformat()
+        }))
     return {"message": "Payment verified, subscription active", "status": "active"}
 
 
@@ -1138,6 +1150,10 @@ async def test_confirm_subscription(sub_id: str, user=Depends(get_current_user))
             "paid_at": now_ist().isoformat()
         }
     }})
+    # Auto-generate invoice
+    updated_sub = await db.coaching_subscriptions.find_one({"id": sub_id}, {"_id": 0})
+    if updated_sub:
+        asyncio.create_task(generate_coaching_invoice(updated_sub, "coaching_subscription", updated_sub.get("payment_details", {})))
     return {"message": "Test payment confirmed, subscription active", "status": "active"}
 
 
@@ -1286,6 +1302,12 @@ async def verify_renewal_payment(sub_id: str, request: Request, user=Depends(get
         }
     }})
 
+    # Auto-generate invoice
+    renewed_sub = await db.coaching_subscriptions.find_one({"id": sub_id}, {"_id": 0})
+    if renewed_sub:
+        asyncio.create_task(generate_coaching_invoice(renewed_sub, "coaching_renewal", {
+            "razorpay_payment_id": razorpay_payment_id, "razorpay_order_id": razorpay_order_id, "paid_at": now_ist().isoformat()
+        }))
     return {"message": "Renewal payment verified, subscription renewed", "status": "active"}
 
 

@@ -150,6 +150,7 @@ async def list_invoices(
     status: Optional[str] = Query(None),
     month: Optional[str] = Query(None),
     client_id: Optional[str] = Query(None),
+    source: Optional[str] = Query(None),
     limit: int = Query(100, le=200),
 ):
     """List invoices for this coach."""
@@ -162,6 +163,10 @@ async def list_invoices(
         q["client_id"] = client_id
     if month:
         q["date"] = {"$regex": f"^{month}"}
+    if source == "auto":
+        q["auto_generated"] = True
+    elif source == "manual":
+        q["auto_generated"] = {"$ne": True}
     invoices = []
     async for inv in db.coach_invoices.find(q, {"_id": 0}).sort("date", -1).limit(limit):
         invoices.append(inv)
@@ -201,9 +206,12 @@ async def delete_invoice(invoice_id: str, user=Depends(get_current_user)):
     """Delete an invoice."""
     if user.get("role") != "coach":
         raise HTTPException(403, "Coaches only")
-    result = await db.coach_invoices.delete_one({"id": invoice_id, "coach_id": user["id"]})
-    if result.deleted_count == 0:
+    inv = await db.coach_invoices.find_one({"id": invoice_id, "coach_id": user["id"]})
+    if not inv:
         raise HTTPException(404, "Invoice not found")
+    if inv.get("auto_generated"):
+        raise HTTPException(400, "Cannot delete auto-generated invoices")
+    await db.coach_invoices.delete_one({"id": invoice_id})
     return {"message": "Invoice deleted"}
 
 

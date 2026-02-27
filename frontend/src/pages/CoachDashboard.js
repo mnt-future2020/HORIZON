@@ -4587,6 +4587,7 @@ export default function CoachDashboard({ defaultView }) {
                               : "bg-muted border-border text-muted-foreground"
                             }`}>{inv.status.toUpperCase()}</span>
                             {inv.gst_enabled && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">GST</span>}
+                            {inv.auto_generated && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">AUTO</span>}
                           </div>
                           <p className="text-sm font-medium">{inv.client_name}</p>
                           <p className="text-xs text-muted-foreground">{inv.date} · Due {inv.due_date}</p>
@@ -4621,10 +4622,12 @@ export default function CoachDashboard({ defaultView }) {
                             <CheckCircle className="h-3 w-3" /> Mark Paid
                           </button>
                         )}
-                        <button onClick={() => handleDeleteInvoice(inv.id)}
-                          className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs font-bold text-destructive transition-colors ml-auto">
-                          <Trash2 className="h-3 w-3" /> Delete
-                        </button>
+                        {!inv.auto_generated && (
+                          <button onClick={() => handleDeleteInvoice(inv.id)}
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs font-bold text-destructive transition-colors ml-auto">
+                            <Trash2 className="h-3 w-3" /> Delete
+                          </button>
+                        )}
                       </div>
                     </motion.div>
                   ))}

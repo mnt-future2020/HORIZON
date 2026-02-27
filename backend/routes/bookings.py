@@ -10,6 +10,7 @@ import hashlib
 import logging
 import asyncio
 import re
+from invoice_utils import generate_venue_invoice
 try:
     from push_service import notify_booking_confirmed, notify_booking_cancelled
 except Exception:
@@ -260,6 +261,9 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
         new_status = "confirmed" if new_shares_paid >= result["split_config"]["total_shares"] else "pending"
         if new_status == "confirmed":
             await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "confirmed"}})
+            confirmed_booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+            if confirmed_booking:
+                asyncio.create_task(generate_venue_invoice(confirmed_booking, {"razorpay_payment_id": razorpay_payment_id, "paid_at": now_ist().isoformat()}))
         return {"message": "Share paid", "shares_paid": new_shares_paid, "status": new_status}
     else:
         await db.bookings.update_one({"id": booking_id}, {"$set": {
@@ -271,6 +275,9 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
                 "paid_at": now_ist().isoformat()
             }
         }})
+        confirmed_booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+        if confirmed_booking:
+            asyncio.create_task(generate_venue_invoice(confirmed_booking, {"razorpay_payment_id": razorpay_payment_id, "razorpay_order_id": razorpay_order_id, "paid_at": now_ist().isoformat()}))
         return {"message": "Payment verified, booking confirmed", "status": "confirmed"}
 
 
@@ -304,6 +311,9 @@ async def test_confirm_payment(booking_id: str, user=Depends(get_current_user)):
         booking.get("date", ""),
         booking.get("start_time", ""),
     ))
+    confirmed_booking = await db.bookings.find_one({"id": booking_id}, {"_id": 0})
+    if confirmed_booking:
+        asyncio.create_task(generate_venue_invoice(confirmed_booking, confirmed_booking.get("payment_details", {})))
     return {"message": "Test payment confirmed", "status": "confirmed"}
 
 
@@ -439,6 +449,9 @@ async def razorpay_webhook(request: Request):
                         booking.get("host_id", ""), booking.get("venue_name", ""),
                         booking.get("date", ""), booking.get("start_time", "")
                     ))
+                    full_booking = await db.bookings.find_one({"id": booking["id"]}, {"_id": 0})
+                    if full_booking:
+                        asyncio.create_task(generate_venue_invoice(full_booking, {"razorpay_payment_id": razorpay_payment_id, "paid_at": now_ist().isoformat()}))
                 else:
                     logger.info(f"Webhook: split booking {booking['id']} share {new_paid}/{result['split_config']['total_shares']}")
         else:
@@ -456,6 +469,10 @@ async def razorpay_webhook(request: Request):
             asyncio.create_task(notify_booking_confirmed(
                 booking.get("host_id", ""), booking.get("venue_name", ""),
                 booking.get("date", ""), booking.get("start_time", "")
+            ))
+            asyncio.create_task(generate_venue_invoice(
+                {**booking, "status": "confirmed"},
+                {"razorpay_payment_id": razorpay_payment_id, "razorpay_order_id": order_id, "paid_at": now_ist().isoformat()}
             ))
 
     elif event == "payment.failed":
