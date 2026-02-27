@@ -322,12 +322,18 @@ async def book_session(request: Request, user=Depends(get_current_user)):
         "created_at": now_ist().isoformat(),
     }
 
-    # Check for active monthly package subscription with this coach
+    # Check for active monthly package subscription with this coach + matching sport
+    booked_sport = session["sport"]
     active_sub = await db.coaching_subscriptions.find_one({
         "coach_id": coach_id,
         "player_id": user["id"],
         "status": "active",
         "current_period_end": {"$gte": now_ist().isoformat()},
+        "$or": [
+            {"sports": booked_sport},       # subscription covers this sport
+            {"sports": {"$size": 0}},        # or subscription has no sport restriction
+            {"sports": {"$exists": False}},  # or legacy sub without sports field
+        ],
     })
 
     if active_sub and active_sub.get("sessions_used", 0) < active_sub["sessions_per_month"]:
@@ -990,12 +996,22 @@ async def subscribe_to_package(package_id: str, user=Depends(get_current_user)):
     if not package:
         raise HTTPException(404, "Package not found or inactive")
 
-    # Check for existing active subscription with this coach
-    existing = await db.coaching_subscriptions.find_one({
-        "coach_id": package["coach_id"], "player_id": user["id"], "status": "active"
-    })
+    # Check for existing active subscription with this coach for overlapping sports
+    pkg_sports = package.get("sports", [])
+    if pkg_sports:
+        existing = await db.coaching_subscriptions.find_one({
+            "coach_id": package["coach_id"], "player_id": user["id"], "status": "active",
+            "sports": {"$in": pkg_sports},
+        })
+    else:
+        existing = await db.coaching_subscriptions.find_one({
+            "coach_id": package["coach_id"], "player_id": user["id"], "status": "active",
+        })
     if existing:
-        raise HTTPException(409, "You already have an active subscription with this coach")
+        overlap = set(existing.get("sports", [])) & set(pkg_sports) if pkg_sports else set()
+        sport_names = ", ".join(s.replace("_", " ").title() for s in overlap) if overlap else ""
+        msg = f"You already have an active subscription for {sport_names} with this coach" if sport_names else "You already have an active subscription with this coach"
+        raise HTTPException(409, msg)
 
     platform = await get_platform_settings()
     commission_pct = platform.get("coaching_commission_pct", 10)
@@ -1014,6 +1030,7 @@ async def subscribe_to_package(package_id: str, user=Depends(get_current_user)):
         "player_name": user.get("name", ""),
         "sessions_per_month": package["sessions_per_month"],
         "sessions_used": 0,
+        "sports": package.get("sports", []),
         "price": package["price"],
         "commission_amount": commission_amount,
         "current_period_start": now.isoformat(),
