@@ -1,5 +1,6 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import redis.asyncio as aioredis
+import ssl
 import os
 import logging
 
@@ -42,7 +43,11 @@ async def init_redis():
     global redis_client
     if redis_url:
         try:
-            redis_client = aioredis.from_url(redis_url, decode_responses=False)
+            # Upstash uses rediss:// (TLS) — library handles SSL automatically
+            kwargs = {"decode_responses": False}
+            if redis_url.startswith("rediss://"):
+                kwargs["ssl_cert_reqs"] = None
+            redis_client = aioredis.from_url(redis_url, **kwargs)
             await redis_client.ping()
             logger.info("Redis connected for slot locking")
         except Exception as e:

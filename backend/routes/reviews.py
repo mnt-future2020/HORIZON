@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 import logging
@@ -89,7 +90,7 @@ async def create_review(venue_id: str, request_data: dict, user=Depends(get_curr
         "rating": rating,
         "comment": comment,
         "sentiment": sentiment,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     # Atomic upsert to prevent duplicate reviews (race condition fix)
     result = await db.reviews.update_one(

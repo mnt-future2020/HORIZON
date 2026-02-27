@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 
@@ -31,7 +32,7 @@ async def create_expense(request: Request, user=Depends(get_current_user)):
     category = data.get("category", "other")
     if category not in EXPENSE_CATEGORIES:
         raise HTTPException(400, f"Invalid category. Must be one of: {', '.join(EXPENSE_CATEGORIES)}")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     expense = {
         "id": str(uuid.uuid4()),
         "coach_id": user["id"],
@@ -100,7 +101,7 @@ async def update_expense(expense_id: str, request: Request, user=Depends(get_cur
     if "category" in updates and updates["category"] not in EXPENSE_CATEGORIES:
         raise HTTPException(400, "Invalid category")
     if updates:
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        updates["updated_at"] = now_ist().isoformat()
         await db.coach_expenses.update_one({"id": expense_id}, {"$set": updates})
     updated = await db.coach_expenses.find_one({"id": expense_id}, {"_id": 0})
     return updated
@@ -200,7 +201,7 @@ async def finance_summary(user=Depends(get_current_user)):
     net_profit = round(net_income - total_expenses, 2)
 
     # ── Monthly trend (last 6 months) ──
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     monthly_trend = []
     current_month_key = now.strftime("%Y-%m")
     current_month_income = 0
@@ -323,7 +324,7 @@ async def client_outstanding(user=Depends(get_current_user)):
         if outstanding <= 0:
             status = "paid"
         elif last_session_date:
-            days_since = (datetime.now(timezone.utc) - datetime.fromisoformat(last_session_date + "T00:00:00+00:00")).days
+            days_since = (now_ist() - datetime.fromisoformat(last_session_date + "T00:00:00+00:00")).days
             status = "overdue" if days_since > 30 else "pending"
         else:
             status = "pending"

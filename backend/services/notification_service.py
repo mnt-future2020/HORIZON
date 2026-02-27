@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 import uuid
 
 logger = logging.getLogger("horizon")
@@ -218,7 +219,7 @@ async def send_notification(
             "message": message,
             "data": data or {},
             "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         }
         await db.notifications.insert_one(notif)
         results["in_app"] = True
@@ -255,7 +256,7 @@ async def send_notification(
         "title": title,
         "channels_attempted": channels,
         "results": results,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.notification_delivery_log.insert_one(delivery)
 

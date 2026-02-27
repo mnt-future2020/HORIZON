@@ -3,6 +3,7 @@ from typing import Optional
 from datetime import datetime, timezone
 from database import db
 from auth import get_current_user, get_razorpay_client, get_platform_settings
+from tz import now_ist
 from models import MatchRequestCreate, MercenaryCreate, MatchResultSubmit
 from glicko2 import update_rating, calculate_compatibility, suggest_balanced_teams
 import uuid
@@ -34,7 +35,7 @@ async def create_match(input: MatchRequestCreate, user=Depends(get_current_user)
         "players_joined": [user["id"]], "player_names": [user["name"]],
         "player_ratings": {user["id"]: user.get("skill_rating", 1500)},
         "status": "open",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.match_requests.insert_one(match)
     match.pop("_id", None)
@@ -198,7 +199,7 @@ async def submit_match_result(match_id: str, input: MatchResultSubmit, user=Depe
         "score_b": input.score_b,
         "confirmations": [{"user_id": user["id"], "confirmed": True}],
         "confirmed": False,
-        "submitted_at": datetime.now(timezone.utc).isoformat()
+        "submitted_at": now_ist().isoformat()
     }
 
     all_players = set(input.team_a + input.team_b)
@@ -209,7 +210,7 @@ async def submit_match_result(match_id: str, input: MatchResultSubmit, user=Depe
     # Auto-confirm if only submitter is enough (solo/duo)
     if len(result["confirmations"]) >= needed:
         result["confirmed"] = True
-        result["confirmed_at"] = datetime.now(timezone.utc).isoformat()
+        result["confirmed_at"] = now_ist().isoformat()
 
     await db.match_requests.update_one(
         {"id": match_id},
@@ -262,7 +263,7 @@ async def confirm_match_result(match_id: str, request: Request, user=Depends(get
 
     if confirmed_count >= needed:
         result["confirmed"] = True
-        result["confirmed_at"] = datetime.now(timezone.utc).isoformat()
+        result["confirmed_at"] = now_ist().isoformat()
         await db.match_requests.update_one(
             {"id": match_id},
             {"$set": {"result": result, "status": "completed"}}
@@ -333,7 +334,7 @@ async def _apply_rating_updates(match_id: str, result: dict):
     else:
         score_a, score_b = 0.5, 0.5
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     updates = []
 
     # Process Team A
@@ -507,7 +508,7 @@ async def create_mercenary(input: MercenaryCreate, user=Depends(get_current_user
         "spots_filled": 0,
         "applicants": [], "accepted": [], "paid_players": [],
         "status": "open",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.mercenary_posts.insert_one(post)
     post.pop("_id", None)
@@ -529,7 +530,7 @@ async def apply_mercenary(post_id: str, user=Depends(get_current_user)):
         "id": user["id"], "name": user["name"],
         "skill_rating": user.get("skill_rating", 1500),
         "sports": user.get("sports", []),
-        "applied_at": datetime.now(timezone.utc).isoformat()
+        "applied_at": now_ist().isoformat()
     }
     await db.mercenary_posts.update_one(
         {"id": post_id}, {"$push": {"applicants": applicant}}
@@ -539,7 +540,7 @@ async def apply_mercenary(post_id: str, user=Depends(get_current_user)):
         "type": "mercenary_application",
         "title": "New Mercenary Application",
         "message": f"{user['name']} (Rating: {user.get('skill_rating', 1500)}) applied for {post['position_needed']}",
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": "Applied successfully"}
 
@@ -567,7 +568,7 @@ async def accept_mercenary(post_id: str, applicant_id: str, user=Depends(get_cur
         "message": f"You've been accepted for {post['position_needed']} at {post['venue_name']} on {post['date']} at {post['time']}. Pay {chr(8377)}{post['amount_per_player']} to confirm.",
         "venue_id": post.get("venue_id", ""),
         "mercenary_post_id": post_id,
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": "Applicant accepted"}
 
@@ -615,7 +616,7 @@ async def pay_mercenary(post_id: str, user=Depends(get_current_user)):
         except Exception as e:
             logger.warning(f"Razorpay failed for mercenary: {e}")
 
-    paid_player = {"id": user["id"], "name": user["name"], "paid_at": datetime.now(timezone.utc).isoformat()}
+    paid_player = {"id": user["id"], "name": user["name"], "paid_at": now_ist().isoformat()}
     new_filled = post.get("spots_filled", 0) + 1
     updates = {"$push": {"paid_players": paid_player}, "$set": {"spots_filled": new_filled}}
     if new_filled >= post.get("spots_available", 1):
@@ -640,7 +641,7 @@ async def verify_mercenary_payment(post_id: str, request: Request, user=Depends(
     if user["id"] in [p["id"] for p in post.get("paid_players", [])]:
         raise HTTPException(400, "Already paid")
 
-    paid_player = {"id": user["id"], "name": user["name"], "paid_at": datetime.now(timezone.utc).isoformat()}
+    paid_player = {"id": user["id"], "name": user["name"], "paid_at": now_ist().isoformat()}
     new_filled = post.get("spots_filled", 0) + 1
     updates = {"$push": {"paid_players": paid_player}, "$set": {"spots_filled": new_filled}}
     if new_filled >= post.get("spots_available", 1):
@@ -657,6 +658,6 @@ async def verify_mercenary_payment(post_id: str, request: Request, user=Depends(
         "type": "mercenary_paid",
         "title": "Player Confirmed!",
         "message": f"{user['name']} paid and joined your game at {post['venue_name']}",
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": "Payment verified, you're in the game!"}

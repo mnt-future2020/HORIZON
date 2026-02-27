@@ -1,24 +1,22 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { bookingAPI, analyticsAPI, waitlistAPI, coachingAPI, recommendationAPI } from "@/lib/api";
-import { mediaUrl } from "@/lib/utils";
+import { bookingAPI, analyticsAPI, waitlistAPI, recommendationAPI } from "@/lib/api";
+import { mediaUrl, fmt12h } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { AthleticStatCard } from "@/components/ui/stat-card";
 import { motion } from "framer-motion";
-import { QRCodeSVG } from "qrcode.react";
-import { MapPin, Swords, Calendar, Trophy, TrendingUp, Clock, ChevronRight, Star, Search, Play, ListOrdered, X, User, Loader2, Dumbbell, BarChart3, Target, QrCode, Zap, Flame, Building2 } from "lucide-react";
+import { MapPin, Swords, Calendar, Trophy, TrendingUp, Clock, ChevronRight, Star, Search, Play, ListOrdered, X, User, Loader2, Dumbbell, BarChart3, Target, Zap, Flame, Building2 } from "lucide-react";
+import BookingReceipt from "@/components/BookingReceipt";
 
 // Brand ambassador athlete images
 const PLAYER_HERO = "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80";
 const MOTIVATION_IMG = "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80";
 
-function BookingCard({ booking, onClick, delay = 0, onGetQR }) {
-  const isPast = new Date(booking.date) < new Date(new Date().toDateString());
-  const isUpcoming = !isPast && booking.status === "confirmed";
+function BookingCard({ booking, onClick, delay = 0 }) {
   const badgeVariant = booking.status === "confirmed" ? "athletic" : booking.status === "pending" ? "secondary" : "destructive";
 
   return (
@@ -51,7 +49,7 @@ function BookingCard({ booking, onClick, delay = 0, onGetQR }) {
         </span>
         <span className="flex items-center gap-2">
           <Clock className="h-4 w-4 text-sky-400" />
-          {booking.start_time}-{booking.end_time}
+          {fmt12h(booking.start_time)}-{fmt12h(booking.end_time)}
         </span>
       </div>
 
@@ -59,24 +57,11 @@ function BookingCard({ booking, onClick, delay = 0, onGetQR }) {
         <div className="font-display text-xl font-black text-primary">
           {booking.total_amount?.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 })}
         </div>
-        <div className="flex items-center gap-2">
-          {booking.payment_mode === "split" && (
-            <Badge variant="sport" className="text-xs">
-              SPLIT {booking.split_config?.shares_paid}/{booking.split_config?.total_shares}
-            </Badge>
-          )}
-          {isUpcoming && !booking.checked_in && onGetQR && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-[10px] h-7 font-bold"
-              onClick={(e) => { e.stopPropagation(); onGetQR(booking.id); }}
-              data-testid={`qr-btn-${booking.id}`}
-            >
-              <QrCode className="h-3 w-3 mr-1" /> Check-in QR
-            </Button>
-          )}
-        </div>
+        {booking.payment_mode === "split" && (
+          <Badge variant="sport" className="text-xs">
+            SPLIT {booking.split_config?.shares_paid}/{booking.split_config?.total_shares}
+          </Badge>
+        )}
       </div>
     </motion.div>
   );
@@ -91,8 +76,6 @@ export default function PlayerDashboard() {
   const [searchQ, setSearchQ] = useState("");
   const [waitlistEntries, setWaitlistEntries] = useState([]);
   const [leavingWaitlist, setLeavingWaitlist] = useState(null);
-  const [qrData, setQrData] = useState(null);
-  const [qrLoading, setQrLoading] = useState(false);
   const [venueRecs, setVenueRecs] = useState([]);
   const [engagementScore, setEngagementScore] = useState(null);
 
@@ -124,14 +107,7 @@ export default function PlayerDashboard() {
     }
   };
 
-  const handleGetQR = async (bookingId) => {
-    setQrLoading(true);
-    try {
-      const res = await coachingAPI.getCheckinQR(bookingId);
-      setQrData(res.data);
-    } catch { /* ignore */ }
-    setQrLoading(false);
-  };
+  const [selectedBooking, setSelectedBooking] = useState(null);
 
   const upcoming = bookings.filter(b => b.status !== "cancelled" && new Date(b.date) >= new Date(new Date().toDateString()));
   const past = bookings.filter(b => new Date(b.date) < new Date(new Date().toDateString()));
@@ -456,7 +432,7 @@ export default function PlayerDashboard() {
         ) : (
           <div className="space-y-4">
             {upcoming.slice(0, 5).map((b, idx) => (
-              <BookingCard key={b.id} booking={b} onClick={() => {}} delay={0.8 + idx * 0.05} onGetQR={handleGetQR} />
+              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBooking(b)} delay={0.8 + idx * 0.05} />
             ))}
           </div>
         )}
@@ -597,46 +573,19 @@ export default function PlayerDashboard() {
           <h2 className="font-display text-xl font-black uppercase tracking-wide mb-6">Recent Games</h2>
           <div className="space-y-4">
             {past.slice(0, 3).map((b, idx) => (
-              <BookingCard key={b.id} booking={b} onClick={() => {}} delay={1.0 + idx * 0.05} />
+              <BookingCard key={b.id} booking={b} onClick={() => setSelectedBooking(b)} delay={1.0 + idx * 0.05} />
             ))}
           </div>
         </div>
       )}
 
-      {/* QR Check-in Dialog */}
-      <Dialog open={!!qrData} onOpenChange={open => { if (!open) setQrData(null); }}>
-        <DialogContent className="bg-card border-border max-w-xs text-center">
+      {/* Booking Receipt Dialog */}
+      <Dialog open={!!selectedBooking} onOpenChange={open => { if (!open) setSelectedBooking(null); }}>
+        <DialogContent className="bg-card border-border max-w-sm">
           <DialogHeader>
-            <DialogTitle className="font-display">Check-in QR Code</DialogTitle>
+            <DialogTitle className="font-display">Booking Receipt</DialogTitle>
           </DialogHeader>
-          {qrData && (
-            <div className="space-y-4">
-              <div className="bg-white p-6 rounded-xl mx-auto w-fit">
-                <QRCodeSVG
-                  value={qrData.qr_data}
-                  size={200}
-                  level="M"
-                  includeMargin={false}
-                />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  Show this to the venue staff to check in at <span className="font-bold text-foreground">{qrData.venue_name}</span>
-                </p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  {qrData.date} · {qrData.start_time}
-                </p>
-              </div>
-              <p className="text-[9px] font-mono text-muted-foreground/50 break-all px-2">
-                {qrData.qr_data}
-              </p>
-              {qrData.expires_at && (
-                <p className="text-[10px] text-muted-foreground/60">
-                  Expires: {new Date(qrData.expires_at).toLocaleString()}
-                </p>
-              )}
-            </div>
-          )}
+          {selectedBooking && <BookingReceipt booking={selectedBooking} />}
         </DialogContent>
       </Dialog>
     </div>

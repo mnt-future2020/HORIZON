@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from database import db
+from tz import now_ist
 from auth import get_current_user, get_razorpay_client, get_platform_settings
 from models import (
     AcademyCreate, AcademyEnroll, BatchCreate,
@@ -70,7 +71,7 @@ async def create_academy(input: AcademyCreate, user=Depends(get_current_user)):
         "coach_name": user["name"], **input.model_dump(),
         "current_students": 0, "students": [],
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.academies.insert_one(academy)
     academy.pop("_id", None)
@@ -98,7 +99,7 @@ async def add_student(academy_id: str, request: Request, user=Depends(get_curren
         "name": body.get("name", ""),
         "email": body.get("email", ""),
         "phone": body.get("phone", ""),
-        "joined_at": datetime.now(timezone.utc).isoformat(),
+        "joined_at": now_ist().isoformat(),
         "subscription_status": "active"
     }
     await db.academies.update_one(
@@ -151,7 +152,7 @@ async def enroll_in_academy(academy_id: str, input: AcademyEnroll, user=Depends(
     fee = academy["monthly_fee"]
     commission_amount = int(fee * commission_pct / 100)
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     enrollment = {
         "id": str(uuid.uuid4()),
         "academy_id": academy_id,
@@ -221,7 +222,7 @@ async def verify_enrollment_payment(academy_id: str, request: Request, user=Depe
     if not hmac.compare_digest(expected, razorpay_signature):
         raise HTTPException(400, "Payment verification failed")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     await db.academy_enrollments.update_one({"id": enrollment["id"]}, {"$set": {
         "status": "active",
         "payment_details": {
@@ -279,7 +280,7 @@ async def test_confirm_enrollment(academy_id: str, user=Depends(get_current_user
     if enrollment.get("payment_gateway") not in ("test", "mock"):
         raise HTTPException(400, "Only for test-mode enrollments")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     await db.academy_enrollments.update_one({"id": enrollment["id"]}, {"$set": {
         "status": "active",
         "payment_details": {
@@ -355,7 +356,7 @@ async def cancel_enrollment(enrollment_id: str, user=Depends(get_current_user)):
     if enrollment.get("status") not in ("active", "payment_pending"):
         raise HTTPException(400, f"Enrollment is already {enrollment.get('status')}")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     was_active = enrollment.get("status") == "active"
 
     await db.academy_enrollments.update_one({"id": enrollment_id}, {"$set": {
@@ -391,7 +392,7 @@ async def create_batch(academy_id: str, input: BatchCreate, user=Depends(get_cur
         "days": input.days,
         "student_ids": [],
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.academy_batches.insert_one(batch)
     batch.pop("_id", None)
@@ -492,7 +493,7 @@ async def mark_attendance(academy_id: str, input: AttendanceMark, user=Depends(g
     present_set = set(input.present_student_ids)
     absent = [sid for sid in all_student_ids if sid not in present_set]
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     record = {
         "academy_id": academy_id,
         "batch_id": input.batch_id or "",
@@ -554,7 +555,7 @@ async def attendance_stats(academy_id: str, user=Depends(get_current_user)):
     await _require_academy_coach(academy_id, user)
 
     # Get all attendance records (last 90 days)
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=90)).strftime("%Y-%m-%d")
+    cutoff = (now_ist() - timedelta(days=90)).strftime("%Y-%m-%d")
     records = await db.academy_attendance.find(
         {"academy_id": academy_id, "date": {"$gte": cutoff}}, {"_id": 0}
     ).sort("date", 1).to_list(500)
@@ -619,7 +620,7 @@ async def get_fee_status(academy_id: str, user=Depends(get_current_user)):
     """Fee status for all active students: paid, pending, or overdue."""
     await _require_academy_coach(academy_id, user)
 
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    current_month = now_ist().strftime("%Y-%m")
     enrollments = await db.academy_enrollments.find(
         {"academy_id": academy_id, "status": "active"}, {"_id": 0}
     ).to_list(500)
@@ -645,7 +646,7 @@ async def get_fee_status(academy_id: str, user=Depends(get_current_user)):
         else:
             # Check if overdue (past period end)
             period_end = e.get("current_period_end", "")
-            if period_end and period_end < datetime.now(timezone.utc).isoformat():
+            if period_end and period_end < now_ist().isoformat():
                 status = "overdue"
             else:
                 status = "pending"
@@ -686,7 +687,7 @@ async def collect_fee(academy_id: str, input: FeeCollect, user=Depends(get_curre
     if existing:
         raise HTTPException(409, f"Fee already collected for {input.period_month}")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     record = {
         "id": str(uuid.uuid4()),
         "academy_id": academy_id,
@@ -720,7 +721,7 @@ async def fee_report(
     """Monthly fee collection report."""
     await _require_academy_coach(academy_id, user)
 
-    target_month = month or datetime.now(timezone.utc).strftime("%Y-%m")
+    target_month = month or now_ist().strftime("%Y-%m")
     records = await db.academy_fee_records.find(
         {"academy_id": academy_id, "period_month": target_month, "status": "paid"}, {"_id": 0}
     ).to_list(500)
@@ -776,7 +777,7 @@ async def add_progress(
     if not enrollment:
         raise HTTPException(400, "Student not enrolled in this academy")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     entry = {
         "id": str(uuid.uuid4()),
         "academy_id": academy_id,
@@ -854,8 +855,8 @@ async def academy_dashboard(academy_id: str, user=Depends(get_current_user)):
     """Aggregated stats for academy overview."""
     academy = await _require_academy_coach(academy_id, user)
 
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
-    cutoff_30d = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+    current_month = now_ist().strftime("%Y-%m")
+    cutoff_30d = (now_ist() - timedelta(days=30)).strftime("%Y-%m-%d")
 
     # Parallel counts
     active_enrollments = await db.academy_enrollments.count_documents({

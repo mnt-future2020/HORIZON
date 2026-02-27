@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from whatsapp_service import send_message, build_client_welcome_message
 import uuid
@@ -27,7 +28,7 @@ async def add_client(request: Request, user=Depends(get_current_user)):
     name = (data.get("name") or "").strip()
     if not name:
         raise HTTPException(400, "Client name is required")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     try:
         monthly_fee = max(0, int(data.get("monthly_fee") or 0))
     except (ValueError, TypeError):
@@ -262,7 +263,7 @@ async def update_client(client_id: str, request: Request, user=Depends(get_curre
                "age", "skill_level", "coaching_goal", "guardian_name", "monthly_fee", "reminder_day"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if updates:
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        updates["updated_at"] = now_ist().isoformat()
         await db.coach_clients.update_one({"id": client_id}, {"$set": updates})
     updated = await db.coach_clients.find_one({"id": client_id}, {"_id": 0})
     return updated
@@ -278,7 +279,7 @@ async def deactivate_client(client_id: str, user=Depends(get_current_user)):
         raise HTTPException(404, "Client not found")
     await db.coach_clients.update_one(
         {"id": client_id},
-        {"$set": {"status": "inactive", "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"status": "inactive", "updated_at": now_ist().isoformat()}}
     )
     return {"message": "Client deactivated"}
 
@@ -304,7 +305,7 @@ async def send_welcome_whatsapp(client_id: str, user=Depends(get_current_user)):
     )
     result = await send_message(wa, client["phone"], msg)
     if result.get("ok"):
-        now = datetime.now(timezone.utc).isoformat()
+        now = now_ist().isoformat()
         await db.coach_clients.update_one(
             {"id": client_id},
             {"$set": {"whatsapp_welcome_sent": True, "whatsapp_sent_at": now}},

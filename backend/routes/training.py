@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from models import TrainingLogCreate
 import uuid
@@ -59,13 +60,13 @@ async def create_training_log(input: TrainingLogCreate, org_id: Optional[str] = 
         "notes": input.notes,
         "total_players": len(attendance),
         "present_count": len(attendance),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.training_logs.insert_one(log)
     log.pop("_id", None)
 
     # Auto-create performance records for each present player
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     for att in attendance:
         if att["present"]:
             record = {

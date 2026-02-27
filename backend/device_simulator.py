@@ -16,6 +16,7 @@ import random
 import logging
 import argparse
 from datetime import datetime, timezone
+from tz import now_ist
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv311
 
@@ -67,7 +68,7 @@ class VirtualDevice:
             "power_draw": round(self.power_watts * (self.brightness / 100)) if self.status == "on" else 0,
             "temperature": self.temperature,
             "uptime_seconds": self.uptime_seconds,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": now_ist().isoformat(),
         }
 
     def get_telemetry(self):
@@ -82,7 +83,7 @@ class VirtualDevice:
             "voltage": round(random.uniform(220, 240), 1),
             "current": round(random.uniform(0.5, 5.0), 2) if self.status == "on" else 0,
             "uptime_seconds": self.uptime_seconds,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": now_ist().isoformat(),
         }
 
 

@@ -7,6 +7,7 @@ from typing import Optional
 from datetime import datetime, timezone, timedelta
 from database import db
 from auth import get_current_user, get_razorpay_client, get_platform_settings
+from tz import now_ist, IST, parse_ist
 import uuid
 import hmac
 import hashlib
@@ -145,7 +146,7 @@ async def set_availability(request: Request, user=Depends(get_current_user)):
         "end_time": data.get("end_time", "10:00"),
         "sports": data.get("sports", []),  # Which sports this slot covers
         "is_active": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.coaching_availability.insert_one(slot)
     slot.pop("_id", None)
@@ -318,7 +319,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
         "notes": data.get("notes", ""),
         "rating": None,
         "review": None,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
 
     # Check for active monthly package subscription with this coach
@@ -326,7 +327,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
         "coach_id": coach_id,
         "player_id": user["id"],
         "status": "active",
-        "current_period_end": {"$gte": datetime.now(timezone.utc).isoformat()},
+        "current_period_end": {"$gte": now_ist().isoformat()},
     })
 
     if active_sub and active_sub.get("sessions_used", 0) < active_sub["sessions_per_month"]:
@@ -382,7 +383,7 @@ async def book_session(request: Request, user=Depends(get_current_user)):
         "title": "New Session Booked!",
         "message": f'{user.get("name", "A player")} booked a {session["sport"]} session on {date} at {start_time}.',
         "is_read": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     })
 
     # Return razorpay_key_id for frontend checkout
@@ -407,7 +408,7 @@ async def list_sessions(
         query["status"] = status
 
     if upcoming:
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today = now_ist().strftime("%Y-%m-%d")
         query["date"] = {"$gte": today}
 
     sessions = await db.coaching_sessions.find(
@@ -433,7 +434,7 @@ async def cancel_session(session_id: str, user=Depends(get_current_user)):
 
     await db.coaching_sessions.update_one(
         {"id": session_id},
-        {"$set": {"status": "cancelled", "cancelled_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"status": "cancelled", "cancelled_at": now_ist().isoformat()}}
     )
 
     # Notify the other party
@@ -446,7 +447,7 @@ async def cancel_session(session_id: str, user=Depends(get_current_user)):
         "title": "Session Cancelled",
         "message": f'{canceller} cancelled the session on {session["date"]} at {session["start_time"]}.',
         "is_read": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     })
 
     return {"message": "Session cancelled"}
@@ -486,7 +487,7 @@ async def verify_session_payment(session_id: str, request: Request, user=Depends
         "payment_details": {
             "razorpay_payment_id": razorpay_payment_id,
             "razorpay_order_id": razorpay_order_id,
-            "paid_at": datetime.now(timezone.utc).isoformat()
+            "paid_at": now_ist().isoformat()
         }
     }})
     confirmed_session = await db.coaching_sessions.find_one({"id": session_id}, {"_id": 0})
@@ -515,7 +516,7 @@ async def test_confirm_session(session_id: str, user=Depends(get_current_user)):
         "payment_details": {
             "method": "test",
             "test_payment_id": f"test_{uuid.uuid4().hex[:12]}",
-            "paid_at": datetime.now(timezone.utc).isoformat()
+            "paid_at": now_ist().isoformat()
         }
     }})
     confirmed_session = await db.coaching_sessions.find_one({"id": session_id}, {"_id": 0})
@@ -535,7 +536,7 @@ async def complete_session(session_id: str, user=Depends(get_current_user)):
     if session["status"] != "confirmed":
         raise HTTPException(400, "Session is not in confirmed status")
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     await db.coaching_sessions.update_one(
         {"id": session_id},
         {"$set": {"status": "completed", "completed_at": now}}
@@ -589,7 +590,7 @@ async def review_session(session_id: str, request: Request, user=Depends(get_cur
         {"$set": {
             "rating": rating,
             "review": data.get("review", ""),
-            "reviewed_at": datetime.now(timezone.utc).isoformat(),
+            "reviewed_at": now_ist().isoformat(),
         }}
     )
 
@@ -609,7 +610,7 @@ async def coach_stats(user=Depends(get_current_user)):
     upcoming_count = await db.coaching_sessions.count_documents({
         "coach_id": user["id"],
         "status": "confirmed",
-        "date": {"$gte": datetime.now(timezone.utc).strftime("%Y-%m-%d")}
+        "date": {"$gte": now_ist().strftime("%Y-%m-%d")}
     })
     cancelled = await db.coaching_sessions.count_documents({"coach_id": user["id"], "status": "cancelled"})
 
@@ -721,7 +722,11 @@ async def get_checkin_qr(booking_id: str, user=Depends(get_current_user)):
         {"$set": {"checkin_token": token}}
     )
 
-    expires_at = datetime.now(timezone.utc) + timedelta(hours=2)
+    # Expire QR at booking end_time (not arbitrary 2h)
+    try:
+        expires_at = parse_ist(booking['date'], booking['end_time'])
+    except Exception:
+        expires_at = now_ist() + timedelta(hours=24)
 
     return {
         "booking_id": booking_id,
@@ -768,6 +773,25 @@ async def verify_checkin(request: Request, user=Depends(get_current_user)):
     if booking.get("checkin_token") != token:
         raise HTTPException(400, "Invalid or expired check-in token")
 
+    # Time window check: only allow check-in 30 min before start to end_time
+    try:
+        booking_date = booking["date"]  # "2026-02-27"
+        start_time = booking["start_time"]  # "17:00"
+        end_time = booking["end_time"]  # "18:00"
+        now = now_ist()
+        start_dt = parse_ist(booking_date, start_time)
+        end_dt = parse_ist(booking_date, end_time)
+        window_open = start_dt - timedelta(minutes=15)
+        if now < window_open:
+            mins_left = int((window_open - now).total_seconds() // 60)
+            raise HTTPException(400, f"Check-in opens 15 minutes before booking time. Try again in {mins_left} min.")
+        if now > end_dt:
+            raise HTTPException(400, "Booking time has ended — check-in is no longer available.")
+    except HTTPException:
+        raise
+    except Exception:
+        pass  # If date parsing fails, allow check-in (don't block)
+
     if booking.get("checked_in"):
         return {
             "message": "Already checked in",
@@ -786,7 +810,7 @@ async def verify_checkin(request: Request, user=Depends(get_current_user)):
         if booking.get("coach_id") != user["id"]:
             raise HTTPException(403, "Not your coaching session")
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     await collection.update_one(
         {"id": booking_id},
         {"$set": {
@@ -856,7 +880,7 @@ async def create_package(request: Request, user=Depends(get_current_user)):
         "max_subscribers": max_subs,
         "is_public": bool(data.get("is_public", True)),
         "is_active": True,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
 
     await db.coaching_packages.insert_one(package)
@@ -977,7 +1001,7 @@ async def subscribe_to_package(package_id: str, user=Depends(get_current_user)):
     commission_pct = platform.get("coaching_commission_pct", 10)
     commission_amount = int(package["price"] * commission_pct / 100)
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     period_end = (now + timedelta(days=30)).isoformat()
 
     sub = {
@@ -1057,7 +1081,7 @@ async def verify_subscription_payment(sub_id: str, request: Request, user=Depend
         "payment_details": {
             "razorpay_payment_id": razorpay_payment_id,
             "razorpay_order_id": razorpay_order_id,
-            "paid_at": datetime.now(timezone.utc).isoformat()
+            "paid_at": now_ist().isoformat()
         }
     }})
 
@@ -1069,7 +1093,7 @@ async def verify_subscription_payment(sub_id: str, request: Request, user=Depend
         "title": "New Package Subscriber!",
         "message": f'{user.get("name", "A player")} subscribed to your "{sub["package_name"]}" package.',
         "is_read": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     })
 
     return {"message": "Payment verified, subscription active", "status": "active"}
@@ -1095,7 +1119,7 @@ async def test_confirm_subscription(sub_id: str, user=Depends(get_current_user))
         "payment_details": {
             "method": "test",
             "test_payment_id": f"test_{uuid.uuid4().hex[:12]}",
-            "paid_at": datetime.now(timezone.utc).isoformat()
+            "paid_at": now_ist().isoformat()
         }
     }})
     return {"message": "Test payment confirmed, subscription active", "status": "active"}
@@ -1126,7 +1150,7 @@ async def cancel_subscription(sub_id: str, user=Depends(get_current_user)):
 
     await db.coaching_subscriptions.update_one({"id": sub_id}, {"$set": {
         "status": "cancelled",
-        "cancelled_at": datetime.now(timezone.utc).isoformat()
+        "cancelled_at": now_ist().isoformat()
     }})
 
     # Notify coach
@@ -1137,7 +1161,7 @@ async def cancel_subscription(sub_id: str, user=Depends(get_current_user)):
         "title": "Subscription Cancelled",
         "message": f'{sub.get("player_name", "A player")} cancelled their "{sub["package_name"]}" subscription.',
         "is_read": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     })
 
     return {"message": "Subscription cancelled. Remaining sessions are usable until the period ends."}
@@ -1185,7 +1209,7 @@ async def renew_subscription(sub_id: str, user=Depends(get_current_user)):
             raise HTTPException(502, "Payment gateway error. Please try again.")
     else:
         # Test mode — auto-renew
-        now = datetime.now(timezone.utc)
+        now = now_ist()
         await db.coaching_subscriptions.update_one({"id": sub_id}, {"$set": {
             "status": "active",
             "sessions_used": 0,
@@ -1232,7 +1256,7 @@ async def verify_renewal_payment(sub_id: str, request: Request, user=Depends(get
     if not hmac.compare_digest(expected, razorpay_signature):
         raise HTTPException(400, "Payment verification failed")
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     await db.coaching_subscriptions.update_one({"id": sub_id}, {"$set": {
         "status": "active",
         "sessions_used": 0,
@@ -1276,7 +1300,7 @@ async def get_my_plan(user=Depends(get_current_user)):
     package_count = await db.coaching_packages.count_documents({"coach_id": user["id"], "status": "active"})
 
     # Sessions this month
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     month_prefix = now.strftime("%Y-%m")
     online_sessions = await db.coaching_sessions.count_documents(
         {"coach_id": user["id"], "date": {"$regex": f"^{month_prefix}"}}

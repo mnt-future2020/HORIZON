@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from database import db
 from auth import get_razorpay_client
+from tz import now_ist
 import uuid
 
 logger = logging.getLogger("horizon")
@@ -44,13 +45,13 @@ async def handle_payment_failure(user_id: str, subscription_id: str, reason: str
         "retry_count": 0,
         "max_retries": MAX_RETRIES,
         "status": "active",  # active, retrying, recovered, suspended, cancelled
-        "next_retry_at": (datetime.now(timezone.utc) + timedelta(hours=RETRY_SCHEDULE[0])).isoformat(),
-        "grace_period_ends": (datetime.now(timezone.utc) + timedelta(days=GRACE_PERIOD_DAYS)).isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "next_retry_at": (now_ist() + timedelta(hours=RETRY_SCHEDULE[0])).isoformat(),
+        "grace_period_ends": (now_ist() + timedelta(days=GRACE_PERIOD_DAYS)).isoformat(),
+        "created_at": now_ist().isoformat(),
         "history": [{
             "event": "payment_failed",
             "reason": reason,
-            "timestamp": datetime.now(timezone.utc).isoformat()
+            "timestamp": now_ist().isoformat()
         }]
     }
     await db.dunning.insert_one(dunning)
@@ -88,7 +89,7 @@ async def _schedule_next_retry(dunning: dict):
         return dunning
 
     next_delay = RETRY_SCHEDULE[min(retry_count, len(RETRY_SCHEDULE) - 1)]
-    next_retry = (datetime.now(timezone.utc) + timedelta(hours=next_delay)).isoformat()
+    next_retry = (now_ist() + timedelta(hours=next_delay)).isoformat()
 
     await db.dunning.update_one(
         {"id": dunning["id"]},
@@ -99,7 +100,7 @@ async def _schedule_next_retry(dunning: dict):
                 "event": "retry_scheduled",
                 "retry_number": retry_count + 1,
                 "next_retry_at": next_retry,
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": now_ist().isoformat()
             }}
         }
     )
@@ -108,7 +109,7 @@ async def _schedule_next_retry(dunning: dict):
 
 async def process_due_retries():
     """Process all dunning entries that are due for retry. Called by scheduler."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
 
     due_entries = await db.dunning.find({
         "status": {"$in": ["active", "retrying"]},
@@ -192,7 +193,7 @@ async def _attempt_payment_retry(dunning: dict) -> bool:
             {"$push": {"history": {
                 "event": "retry_attempted",
                 "order_id": order.get("id"),
-                "timestamp": datetime.now(timezone.utc).isoformat()
+                "timestamp": now_ist().isoformat()
             }}}
         )
 
@@ -212,7 +213,7 @@ async def _mark_recovered(dunning: dict):
         {"$set": {"status": "recovered"},
          "$push": {"history": {
              "event": "recovered",
-             "timestamp": datetime.now(timezone.utc).isoformat()
+             "timestamp": now_ist().isoformat()
          }}}
     )
 
@@ -238,7 +239,7 @@ async def _suspend_subscription(dunning: dict):
         {"$set": {"status": "suspended"},
          "$push": {"history": {
              "event": "subscription_suspended",
-             "timestamp": datetime.now(timezone.utc).isoformat()
+             "timestamp": now_ist().isoformat()
          }}}
     )
 
@@ -282,7 +283,7 @@ async def resolve_dunning(user_id: str):
         {"$set": {"status": "recovered"},
          "$push": {"history": {
              "event": "manually_resolved",
-             "timestamp": datetime.now(timezone.utc).isoformat()
+             "timestamp": now_ist().isoformat()
          }}}
     )
     return result.modified_count

@@ -4,6 +4,7 @@ Enhanced Subscription Routes with Dunning Management
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user, get_platform_settings
 from services.dunning_service import (
     handle_payment_failure, process_due_retries,
@@ -61,7 +62,7 @@ async def upgrade_plan(request: Request, user=Depends(get_current_user)):
         {"$set": {
             "subscription_plan": new_plan_id,
             "subscription_status": "active",
-            "plan_updated_at": datetime.now(timezone.utc).isoformat()
+            "plan_updated_at": now_ist().isoformat()
         }}
     )
 

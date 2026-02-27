@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate as useNav } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { coachingAPI } from "@/lib/api";
-import { mediaUrl } from "@/lib/utils";
+import { coachingAPI, paymentAPI } from "@/lib/api";
+import { mediaUrl, fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -404,7 +404,7 @@ export default function CoachListingPage() {
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-3">
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} - {s.end_time}</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} - {fmt12h(s.end_time)}</span>
                   <span className="font-bold text-primary">₹{s.price}</span>
                 </div>
               </div>
@@ -667,7 +667,7 @@ export default function CoachListingPage() {
                       <div className="flex items-center justify-between text-xs mb-3 px-1">
                         <span className="text-muted-foreground">
                           {new Date(selectedDate).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                          {" · "}{selectedSlot.start_time} – {selectedSlot.end_time}
+                          {" · "}{fmt12h(selectedSlot.start_time)} – {fmt12h(selectedSlot.end_time)}
                           {" · "}<span className="capitalize">{bookingSport.replace("_", " ")}</span>
                         </span>
                         <span className="font-black text-primary">₹{selectedCoach.session_price || 500}</span>

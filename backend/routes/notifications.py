@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from models import NotifySubscribeInput
 import uuid
@@ -37,7 +38,7 @@ async def notify_slot_available(venue_id: str, date: str, start_time: str, turf_
             "start_time": start_time,
             "turf_number": turf_number,
             "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         })
 
     if notifications:
@@ -83,7 +84,7 @@ async def subscribe_notification(input: NotifySubscribeInput, user=Depends(get_c
         "start_time": input.start_time,
         "turf_number": input.turf_number,
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.notification_subscriptions.insert_one(sub)
     sub.pop("_id", None)

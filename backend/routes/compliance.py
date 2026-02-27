@@ -5,6 +5,7 @@ Implements consent management, data export, and right-to-erasure.
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 import logging
@@ -66,7 +67,7 @@ async def update_consent(request: Request, user=Depends(get_current_user)):
         {"user_id": user["id"], "category": category}
     )
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
 
     if consent:
         await db.consents.update_one(
@@ -123,7 +124,7 @@ async def export_user_data(user=Depends(get_current_user)):
     ).to_list(100)
 
     export = {
-        "export_date": datetime.now(timezone.utc).isoformat(),
+        "export_date": now_ist().isoformat(),
         "user_id": user_id,
         "personal_info": user_data,
         "bookings": bookings,
@@ -172,7 +173,7 @@ async def request_data_erasure(request: Request, user=Depends(get_current_user))
         }
 
     user_id = user["id"]
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
 
     # Create erasure request record (retained for compliance)
     erasure = {
@@ -286,7 +287,7 @@ async def _audit_log(user_id: str, action: str, details: dict = None):
         "user_id": user_id,
         "action": action,
         "details": details or {},
-        "timestamp": datetime.now(timezone.utc).isoformat()
+        "timestamp": now_ist().isoformat()
     }
     await db.audit_log.insert_one(entry)
 

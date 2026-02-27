@@ -3,6 +3,7 @@ from typing import Optional, Dict, List
 from datetime import datetime, timezone
 from database import db, get_redis, lock_key, SOFT_LOCK_TTL, HARD_LOCK_TTL
 from auth import get_current_user, get_optional_user, get_platform_settings
+from tz import now_ist
 from models import VenueCreate, SlotLockInput, PricingRuleCreate
 import uuid
 import random
@@ -265,11 +266,16 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
         raise HTTPException(403, f"Your {user_plan.title()} plan allows max {max_venues} venue(s). Upgrade your plan to add more.")
     base_slug = generate_slug(input.name)
     slug = await unique_slug(base_slug)
+    data = input.model_dump()
+    # Auto-calculate total turfs from turf_config
+    if data.get("turf_config"):
+        total = sum(len(tc.get("turfs", [])) for tc in data["turf_config"])
+        data["turfs"] = max(total, 1)
     venue = {
         "id": str(uuid.uuid4()),
         "owner_id": user["id"],
         "slug": slug,
-        **input.model_dump(),
+        **data,
         "contact_phone": user.get("phone", ""),
         "badge": "bookable",
         "created_by": "owner",
@@ -277,7 +283,7 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
         "total_reviews": 0,
         "total_bookings": 0,
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.venues.insert_one(venue)
     venue.pop("_id", None)
@@ -291,8 +297,11 @@ async def update_venue(venue_id: str, request: Request, user=Depends(get_current
         raise HTTPException(403, "Not authorized")
     data = await request.json()
     allowed = ["name", "description", "sports", "address", "city", "amenities", "images",
-               "base_price", "slot_duration_minutes", "opening_hour", "closing_hour", "turfs"]
+               "base_price", "slot_duration_minutes", "opening_hour", "closing_hour", "turfs", "turf_config"]
     updates = {k: v for k, v in data.items() if k in allowed}
+    # Auto-calculate turfs from turf_config
+    if "turf_config" in updates and updates["turf_config"]:
+        updates["turfs"] = max(sum(len(tc.get("turfs", [])) for tc in updates["turf_config"]), 1)
     # If name is being updated, regenerate slug
     if "name" in updates:
         base_slug = generate_slug(updates["name"])
@@ -303,7 +312,7 @@ async def update_venue(venue_id: str, request: Request, user=Depends(get_current
     # MEDIUM FIX: Sanitize broadcast data — only send public-safe venue fields via WebSocket
     public_fields = ["id", "name", "slug", "description", "sports", "address", "city", "area",
                      "amenities", "images", "base_price", "rating", "total_reviews",
-                     "total_bookings", "turfs", "opening_hour", "closing_hour",
+                     "total_bookings", "turfs", "turf_config", "opening_hour", "closing_hour",
                      "slot_duration_minutes", "lat", "lng", "status"]
     safe_venue = {k: updated.get(k) for k in public_fields if k in updated}
     await venue_manager.broadcast(venue_id, {"type": "venue_update", "venue": safe_venue})
@@ -347,7 +356,7 @@ async def venue_enquiry(venue_id: str, request: Request):
         "message": message,
         "status": "new",
         "whatsapp_sent": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.venue_enquiries.insert_one(enquiry)
     enquiry.pop("_id", None)
@@ -387,45 +396,73 @@ async def get_slots(venue_id: str, date: str, request: Request):
         {"venue_id": venue_id, "date": date, "status": {"$in": ["confirmed", "pending", "payment_pending"]}},
         {"_id": 0}
     ).to_list(100)
-    booked_set = {f"{b['start_time']}-{b.get('turf_number', 1)}" for b in bookings}
+    duration = venue.get("slot_duration_minutes", 60)
+
+    # Build booked_set handling multi-slot bookings (a booking may span multiple base slots)
+    booked_set = set()
+    for b in bookings:
+        turf = b.get("turf_number", 1)
+        b_start_parts = b["start_time"].split(":")
+        b_end_parts = b["end_time"].split(":")
+        b_start_min = int(b_start_parts[0]) * 60 + int(b_start_parts[1])
+        b_end_min = int(b_end_parts[0]) * 60 + int(b_end_parts[1])
+        current = b_start_min
+        while current < b_end_min:
+            h, m = divmod(current, 60)
+            booked_set.add(f"{h:02d}:{m:02d}-{turf}")
+            current += duration
 
     try:
         date_obj = datetime.strptime(date, "%Y-%m-%d")
         dow = date_obj.weekday()
     except Exception:
         dow = 0
-
-    duration = venue.get("slot_duration_minutes", 60)
     slot_defs = []
     opening_min = venue.get("opening_hour", 6) * 60
     closing_min = venue.get("closing_hour", 23) * 60
-    for turf in range(1, venue.get("turfs", 1) + 1):
+
+    # Build turf list from turf_config or fallback to simple numbering
+    base_price = venue.get("base_price", 2000)
+    turf_config = venue.get("turf_config")
+    turf_list = []  # [(turf_number, turf_name, sport, turf_price)]
+    if turf_config:
+        idx = 1
+        for tc in turf_config:
+            sport = tc.get("sport", "")
+            for t in tc.get("turfs", []):
+                turf_list.append((idx, t.get("name", f"Turf {idx}"), sport, t.get("price", base_price)))
+                idx += 1
+    else:
+        for turf in range(1, venue.get("turfs", 1) + 1):
+            turf_list.append((turf, f"Turf {turf}", "", base_price))
+
+    for turf_num, turf_name, sport, turf_price in turf_list:
         current_min = opening_min
         while current_min + duration <= closing_min:
             start_h, start_m = divmod(current_min, 60)
             end_h, end_m = divmod(current_min + duration, 60)
             start = f"{start_h:02d}:{start_m:02d}"
             end = f"{end_h:02d}:{end_m:02d}"
-            slot_defs.append((start, end, turf))
+            slot_defs.append((start, end, turf_num, turf_name, sport, turf_price))
             current_min += duration
 
     lock_map = {}
     if redis_client:
         try:
             pipe = redis_client.pipeline()
-            for start, end, turf in slot_defs:
-                pipe.get(lock_key(venue_id, date, start, turf))
+            for start, end, turf_num, turf_name, sport, turf_price in slot_defs:
+                pipe.get(lock_key(venue_id, date, start, turf_num))
             results = await pipe.execute()
-            for i, (start, end, turf) in enumerate(slot_defs):
+            for i, (start, end, turf_num, turf_name, sport, turf_price) in enumerate(slot_defs):
                 if results[i]:
-                    lock_map[f"{start}-{turf}"] = results[i].decode() if isinstance(results[i], bytes) else results[i]
+                    lock_map[f"{start}-{turf_num}"] = results[i].decode() if isinstance(results[i], bytes) else results[i]
         except Exception as e:
             logger.warning(f"Redis lock check failed: {e}")
 
     slots = []
-    for start, end, turf in slot_defs:
-        is_booked = f"{start}-{turf}" in booked_set
-        slot_lock_key = f"{start}-{turf}"
+    for start, end, turf_num, turf_name, sport, turf_price in slot_defs:
+        is_booked = f"{start}-{turf_num}" in booked_set
+        slot_lock_key = f"{start}-{turf_num}"
         locked_by = lock_map.get(slot_lock_key)
         if is_booked:
             status = "booked"
@@ -436,7 +473,7 @@ async def get_slots(venue_id: str, date: str, request: Request):
         else:
             status = "available"
 
-        price = venue.get("base_price", 2000)
+        price = turf_price or base_price
         for rule in rules:
             cond = rule.get("conditions", {})
             act = rule.get("action", {})
@@ -454,7 +491,8 @@ async def get_slots(venue_id: str, date: str, request: Request):
                     price = int(price * (1 - act.get("value", 0)))
 
         slots.append({
-            "start_time": start, "end_time": end, "turf_number": turf,
+            "start_time": start, "end_time": end, "turf_number": turf_num,
+            "turf_name": turf_name, "sport": sport,
             "price": price, "status": status,
             "locked_by": locked_by if locked_by and locked_by != current_uid else None,
         })
@@ -586,7 +624,7 @@ async def create_pricing_rule(venue_id: str, input: PricingRuleCreate, user=Depe
     rule = {
         "id": str(uuid.uuid4()), "venue_id": venue_id,
         **input.model_dump(),
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.pricing_rules.insert_one(rule)
     rule.pop("_id", None)
@@ -604,7 +642,7 @@ async def update_pricing_rule(rule_id: str, input: PricingRuleCreate, user=Depen
             raise HTTPException(403, "Not authorized for this venue's pricing rules")
     result = await db.pricing_rules.update_one(
         {"id": rule_id},
-        {"$set": {**input.model_dump(), "updated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {**input.model_dump(), "updated_at": now_ist().isoformat()}}
     )
     if result.matched_count == 0:
         raise HTTPException(404, "Rule not found")

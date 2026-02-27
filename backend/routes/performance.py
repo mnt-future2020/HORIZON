@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from models import PerformanceRecordCreate, BulkRecordCreate
 import uuid
@@ -71,7 +72,7 @@ async def create_record(input: PerformanceRecordCreate, user=Depends(get_current
         "session_id": None,
         "date": input.date,
         "verified": True,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.performance_records.insert_one(record)
     record.pop("_id", None)
@@ -115,7 +116,7 @@ async def create_bulk_records(input: BulkRecordCreate, user=Depends(get_current_
             "session_id": None,
             "date": input.date,
             "verified": True,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         }
         await db.performance_records.insert_one(record)
         record.pop("_id", None)

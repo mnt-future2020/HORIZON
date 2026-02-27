@@ -119,6 +119,7 @@ export const bookingAPI = {
   get: (id) => api.get(`/bookings/${id}`),
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
   testConfirm: (id) => api.post(`/bookings/${id}/test-confirm`),
+  getCheckinQR: (bookingId) => api.get(`/coaching/checkin/qr/${bookingId}`),
 };
 
 export const slotLockAPI = {
@@ -237,6 +238,7 @@ export const adminAPI = {
 
 export const paymentAPI = {
   gatewayInfo: () => api.get("/payment/gateway-info"),
+  createOrder: (data) => api.post("/payments/create-order", data),
   verifyPayment: (bookingId, data) => api.post(`/bookings/${bookingId}/verify-payment`, data),
 };
 

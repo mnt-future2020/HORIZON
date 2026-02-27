@@ -6,6 +6,7 @@ import httpx
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
+from tz import now_ist
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 from auth import get_current_user
 from database import db
@@ -96,7 +97,7 @@ async def upload_video(
         "analysis": None,
         "share_id": None,
         "is_shared": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
         "analyzed_at": None,
     }
 
@@ -199,7 +200,7 @@ async def analyze_video(highlight_id: str, user=Depends(get_current_user)):
             {"$set": {
                 "status": "completed",
                 "analysis": analysis,
-                "analyzed_at": datetime.now(timezone.utc).isoformat()
+                "analyzed_at": now_ist().isoformat()
             }}
         )
 

@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional, List
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 
@@ -49,7 +50,7 @@ async def create_product(request: Request, user=Depends(get_current_user)):
         "stock": int(data.get("stock", -1)),    # -1 = unlimited
         "is_active": True,
         "emoji": data.get("emoji", "🛒"),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     if not product["name"]:
         raise HTTPException(400, "Product name required")
@@ -144,7 +145,7 @@ async def _insert_sale(data: dict, user: dict) -> dict:
         "customer_name": data.get("customer_name", ""),
         "customer_phone": data.get("customer_phone", ""),
         "offline_at": data.get("offline_at"),   # original timestamp if offline sale
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     # Idempotency check BEFORE stock decrement to avoid double-decrement
     existing = await db.pos_sales.find_one({"id": sale["id"]})
@@ -185,7 +186,7 @@ async def list_sales(
 async def sales_summary(venue_id: str, user=Depends(get_current_user)):
     """Today's sales summary for the venue."""
     await _require_venue_owner(venue_id, user)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = now_ist().strftime("%Y-%m-%d")
     # All sales for today
     all_sales = await db.pos_sales.find(
         {"venue_id": venue_id, "created_at": {"$regex": f"^{today}"}},

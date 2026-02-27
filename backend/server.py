@@ -137,6 +137,7 @@ async def health_check():
 # Contact form endpoint
 from fastapi import Request as FastAPIRequest
 from datetime import datetime as dt, timezone as tz
+from tz import now_ist
 import uuid as _uuid
 
 @app.post(f"{API_PREFIX}/contact")
@@ -161,7 +162,7 @@ async def submit_contact(request: FastAPIRequest):
         "subject": subject,
         "message": message,
         "status": "new",
-        "created_at": dt.now(tz.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.contact_messages.insert_one(entry)
     entry.pop("_id", None)

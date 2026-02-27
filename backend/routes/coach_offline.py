@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 
@@ -27,7 +28,7 @@ async def log_offline_session(request: Request, user=Depends(get_current_user)):
         client = await db.coach_clients.find_one({"id": client_id, "coach_id": user["id"]})
         if client:
             client_name = client.get("name", "")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     session = {
         "id": str(uuid.uuid4()),
         "coach_id": user["id"],
@@ -112,7 +113,7 @@ async def record_offline_payment(request: Request, user=Depends(get_current_user
     amount = float(data.get("amount", 0))
     if amount <= 0:
         raise HTTPException(400, "Amount must be greater than 0")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     payment = {
         "id": str(uuid.uuid4()),
         "coach_id": user["id"],
@@ -245,7 +246,7 @@ async def revenue_analytics(user=Depends(get_current_user)):
 
     # Monthly trend (last 6 months)
     monthly = []
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     for i in range(5, -1, -1):
         d = now - timedelta(days=i * 30)
         month_key = d.strftime("%Y-%m")
@@ -308,7 +309,7 @@ async def client_analytics(user=Depends(get_current_user)):
     online_total = len(online_ids)
 
     # New this month
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     month_start = now.replace(day=1).isoformat()[:10]
     new_offline = await db.coach_clients.count_documents(
         {"coach_id": user["id"], "created_at": {"$gte": month_start}}

@@ -7,6 +7,7 @@ from typing import Optional, Dict
 from datetime import datetime, timezone
 from database import db
 from auth import get_current_user
+from tz import now_ist
 from models import GroupCreate, TeamCreate, MessageCreate
 import uuid
 import math
@@ -80,7 +81,7 @@ async def create_group(inp: GroupCreate, user=Depends(get_current_user)):
         "member_count": 1,
         "members": [user["id"]],
         "admins": [user["id"]],
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.groups.insert_one(group)
     group.pop("_id", None)
@@ -327,7 +328,7 @@ async def send_group_message(group_id: str, inp: MessageCreate, user=Depends(get
         "mentioned_users": mentioned_ids,
         "pinned": False,
         "reactions": [],
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.group_messages.insert_one(msg)
     msg.pop("_id", None)
@@ -401,7 +402,7 @@ async def delete_group_message(group_id: str, message_id: str, user=Depends(get_
     is_admin = user["id"] in group.get("admins", [])
     if msg["sender_id"] != user["id"] and not is_admin:
         raise HTTPException(403, "Can only delete your own messages (or admin)")
-    await db.group_messages.update_one({"id": message_id}, {"$set": {"content": "", "media_url": "", "deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat(), "deleted_by": user["id"]}})
+    await db.group_messages.update_one({"id": message_id}, {"$set": {"content": "", "media_url": "", "deleted": True, "deleted_at": now_ist().isoformat(), "deleted_by": user["id"]}})
     for mid in group.get("members", []):
         if mid != user["id"]:
             await chat_manager.send_to_user(mid, {"type": "group_message_deleted", "group_id": group_id, "message_id": message_id})
@@ -427,7 +428,7 @@ async def group_typing(group_id: str, user=Depends(get_current_user)):
         raise HTTPException(403, "Not a member")
     await db.typing_status.update_one(
         {"group_id": group_id, "user_id": user["id"]},
-        {"$set": {"group_id": group_id, "user_id": user["id"], "user_name": user.get("name", ""), "typing_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"group_id": group_id, "user_id": user["id"], "user_name": user.get("name", ""), "typing_at": now_ist().isoformat()}},
         upsert=True
     )
     for mid in group.get("members", []):
@@ -441,9 +442,9 @@ async def get_group_typing(group_id: str, user=Depends(get_current_user)):
     group = await db.groups.find_one({"id": group_id})
     if not group or user["id"] not in group.get("members", []):
         return {"typing": []}
-    cutoff = datetime.now(timezone.utc).isoformat()[:-7]  # ~5s tolerance handled client-side
+    cutoff = now_ist().isoformat()[:-7]  # ~5s tolerance handled client-side
     statuses = await db.typing_status.find({"group_id": group_id, "user_id": {"$ne": user["id"]}}, {"_id": 0}).to_list(50)
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     typing = []
     for s in statuses:
         try:
@@ -461,7 +462,7 @@ async def mark_group_read(group_id: str, user=Depends(get_current_user)):
     group = await db.groups.find_one({"id": group_id})
     if not group or user["id"] not in group.get("members", []):
         raise HTTPException(403, "Not a member")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     await db.group_read_status.update_one(
         {"group_id": group_id, "user_id": user["id"]},
         {"$set": {"group_id": group_id, "user_id": user["id"], "last_read_at": now}},
@@ -505,7 +506,7 @@ async def pin_group_message(group_id: str, message_id: str, user=Depends(get_cur
     group = await db.groups.find_one({"id": group_id})
     if not group or user["id"] not in group.get("admins", []):
         raise HTTPException(403, "Only admins can pin messages")
-    await db.group_messages.update_one({"id": message_id, "group_id": group_id}, {"$set": {"pinned": True, "pinned_by": user["id"], "pinned_at": datetime.now(timezone.utc).isoformat()}})
+    await db.group_messages.update_one({"id": message_id, "group_id": group_id}, {"$set": {"pinned": True, "pinned_by": user["id"], "pinned_at": now_ist().isoformat()}})
     return {"pinned": True}
 
 
@@ -552,7 +553,7 @@ async def create_group_poll(group_id: str, request: Request, user=Depends(get_cu
         "media_url": "",
         "reactions": [],
         "pinned": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.group_messages.insert_one(msg)
     msg.pop("_id", None)
@@ -644,7 +645,7 @@ async def clear_group_chat(group_id: str, user=Depends(get_current_user)):
     group = await db.groups.find_one({"id": group_id})
     if not group or user["id"] not in group.get("members", []):
         raise HTTPException(403, "Not a member")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     await db.groups.update_one(
         {"id": group_id},
         {"$set": {f"cleared_at.{user['id']}": now}}
@@ -701,7 +702,7 @@ async def request_to_join(group_id: str, user=Depends(get_current_user)):
         "user_name": user.get("name", ""),
         "user_avatar": user.get("avatar", ""),
         "status": "pending",
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.group_join_requests.insert_one(req)
     req.pop("_id", None)
@@ -809,7 +810,7 @@ async def forward_message(request: Request, user=Depends(get_current_user)):
     if source_type == "dm" and content:
         content = decrypt_message(content, source_id)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
 
     if target_type == "group":
         group = await db.groups.find_one({"id": target_id})
@@ -869,12 +870,12 @@ async def create_team(inp: TeamCreate, user=Depends(get_current_user)):
         "skill_range_max": inp.skill_range_max,
         "captain_id": user["id"],
         "captain_name": user.get("name", ""),
-        "players": [{"id": user["id"], "name": user.get("name", ""), "role": "captain", "joined_at": datetime.now(timezone.utc).isoformat()}],
+        "players": [{"id": user["id"], "name": user.get("name", ""), "role": "captain", "joined_at": now_ist().isoformat()}],
         "player_count": 1,
         "wins": 0,
         "losses": 0,
         "draws": 0,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.teams.insert_one(team)
     team.pop("_id", None)
@@ -957,7 +958,7 @@ async def join_team(team_id: str, user=Depends(get_current_user)):
         "id": user["id"],
         "name": user.get("name", ""),
         "role": "player",
-        "joined_at": datetime.now(timezone.utc).isoformat()
+        "joined_at": now_ist().isoformat()
     }
     await db.teams.update_one(
         {"id": team_id},
@@ -1065,7 +1066,7 @@ async def start_conversation(request: Request, user=Depends(get_current_user)):
         if existing.get("status") == "declined" and existing.get("requester_id") == user["id"]:
             await db.conversations.update_one(
                 {"id": existing["id"]},
-                {"$set": {"status": "request", "requested_at": datetime.now(timezone.utc).isoformat()}}
+                {"$set": {"status": "request", "requested_at": now_ist().isoformat()}}
             )
             existing["status"] = "request"
         existing["other_user"] = {"id": other_id, "name": other.get("name", ""), "avatar": other.get("avatar", "")}
@@ -1076,7 +1077,7 @@ async def start_conversation(request: Request, user=Depends(get_current_user)):
     they_follow = await db.follows.find_one({"follower_id": other_id, "following_id": user["id"]})
     is_mutual = bool(i_follow and they_follow)
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     convo = {
         "id": str(uuid.uuid4()),
         "participants": [user["id"], other_id],
@@ -1170,7 +1171,7 @@ async def send_dm(conversation_id: str, inp: MessageCreate, user=Depends(get_cur
         "duration": inp.duration,
         "reply_to": inp.reply_to or "",
         "read": False,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     if inp.shared_post:
         msg["shared_post"] = inp.shared_post
@@ -1231,7 +1232,7 @@ async def delete_message(conversation_id: str, message_id: str, user=Depends(get
         raise HTTPException(403, "Can only delete your own messages")
     await db.direct_messages.update_one(
         {"id": message_id},
-        {"$set": {"content": "", "deleted": True, "deleted_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"content": "", "deleted": True, "deleted_at": now_ist().isoformat()}}
     )
     # Broadcast deletion via WebSocket
     convo = await db.conversations.find_one({"id": conversation_id})
@@ -1251,7 +1252,7 @@ async def update_online_status(user=Depends(get_current_user)):
     """Heartbeat to track online status."""
     await db.online_status.update_one(
         {"user_id": user["id"]},
-        {"$set": {"user_id": user["id"], "last_seen": datetime.now(timezone.utc).isoformat(), "online": True}},
+        {"$set": {"user_id": user["id"], "last_seen": now_ist().isoformat(), "online": True}},
         upsert=True,
     )
     return {"ok": True}
@@ -1268,7 +1269,7 @@ async def get_online_status(user_id: str, user=Depends(get_current_user)):
     if last_seen:
         try:
             last_dt = datetime.fromisoformat(last_seen.replace("Z", "+00:00"))
-            diff = (datetime.now(timezone.utc) - last_dt).total_seconds()
+            diff = (now_ist() - last_dt).total_seconds()
             return {"online": diff < 30, "last_seen": last_seen}
         except Exception:
             pass
@@ -1283,7 +1284,7 @@ async def set_typing(conversation_id: str, user=Depends(get_current_user)):
         {"$set": {
             "conversation_id": conversation_id,
             "user_id": user["id"],
-            "typing_at": datetime.now(timezone.utc).isoformat(),
+            "typing_at": now_ist().isoformat(),
         }},
         upsert=True,
     )
@@ -1306,7 +1307,7 @@ async def get_typing(conversation_id: str, user=Depends(get_current_user)):
         return {"typing": False}
     try:
         typing_at = datetime.fromisoformat(status["typing_at"].replace("Z", "+00:00"))
-        diff = (datetime.now(timezone.utc) - typing_at).total_seconds()
+        diff = (now_ist() - typing_at).total_seconds()
         return {"typing": diff < 5}  # Typing status expires after 5 seconds
     except Exception:
         return {"typing": False}
@@ -1434,7 +1435,7 @@ async def pin_dm_message(conversation_id: str, message_id: str, user=Depends(get
     convo = await db.conversations.find_one({"id": conversation_id})
     if not convo or user["id"] not in convo.get("participants", []):
         raise HTTPException(403, "Not your conversation")
-    await db.direct_messages.update_one({"id": message_id, "conversation_id": conversation_id}, {"$set": {"pinned": True, "pinned_by": user["id"], "pinned_at": datetime.now(timezone.utc).isoformat()}})
+    await db.direct_messages.update_one({"id": message_id, "conversation_id": conversation_id}, {"$set": {"pinned": True, "pinned_by": user["id"], "pinned_at": now_ist().isoformat()}})
     return {"pinned": True}
 
 
@@ -1476,7 +1477,7 @@ async def create_dm_poll(conversation_id: str, request: Request, user=Depends(ge
         "content": encrypt_message(f"📊 Poll: {question}", conversation_id),
         "message_type": "poll",
         "poll": {"question": question, "options": [{"text": o, "votes": []} for o in options[:10]], "multiple": data.get("multiple", False)},
-        "media_url": "", "read": False, "created_at": datetime.now(timezone.utc).isoformat(),
+        "media_url": "", "read": False, "created_at": now_ist().isoformat(),
     }
     await db.direct_messages.insert_one(msg)
     msg.pop("_id", None)
@@ -1557,7 +1558,7 @@ async def clear_dm_chat(conversation_id: str, user=Depends(get_current_user)):
     convo = await db.conversations.find_one({"id": conversation_id})
     if not convo or user["id"] not in convo.get("participants", []):
         raise HTTPException(403, "Not your conversation")
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     await db.conversations.update_one(
         {"id": conversation_id},
         {"$set": {f"cleared_at.{user['id']}": now}}
@@ -1605,7 +1606,7 @@ async def accept_message_request(conversation_id: str, user=Depends(get_current_
 
     await db.conversations.update_one(
         {"id": conversation_id},
-        {"$set": {"status": "active", "accepted_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"status": "active", "accepted_at": now_ist().isoformat()}}
     )
     # Notify requester via WebSocket
     await chat_manager.send_to_user(convo["requester_id"], {
@@ -1629,7 +1630,7 @@ async def decline_message_request(conversation_id: str, user=Depends(get_current
 
     await db.conversations.update_one(
         {"id": conversation_id},
-        {"$set": {"status": "declined", "declined_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"status": "declined", "declined_at": now_ist().isoformat()}}
     )
     return {"declined": True}
 

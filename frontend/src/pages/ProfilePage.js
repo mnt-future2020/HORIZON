@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAPI, analyticsAPI, bookingAPI, uploadAPI, careerAPI, venueAPI, coachingAPI, organizationAPI, playerCardAPI } from "@/lib/api";
-import { mediaUrl } from "@/lib/utils";
+import { mediaUrl, fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -903,7 +903,7 @@ export default function ProfilePage() {
                     <div key={b.id} className="glass-card rounded-lg p-4 flex items-center justify-between" data-testid={`history-card-${b.id}`}>
                       <div>
                         <div className="font-bold text-sm text-foreground">{b.venue_name}</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">{b.date} | {b.start_time}-{b.end_time} | {b.sport}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{b.date} | {fmt12h(b.start_time)}-{fmt12h(b.end_time)} | {b.sport}</div>
                       </div>
                       <div className="text-right">
                         <div className="font-display font-bold text-foreground">{"\u20B9"}{b.total_amount}</div>

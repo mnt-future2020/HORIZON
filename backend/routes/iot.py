@@ -4,6 +4,7 @@ import logging
 import asyncio
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
+from tz import now_ist
 from auth import get_current_user
 from database import db
 from pydantic import BaseModel
@@ -54,7 +55,7 @@ async def handle_mqtt_telemetry(topic: str, data: dict):
     if topic.endswith("/status"):
         # Update device status in DB
         update = {
-            "last_seen": datetime.now(timezone.utc).isoformat(),
+            "last_seen": now_ist().isoformat(),
             "is_online": True,
         }
         if "status" in data:
@@ -74,8 +75,8 @@ async def handle_mqtt_telemetry(topic: str, data: dict):
             "device_id": device_id,
             "topic": topic,
             "data": data,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "_ttl": datetime.now(timezone.utc) + timedelta(days=7),
+            "timestamp": now_ist().isoformat(),
+            "_ttl": now_ist() + timedelta(days=7),
         })
         await broadcast_ws({"type": "telemetry", "data": data})
 
@@ -165,8 +166,8 @@ async def register_device(inp: DeviceCreate, user=Depends(get_current_user)):
         "brightness": 0,
         "is_online": True,
         "auto_schedule": True,
-        "last_seen": datetime.now(timezone.utc).isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "last_seen": now_ist().isoformat(),
+        "created_at": now_ist().isoformat(),
         "total_runtime_minutes": 0,
     }
     await db.iot_devices.insert_one(doc)
@@ -226,7 +227,7 @@ async def control_device(device_id: str, ctrl: DeviceControl, user=Depends(get_c
     update = {
         "status": new_status,
         "brightness": brightness,
-        "last_seen": datetime.now(timezone.utc).isoformat(),
+        "last_seen": now_ist().isoformat(),
     }
     await db.iot_devices.update_one({"id": device_id}, {"$set": update})
 
@@ -239,7 +240,7 @@ async def control_device(device_id: str, ctrl: DeviceControl, user=Depends(get_c
             "event": "turned_on",
             "power_watts": device["power_watts"],
             "brightness": brightness,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": now_ist().isoformat(),
         })
     elif ctrl.action == "off" and device.get("status") == "on":
         await db.iot_energy_logs.insert_one({
@@ -249,7 +250,7 @@ async def control_device(device_id: str, ctrl: DeviceControl, user=Depends(get_c
             "event": "turned_off",
             "power_watts": 0,
             "brightness": 0,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": now_ist().isoformat(),
         })
 
     # Broadcast status change to WebSocket clients
@@ -280,7 +281,7 @@ async def create_zone(inp: ZoneCreate, user=Depends(get_current_user)):
         "name": inp.name,
         "turf_number": inp.turf_number,
         "description": inp.description,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.iot_zones.insert_one(doc)
     doc.pop("_id", None)
@@ -329,7 +330,7 @@ async def control_zone(zone_id: str, ctrl: DeviceControl, user=Depends(get_curre
         new_status = "on" if ctrl.action in ("on", "brightness") and brightness > 0 else "off"
         await db.iot_devices.update_one({"id": d["id"]}, {"$set": {
             "status": new_status, "brightness": brightness,
-            "last_seen": datetime.now(timezone.utc).isoformat()
+            "last_seen": now_ist().isoformat()
         }})
         results.append({"device_id": d["id"], "success": success, "status": new_status})
 
@@ -347,7 +348,7 @@ async def get_energy_analytics(
     await verify_venue_access(venue_id, user)
 
     days = 7 if period == "7d" else 30
-    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    cutoff = (now_ist() - timedelta(days=days)).isoformat()
 
     # Get all devices for this venue
     devices = await db.iot_devices.find({"venue_id": venue_id}, {"_id": 0}).to_list(100)
@@ -364,7 +365,7 @@ async def get_energy_analytics(
     # Compute daily energy usage (simulated based on device power ratings and bookings)
     # In production, this would come from real power meter readings
     daily_data = {}
-    today = datetime.now(timezone.utc).date()
+    today = now_ist().date()
     for i in range(days):
         d = today - timedelta(days=i)
         date_str = d.isoformat()
@@ -410,7 +411,7 @@ async def list_schedules(venue_id: str = Query(...), date: Optional[str] = None,
     await verify_venue_access(venue_id, user)
 
     if not date:
-        date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        date = now_ist().strftime("%Y-%m-%d")
 
     # Get confirmed bookings for this date
     bookings = await db.bookings.find(
@@ -464,7 +465,7 @@ async def list_schedules(venue_id: str = Query(...), date: Optional[str] = None,
 async def sync_bookings_to_schedule(venue_id: str = Query(...), user=Depends(get_current_user)):
     """Manually trigger sync of today's bookings to IoT schedule."""
     await verify_venue_access(venue_id, user)
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = now_ist().strftime("%Y-%m-%d")
     bookings = await db.bookings.find(
         {"venue_id": venue_id, "date": today, "status": "confirmed"}, {"_id": 0}
     ).to_list(50)

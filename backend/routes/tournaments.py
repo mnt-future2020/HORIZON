@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user, get_razorpay_client, get_platform_settings
 import uuid
 import math
@@ -148,7 +149,7 @@ async def create_tournament(request: Request, user=Depends(get_current_user)):
         "participants": [],
         "matches": [],
         "standings": [],
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
 
     # Fetch venue name if venue_id provided
@@ -244,7 +245,7 @@ async def cancel_tournament(tournament_id: str, user=Depends(get_current_user)):
             "title": "Tournament Cancelled",
             "message": f'"{tournament["name"]}" has been cancelled by the organizer.',
             "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": now_ist().isoformat(),
         })
 
     return {"message": "Tournament cancelled"}
@@ -279,7 +280,7 @@ async def register_for_tournament(tournament_id: str, user=Depends(get_current_u
         "user_id": user["id"],
         "name": user.get("name", ""),
         "rating": user.get("skill_rating", 1500),
-        "registered_at": datetime.now(timezone.utc).isoformat(),
+        "registered_at": now_ist().isoformat(),
     }
 
     result_data = {"message": "Registered successfully", "participant": participant}
@@ -393,7 +394,7 @@ async def verify_entry_payment(tournament_id: str, request: Request, user=Depend
             "participants.$.payment_details": {
                 "razorpay_payment_id": razorpay_payment_id,
                 "razorpay_order_id": razorpay_order_id,
-                "paid_at": datetime.now(timezone.utc).isoformat()
+                "paid_at": now_ist().isoformat()
             }
         }}
     )
@@ -427,7 +428,7 @@ async def test_confirm_entry(tournament_id: str, user=Depends(get_current_user))
             "participants.$.payment_details": {
                 "method": "test",
                 "test_payment_id": f"test_{uuid.uuid4().hex[:12]}",
-                "paid_at": datetime.now(timezone.utc).isoformat()
+                "paid_at": now_ist().isoformat()
             }
         }}
     )
@@ -493,7 +494,7 @@ async def start_tournament(tournament_id: str, user=Depends(get_current_user)):
             "status": "in_progress",
             "matches": matches,
             "standings": standings,
-            "started_at": datetime.now(timezone.utc).isoformat(),
+            "started_at": now_ist().isoformat(),
         }}
     )
 
@@ -506,7 +507,7 @@ async def start_tournament(tournament_id: str, user=Depends(get_current_user)):
             "title": "Tournament Started!",
             "message": f'"{tournament["name"]}" has begun. Check your matches!',
             "is_read": False,
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": now_ist().isoformat(),
         })
 
     updated = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
@@ -579,7 +580,7 @@ async def submit_match_result(
     match["score_a"] = score_a
     match["score_b"] = score_b
     match["status"] = "completed"
-    match["completed_at"] = datetime.now(timezone.utc).isoformat()
+    match["completed_at"] = now_ist().isoformat()
     matches[match_idx] = match
 
     # Format-specific logic
@@ -616,12 +617,12 @@ async def submit_match_result(
 
     update_set = {"matches": matches, "status": tournament_status}
     if tournament_status == "completed":
-        update_set["completed_at"] = datetime.now(timezone.utc).isoformat()
+        update_set["completed_at"] = now_ist().isoformat()
 
     await db.tournaments.update_one({"id": tournament_id}, {"$set": update_set})
 
     # ── Auto-create performance records for both players ──
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     for pid in [match.get("player_a"), match.get("player_b")]:
         if not pid:
             continue

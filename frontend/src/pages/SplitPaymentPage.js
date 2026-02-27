@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { splitAPI } from "@/lib/api";
+import { fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -9,9 +10,11 @@ import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Users, Calendar, Clock, MapPin, IndianRupee, Check, CreditCard } from "lucide-react";
+import { useRazorpay } from "@/hooks/useRazorpay";
 
 export default function SplitPaymentPage() {
   const { token } = useParams();
+  const { openCheckout } = useRazorpay();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [payerName, setPayerName] = useState("");
@@ -25,18 +28,6 @@ export default function SplitPaymentPage() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      if (document.getElementById("razorpay-script")) { resolve(true); return; }
-      const script = document.createElement("script");
-      script.id = "razorpay-script";
-      script.src = "https://checkout.razorpay.com/v1/checkout.js";
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handlePay = async () => {
     if (!payerName.trim()) { toast.error("Enter your name"); return; }
     setPaying(true);
@@ -45,16 +36,13 @@ export default function SplitPaymentPage() {
       const result = res.data;
 
       if (result.payment_gateway === "razorpay" && result.razorpay_order_id) {
-        const loaded = await loadRazorpayScript();
-        if (!loaded) { toast.error("Payment gateway failed to load"); setPaying(false); return; }
-        const options = {
-          key: result.razorpay_key_id,
-          amount: result.amount * 100,
-          currency: "INR",
-          order_id: result.razorpay_order_id,
+        const loaded = await openCheckout({
+          keyId: result.razorpay_key_id,
+          orderId: result.razorpay_order_id,
+          amount: result.amount,
           name: "Horizon Sports",
           description: `Split Payment - ${payerName}`,
-          handler: async (response) => {
+          onSuccess: async (response) => {
             try {
               await splitAPI.verifyPayment(token, {
                 payer_name: payerName,
@@ -69,11 +57,9 @@ export default function SplitPaymentPage() {
             } catch { toast.error("Payment verification failed"); }
             setPaying(false);
           },
-          modal: { ondismiss: () => { toast.info("Payment cancelled"); setPaying(false); } },
-          theme: { color: "#3b82f6" }
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
+          onDismiss: () => { toast.info("Payment cancelled"); setPaying(false); },
+        });
+        if (!loaded) { toast.error("Payment gateway failed to load"); setPaying(false); }
         return;
       }
 
@@ -131,7 +117,7 @@ export default function SplitPaymentPage() {
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm text-muted-foreground"><Clock className="h-3.5 w-3.5" /> Time</span>
-              <span className="text-sm font-bold text-foreground">{booking.start_time} - {booking.end_time}</span>
+              <span className="text-sm font-bold text-foreground">{fmt12h(booking.start_time)} - {fmt12h(booking.end_time)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2 text-sm text-muted-foreground"><Users className="h-3.5 w-3.5" /> Host</span>

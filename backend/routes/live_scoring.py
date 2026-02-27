@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, WebSocket, WebSo
 from typing import Dict, List
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from models import LiveScoreStart, LiveScoreUpdate, LiveScoreEvent, LivePeriodChange
 import uuid
@@ -65,7 +66,7 @@ async def _require_scorer(live_match: dict, user: dict):
 
 async def _broadcast_and_save(live_match_id: str, live_match: dict, msg_type: str, extra: dict = None):
     """Save to DB and broadcast to spectators."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     live_match["updated_at"] = now
     live_match["spectator_count"] = match_manager.get_count(live_match_id)
     await db.live_matches.update_one({"id": live_match_id}, {"$set": live_match})
@@ -144,7 +145,7 @@ async def start_live_scoring(body: LiveScoreStart, user=Depends(get_current_user
         round_label = f"Round {round_num}"
     match_label = f"{round_label} — Match #{match.get('match_number', 1)}"
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     live_match = {
         "id": str(uuid.uuid4()),
         "tournament_id": body.tournament_id,
@@ -246,7 +247,7 @@ async def add_event(live_match_id: str, body: LiveScoreEvent, user=Depends(get_c
         "player_name": body.player_name,
         "minute": body.minute,
         "description": body.description or body.type.replace("_", " ").title(),
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now_ist().isoformat(),
     }
     live_match["events"].append(event)
     await _broadcast_and_save(live_match_id, live_match, "event", {"event": event})
@@ -343,7 +344,7 @@ async def end_live_scoring(live_match_id: str, request: Request, user=Depends(ge
         if match_idx is not None:
             match = matches[match_idx]
             if match["status"] != "completed":
-                now = datetime.now(timezone.utc).isoformat()
+                now = now_ist().isoformat()
                 match["winner"] = winner if winner != "draw" else None
                 match["score_a"] = home_score
                 match["score_b"] = away_score

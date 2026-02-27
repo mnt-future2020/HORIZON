@@ -4,6 +4,7 @@ import math
 from datetime import datetime, timezone
 from database import db
 from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw
+from tz import now_ist
 import s3_service
 import uuid
 import re
@@ -120,7 +121,7 @@ async def admin_approve_user(user_id: str, user=Depends(get_current_user)):
         "id": str(uuid.uuid4()), "user_id": user_id,
         "type": "account_approved", "title": "Account Approved!",
         "message": msg,
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": "User approved"}
 
@@ -151,7 +152,7 @@ async def admin_reject_user(user_id: str, request: Request, user=Depends(get_cur
         "id": str(uuid.uuid4()), "user_id": user_id,
         "type": "account_rejected", "title": "Registration Update",
         "message": notification_msg,
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": "User rejected"}
 
@@ -241,7 +242,7 @@ async def admin_create_venue(request: Request, user=Depends(get_current_user)):
         "total_reviews": 0,
         "total_bookings": 0,
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.venues.insert_one(venue)
     venue.pop("_id", None)
@@ -274,7 +275,7 @@ async def admin_assign_venue_owner(venue_id: str, request: Request, user=Depends
         "id": str(uuid.uuid4()), "user_id": owner_id,
         "type": "venue_assigned", "title": "Venue Assigned!",
         "message": f'The venue "{venue["name"]}" has been assigned to your account. You can now manage it from your dashboard.',
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": f"Venue assigned to {owner.get('name', owner_id)}", "contact_phone": contact_phone}
 
@@ -293,7 +294,7 @@ async def admin_get_settings(user=Depends(get_current_user)):
     if not settings:
         settings = {
             "key": "platform",
-            "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "is_live": False},
+            "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "webhook_secret": "", "is_live": False},
             "booking_commission_pct": 10,
             "coaching_commission_pct": 10,
             "tournament_commission_pct": 10,
@@ -420,7 +421,7 @@ async def admin_toggle_verified(user_id: str, user=Depends(get_current_user)):
         "id": str(uuid.uuid4()), "user_id": user_id,
         "type": "verification_update", "title": f"Account {label.title()}",
         "message": f"Your account has been {label} by Horizon.",
-        "is_read": False, "created_at": datetime.now(timezone.utc).isoformat()
+        "is_read": False, "created_at": now_ist().isoformat()
     })
     return {"message": f"User {label}", "is_verified": new_state}
 

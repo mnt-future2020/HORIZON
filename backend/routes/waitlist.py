@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 import logging
@@ -62,7 +63,7 @@ async def join_waitlist(request_data: dict, user=Depends(get_current_user)):
         "turf_number": turf_number,
         "position": count + 1,
         "status": "waiting",  # waiting, promoted, expired, cancelled
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.waitlist.insert_one(entry)
     entry.pop("_id", None)
@@ -129,7 +130,7 @@ async def promote_next_in_waitlist(venue_id: str, date: str, start_time: str, tu
         {"id": next_entry["id"]},
         {"$set": {
             "status": "promoted",
-            "promoted_at": datetime.now(timezone.utc).isoformat()
+            "promoted_at": now_ist().isoformat()
         }}
     )
 
@@ -149,7 +150,7 @@ async def promote_next_in_waitlist(venue_id: str, date: str, start_time: str, tu
         "start_time": start_time,
         "turf_number": turf_number,
         "is_read": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.notifications.insert_one(notification)
 

@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from database import db
+from tz import now_ist
 
 logger = logging.getLogger("horizon")
 
@@ -49,7 +50,7 @@ async def rank_feed_posts(posts: list, viewer_id: str) -> list:
     # Pre-compute viewer's social graph for affinity
     affinity_cache = await _compute_affinity_map(viewer_id, [p["user_id"] for p in posts])
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     scored = []
 
     for post in posts:
@@ -215,13 +216,13 @@ async def compute_trending_scores(hours: int = 48, limit: int = 20) -> list:
     Compute trending posts using Wilson score + time boost.
     Considers: like ratio, engagement velocity, recency.
     """
-    cutoff = (datetime.now(timezone.utc) - timedelta(hours=hours)).isoformat()
+    cutoff = (now_ist() - timedelta(hours=hours)).isoformat()
     posts = await db.social_posts.find(
         {"created_at": {"$gte": cutoff}, "visibility": "public"},
         {"_id": 0}
     ).to_list(500)
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     scored = []
 
     for post in posts:
@@ -701,7 +702,7 @@ async def recommend_groups(user_id: str, limit: int = 10) -> list:
         # Recent activity
         if g.get("last_message_at"):
             last_msg = datetime.fromisoformat(g["last_message_at"].replace("Z", "+00:00"))
-            hours_since = (datetime.now(timezone.utc) - last_msg).total_seconds() / 3600
+            hours_since = (now_ist() - last_msg).total_seconds() / 3600
             if hours_since < 24:
                 score += 15
             elif hours_since < 168:
@@ -725,7 +726,7 @@ async def compute_engagement_score(user_id: str) -> dict:
     Compute a 0-100 engagement score for a user.
     Factors: posting frequency, interaction rate, streak, response rate, diversity.
     """
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     week_ago = (now - timedelta(days=7)).isoformat()
     month_ago = (now - timedelta(days=30)).isoformat()
 
@@ -840,7 +841,7 @@ async def predict_churn_risk(user_id: str) -> dict:
     Predict churn risk based on declining activity patterns.
     Returns risk level (low/medium/high/critical) and signals.
     """
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     week_ago = (now - timedelta(days=7)).isoformat()
     two_weeks_ago = (now - timedelta(days=14)).isoformat()
     month_ago = (now - timedelta(days=30)).isoformat()

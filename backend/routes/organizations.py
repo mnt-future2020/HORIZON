@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from models import OrganizationCreate
 import uuid
@@ -56,14 +57,14 @@ async def create_organization(input: OrganizationCreate, user=Depends(get_curren
             "user_id": user["id"],
             "name": user.get("name", ""),
             "role": "head_coach",
-            "joined_at": datetime.now(timezone.utc).isoformat()
+            "joined_at": now_ist().isoformat()
         }],
         "players": [],
         "player_count": 0,
         "staff_count": 1,
         "stats": {"total_records": 0, "total_training_sessions": 0, "tournaments_organized": 0},
         "status": "active",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     await db.organizations.insert_one(org)
     org.pop("_id", None)
@@ -146,7 +147,7 @@ async def add_staff(org_id: str, request: Request, user=Depends(get_current_user
         "user_id": staff_user["id"],
         "name": staff_user["name"],
         "role": data.get("role", "assistant"),
-        "joined_at": datetime.now(timezone.utc).isoformat()
+        "joined_at": now_ist().isoformat()
     }
     await db.organizations.update_one(
         {"id": org_id},
@@ -199,7 +200,7 @@ async def enroll_player(org_id: str, request: Request, user=Depends(get_current_
     entry = {
         "user_id": player["id"],
         "name": player["name"],
-        "enrolled_at": datetime.now(timezone.utc).isoformat(),
+        "enrolled_at": now_ist().isoformat(),
         "status": "active"
     }
     await db.organizations.update_one(

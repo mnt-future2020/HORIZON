@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { academyAPI, coachingAPI, organizationAPI, performanceAPI, trainingAPI } from "@/lib/api";
+import { fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -1301,7 +1302,7 @@ export default function CoachDashboard({ defaultView }) {
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} - {s.end_time}</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} - {fmt12h(s.end_time)}</span>
                       <span className="font-bold text-primary">₹{s.price}</span>
                       {s.location && <span className="text-muted-foreground">{s.location}</span>}
                     </div>
@@ -2287,6 +2288,137 @@ export default function CoachDashboard({ defaultView }) {
             </div>
           )}
         </>
+      )}
+
+      {/* ─── Availability View ─── */}
+      {activeView === "availability" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-sm">Weekly Availability</h3>
+              <p className="text-xs text-muted-foreground">Set your available time slots for 1-on-1 coaching</p>
+            </div>
+            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+              onClick={() => { setAvailForm({ day_of_week: "1", start_time: "09:00", end_time: "10:00" }); setAvailOpen(true); }}
+              data-testid="add-availability-btn">
+              <Plus className="h-3.5 w-3.5 mr-1" /> Add Slot
+            </Button>
+          </div>
+
+          {availability.length > 0 ? (
+            <div className="space-y-2">
+              {DAY_LABELS.map((day, dayIdx) => {
+                const daySlots = availability.filter(a => a.day_of_week === dayIdx);
+                if (daySlots.length === 0) return null;
+                return (
+                  <div key={dayIdx} className="glass-card rounded-lg p-3">
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-mono font-bold w-8 text-primary">{day}</span>
+                      <div className="flex flex-wrap gap-2 flex-1">
+                        {daySlots.map(slot => (
+                          <div key={slot.id} className="flex items-center gap-1.5 bg-secondary/50 rounded-full px-3 py-1">
+                            <Clock className="h-3 w-3 text-muted-foreground" />
+                            <span className="text-xs font-bold">{fmt12h(slot.start_time)} - {fmt12h(slot.end_time)}</span>
+                            <button onClick={() => handleRemoveAvailability(slot.id)}
+                              className="ml-1 text-muted-foreground hover:text-destructive">
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+              <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-sm">No availability set. Add your coaching hours.</p>
+            </div>
+          )}
+
+          <Dialog open={availOpen} onOpenChange={setAvailOpen}>
+            <DialogContent className="bg-card border-border max-w-sm">
+              <DialogHeader><DialogTitle className="font-display">Add Availability</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Day</Label>
+                  <Select value={availForm.day_of_week} onValueChange={v => setAvailForm(p => ({ ...p, day_of_week: v }))}>
+                    <SelectTrigger className="mt-1 bg-background border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DAY_LABELS.map((d, i) => <SelectItem key={i} value={String(i)}>{d}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Start Time</Label>
+                    <Input type="time" value={availForm.start_time}
+                      onChange={e => setAvailForm(p => ({ ...p, start_time: e.target.value }))}
+                      className="mt-1 bg-background border-border" />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">End Time</Label>
+                    <Input type="time" value={availForm.end_time}
+                      onChange={e => setAvailForm(p => ({ ...p, end_time: e.target.value }))}
+                      className="mt-1 bg-background border-border" />
+                  </div>
+                </div>
+                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleAddAvailability}>
+                  Add Slot
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+
+      {/* ─── Profile View ─── */}
+      {activeView === "profile" && (
+        <div className="space-y-4 max-w-lg">
+          <div className="glass-card rounded-xl p-5 space-y-4">
+            <h3 className="font-bold text-sm">Coaching Profile</h3>
+            <div>
+              <Label className="text-xs text-muted-foreground">Bio</Label>
+              <textarea value={profileForm.coaching_bio}
+                onChange={e => setProfileForm(p => ({ ...p, coaching_bio: e.target.value }))}
+                rows={3} placeholder="Tell Lobbians about your coaching experience..."
+                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Session Price (₹)</Label>
+                <Input type="number" value={profileForm.session_price}
+                  onChange={e => setProfileForm(p => ({ ...p, session_price: e.target.value }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Duration (min)</Label>
+                <Input type="number" value={profileForm.session_duration_minutes}
+                  onChange={e => setProfileForm(p => ({ ...p, session_duration_minutes: e.target.value }))}
+                  className="mt-1 bg-background border-border" />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">City</Label>
+              <Input value={profileForm.city}
+                onChange={e => setProfileForm(p => ({ ...p, city: e.target.value }))}
+                placeholder="e.g. Bengaluru" className="mt-1 bg-background border-border" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Coaching Venue / Location</Label>
+              <Input value={profileForm.coaching_venue}
+                onChange={e => setProfileForm(p => ({ ...p, coaching_venue: e.target.value }))}
+                placeholder="e.g. Koramangala Indoor Court" className="mt-1 bg-background border-border" />
+            </div>
+            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveProfile}>
+              Save Profile
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* ─── Organization View ─── */}
@@ -4933,7 +5065,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                         <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{s.sport}</Badge>
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {s.start_time} - {s.end_time}
+                        {fmt12h(s.start_time)} - {fmt12h(s.end_time)}
                       </div>
                     </div>
                     <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
@@ -4954,7 +5086,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                         <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{s.sport}</Badge>
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {s.start_time} - {s.end_time}
+                        {fmt12h(s.start_time)} - {fmt12h(s.end_time)}
                         {s.checkin_time && (
                           <span className="ml-2 text-brand-400">
                             Checked in at {new Date(s.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}

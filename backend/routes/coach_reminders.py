@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from typing import Optional
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user, create_razorpay_payment_link
 from whatsapp_service import send_message, build_payment_reminder_message
 import uuid
@@ -26,7 +27,7 @@ async def _do_send_reminder(client: dict, coach_name: str, wa_config: dict, curr
     Upserts a payment_reminders document for this client+month.
     Returns {ok, payment_link_url, wa_result, reminder_id}
     """
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     today_str = now[:10]
     amount = int(client.get("monthly_fee", 0))
     if amount <= 0:
@@ -166,7 +167,7 @@ async def send_payment_reminder(client_id: str, user=Depends(get_current_user)):
     wa = (settings or {}).get("whatsapp", {})
     coach_doc = await db.users.find_one({"id": user["id"]}, {"name": 1})
     coach_name = coach_doc.get("name", "Your Coach") if coach_doc else "Your Coach"
-    current_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    current_month = now_ist().strftime("%Y-%m")
 
     result = await _do_send_reminder(client, coach_name, wa, current_month)
     return result
@@ -216,7 +217,7 @@ async def razorpay_webhook(request: Request):
     if not link_id:
         return {"ok": True}
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     result = await db.payment_reminders.update_one(
         {"razorpay_link_id": link_id},
         {"$set": {"status": "paid", "paid_at": now}},
@@ -234,7 +235,7 @@ async def run_daily_reminders(coach_id: Optional[str] = None) -> int:
     Send WhatsApp + Razorpay payment link.
     Returns count of reminders sent.
     """
-    today = datetime.now(timezone.utc)
+    today = now_ist()
     current_month = today.strftime("%Y-%m")
     today_str = today.strftime("%Y-%m-%d")
     count = 0
@@ -288,7 +289,7 @@ async def run_session_reminders() -> int:
     from whatsapp_service import build_session_reminder_message
     from datetime import timedelta
 
-    tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+    tomorrow = (now_ist() + timedelta(days=1)).strftime("%Y-%m-%d")
     count = 0
 
     async for session in db.coaching_sessions.find(
@@ -355,7 +356,7 @@ async def run_package_expiry_reminders() -> int:
     from whatsapp_service import build_package_expiry_message
     from datetime import timedelta
 
-    today = datetime.now(timezone.utc).date()
+    today = now_ist().date()
     count = 0
 
     async for sub in db.coaching_subscriptions.find({"status": "active"}, {"_id": 0}):
@@ -435,7 +436,7 @@ async def run_no_show_followup() -> int:
     from routes.coach_whatsapp import get_coach_wa_settings, send_wa_with_log
     from whatsapp_service import build_no_show_message
 
-    today_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_str = now_ist().strftime("%Y-%m-%d")
     count = 0
 
     async for session in db.coaching_sessions.find(
@@ -498,7 +499,7 @@ async def run_monthly_progress() -> int:
     from routes.coach_whatsapp import get_coach_wa_settings, send_wa_with_log
     from whatsapp_service import build_monthly_progress_message
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     month_str = now.strftime("%Y-%m")
     month_display = now.strftime("%B %Y")
     count = 0

@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from typing import Optional
 from datetime import datetime, timezone, timedelta
 from database import db
+from tz import now_ist
 from auth import get_current_user
 import uuid
 import io
@@ -29,7 +30,7 @@ async def _get_invoice_number(coach_id: str, prefix: str = "INV") -> str:
         return_document=True,
     )
     seq = result.get("seq", 1) if result else 1
-    year = datetime.now(timezone.utc).year
+    year = now_ist().year
     return f"{prefix}-{year}-{seq:04d}"
 
 
@@ -62,7 +63,7 @@ async def save_gst_settings(request: Request, user=Depends(get_current_user)):
     updates = {k: v for k, v in data.items() if k in allowed}
     if "gst_rate" in updates and updates["gst_rate"] not in (0, 5, 12, 18):
         raise HTTPException(400, "GST rate must be 0, 5, 12, or 18")
-    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    updates["updated_at"] = now_ist().isoformat()
     await db.coach_gst_settings.update_one(
         {"coach_id": user["id"]},
         {"$set": {**updates, "coach_id": user["id"]}},
@@ -106,9 +107,9 @@ async def create_invoice(request: Request, user=Depends(get_current_user)):
     totals = _compute_totals(processed_items, gst_enabled, gst_rate)
 
     invoice_no = await _get_invoice_number(user["id"], prefix)
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
     today = now[:10]
-    default_due = (datetime.now(timezone.utc) + timedelta(days=7)).strftime("%Y-%m-%d")
+    default_due = (now_ist() + timedelta(days=7)).strftime("%Y-%m-%d")
 
     coach_doc = await db.users.find_one({"id": user["id"]}, {"name": 1, "phone": 1, "email": 1})
 
@@ -190,7 +191,7 @@ async def update_invoice(invoice_id: str, request: Request, user=Depends(get_cur
     allowed = ["status", "notes", "due_date", "payment_mode", "date"]
     updates = {k: v for k, v in data.items() if k in allowed}
     if updates:
-        updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+        updates["updated_at"] = now_ist().isoformat()
         await db.coach_invoices.update_one({"id": invoice_id}, {"$set": updates})
     return await db.coach_invoices.find_one({"id": invoice_id}, {"_id": 0})
 
@@ -213,7 +214,7 @@ async def mark_invoice_paid(invoice_id: str, user=Depends(get_current_user)):
         raise HTTPException(403, "Coaches only")
     result = await db.coach_invoices.update_one(
         {"id": invoice_id, "coach_id": user["id"]},
-        {"$set": {"status": "paid", "updated_at": datetime.now(timezone.utc).isoformat()}},
+        {"$set": {"status": "paid", "updated_at": now_ist().isoformat()}},
     )
     if result.modified_count == 0:
         raise HTTPException(404, "Invoice not found")

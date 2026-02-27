@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 from database import db
 from auth import hash_pw, verify_pw, create_token, create_refresh_token, verify_refresh_token, validate_password_strength, get_current_user, invalidate_user_tokens
+from tz import now_ist
 from models import RegisterInput, LoginInput
 from collections import defaultdict
 import uuid
@@ -66,7 +67,7 @@ async def register(input: RegisterInput, request: Request):
         "business_name": input.business_name or "",
         "gst_number": input.gst_number or "",
         "is_verified": False,
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     }
     # Venue owner: add document verification fields
     if input.role == "venue_owner":
@@ -269,7 +270,7 @@ async def dev_login(request: Request):
         }
         if email in dev_accounts:
             acct = dev_accounts[email]
-            now = datetime.now(timezone.utc).isoformat()
+            now = now_ist().isoformat()
             user = {
                 "id": str(uuid.uuid4()), "name": acct["name"], "email": email,
                 "password_hash": hash_pw("Dev12345"), "role": acct["role"],

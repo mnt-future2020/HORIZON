@@ -35,6 +35,8 @@ class VenueCreate(BaseModel):
     opening_hour: int = 6
     closing_hour: int = 23
     turfs: int = 1
+    turf_config: Optional[List[dict]] = None
+    # e.g. [{"sport": "football", "turfs": [{"name": "Main Ground"}, {"name": "Mini Pitch"}]}]
 
 
 class BookingCreate(BaseModel):
@@ -46,6 +48,10 @@ class BookingCreate(BaseModel):
     sport: str = "football"
     payment_mode: str = "full"
     split_count: Optional[int] = None
+    num_players: Optional[int] = None
+    razorpay_payment_id: Optional[str] = None
+    razorpay_order_id: Optional[str] = None
+    razorpay_signature: Optional[str] = None
 
 
 class PricingRuleCreate(BaseModel):

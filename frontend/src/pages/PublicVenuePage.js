@@ -11,7 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   MapPin, Star, Clock, Users, Zap, Share2, QrCode,
-  ChevronLeft, ExternalLink, Phone, CheckCircle2,
+  ChevronLeft, ChevronRight, ExternalLink, Phone, CheckCircle2,
   Calendar, Tag, ShieldCheck, Trophy, Wifi, Coffee,
   Car, Droplets, Wind, Video, ShoppingBag, AlertCircle,
   Copy, Check, Radio
@@ -142,6 +142,8 @@ export default function PublicVenuePage() {
     fetchVenueData(true);
   }, [fetchVenueData]);
 
+
+
   // Start WS once venueId is known
   useEffect(() => {
     if (!venue?.id) return;
@@ -243,7 +245,7 @@ export default function PublicVenuePage() {
             </Button>
             <Button size="sm" onClick={handleBookNow} className="gap-2">
               <Calendar className="w-4 h-4" />
-              Book Now
+              {user ? "Book Now" : "Login to Book"}
             </Button>
           </div>
         </div>
@@ -259,11 +261,29 @@ export default function PublicVenuePage() {
             e.target.src = "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=1200&q=80";
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent pointer-events-none" />
+
+        {/* Left/Right Arrows */}
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={() => setCurrentImageIndex(i => (i - 1 + images.length) % images.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+            <button
+              onClick={() => setCurrentImageIndex(i => (i + 1) % images.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </>
+        )}
 
         {/* Image thumbnails */}
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
             {images.map((_, i) => (
               <button
                 key={i}
@@ -275,8 +295,8 @@ export default function PublicVenuePage() {
         )}
 
         {/* Venue Name overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-6">
-          <div className="max-w-6xl mx-auto">
+        <div className="absolute bottom-0 left-0 right-0 p-6 pointer-events-none">
+          <div className="max-w-6xl mx-auto pointer-events-auto">
             <div className="flex flex-wrap gap-2 mb-2">
               {venue.sports?.map((s) => (
                 <Badge key={s} className={`text-xs ${SPORT_COLORS[s] || "bg-gray-100 text-gray-700"}`}>
@@ -309,7 +329,7 @@ export default function PublicVenuePage() {
               <Card className={justUpdated ? "ring-2 ring-primary ring-offset-2 transition-all duration-500" : ""}>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-3">About This Venue</h2>
-                  <p className="text-muted-foreground leading-relaxed">{venue.description}</p>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-line text-justify">{venue.description}</p>
                 </CardContent>
               </Card>
             </motion.div>

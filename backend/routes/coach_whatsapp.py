@@ -8,6 +8,7 @@ Coach WhatsApp Automation Settings
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
 from database import db
+from tz import now_ist
 from auth import get_current_user
 from whatsapp_service import send_message
 import uuid
@@ -60,7 +61,7 @@ async def send_wa_with_log(
         "reference_id": reference_id,
         "status": "sent" if result.get("ok") else "failed",
         "error": result.get("detail", "") if not result.get("ok") else "",
-        "sent_at": datetime.now(timezone.utc).isoformat(),
+        "sent_at": now_ist().isoformat(),
     }
     await db.whatsapp_logs.insert_one(log)
     return result
@@ -84,7 +85,7 @@ async def update_wa_settings(request: Request, user=Depends(get_current_user)):
     data = await request.json()
     allowed = set(DEFAULT_SETTINGS.keys())
     updates = {k: v for k, v in data.items() if k in allowed}
-    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    updates["updated_at"] = now_ist().isoformat()
     await db.coach_wa_settings.update_one(
         {"coach_id": user["id"]},
         {"$set": {**updates, "coach_id": user["id"]}},

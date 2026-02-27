@@ -9,6 +9,7 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Callable, Optional
+from tz import now_ist
 from gmqtt import Client as MQTTClient
 from gmqtt.mqtt.constants import MQTTv311
 
@@ -122,7 +123,7 @@ async def send_device_command(device: dict, action: str, brightness: int = 100) 
         "action": action,
         "brightness": brightness,
         "device_id": device["id"],
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now_ist().isoformat(),
         "source": "horizon-server",
     }
 

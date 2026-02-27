@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from database import db
 from auth import hash_pw
+from tz import now_ist
 import uuid
 import random
 import logging
@@ -25,7 +26,7 @@ async def seed_demo_data():
         "skill_rating": 0, "skill_deviation": 0, "reliability_score": 100,
         "total_games": 0, "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
         "business_name": "", "gst_number": "",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     })
 
     # --- Platform Settings ---
@@ -53,7 +54,7 @@ async def seed_demo_data():
         ]
     })
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
 
     # ─── Demo Coach ───
     coach_id = str(uuid.uuid4())
@@ -82,7 +83,7 @@ async def seed_demo_data():
         "awards": ["Best Coach Award - Chennai District 2023"],
         "certifications_list": ["NIS Diploma in Badminton", "BAI Level 2 Coach"],
         "playing_history": "Played for Tamil Nadu state team 2012-2016. District champion 3 consecutive years.",
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     })
 
     # ─── Demo Players ───
@@ -100,7 +101,7 @@ async def seed_demo_data():
             "reliability_score": random.randint(70, 100),
             "total_games": random.randint(5, 50), "wins": 0, "losses": 0, "draws": 0, "no_shows": 0,
             "business_name": "", "gst_number": "",
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         })
 
     # ─── Demo Academies ───
@@ -281,7 +282,7 @@ async def seed_demo_data():
             "first_package_created": True,
             "documents_uploaded": True,
         },
-        "created_at": datetime.now(timezone.utc).isoformat()
+        "created_at": now_ist().isoformat()
     })
 
     # ─── Offline Clients for Coach Priya ───

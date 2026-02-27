@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Power, Users, CreditCard, X, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Rocket, Brain, Zap, Camera, ScanLine, ShieldCheck, UserCheck, UserX, ClipboardList, Loader2, XCircle } from "lucide-react";
+import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // Professional / venue owner imagery
@@ -150,15 +150,86 @@ function VenueOwnerDashboardContent() {
   const [editVenueOpen, setEditVenueOpen] = useState(false);
   const [editVenueForm, setEditVenueForm] = useState({});
   const [savingVenue, setSavingVenue] = useState(false);
-  const SPORTS_OPTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis"];
-  const AMENITIES_OPTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
+  const SPORT_SUGGESTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis", "Hockey", "Pickleball", "Swimming"];
+  const AMENITY_SUGGESTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
+  const [sportInput, setSportInput] = useState("");
+  const [amenityInput, setAmenityInput] = useState("");
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: [], address: "", area: "", city: "Bengaluru",
-    base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23, turfs: 1,
-    amenities: [], images: [],
+    base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23,
+    amenities: [], images: [], turf_config: [],
   });
-  const toggleVenueFormArray = (field, val) => setVenueForm(p => ({ ...p, [field]: p[field].includes(val) ? p[field].filter(v => v !== val) : [...p[field], val] }));
-  const toggleEditFormArray = (field, val) => setEditVenueForm(p => ({ ...p, [field]: (p[field] || []).includes(val) ? (p[field] || []).filter(v => v !== val) : [...(p[field] || []), val] }));
+
+  // Helper: add sport + auto-create turf_config entry
+  const addSport = (sport) => {
+    const s = sport.trim().toLowerCase();
+    if (!s || venueForm.sports.includes(s)) return;
+    setVenueForm(p => ({
+      ...p,
+      sports: [...p.sports, s],
+      turf_config: [...p.turf_config, { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: p.base_price }] }],
+    }));
+    setSportInput("");
+  };
+  const removeSport = (sport) => {
+    setVenueForm(p => ({
+      ...p,
+      sports: p.sports.filter(s => s !== sport),
+      turf_config: p.turf_config.filter(tc => tc.sport !== sport),
+    }));
+  };
+  const addAmenity = (amenity) => {
+    const a = amenity.trim();
+    if (!a || venueForm.amenities.includes(a)) return;
+    setVenueForm(p => ({ ...p, amenities: [...p.amenities, a] }));
+    setAmenityInput("");
+  };
+  const removeAmenity = (amenity) => {
+    setVenueForm(p => ({ ...p, amenities: p.amenities.filter(a => a !== amenity) }));
+  };
+  // Turf config helpers
+  const addTurfToSport = (sport) => {
+    setVenueForm(p => ({
+      ...p,
+      turf_config: p.turf_config.map(tc =>
+        tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: p.base_price }] } : tc
+      ),
+    }));
+  };
+  const removeTurfFromSport = (sport, idx) => {
+    setVenueForm(p => ({
+      ...p,
+      turf_config: p.turf_config.map(tc =>
+        tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc
+      ),
+    }));
+  };
+  const renameTurf = (sport, idx, name) => {
+    setVenueForm(p => ({
+      ...p,
+      turf_config: p.turf_config.map(tc =>
+        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc
+      ),
+    }));
+  };
+  const updateTurfPrice = (sport, idx, price) => {
+    setVenueForm(p => ({
+      ...p,
+      turf_config: p.turf_config.map(tc =>
+        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc
+      ),
+    }));
+  };
+  // AM/PM helpers
+  const to12h = (h24) => {
+    const ampm = h24 >= 12 ? "PM" : "AM";
+    const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
+    return { hour: h12, ampm };
+  };
+  const to24h = (h12, ampm) => {
+    if (ampm === "AM") return h12 === 12 ? 0 : h12;
+    return h12 === 12 ? 12 : h12 + 12;
+  };
   const emptyRule = {
     name: "", priority: 10,
     conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
@@ -223,7 +294,14 @@ function VenueOwnerDashboardContent() {
 
   const handleCreateVenue = async () => {
     try {
-      await venueAPI.create(venueForm);
+      const payload = { ...venueForm };
+      // Compute total turfs from turf_config
+      if (payload.turf_config?.length) {
+        payload.turfs = payload.turf_config.reduce((sum, tc) => sum + tc.turfs.length, 0);
+      } else {
+        payload.turfs = 1;
+      }
+      await venueAPI.create(payload);
       toast.success("Venue created!");
       setCreateVenueOpen(false);
       loadData();
@@ -232,20 +310,88 @@ function VenueOwnerDashboardContent() {
     }
   };
 
+  const [editSportInput, setEditSportInput] = useState("");
+  const [editAmenityInput, setEditAmenityInput] = useState("");
+
+  // Edit form helpers for sports/amenities/turfs
+  const addEditSport = (sport) => {
+    const s = sport.trim().toLowerCase();
+    if (!s || (editVenueForm.sports || []).includes(s)) return;
+    setEditVenueForm(p => ({
+      ...p,
+      sports: [...(p.sports || []), s],
+      turf_config: [...(p.turf_config || []), { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: p.base_price || 2000 }] }],
+    }));
+    setEditSportInput("");
+  };
+  const removeEditSport = (sport) => {
+    setEditVenueForm(p => ({
+      ...p,
+      sports: (p.sports || []).filter(s => s !== sport),
+      turf_config: (p.turf_config || []).filter(tc => tc.sport !== sport),
+    }));
+  };
+  const addEditAmenity = (amenity) => {
+    const a = amenity.trim();
+    if (!a || (editVenueForm.amenities || []).includes(a)) return;
+    setEditVenueForm(p => ({ ...p, amenities: [...(p.amenities || []), a] }));
+    setEditAmenityInput("");
+  };
+  const removeEditAmenity = (amenity) => {
+    setEditVenueForm(p => ({ ...p, amenities: (p.amenities || []).filter(a => a !== amenity) }));
+  };
+  const addEditTurf = (sport) => {
+    setEditVenueForm(p => ({
+      ...p,
+      turf_config: (p.turf_config || []).map(tc =>
+        tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: p.base_price || 2000 }] } : tc
+      ),
+    }));
+  };
+  const removeEditTurf = (sport, idx) => {
+    setEditVenueForm(p => ({
+      ...p,
+      turf_config: (p.turf_config || []).map(tc =>
+        tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc
+      ),
+    }));
+  };
+  const renameEditTurf = (sport, idx, name) => {
+    setEditVenueForm(p => ({
+      ...p,
+      turf_config: (p.turf_config || []).map(tc =>
+        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc
+      ),
+    }));
+  };
+  const updateEditTurfPrice = (sport, idx, price) => {
+    setEditVenueForm(p => ({
+      ...p,
+      turf_config: (p.turf_config || []).map(tc =>
+        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc
+      ),
+    }));
+  };
+
   const openEditVenue = () => {
     if (!selectedVenue) return;
     setEditVenueForm({
       name: selectedVenue.name || "",
       description: selectedVenue.description || "",
       address: selectedVenue.address || "",
+      area: selectedVenue.area || "",
       city: selectedVenue.city || "",
+      sports: selectedVenue.sports || [],
+      amenities: selectedVenue.amenities || [],
       base_price: selectedVenue.base_price || 2000,
       opening_hour: selectedVenue.opening_hour || 6,
       closing_hour: selectedVenue.closing_hour || 23,
-      turfs: selectedVenue.turfs || 1,
+      turf_config: selectedVenue.turf_config || [],
       slot_duration_minutes: selectedVenue.slot_duration_minutes || 60,
       images: selectedVenue.images || [],
     });
+    setEditSportInput("");
+    setEditAmenityInput("");
     setEditVenueOpen(true);
   };
 
@@ -253,7 +399,11 @@ function VenueOwnerDashboardContent() {
     if (!selectedVenue) return;
     setSavingVenue(true);
     try {
-      const res = await venueAPI.update(selectedVenue.id, editVenueForm);
+      const payload = { ...editVenueForm };
+      if (payload.turf_config?.length) {
+        payload.turfs = payload.turf_config.reduce((sum, tc) => sum + tc.turfs.length, 0);
+      }
+      const res = await venueAPI.update(selectedVenue.id, payload);
       setSelectedVenue(res.data);
       setVenues(prev => prev.map(v => v.id === res.data.id ? res.data : v));
       toast.success("Venue updated! Changes are live on the public page.");
@@ -458,13 +608,14 @@ function VenueOwnerDashboardContent() {
       <Dialog open={createVenueOpen} onOpenChange={setCreateVenueOpen}>
           <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div><Label className="text-xs text-muted-foreground">Name *</Label>
                 <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))}
                   className="mt-1 bg-background border-border" data-testid="venue-name-input" /></div>
               <div><Label className="text-xs text-muted-foreground">Description</Label>
-                <Input value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))}
-                  className="mt-1 bg-background border-border" data-testid="venue-desc-input" /></div>
+                <textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))}
+                  rows={6} placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
+                  className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50" data-testid="venue-desc-input" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-xs text-muted-foreground">Address</Label>
                   <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))}
@@ -476,49 +627,144 @@ function VenueOwnerDashboardContent() {
               <div><Label className="text-xs text-muted-foreground">City *</Label>
                 <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))}
                   className="mt-1 bg-background border-border" data-testid="venue-city-input" /></div>
-              {/* Sports */}
+
+              {/* Sports — dynamic input */}
               <div>
                 <Label className="text-xs text-muted-foreground">Sports *</Label>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {SPORTS_OPTIONS.map(s => (
-                    <button key={s} type="button" onClick={() => toggleVenueFormArray("sports", s.toLowerCase())}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                <div className="flex gap-2 mt-1">
+                  <Input value={sportInput} onChange={e => setSportInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addSport(sportInput))}
+                    placeholder="Type a sport and press Enter" className="bg-background border-border flex-1" />
+                  <Button type="button" size="sm" variant="outline" onClick={() => addSport(sportInput)} disabled={!sportInput.trim()}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {/* Added sports chips + remaining suggestions */}
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {venueForm.sports.map(s => (
+                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
                       {s}
+                      <button type="button" onClick={() => removeSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
+                    </span>
+                  ))}
+                  {SPORT_SUGGESTIONS.filter(s => !venueForm.sports.includes(s.toLowerCase())).map(s => (
+                    <button key={s} type="button" onClick={() => addSport(s)}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                      + {s}
                     </button>
                   ))}
                 </div>
               </div>
-              {/* Amenities */}
+
+              {/* Amenities — dynamic input */}
               <div>
                 <Label className="text-xs text-muted-foreground">Amenities</Label>
-                <div className="flex flex-wrap gap-1.5 mt-1">
-                  {AMENITIES_OPTIONS.map(a => (
-                    <button key={a} type="button" onClick={() => toggleVenueFormArray("amenities", a)}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+                <div className="flex gap-2 mt-1">
+                  <Input value={amenityInput} onChange={e => setAmenityInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addAmenity(amenityInput))}
+                    placeholder="Type an amenity and press Enter" className="bg-background border-border flex-1" />
+                  <Button type="button" size="sm" variant="outline" onClick={() => addAmenity(amenityInput)} disabled={!amenityInput.trim()}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {/* Added amenities chips + remaining suggestions */}
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {venueForm.amenities.map(a => (
+                    <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
                       {a}
+                      <button type="button" onClick={() => removeAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
+                    </span>
+                  ))}
+                  {AMENITY_SUGGESTIONS.filter(a => !venueForm.amenities.includes(a)).map(a => (
+                    <button key={a} type="button" onClick={() => addAmenity(a)}
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                      + {a}
                     </button>
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Base Price (₹/hr)</Label>
-                  <Input type="number" value={venueForm.base_price} onChange={e => setVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" data-testid="venue-price-input" /></div>
-                <div><Label className="text-xs text-muted-foreground">Turfs</Label>
-                  <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" data-testid="venue-turfs-input" /></div>
-                <div><Label className="text-xs text-muted-foreground">Slot (min)</Label>
-                  <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" data-testid="venue-slot-input" /></div>
-              </div>
+
+              {/* Per-sport Turf Configuration */}
+              {venueForm.turf_config.length > 0 && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Turf Configuration</Label>
+                  <div className="space-y-3 mt-1.5">
+                    {venueForm.turf_config.map(tc => (
+                      <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold uppercase tracking-wider text-primary">{tc.sport}</span>
+                          <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addTurfToSport(tc.sport)}>
+                            <Plus className="h-3 w-3 mr-1" /> Add Turf
+                          </Button>
+                        </div>
+                        <div className="space-y-1.5">
+                          {tc.turfs.map((t, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <Input value={t.name} onChange={e => renameTurf(tc.sport, idx, e.target.value)}
+                                placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-muted-foreground">₹</span>
+                                <Input type="number" value={t.price ?? venueForm.base_price} onChange={e => updateTurfPrice(tc.sport, idx, e.target.value)}
+                                  placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                              </div>
+                              {tc.turfs.length > 1 && (
+                                <button type="button" onClick={() => removeTurfFromSport(tc.sport, idx)}
+                                  className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Opening / Closing Hours — AM/PM */}
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Opening Hour</Label>
-                  <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" /></div>
-                <div><Label className="text-xs text-muted-foreground">Closing Hour</Label>
-                  <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" /></div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Opening Hour</Label>
+                  <div className="flex gap-1.5 mt-1">
+                    <select value={to12h(venueForm.opening_hour).hour}
+                      onChange={e => setVenueForm(p => ({ ...p, opening_hour: to24h(Number(e.target.value), to12h(p.opening_hour).ampm) }))}
+                      className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                      {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                    <select value={to12h(venueForm.opening_hour).ampm}
+                      onChange={e => setVenueForm(p => ({ ...p, opening_hour: to24h(to12h(p.opening_hour).hour, e.target.value) }))}
+                      className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Closing Hour</Label>
+                  <div className="flex gap-1.5 mt-1">
+                    <select value={to12h(venueForm.closing_hour).hour}
+                      onChange={e => setVenueForm(p => ({ ...p, closing_hour: to24h(Number(e.target.value), to12h(p.closing_hour).ampm) }))}
+                      className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                      {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
+                    </select>
+                    <select value={to12h(venueForm.closing_hour).ampm}
+                      onChange={e => setVenueForm(p => ({ ...p, closing_hour: to24h(to12h(p.closing_hour).hour, e.target.value) }))}
+                      className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                      <option value="AM">AM</option>
+                      <option value="PM">PM</option>
+                    </select>
+                  </div>
+                </div>
               </div>
+
+              {/* 30-minute booking checkbox */}
+              <div className="flex items-center gap-3 py-1">
+                <input type="checkbox" id="allow30min"
+                  checked={venueForm.slot_duration_minutes === 30}
+                  onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: e.target.checked ? 30 : 60 }))}
+                  className="h-4 w-4 rounded border-border accent-primary" />
+                <Label htmlFor="allow30min" className="text-xs text-muted-foreground cursor-pointer">Allow 30-minute bookings (default: 1 hour)</Label>
+              </div>
+
               <VenueImageUpload
                 images={venueForm.images}
                 onChange={imgs => setVenueForm(p => ({ ...p, images: imgs }))}
@@ -644,6 +890,9 @@ function VenueOwnerDashboardContent() {
       <Tabs defaultValue="bookings" data-testid="owner-tabs">
         <TabsList className="bg-secondary/50 mb-6 flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="bookings" className="font-bold text-xs" data-testid="tab-bookings">Bookings</TabsTrigger>
+          <TabsTrigger value="slots" className="font-bold text-xs" data-testid="tab-slots">
+            <CalendarDays className="h-3 w-3 mr-1" />Slots
+          </TabsTrigger>
           <TabsTrigger value="history" className="font-bold text-xs" data-testid="tab-history">
             <History className="h-3 w-3 mr-1" />History
           </TabsTrigger>
@@ -810,12 +1059,18 @@ function VenueOwnerDashboardContent() {
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Turf</span>
-                      <p className="text-sm font-bold mt-0.5">#{selectedBooking.turf_number}</p>
+                      <p className="text-sm font-bold mt-0.5">{selectedBooking.turf_name || `#${selectedBooking.turf_number}`}</p>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Sport</span>
                       <p className="text-sm font-bold mt-0.5 capitalize">{selectedBooking.sport}</p>
                     </div>
+                    {selectedBooking.num_players && (
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Lobbians</span>
+                        <p className="text-sm font-bold mt-0.5">{selectedBooking.num_players}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -916,12 +1171,6 @@ function VenueOwnerDashboardContent() {
                       </span>
                     </div>
                   )}
-                  {selectedBooking.players?.length > 0 && (
-                    <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Lobbians</span>
-                      <span className="text-foreground">{selectedBooking.players.length} Lobbian{selectedBooking.players.length > 1 ? "s" : ""}</span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Actions */}
@@ -936,6 +1185,11 @@ function VenueOwnerDashboardContent() {
           </DialogContent>
         </Dialog>
 
+
+        {/* Slots Tab - Visual slot availability grid */}
+        <TabsContent value="slots">
+          {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} />}
+        </TabsContent>
 
         {/* History Tab - Comprehensive booking timeline */}
         <TabsContent value="history">
@@ -1366,6 +1620,7 @@ function VenueOwnerDashboardContent() {
           <VenueCheckinPanel
             bookings={bookings.filter(b => b.venue_id === selectedVenue?.id)}
             venueName={selectedVenue?.name}
+            onCheckinSuccess={loadData}
           />
         </TabsContent>
       </Tabs>
@@ -1390,8 +1645,9 @@ function VenueOwnerDashboardContent() {
               <textarea
                 value={editVenueForm.description || ""}
                 onChange={e => setEditVenueForm(p => ({ ...p, description: e.target.value }))}
-                rows={3}
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50"
+                rows={6}
+                placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
+                className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -1411,64 +1667,142 @@ function VenueOwnerDashboardContent() {
               <Input value={editVenueForm.city || ""} onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
                 className="mt-1 bg-background border-border" />
             </div>
-            {/* Sports */}
+
+            {/* Sports — dynamic input */}
             <div>
               <Label className="text-xs text-muted-foreground">Sports</Label>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {SPORTS_OPTIONS.map(s => (
-                  <button key={s} type="button" onClick={() => toggleEditFormArray("sports", s.toLowerCase())}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${(editVenueForm.sports || []).includes(s.toLowerCase()) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+              <div className="flex gap-2 mt-1">
+                <Input value={editSportInput} onChange={e => setEditSportInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addEditSport(editSportInput))}
+                  placeholder="Type a sport and press Enter" className="bg-background border-border flex-1" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addEditSport(editSportInput)} disabled={!editSportInput.trim()}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {(editVenueForm.sports || []).map(s => (
+                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
                     {s}
+                    <button type="button" onClick={() => removeEditSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
+                {SPORT_SUGGESTIONS.filter(s => !(editVenueForm.sports || []).includes(s.toLowerCase())).map(s => (
+                  <button key={s} type="button" onClick={() => addEditSport(s)}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                    + {s}
                   </button>
                 ))}
               </div>
             </div>
-            {/* Amenities */}
+
+            {/* Amenities — dynamic input */}
             <div>
               <Label className="text-xs text-muted-foreground">Amenities</Label>
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {AMENITIES_OPTIONS.map(a => (
-                  <button key={a} type="button" onClick={() => toggleEditFormArray("amenities", a)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${(editVenueForm.amenities || []).includes(a) ? "bg-primary text-primary-foreground border-primary" : "bg-secondary/50 text-muted-foreground border-border hover:border-primary/50"}`}>
+              <div className="flex gap-2 mt-1">
+                <Input value={editAmenityInput} onChange={e => setEditAmenityInput(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addEditAmenity(editAmenityInput))}
+                  placeholder="Type an amenity and press Enter" className="bg-background border-border flex-1" />
+                <Button type="button" size="sm" variant="outline" onClick={() => addEditAmenity(editAmenityInput)} disabled={!editAmenityInput.trim()}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {(editVenueForm.amenities || []).map(a => (
+                  <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
                     {a}
+                    <button type="button" onClick={() => removeEditAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
+                  </span>
+                ))}
+                {AMENITY_SUGGESTIONS.filter(a => !(editVenueForm.amenities || []).includes(a)).map(a => (
+                  <button key={a} type="button" onClick={() => addEditAmenity(a)}
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                    + {a}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+
+            {/* Per-sport Turf Configuration */}
+            {(editVenueForm.turf_config || []).length > 0 && (
               <div>
-                <Label className="text-xs text-muted-foreground">Base Price (₹)</Label>
-                <Input type="number" value={editVenueForm.base_price || 0}
-                  onChange={e => setEditVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))}
-                  className="mt-1 bg-background border-border" />
+                <Label className="text-xs text-muted-foreground">Turf Configuration</Label>
+                <div className="space-y-3 mt-1.5">
+                  {(editVenueForm.turf_config || []).map(tc => (
+                    <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-primary">{tc.sport}</span>
+                        <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addEditTurf(tc.sport)}>
+                          <Plus className="h-3 w-3 mr-1" /> Add Turf
+                        </Button>
+                      </div>
+                      <div className="space-y-1.5">
+                        {tc.turfs.map((t, idx) => (
+                          <div key={idx} className="flex items-center gap-2">
+                            <Input value={t.name} onChange={e => renameEditTurf(tc.sport, idx, e.target.value)}
+                              placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-muted-foreground">₹</span>
+                              <Input type="number" value={t.price ?? editVenueForm.base_price ?? 2000} onChange={e => updateEditTurfPrice(tc.sport, idx, e.target.value)}
+                                placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                            </div>
+                            {tc.turfs.length > 1 && (
+                              <button type="button" onClick={() => removeEditTurf(tc.sport, idx)}
+                                className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Turfs</Label>
-                <Input type="number" value={editVenueForm.turfs || 1}
-                  onChange={e => setEditVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))}
-                  className="mt-1 bg-background border-border" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Slot (min)</Label>
-                <Input type="number" value={editVenueForm.slot_duration_minutes || 60}
-                  onChange={e => setEditVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))}
-                  className="mt-1 bg-background border-border" />
-              </div>
-            </div>
+            )}
+
+            {/* Opening / Closing Hours — AM/PM */}
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs text-muted-foreground">Opening Hour</Label>
-                <Input type="number" min={0} max={23} value={editVenueForm.opening_hour ?? 6}
-                  onChange={e => setEditVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))}
-                  className="mt-1 bg-background border-border" />
+                <div className="flex gap-1.5 mt-1">
+                  <select value={to12h(editVenueForm.opening_hour ?? 6).hour}
+                    onChange={e => setEditVenueForm(p => ({ ...p, opening_hour: to24h(Number(e.target.value), to12h(p.opening_hour ?? 6).ampm) }))}
+                    className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                    {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                  <select value={to12h(editVenueForm.opening_hour ?? 6).ampm}
+                    onChange={e => setEditVenueForm(p => ({ ...p, opening_hour: to24h(to12h(p.opening_hour ?? 6).hour, e.target.value) }))}
+                    className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Closing Hour</Label>
-                <Input type="number" min={0} max={23} value={editVenueForm.closing_hour ?? 23}
-                  onChange={e => setEditVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))}
-                  className="mt-1 bg-background border-border" />
+                <div className="flex gap-1.5 mt-1">
+                  <select value={to12h(editVenueForm.closing_hour ?? 23).hour}
+                    onChange={e => setEditVenueForm(p => ({ ...p, closing_hour: to24h(Number(e.target.value), to12h(p.closing_hour ?? 23).ampm) }))}
+                    className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                    {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
+                  </select>
+                  <select value={to12h(editVenueForm.closing_hour ?? 23).ampm}
+                    onChange={e => setEditVenueForm(p => ({ ...p, closing_hour: to24h(to12h(p.closing_hour ?? 23).hour, e.target.value) }))}
+                    className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
               </div>
             </div>
+
+            {/* 30-minute booking checkbox */}
+            <div className="flex items-center gap-3 py-1">
+              <input type="checkbox" id="edit-allow30min"
+                checked={(editVenueForm.slot_duration_minutes || 60) === 30}
+                onChange={e => setEditVenueForm(p => ({ ...p, slot_duration_minutes: e.target.checked ? 30 : 60 }))}
+                className="h-4 w-4 rounded border-border accent-primary" />
+              <Label htmlFor="edit-allow30min" className="text-xs text-muted-foreground cursor-pointer">Allow 30-minute bookings (default: 1 hour)</Label>
+            </div>
+
             <VenueImageUpload
               images={editVenueForm.images || []}
               onChange={imgs => setEditVenueForm(p => ({ ...p, images: imgs }))}
@@ -1476,7 +1810,7 @@ function VenueOwnerDashboardContent() {
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditVenueOpen(false)}>Cancel</Button>
               <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleSaveVenue} disabled={savingVenue}>
-                {savingVenue ? "Saving..." : "Save & Go Live ✨"}
+                {savingVenue ? "Saving..." : "Save & Go Live"}
               </Button>
             </div>
           </div>
@@ -1698,10 +2032,181 @@ function MLPricingPanel({ venueId, venueName }) {
 }
 
 
+// ─── Slot Availability Panel ────────────────────────────────────────────────
+function SlotAvailabilityPanel({ venueId }) {
+  const [slotDate, setSlotDate] = useState(new Date().toISOString().split("T")[0]);
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+
+  const loadSlots = useCallback(async () => {
+    if (!venueId) return;
+    setLoadingSlots(true);
+    try {
+      const res = await venueAPI.getSlots(venueId, slotDate);
+      setSlots(res.data?.slots || []);
+    } catch {
+      setSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [venueId, slotDate]);
+
+  useEffect(() => { loadSlots(); }, [loadSlots]);
+
+  const turfs = useMemo(() => {
+    const map = new Map();
+    slots.forEach(s => {
+      if (!map.has(s.turf_number)) {
+        map.set(s.turf_number, { turf_number: s.turf_number, turf_name: s.turf_name || `Turf #${s.turf_number}`, sport: s.sport });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => a.turf_number - b.turf_number);
+  }, [slots]);
+
+  const timeSlots = useMemo(() => {
+    const seen = new Set();
+    return slots
+      .filter(s => { if (seen.has(s.start_time)) return false; seen.add(s.start_time); return true; })
+      .sort((a, b) => a.start_time.localeCompare(b.start_time))
+      .map(s => ({ start_time: s.start_time, end_time: s.end_time }));
+  }, [slots]);
+
+  const slotMap = useMemo(() => {
+    const map = {};
+    slots.forEach(s => { map[`${s.start_time}-${s.turf_number}`] = s; });
+    return map;
+  }, [slots]);
+
+  const stats = useMemo(() => {
+    const total = slots.length;
+    const available = slots.filter(s => s.status === "available").length;
+    const booked = slots.filter(s => s.status === "booked").length;
+    const held = slots.filter(s => s.status === "on_hold" || s.status === "locked_by_you").length;
+    return { total, available, booked, held };
+  }, [slots]);
+
+  const shiftDate = (days) => {
+    const d = new Date(slotDate);
+    d.setDate(d.getDate() + days);
+    setSlotDate(d.toISOString().split("T")[0]);
+  };
+
+  const fmt12h = (t) => {
+    const [h, m] = t.split(":").map(Number);
+    const suffix = h >= 12 ? "PM" : "AM";
+    return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${suffix}`;
+  };
+
+  const statusStyles = {
+    available: "bg-emerald-500/15 text-emerald-500",
+    booked: "bg-red-500/15 text-red-500",
+    on_hold: "bg-amber-500/15 text-amber-500",
+    locked_by_you: "bg-amber-500/15 text-amber-500",
+  };
+  const statusLabels = { available: "Open", booked: "Booked", on_hold: "Held", locked_by_you: "Held" };
+
+  return (
+    <div className="space-y-5">
+      {/* Header + Date Nav */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h3 className="font-display font-bold text-base sm:text-lg">Slot Availability</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">View turf availability for any date</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={() => shiftDate(-1)}
+            className="h-9 w-9 flex items-center justify-center rounded-lg border border-border hover:bg-secondary transition-colors">
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <Input type="date" value={slotDate} onChange={e => setSlotDate(e.target.value)}
+            className="w-40 h-9 bg-background border-border text-xs" />
+          <button onClick={() => shiftDate(1)}
+            className="h-9 w-9 flex items-center justify-center rounded-lg border border-border hover:bg-secondary transition-colors">
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="flex flex-wrap gap-3">
+        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+          <p className="font-display font-black text-lg">{stats.total}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total</p>
+        </div>
+        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+          <p className="font-display font-black text-lg text-emerald-500">{stats.available}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Available</p>
+        </div>
+        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+          <p className="font-display font-black text-lg text-red-500">{stats.booked}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Booked</p>
+        </div>
+        {stats.held > 0 && (
+          <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+            <p className="font-display font-black text-lg text-amber-500">{stats.held}</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Held</p>
+          </div>
+        )}
+      </div>
+
+      {/* Grid */}
+      {loadingSlots ? (
+        <div className="flex items-center justify-center py-16 gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground">Loading slots...</span>
+        </div>
+      ) : slots.length === 0 ? (
+        <div className="text-center py-16">
+          <CalendarDays className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
+          <p className="text-sm font-bold text-muted-foreground">No slots for this date</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">Try selecting a different date</p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-border">
+          <div className="inline-grid min-w-full" style={{ gridTemplateColumns: `80px repeat(${turfs.length}, minmax(100px, 1fr))` }}>
+            {/* Header row */}
+            <div className="sticky left-0 z-10 bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-r border-border">
+              Time
+            </div>
+            {turfs.map(t => (
+              <div key={t.turf_number} className="bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-center border-b border-r border-border last:border-r-0">
+                <p className="text-xs font-bold truncate">{t.turf_name}</p>
+                <p className="text-[10px] text-muted-foreground capitalize">{t.sport}</p>
+              </div>
+            ))}
+
+            {/* Data rows */}
+            {timeSlots.map(time => (
+              <>
+                <div key={time.start_time} className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-mono text-muted-foreground border-b border-r border-border/50 flex items-center">
+                  {fmt12h(time.start_time)}
+                </div>
+                {turfs.map(turf => {
+                  const slot = slotMap[`${time.start_time}-${turf.turf_number}`];
+                  const status = slot?.status || "available";
+                  const style = statusStyles[status] || statusStyles.available;
+                  return (
+                    <div key={`${time.start_time}-${turf.turf_number}`}
+                      className={`px-2 py-2 text-center border-b border-r border-border/50 last:border-r-0 ${style}`}
+                      title={`${turf.turf_name} | ${fmt12h(time.start_time)} - ${fmt12h(time.end_time)} | ${statusLabels[status] || status} | ₹${slot?.price || 0}`}>
+                      <div className="text-[11px] font-bold">{statusLabels[status] || status}</div>
+                      {slot?.price != null && <div className="text-[10px] opacity-60">₹{slot.price}</div>}
+                    </div>
+                  );
+                })}
+              </>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ─── Venue QR Check-in Panel ─────────────────────────────────────────────────
-function VenueCheckinPanel({ bookings = [], venueName }) {
+function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
   const [scanMode, setScanMode] = useState("camera");
-  const [qrInput, setQrInput] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -1715,7 +2220,7 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
   const notCheckedIn = todayBookings.filter(b => !b.checked_in);
 
   const handleVerify = async (code) => {
-    const qrData = (code || qrInput).trim();
+    const qrData = (code || "").trim();
     if (!qrData) return;
     setVerifying(true);
     setResult(null);
@@ -1723,6 +2228,11 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
       const res = await coachingAPI.verifyCheckin({ qr_data: qrData });
       setResult(res.data);
       stopCamera();
+      // On successful check-in → refresh bookings + switch to attendance
+      if (!res.data.error && !res.data.already_checked_in) {
+        onCheckinSuccess?.();
+        setTimeout(() => setScanMode("attendance"), 2000);
+      }
     } catch (err) {
       setResult({ error: true, message: err.response?.data?.detail || "Verification failed" });
     }
@@ -1780,9 +2290,9 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
           <Camera className="h-3.5 w-3.5" />Camera Scan
         </button>
-        <button onClick={() => { setScanMode("manual"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "manual" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <ScanLine className="h-3.5 w-3.5" />Manual Entry
+        <button onClick={() => { setScanMode("upload"); stopCamera(); }}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <Upload className="h-3.5 w-3.5" />Upload QR
         </button>
         <button onClick={() => { setScanMode("attendance"); stopCamera(); }}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
@@ -1836,28 +2346,42 @@ function VenueCheckinPanel({ bookings = [], venueName }) {
         </div>
       )}
 
-      {/* Manual */}
-      {scanMode === "manual" && (
+      {/* Upload QR Image */}
+      {scanMode === "upload" && (
         <div className="glass-card rounded-xl p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ScanLine className="h-6 w-6 text-primary" />
+              <Upload className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base">Manual Code Entry</h3>
-              <p className="text-xs text-muted-foreground">Type the check-in code shown below the Lobbian's QR.</p>
+              <h3 className="font-display font-bold text-base">Upload QR Image</h3>
+              <p className="text-xs text-muted-foreground">Upload a screenshot or photo of the Lobbian's QR code.</p>
             </div>
           </div>
           <div className="space-y-3">
-            <Input value={qrInput} onChange={e => setQrInput(e.target.value)}
-              placeholder="HORIZON_CHECKIN:booking-id:TOKEN"
-              className="bg-background border-border font-mono text-sm"
-              onKeyDown={e => e.key === "Enter" && handleVerify()} />
-            <Button className="w-full bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover"
-              onClick={() => handleVerify()} disabled={verifying || !qrInput.trim()}>
-              {verifying ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
-              Verify Check-in
-            </Button>
+            <label className="flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border-2 border-dashed border-border cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
+              <ImagePlus className="h-10 w-10 text-muted-foreground mb-2" />
+              <span className="text-sm font-bold text-muted-foreground">Click to select QR image</span>
+              <span className="text-[10px] text-muted-foreground/60 mt-1">JPG, PNG, or screenshot</span>
+              <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                setVerifying(true);
+                setResult(null);
+                try {
+                  const { Html5Qrcode } = await import("html5-qrcode");
+                  const scanner = new Html5Qrcode("upload-qr-decode");
+                  const decoded = await scanner.scanFile(file, true);
+                  scanner.clear();
+                  await handleVerify(decoded);
+                } catch {
+                  setResult({ error: true, message: "Could not read QR code from image. Try a clearer photo." });
+                  setVerifying(false);
+                }
+                e.target.value = "";
+              }} />
+            </label>
+            <div id="upload-qr-decode" className="hidden" />
           </div>
         </div>
       )}

@@ -1025,6 +1025,7 @@ function SettingsTab() {
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
+  const [showWebhookSecret, setShowWebhookSecret] = useState(false);
   const [showS3Secret, setShowS3Secret] = useState(false);
   const [showWaToken, setShowWaToken] = useState(false);
   const [newPassword, setNewPassword] = useState("");
@@ -1121,8 +1122,8 @@ function SettingsTab() {
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
             className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
-              activeSubTab === tab.id 
-                ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95" 
+              activeSubTab === tab.id
+                ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95"
                 : "text-muted-foreground hover:text-foreground hover:bg-white/5"
             }`}
           >
@@ -1200,6 +1201,28 @@ function SettingsTab() {
                     </div>
                   </div>
                 </div>
+
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Webhook Secret</Label>
+                  <div className="relative">
+                    <Input
+                      type={showWebhookSecret ? "text" : "password"}
+                      value={settings.payment_gateway.webhook_secret || ""}
+                      onChange={e => updateGateway("webhook_secret", e.target.value)}
+                      className="h-12 bg-white/5 border-white/10 text-sm font-bold pr-12 rounded-2xl focus:ring-brand-600/50"
+                      placeholder="Enter Razorpay webhook secret"
+                      data-testid="gateway-webhook-secret"
+                    />
+                    <button
+                      onClick={() => setShowWebhookSecret(!showWebhookSecret)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">Found in Razorpay Dashboard → Webhooks → Secret</p>
+                </div>
+              </div>
               </div>
             </section>
           )}

@@ -3,6 +3,7 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timezone, timedelta
 from database import db
+from tz import now_ist
 import os
 import re
 import secrets
@@ -56,7 +57,7 @@ def verify_pw(plain: str, hashed: str) -> bool:
 
 
 def create_token(uid: str, role: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     return jwt.encode(
         {"sub": uid, "role": role, "type": "access", "iat": now, "exp": now + timedelta(hours=ACCESS_TOKEN_EXPIRY_HOURS)},
         JWT_SECRET, algorithm=JWT_ALGORITHM
@@ -64,7 +65,7 @@ def create_token(uid: str, role: str) -> str:
 
 
 def create_refresh_token(uid: str, role: str) -> str:
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     return jwt.encode(
         {"sub": uid, "role": role, "type": "refresh", "iat": now, "exp": now + timedelta(days=REFRESH_TOKEN_EXPIRY_DAYS)},
         REFRESH_SECRET, algorithm=JWT_ALGORITHM
@@ -182,7 +183,7 @@ async def invalidate_user_tokens(user_id: str):
     Call this after password change, forced logout, account suspension, etc."""
     await db.users.update_one(
         {"id": user_id},
-        {"$set": {"token_invalidated_at": datetime.now(timezone.utc).isoformat()}}
+        {"$set": {"token_invalidated_at": now_ist().isoformat()}}
     )
 
 

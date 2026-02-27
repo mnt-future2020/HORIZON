@@ -8,6 +8,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from datetime import datetime, timezone, timedelta
 from database import db
 from auth import get_current_user
+from tz import now_ist
 from models import SocialPostCreate
 import uuid
 import math
@@ -60,8 +61,8 @@ async def create_story(request: Request, user=Depends(get_current_user)):
         "views": [],
         "view_count": 0,
         "reactions": {},
-        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=STORY_EXPIRY_HOURS)).isoformat(),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (now_ist() + timedelta(hours=STORY_EXPIRY_HOURS)).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.stories.insert_one(story)
     story.pop("_id", None)
@@ -75,7 +76,7 @@ async def create_story(request: Request, user=Depends(get_current_user)):
 @router.get("/stories")
 async def get_stories(user=Depends(get_current_user)):
     """Get active stories from people user follows + own stories."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist().isoformat()
 
     # Get people the user follows
     following_ids = await _get_following_ids(user["id"])
@@ -221,7 +222,7 @@ async def create_post(inp: SocialPostCreate, user=Depends(get_current_user)):
         "likes_count": 0,
         "comments_count": 0,
         "reactions": {},
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.social_posts.insert_one(post)
     post.pop("_id", None)
@@ -244,7 +245,7 @@ async def toggle_like(post_id: str, user=Depends(get_current_user)):
     else:
         await db.social_likes.insert_one({
             "post_id": post_id, "user_id": user["id"],
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         })
         await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": 1}})
         return {"liked": True}
@@ -284,7 +285,7 @@ async def react_to_post(post_id: str, request: Request, user=Depends(get_current
         await db.social_reactions.insert_one({
             "post_id": post_id, "user_id": user["id"],
             "reaction": reaction,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         })
         await db.social_posts.update_one(
             {"id": post_id}, {"$inc": {f"reactions.{reaction}": 1}}
@@ -302,7 +303,7 @@ async def add_comment(post_id: str, request: Request, user=Depends(get_current_u
         "user_name": user.get("name", "Unknown"),
         "user_avatar": user.get("avatar", ""),
         "content": data.get("content", ""),
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     }
     await db.social_comments.insert_one(comment)
     await db.social_posts.update_one({"id": post_id}, {"$inc": {"comments_count": 1}})
@@ -346,7 +347,7 @@ async def trending_posts(
         posts = await compute_trending_scores(hours=48, limit=limit)
     except Exception as e:
         logger.warning(f"Wilson trending fallback to simple sort: {e}")
-        cutoff = (datetime.now(timezone.utc) - timedelta(hours=48)).isoformat()
+        cutoff = (now_ist() - timedelta(hours=48)).isoformat()
         posts = await db.social_posts.find(
             {"created_at": {"$gte": cutoff}, "visibility": "public"},
             {"_id": 0}
@@ -392,7 +393,7 @@ async def toggle_follow(target_id: str, user=Depends(get_current_user)):
         await db.follows.insert_one({
             "follower_id": user["id"],
             "following_id": target_id,
-            "created_at": datetime.now(timezone.utc).isoformat()
+            "created_at": now_ist().isoformat()
         })
         await db.users.update_one({"id": user["id"]}, {"$inc": {"following_count": 1}})
         await db.users.update_one({"id": target_id}, {"$inc": {"followers_count": 1}})
@@ -451,7 +452,7 @@ async def my_engagement(user=Depends(get_current_user)):
     total_posts = await db.social_posts.count_documents({"user_id": user["id"]})
 
     # Posts today
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0).isoformat()
+    today_start = now_ist().replace(hour=0, minute=0, second=0).isoformat()
     posts_today = await db.social_posts.count_documents(
         {"user_id": user["id"], "created_at": {"$gte": today_start}}
     )
@@ -466,7 +467,7 @@ async def my_engagement(user=Depends(get_current_user)):
     following_count = await db.follows.count_documents({"follower_id": user["id"]})
 
     # Daily prompt (deterministic per day)
-    day_of_year = datetime.now(timezone.utc).timetuple().tm_yday
+    day_of_year = now_ist().timetuple().tm_yday
     prompt_idx = day_of_year % len(POST_PROMPTS)
 
     posted_today = posts_today > 0 or stories_today > 0
@@ -509,7 +510,7 @@ async def suggested_follows(user=Depends(get_current_user)):
     co_player_ids.discard(user["id"])
 
     # Top active posters not yet followed (fallback)
-    week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+    week_ago = (now_ist() - timedelta(days=7)).isoformat()
     active_pipeline = [
         {"$match": {"created_at": {"$gte": week_ago}, "user_id": {"$nin": list(following_ids) + [user["id"]]}}},
         {"$group": {"_id": "$user_id", "post_count": {"$sum": 1}}},
@@ -713,7 +714,7 @@ async def toggle_bookmark(post_id: str, user=Depends(get_current_user)):
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
         "post_id": post_id,
-        "created_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": now_ist().isoformat(),
     })
     return {"bookmarked": True}
 
@@ -927,7 +928,7 @@ async def sync_contacts(req: ContactSyncRequest, user=Depends(get_current_user))
                 "owner_id": user["id"],
                 "contact_user_id": mu["id"],
                 "match_type": mu["match_type"],
-                "synced_at": datetime.now(timezone.utc).isoformat(),
+                "synced_at": now_ist().isoformat(),
             }},
             upsert=True,
         )
@@ -994,7 +995,7 @@ async def _get_following_ids(user_id: str) -> list:
 
 async def _update_streak(user_id: str):
     """Update posting streak when user creates a post or story."""
-    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today = now_ist().strftime("%Y-%m-%d")
     streak = await db.streaks.find_one({"user_id": user_id})
 
     if not streak:
@@ -1010,7 +1011,7 @@ async def _update_streak(user_id: str):
     if last_date == today:
         return  # Already posted today, no streak update needed
 
-    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).strftime("%Y-%m-%d")
+    yesterday = (now_ist() - timedelta(days=1)).strftime("%Y-%m-%d")
     current = streak.get("current_streak", 0)
     longest = streak.get("longest_streak", 0)
 
