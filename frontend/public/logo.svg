@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" fill="none">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+    <linearGradient id="ball" x1="25%" y1="10%" x2="75%" y2="90%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="40%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+    <radialGradient id="shine" cx="35%" cy="30%" r="45%">
+      <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="ball-clip"><circle cx="0" cy="0" r="17.5"/></clipPath>
+  </defs>
+
+  <!-- "l" -->
+  <text x="10" y="62" font-family="'Chivo','Inter','Helvetica Neue',sans-serif" font-weight="900" font-size="62" letter-spacing="-2" fill="url(#g)">l</text>
+
+  <!-- Football (soccer ball) replacing "o" -->
+  <g transform="translate(58.5, 43)">
+    <!-- Ball body -->
+    <circle cx="0" cy="0" r="17.5" fill="url(#ball)" stroke="#047857" stroke-width="0.8"/>
+    <!-- Shine -->
+    <circle cx="0" cy="0" r="17.5" fill="url(#shine)"/>
+    <!-- Pentagon pattern (classic soccer ball) clipped to circle -->
+    <g clip-path="url(#ball-clip)">
+      <!-- Center pentagon -->
+      <polygon points="0,-7 6.7,-2.2 4.1,5.7 -4.1,5.7 -6.7,-2.2" fill="#047857" fill-opacity="0.5" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.6"/>
+      <!-- Top pentagon -->
+      <polygon points="0,-18.5 5.5,-13 3.4,-6.5 -3.4,-6.5 -5.5,-13" fill="#047857" fill-opacity="0.45" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <!-- Top-right -->
+      <polygon points="11,-11 16,-5 12,1.5 6,-2 7,-8.5" fill="#047857" fill-opacity="0.4" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <!-- Top-left -->
+      <polygon points="-11,-11 -7,-8.5 -6,-2 -12,1.5 -16,-5" fill="#047857" fill-opacity="0.4" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <!-- Bottom-right -->
+      <polygon points="13,6 16,12 11,17 4.5,14 4,6" fill="#047857" fill-opacity="0.4" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <!-- Bottom-left -->
+      <polygon points="-13,6 -4,6 -4.5,14 -11,17 -16,12" fill="#047857" fill-opacity="0.4" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <!-- Connecting lines (hexagon edges) -->
+      <line x1="0" y1="-7" x2="0" y2="-13" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <line x1="6.7" y1="-2.2" x2="11" y2="-5" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <line x1="4.1" y1="5.7" x2="7" y2="10" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <line x1="-4.1" y1="5.7" x2="-7" y2="10" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+      <line x1="-6.7" y1="-2.2" x2="-11" y2="-5" stroke="#ecfdf5" stroke-width="0.5" stroke-opacity="0.5"/>
+    </g>
+    <!-- Subtle outer glow -->
+    <circle cx="0" cy="0" r="17.5" fill="none" stroke="#34d399" stroke-width="0.4" stroke-opacity="0.3"/>
+  </g>
+
+  <!-- "bbi" -->
+  <text x="80" y="62" font-family="'Chivo','Inter','Helvetica Neue',sans-serif" font-weight="900" font-size="62" letter-spacing="-2" fill="url(#g)">bbi</text>
+</svg>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Lightbulb, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark, Settings } from "lucide-react";
+import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Lightbulb, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark, Settings, ClipboardList } from "lucide-react";
 
 function NavLink({ to, icon: Icon, label, active }) {
   return (
@@ -109,6 +109,7 @@ export default function Navbar() {
     venue_owner: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/owner", icon: Building2, label: "Dashboard" },
+      { to: "/owner/manage", icon: ClipboardList, label: "Venue Mgmt" },
       { to: "/pos", icon: ShoppingCart, label: "POS" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
       { to: "/communities", icon: Users, label: "Groups" },
@@ -323,13 +324,14 @@ export function Sidebar() {
       { to: "/coaching",     ms: "fitness_center",      label: "Coaching" },
     ],
     venue_owner: [
-      { to: "/feed",         ms: "rss_feed",            label: "Feed" },
-      { to: "/owner",        ms: "store",               label: "Dashboard" },
-      { to: "/pos",          ms: "point_of_sale",       label: "POS" },
-      { to: "/iot",          ms: "sensors",             label: "IoT" },
-      { to: "/communities",  ms: "groups",              label: "Groups" },
-      { to: "/chat",         ms: "forum",               label: "Chat" },
-      { to: "/tournaments",  ms: "emoji_events",        label: "Tournaments" },
+      { to: "/feed",           ms: "rss_feed",            label: "Feed" },
+      { to: "/owner",          ms: "store",               label: "Dashboard", exact: true },
+      { to: "/owner/manage",   ms: "assignment",          label: "Venue Management" },
+      { to: "/pos",            ms: "point_of_sale",       label: "POS" },
+      { to: "/iot",            ms: "sensors",             label: "IoT" },
+      { to: "/communities",    ms: "groups",              label: "Groups" },
+      { to: "/chat",           ms: "forum",               label: "Chat" },
+      { to: "/tournaments",    ms: "emoji_events",        label: "Tournaments" },
     ],
     coach: [
       { to: "/feed",         ms: "rss_feed",            label: "Feed" },

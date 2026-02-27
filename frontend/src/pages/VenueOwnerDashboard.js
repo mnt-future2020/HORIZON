@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, pricingMLAPI, coachingAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -86,7 +86,7 @@ function VenueImageUpload({ images = [], onChange }) {
   );
 }
 
-export default function VenueOwnerDashboard() {
+export default function VenueOwnerDashboard({ defaultView }) {
   const { user } = useAuth();
 
   // Pending/rejected/suspended account gate
@@ -122,12 +122,14 @@ export default function VenueOwnerDashboard() {
     );
   }
 
-  return <VenueOwnerDashboardContent />;
+  return <VenueOwnerDashboardContent defaultView={defaultView} />;
 }
 
-function VenueOwnerDashboardContent() {
+function VenueOwnerDashboardContent({ defaultView }) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isManageView = location.pathname === "/owner/manage";
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -567,7 +569,8 @@ function VenueOwnerDashboardContent() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6" data-testid="owner-dashboard">
-      {/* Welcome Hero - With Professional Imagery */}
+      {/* Welcome Hero, Stats, Venue Selector — only on Dashboard home */}
+      {!isManageView && (<>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -886,7 +889,21 @@ function VenueOwnerDashboardContent() {
           )}
         </motion.div>
       )}
+      </>)}
 
+      {/* Compact venue selector on manage view */}
+      {isManageView && venues.length > 1 && (
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+          {venues.map(v => (
+            <button key={v.id} onClick={() => handleSelectVenue(v)}
+              className={`shrink-0 px-4 py-2 rounded-lg font-bold text-xs transition-all border ${selectedVenue?.id === v.id ? "bg-brand-500/10 border-brand-500/30 text-brand-500" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-500/30"}`}>
+              {v.name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {isManageView && (
       <Tabs defaultValue="bookings" data-testid="owner-tabs">
         <TabsList className="bg-secondary/50 mb-6 flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="bookings" className="font-bold text-xs" data-testid="tab-bookings">Bookings</TabsTrigger>
@@ -1624,6 +1641,7 @@ function VenueOwnerDashboardContent() {
           />
         </TabsContent>
       </Tabs>
+      )}
 
       {/* Edit Venue Dialog */}
       <Dialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
