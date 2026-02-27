@@ -35,18 +35,18 @@ function StatCard({ icon: Icon, label, value, sub, colorClass = "text-brand-600"
       className="bg-card rounded-[28px] p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
     >
       <div className="flex items-center justify-between mb-6 relative z-10">
-        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</div>
+        <div className="text-xs font-medium text-muted-foreground">{label}</div>
         <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
           <Icon className={`h-5 w-5 ${colorClass}`} />
         </div>
       </div>
 
       <div className="relative z-10">
-        <div className="text-4xl font-black font-display text-foreground tracking-tight mb-2 flex items-baseline">
+        <div className="text-2xl font-bold font-display text-foreground tracking-tight mb-2 flex items-baseline">
           {value}
         </div>
         {sub && (
-          <div className="text-[11px] text-muted-foreground font-black flex items-center gap-1.5 mt-2 bg-secondary/20 py-1.5 px-3 rounded-full w-fit border border-border/40">
+          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-2 bg-secondary/20 py-1.5 px-3 rounded-full w-fit border border-border/40">
             {sub}
           </div>
         )}
@@ -78,19 +78,19 @@ function RecentUserItem({ user: u, index }) {
       className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group rounded-2xl"
     >
       <div className="flex items-center gap-4">
-        <div className={`h-11 w-11 rounded-full flex items-center justify-center font-black text-base shrink-0 border border-white/5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+        <div className={`h-11 w-11 rounded-full flex items-center justify-center font-semibold text-base shrink-0 border border-white/5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
           {u.name?.[0]?.toUpperCase()}
         </div>
         <div>
-          <div className="text-sm font-black text-foreground tracking-tight">{u.name}</div>
-          <div className="text-[11px] text-muted-foreground font-semibold opacity-70 truncate max-w-[150px] md:max-w-[200px]">{u.email}</div>
+          <div className="text-base font-semibold text-foreground tracking-tight">{u.name}</div>
+          <div className="text-sm text-muted-foreground font-medium opacity-70 truncate max-w-[150px] md:max-w-[200px]">{u.email}</div>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-none ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+        <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
           {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
         </Badge>
-        <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
+        <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
           {u.account_status}
         </Badge>
       </div>
@@ -133,7 +133,7 @@ function OverviewTab() {
         transition={{ delay: 1, duration: 0.5 }}
       >
         <div className="flex items-center justify-between mb-6 px-2">
-          <h3 className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.3em]">Recent Registrations</h3>
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Recent Registrations</h3>
           <div className="h-[1px] flex-1 bg-border/40 ml-6" />
         </div>
         
@@ -263,131 +263,117 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
+      initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.05 }}
-      whileHover={{ y: -3, borderColor: "rgba(var(--brand-600), 0.2)", transition: { duration: 0.2 } }}
-      className="bg-card rounded-[28px] p-6 mb-4 border border-border/40 shadow-sm group relative overflow-hidden transition-all duration-300"
+      transition={{ delay: index * 0.03 }}
+      className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors rounded-2xl group"
     >
-      <div className="flex items-center justify-between flex-wrap gap-6 relative z-10">
-        <div className="flex items-center gap-5 min-w-0">
-          <div className={`h-14 w-14 rounded-full flex items-center justify-center font-black text-xl shrink-0 border border-border/40 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
-            {u.name?.[0]?.toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-3 mb-1">
-              <h4 className="text-base font-black tracking-tight text-foreground truncate">{u.name}</h4>
-              <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-[0.2em] h-5 rounded-full border-none px-3 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
-                {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
-              </Badge>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground font-semibold opacity-80">
-                <span className="truncate">{u.email}</span>
-                {u.phone && (
-                  <>
-                    <span className="opacity-40">•</span>
-                    <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {u.phone}</span>
-                  </>
-                )}
-              </div>
-              {u.business_name && (
-                <div className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1.5 mt-1">
-                  <Building2 className="w-3 h-3" />
-                  <span className="bg-white/5 px-2 py-0.5 rounded-md border border-white/5">
-                    {u.business_name} {u.gst_number && `(GST: ${u.gst_number})`}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+      <div className="flex items-center gap-4 min-w-0">
+        <div className={`h-11 w-11 rounded-full flex items-center justify-center font-semibold text-base shrink-0 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+          {u.name?.[0]?.toUpperCase()}
         </div>
-
-        <div className="flex items-center gap-3 shrink-0 flex-wrap">
-          <Badge variant="outline" className={`text-[10px] font-black uppercase tracking-widest px-4 py-1.5 rounded-full border-none shadow-sm ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
-            {u.account_status}
-          </Badge>
-
-          {u.role === "venue_owner" && u.subscription_plan && (
-            <Badge variant="outline" className="text-[10px] font-black uppercase tracking-widest bg-purple-500/10 text-purple-600 border-none px-4 py-1.5 rounded-full">
-              {u.subscription_plan}
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5 mb-0.5">
+            <h4 className="text-base font-semibold tracking-tight text-foreground truncate">{u.name}</h4>
+            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide h-5 rounded-full border-none px-2.5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+              {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
             </Badge>
-          )}
-
-          <div className="h-8 w-[1px] bg-white/10 mx-2 hidden sm:block" />
-
-          <div className="flex items-center gap-2">
-            {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
-              <Button size="sm" variant="outline"
-                className={`h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-wider transition-all border-white/10 shadow-lg ${
-                  u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white" :
-                  u.doc_verification_status === "verified" ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" :
-                  "text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white"
-                }`}
-                onClick={() => onOpenDocs(u.id)}>
-                <FileText className="h-4 w-4 mr-2" /> Docs
-              </Button>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium opacity-70">
+            <span className="truncate">{u.email}</span>
+            {u.phone && (
+              <>
+                <span className="opacity-40">•</span>
+                <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {u.phone}</span>
+              </>
             )}
-
-            {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-brand-500 bg-brand-500/10 border-white/5 hover:bg-brand-500 hover:text-white transition-all shadow-lg"
-                  onClick={() => onAction(u.id, "approve")}>
-                  <CheckCircle className="h-4 w-4 mr-2" /> Approve
-                </Button>
-                <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-rose-500 bg-rose-500/10 border-white/5 hover:bg-rose-500 hover:text-white transition-all shadow-lg"
-                  onClick={() => onAction(u.id, "reject")}>
-                  <XCircle className="h-4 w-4 mr-2" /> Reject
-                </Button>
-              </div>
-            )}
-
-            {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
-                {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
-              </span>
-            )}
-
-            {u.account_status === "active" && (
-              <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-amber-500 bg-amber-500/10 border-white/5 hover:bg-amber-500 hover:text-white transition-all shadow-lg"
-                onClick={() => onAction(u.id, "suspend")}>
-                <Ban className="h-4 w-4 mr-2" /> Suspend
-              </Button>
-            )}
-
-            {u.role === "coach" && u.account_status === "active" && (
-              <Button size="sm" variant="outline" className={`h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest border-white/5 shadow-lg transition-all ${u.is_verified ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" : "text-muted-foreground bg-white/5 hover:bg-white/10 hover:text-foreground"}`}
-                onClick={() => onVerify(u.id)}>
-                <CheckCircle2 className={`h-4 w-4 mr-2 ${u.is_verified ? "" : "opacity-40"}`} />
-                {u.is_verified ? "Verified" : "Verify"}
-              </Button>
-            )}
-
-            {(u.account_status === "suspended" || u.account_status === "rejected") && (
-              <Button size="sm" variant="outline" className="h-10 px-5 rounded-2xl font-black text-[10px] uppercase tracking-widest text-brand-600 bg-brand-600/10 border-white/5 hover:bg-brand-600 hover:text-white transition-all shadow-lg"
-                onClick={() => onAction(u.id, "activate")}>
-                <RotateCcw className="h-4 w-4 mr-2" /> Activate
-              </Button>
+            {u.business_name && (
+              <>
+                <span className="opacity-40">•</span>
+                <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {u.business_name}</span>
+              </>
             )}
           </div>
         </div>
       </div>
 
-      {/* Background accent */}
-      <div className={`absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-white/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+      <div className="flex items-center gap-2.5 shrink-0">
+        <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
+          {u.account_status}
+        </Badge>
+
+        {u.role === "venue_owner" && u.subscription_plan && (
+          <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wide bg-purple-500/10 text-purple-600 border-none px-3 py-1 rounded-full">
+            {u.subscription_plan}
+          </Badge>
+        )}
+
+        {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
+          <Button size="sm" variant="outline"
+            className={`h-8 px-3 rounded-xl font-semibold text-xs transition-all border-transparent ${
+              u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white" :
+              u.doc_verification_status === "verified" ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" :
+              "text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white"
+            }`}
+            onClick={() => onOpenDocs(u.id)}>
+            <FileText className="h-3.5 w-3.5 mr-1.5" /> Docs
+          </Button>
+        )}
+
+        {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
+          <div className="flex gap-1.5">
+            <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-brand-500 bg-brand-500/10 border-transparent hover:bg-brand-500 hover:text-white transition-all"
+              onClick={() => onAction(u.id, "approve")}>
+              <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Approve
+            </Button>
+            <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-rose-500 bg-rose-500/10 border-transparent hover:bg-rose-500 hover:text-white transition-all"
+              onClick={() => onAction(u.id, "reject")}>
+              <XCircle className="h-3.5 w-3.5 mr-1.5" /> Reject
+            </Button>
+          </div>
+        )}
+
+        {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
+          <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
+            {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
+          </span>
+        )}
+
+        {u.account_status === "active" && (
+          <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-amber-500 bg-amber-500/10 border-transparent hover:bg-amber-500 hover:text-white transition-all"
+            onClick={() => onAction(u.id, "suspend")}>
+            <Ban className="h-3.5 w-3.5 mr-1.5" /> Suspend
+          </Button>
+        )}
+
+        {u.role === "coach" && u.account_status === "active" && (
+          <Button size="sm" variant="outline" className={`h-8 px-3 rounded-xl font-semibold text-xs border-transparent transition-all ${u.is_verified ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" : "text-muted-foreground bg-secondary/50 hover:bg-secondary hover:text-foreground"}`}
+            onClick={() => onVerify(u.id)}>
+            <CheckCircle2 className={`h-3.5 w-3.5 mr-1.5 ${u.is_verified ? "" : "opacity-40"}`} />
+            {u.is_verified ? "Verified" : "Verify"}
+          </Button>
+        )}
+
+        {(u.account_status === "suspended" || u.account_status === "rejected") && (
+          <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-brand-600 bg-brand-600/10 border-transparent hover:bg-brand-600 hover:text-white transition-all"
+            onClick={() => onAction(u.id, "activate")}>
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Activate
+          </Button>
+        )}
+      </div>
     </motion.div>
   );
 }
 
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
-      <div className="flex flex-wrap gap-3 mb-10">
+      <div className="flex flex-wrap gap-3 mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
-            className={`px-6 py-2.5 rounded-full text-[10px] font-black tracking-[0.2em] transition-all duration-300 uppercase shadow-lg active:scale-95 ${
+            className={`px-5 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 uppercase active:scale-95 ${
               filter === f 
                 ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" 
-                : "glass-premium border-white/10 text-muted-foreground hover:text-foreground hover:border-white/20"
+                : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
             }`}>
             {f === "all" ? "All Users" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
           </button>
@@ -399,25 +385,27 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="glass-premium border-white/10 shadow-xl rounded-[32px] p-20 text-center flex flex-col items-center justify-center min-h-[300px]"
+          className="bg-card border border-border/40 rounded-[28px] p-20 text-center flex flex-col items-center justify-center min-h-[300px]"
         >
-          <div className="p-6 rounded-3xl bg-white/5 mb-6">
-            <Users className="h-10 w-10 text-muted-foreground/20" />
+          <div className="p-6 rounded-3xl bg-secondary/30 mb-6">
+            <Users className="h-10 w-10 text-muted-foreground/30" />
           </div>
-          <div className="text-muted-foreground text-sm font-bold tracking-tight uppercase opacity-60">No users found matching this filter</div>
+          <div className="text-muted-foreground text-sm font-medium">No users found matching this filter</div>
         </motion.div>
       ) : (
-        <div className="grid grid-cols-1 gap-1">
-          {users.map((u, i) => (
-            <UserItem
-              key={u.id}
-              user={u}
-              index={i}
-              onAction={handleAction}
-              onVerify={handleVerify}
-              onOpenDocs={openDocViewer}
-            />
-          ))}
+        <div className="bg-card border border-border/40 rounded-[28px] p-2 shadow-sm">
+          <div className="divide-y divide-border/30">
+            {users.map((u, i) => (
+              <UserItem
+                key={u.id}
+                user={u}
+                index={i}
+                onAction={handleAction}
+                onVerify={handleVerify}
+                onOpenDocs={openDocViewer}
+              />
+            ))}
+          </div>
         </div>
       )}
 
@@ -447,7 +435,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
                   <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
                 ) : (
                   <button key={p} onClick={() => load(p)}
-                    className={`h-9 min-w-[36px] px-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                    className={`h-9 min-w-[36px] px-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
                       p === page
                         ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
                         : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -613,12 +601,12 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
-      whileHover={{ y: -3, borderColor: "rgba(var(--brand-600), 0.2)", transition: { duration: 0.2 } }}
-      className="bg-card rounded-[28px] p-6 mb-4 border border-border/40 shadow-sm group relative overflow-hidden transition-all duration-300"
+      whileHover={{ y: -3, transition: { duration: 0.2 } }}
+      className="bg-card rounded-[28px] p-6 mb-4 shadow-sm group relative overflow-hidden transition-all duration-300"
     >
       <div className="flex items-start gap-6 relative z-10">
         {/* Venue Thumbnail */}
-        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-border/40 bg-muted/20">
+        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-muted/20">
           {mainImage ? (
             <img src={mediaUrl(mainImage)} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
           ) : (
@@ -630,19 +618,19 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <h4 className="text-lg font-black tracking-tight text-foreground truncate">{v.name}</h4>
+            <h4 className="text-lg font-bold tracking-tight text-foreground truncate">{v.name}</h4>
             <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none ${
+              <Badge variant="outline" className={`text-[10px] font-semibold uppercase tracking-wide h-5 rounded-full border-none ${
                 v.badge === "bookable" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-600"
               }`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
               </Badge>
               {v.owner_id ? (
-                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-brand-600/10 text-brand-600">
+                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide h-5 rounded-full border-none bg-brand-600/10 text-brand-600">
                   Linked
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-secondary/30 text-muted-foreground">
+                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide h-5 rounded-full border-none bg-secondary/30 text-muted-foreground">
                   Manual
                 </Badge>
               )}
@@ -653,7 +641,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
           
           <div className="flex items-center gap-2 flex-wrap">
             {v.sports?.map(sport => (
-              <span key={sport} className="text-[9px] font-black uppercase tracking-widest bg-secondary/20 text-muted-foreground py-1 px-3 rounded-full border border-border/40">
+              <span key={sport} className="text-[10px] font-semibold uppercase tracking-wide bg-secondary/20 text-muted-foreground py-1 px-3 rounded-full border border-border/40">
                 {sport}
               </span>
             ))}
@@ -675,7 +663,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
         {/* Actions Section */}
         <div className="flex flex-col items-end justify-between self-stretch gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-black uppercase tracking-tighter ${v.status === "active" ? "text-brand-600" : "text-rose-500"}`}>
+            <span className={`text-[10px] font-semibold uppercase tracking-tight ${v.status === "active" ? "text-brand-600" : "text-rose-500"}`}>
               {v.status === "active" ? "Live" : "Inactive"}
             </span>
             <Switch checked={v.status === "active"} onCheckedChange={() => onToggle(v.id, v.status)} />
@@ -685,7 +673,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-9 px-4 text-[11px] font-black uppercase tracking-wider rounded-full border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all shadow-sm"
+              className="h-9 px-4 text-[11px] font-semibold uppercase tracking-wide rounded-full border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all shadow-sm"
               onClick={() => onAssign(v)}
             >
               <UserPlus className="h-3.5 w-3.5 mr-2" /> Assign Owner
@@ -789,10 +777,10 @@ function VenuesTab() {
     <div className="space-y-3" data-testid="admin-venues-tab">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">Venues</h2>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mt-1">{venues.length} Facilities Managed</p>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">Venues</h2>
+          <p className="text-xs font-medium text-muted-foreground mt-1">{venues.length} Facilities Managed</p>
         </div>
-        <Button size="sm" className="gap-2 h-11 px-6 text-xs font-black tracking-widest uppercase rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 active:scale-95 bg-brand-600 text-white" onClick={() => setShowCreateDialog(true)}>
+        <Button size="sm" className="gap-2 h-11 px-6 text-xs font-semibold tracking-wide uppercase rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 active:scale-95 bg-brand-600 text-white" onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4" /> Add New Venue
         </Button>
       </div>
@@ -1121,7 +1109,7 @@ function SettingsTab() {
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wide transition-all duration-300 ${
               activeSubTab === tab.id
                 ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95"
                 : "text-muted-foreground hover:text-foreground hover:bg-white/5"
@@ -1149,15 +1137,15 @@ function SettingsTab() {
                   <CreditCard className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">Payment Gateway</h3>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Global Transaction Settings</p>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">Payment Gateway</h3>
+                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Global Transaction Settings</p>
                 </div>
               </div>
               
               <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Provider</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Provider</Label>
                     <div className="h-12 flex items-center px-4 bg-white/5 rounded-2xl border border-white/10 text-sm font-bold text-foreground">
                       {settings.payment_gateway.provider}
                     </div>
@@ -1165,7 +1153,7 @@ function SettingsTab() {
                   <div className="flex flex-col justify-end">
                     <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/10 w-fit">
                       <Switch checked={settings.payment_gateway.is_live} onCheckedChange={v => updateGateway("is_live", v)} data-testid="gateway-live-toggle" />
-                      <Label className="text-xs font-black uppercase tracking-wider cursor-pointer">
+                      <Label className="text-xs font-semibold cursor-pointer">
                         {settings.payment_gateway.is_live ? "Live Mode" : "Test Mode"}
                       </Label>
                     </div>
@@ -1174,7 +1162,7 @@ function SettingsTab() {
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Key ID</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Key ID</Label>
                     <Input 
                       value={settings.payment_gateway.key_id} 
                       onChange={e => updateGateway("key_id", e.target.value)}
@@ -1183,7 +1171,7 @@ function SettingsTab() {
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Key Secret</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Key Secret</Label>
                     <div className="relative">
                       <Input 
                         type={showSecret ? "text" : "password"} 
@@ -1203,7 +1191,7 @@ function SettingsTab() {
                 </div>
 
                 <div>
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Webhook Secret</Label>
+                  <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Webhook Secret</Label>
                   <div className="relative">
                     <Input
                       type={showWebhookSecret ? "text" : "password"}
@@ -1234,19 +1222,19 @@ function SettingsTab() {
                 </div>
                 <div>
                   <div className="flex items-center gap-3">
-                    <h3 className="text-xl font-black tracking-tight text-foreground uppercase">Cloud Storage</h3>
-                    <Badge className={`text-[9px] font-black uppercase tracking-widest border-none ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                    <h3 className="text-xl font-bold tracking-tight text-foreground">Cloud Storage</h3>
+                    <Badge className={`text-[10px] font-semibold uppercase tracking-wide border-none ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
                       {s3Configured ? "Connected" : "Not Linked"}
                     </Badge>
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Media Assets Management</p>
+                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Media Assets Management</p>
                 </div>
               </div>
 
               <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6 group">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Access Key ID</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Access Key ID</Label>
                     <Input 
                       value={s3.access_key_id || ""} 
                       onChange={e => updateS3("access_key_id", e.target.value)}
@@ -1255,7 +1243,7 @@ function SettingsTab() {
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Secret Access Key</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Secret Access Key</Label>
                     <div className="relative">
                       <Input
                         type={showS3Secret ? "text" : "password"}
@@ -1276,7 +1264,7 @@ function SettingsTab() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Bucket Name</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Bucket Name</Label>
                     <Input 
                       value={s3.bucket_name || ""} 
                       onChange={e => updateS3("bucket_name", e.target.value)}
@@ -1285,7 +1273,7 @@ function SettingsTab() {
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Region</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Region</Label>
                     <select
                       value={s3.region || "ap-south-1"}
                       onChange={e => updateS3("region", e.target.value)}
@@ -1317,7 +1305,7 @@ function SettingsTab() {
                     variant="outline" 
                     onClick={handleTestS3} 
                     disabled={testingS3 || !s3Configured} 
-                    className="w-full h-12 rounded-2xl text-xs font-black uppercase tracking-widest gap-3 border-white/10 bg-white/5 hover:bg-white/10 text-foreground hover:text-brand-600 hover:border-brand-600/50 transition-all shadow-lg active:scale-95"
+                    className="w-full h-12 rounded-2xl text-xs font-semibold uppercase tracking-wide gap-3 border-white/10 bg-white/5 hover:bg-white/10 text-foreground hover:text-brand-600 hover:border-brand-600/50 transition-all shadow-lg active:scale-95"
                   >
                     {testingS3 ? (
                       <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
@@ -1338,15 +1326,15 @@ function SettingsTab() {
                   <MessageCircle className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">WhatsApp Business</h3>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Automated Enquiry Messaging</p>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">WhatsApp Business</h3>
+                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Automated Enquiry Messaging</p>
                 </div>
               </div>
 
               <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Phone Number ID</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Phone Number ID</Label>
                     <Input 
                       value={settings.whatsapp?.phone_number_id || ""} 
                       onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, phone_number_id: e.target.value } }))}
@@ -1355,9 +1343,9 @@ function SettingsTab() {
                     />
                   </div>
                   <div>
-                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Business Phone</Label>
+                    <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Business Phone</Label>
                     <div className="flex">
-                      <span className="h-12 inline-flex items-center px-4 bg-white/10 border border-white/10 border-r-0 rounded-l-2xl text-[11px] font-black text-muted-foreground">+91</span>
+                      <span className="h-12 inline-flex items-center px-4 bg-white/10 border border-white/10 border-r-0 rounded-l-2xl text-[11px] font-bold text-muted-foreground">+91</span>
                       <Input 
                         value={settings.whatsapp?.business_phone || ""} 
                         onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: cleanPhone(e.target.value) } }))}
@@ -1369,7 +1357,7 @@ function SettingsTab() {
                   </div>
                 </div>
                 <div>
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Access Token</Label>
+                  <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Access Token</Label>
                   <div className="relative">
                     <Input 
                       type={showWaToken ? "text" : "password"} 
@@ -1398,7 +1386,7 @@ function SettingsTab() {
                     <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
                       <Percent className="h-6 w-6 text-brand-600" />
                     </div>
-                    <h3 className="text-lg font-black tracking-tight text-foreground uppercase">Revenue Share</h3>
+                    <h3 className="text-lg font-bold tracking-tight text-foreground">Revenue Share</h3>
                   </div>
                   
                   <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
@@ -1412,7 +1400,7 @@ function SettingsTab() {
                           <div className="p-2 rounded-xl bg-white/5 text-muted-foreground group-hover:text-brand-600 transition-colors">
                             <comm.icon className="w-4 h-4" />
                           </div>
-                          <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">{comm.label}</span>
+                          <span className="text-xs font-semibold text-muted-foreground">{comm.label}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <Input 
@@ -1421,9 +1409,9 @@ function SettingsTab() {
                             max={50} 
                             value={settings[comm.key] ?? 10}
                             onChange={e => setSettings(s => ({ ...s, [comm.key]: Number(e.target.value) }))}
-                            className="h-10 bg-white/5 border-white/10 text-sm font-black w-20 rounded-xl focus:ring-brand-600/50 text-center" 
+                            className="h-10 bg-white/5 border-white/10 text-sm font-bold w-20 rounded-xl focus:ring-brand-600/50 text-center" 
                           />
-                          <span className="text-xs font-black text-muted-foreground">%</span>
+                          <span className="text-xs font-bold text-muted-foreground">%</span>
                         </div>
                       </div>
                     ))}
@@ -1435,7 +1423,7 @@ function SettingsTab() {
                     <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
                       <Crown className="h-6 w-6 text-brand-600" />
                     </div>
-                    <h3 className="text-lg font-black tracking-tight text-foreground uppercase">Service Limits</h3>
+                    <h3 className="text-lg font-bold tracking-tight text-foreground">Service Limits</h3>
                   </div>
                   <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl flex items-center justify-center">
                     <p className="text-sm font-bold text-muted-foreground text-center px-4">Subscription plan quotas are configured in the section below.</p>
@@ -1448,43 +1436,43 @@ function SettingsTab() {
                   <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
                     <Crown className="h-6 w-6 text-brand-600" />
                   </div>
-                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">SaaS Subscription Models</h3>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">SaaS Subscription Models</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {settings.subscription_plans.map((plan, idx) => (
                     <div key={plan.id} className="glass-premium rounded-[32px] p-6 border border-white/5 shadow-xl space-y-6 relative overflow-hidden group">
                       <div className="flex items-center justify-between relative z-10">
-                        <span className="text-sm font-black tracking-tight uppercase text-brand-600">{plan.name}</span>
-                        <Badge className="text-[8px] font-black uppercase tracking-widest bg-brand-600/10 text-brand-600 border-none py-1 px-2 rounded-full transition-colors hover:bg-brand-600 hover:text-white pointer-events-none">{plan.id}</Badge>
+                        <span className="text-sm font-semibold tracking-tight text-brand-600">{plan.name}</span>
+                        <Badge className="text-[10px] font-semibold uppercase tracking-wide bg-brand-600/10 text-brand-600 border-none py-1 px-2 rounded-full transition-colors hover:bg-brand-600 hover:text-white pointer-events-none">{plan.id}</Badge>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4 relative z-10">
                         <div>
-                          <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Monthly Rate</Label>
+                          <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Monthly Rate</Label>
                           <div className="flex items-center">
-                            <span className="text-lg font-black mr-1 text-muted-foreground">₹</span>
+                            <span className="text-lg font-bold mr-1 text-muted-foreground">₹</span>
                             <Input 
                               type="number" 
                               value={plan.price} 
                               onChange={e => updatePlan(idx, "price", Number(e.target.value))}
-                              className="h-9 bg-white/5 border-white/10 text-sm font-black rounded-lg focus:ring-brand-600/50" 
+                              className="h-9 bg-white/5 border-white/10 text-sm font-bold rounded-lg focus:ring-brand-600/50" 
                             />
                           </div>
                         </div>
                         <div>
-                          <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Max Units</Label>
+                          <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Max Units</Label>
                           <Input 
                             type="number" 
                             value={plan.max_venues} 
                             onChange={e => updatePlan(idx, "max_venues", Number(e.target.value))}
-                            className="h-9 bg-white/5 border-white/10 text-sm font-black rounded-lg focus:ring-brand-600/50" 
+                            className="h-9 bg-white/5 border-white/10 text-sm font-bold rounded-lg focus:ring-brand-600/50" 
                           />
                         </div>
                       </div>
 
                       <div className="relative z-10">
-                        <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Core Features</Label>
+                        <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Core Features</Label>
                         <textarea 
                           value={plan.features.join(", ")} 
                           onChange={e => updatePlan(idx, "features", e.target.value.split(",").map(f => f.trim()).filter(Boolean))}
@@ -1505,14 +1493,14 @@ function SettingsTab() {
                   <ShieldCheck className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">Access Security</h3>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Admin Credentials & Auth</p>
+                  <h3 className="text-xl font-bold tracking-tight text-foreground">Access Security</h3>
+                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Admin Credentials & Auth</p>
                 </div>
               </div>
 
               <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
                 <div>
-                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 block">Reset Alpha Credentials</Label>
+                  <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-4 block">Reset Alpha Credentials</Label>
                   <div className="flex gap-2">
                     <Input 
                       type="password" 
@@ -1524,7 +1512,7 @@ function SettingsTab() {
                     <Button 
                       onClick={handleChangePassword} 
                       disabled={changingPw || !newPassword} 
-                      className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-[10px] bg-white/10 text-foreground hover:bg-brand-600 transition-all shadow-lg active:scale-95"
+                      className="h-12 px-6 rounded-2xl font-semibold uppercase tracking-wide text-[10px] bg-white/10 text-foreground hover:bg-brand-600 transition-all shadow-lg active:scale-95"
                     >
                       {changingPw ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
                     </Button>
@@ -1541,7 +1529,7 @@ function SettingsTab() {
         <Button 
           onClick={saveSettings} 
           disabled={saving} 
-          className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white font-black text-sm uppercase tracking-[0.2em] rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
+          className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm uppercase tracking-wide rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
         >
           {saving ? (
             <Loader2 className="h-5 w-5 animate-spin" />

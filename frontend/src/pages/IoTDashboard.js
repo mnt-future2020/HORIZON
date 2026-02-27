@@ -33,8 +33,8 @@ const IoTStatCard = ({ icon: Icon, label, value, sub, index, colorClass = "text-
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ duration: 0.5, delay: index * 0.1 }}
-    whileHover={{ y: -5, borderColor: "rgba(var(--brand-600), 0.2)" }}
-    className="bg-card rounded-[32px] p-7 border border-border/60 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
+    whileHover={{ y: -5 }}
+    className="bg-card rounded-[32px] p-7 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
   >
     <div className="flex items-center justify-between mb-6 relative z-10">
       <div className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.25em] drop-shadow-sm">{label}</div>
@@ -74,14 +74,14 @@ function DeviceCard({ device, onControl, onEdit, onDelete, index }) {
       initial={{ opacity: 0, y: 15 }} 
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
-      whileHover={{ y: -4, borderColor: "rgba(var(--brand-600), 0.2)" }}
-      className={`bg-card rounded-[28px] p-6 border border-border/40 shadow-sm transition-all duration-300 relative overflow-hidden group ${
+      whileHover={{ y: -4 }}
+      className={`bg-card rounded-[28px] p-6 shadow-sm transition-all duration-300 relative overflow-hidden group ${
         !isOnline ? "opacity-50 grayscale" : ""
       }`} data-testid={`device-card-${device.id}`}>
       
       <div className="flex items-start justify-between gap-4 mb-6 relative z-10">
         <div className="flex items-center gap-4 min-w-0">
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 border border-border/40 ${
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 ${
             isOn ? "bg-brand-500/10 shadow-sm" : "bg-secondary/20"
           }`}>
             <Lightbulb className={`h-7 w-7 transition-colors duration-500 ${isOn ? "text-brand-500" : "text-muted-foreground/30"}`} />
@@ -161,12 +161,12 @@ function ZoneCard({ zone, onControl, onEdit, onDelete, index }) {
       initial={{ opacity: 0, x: -20 }} 
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.1 }}
-      whileHover={{ x: 5, borderColor: "rgba(var(--brand-600), 0.15)" }}
-      className="bg-card rounded-[24px] p-6 border border-border/40 flex items-center justify-between gap-6 group shadow-sm transition-all duration-300" 
+      whileHover={{ x: 5 }}
+      className="bg-card rounded-[24px] p-6 flex items-center justify-between gap-6 group shadow-sm transition-all duration-300" 
       data-testid={`zone-card-${zone.id}`}
     >
       <div className="flex items-center gap-6 min-w-0">
-        <div className="h-16 w-16 rounded-[20px] bg-brand-600/10 flex items-center justify-center shrink-0 border border-border/40 transition-all duration-500">
+        <div className="h-16 w-16 rounded-[20px] bg-brand-600/10 flex items-center justify-center shrink-0 transition-all duration-500">
           <Layers className="h-8 w-8 text-brand-600" />
         </div>
         <div className="min-w-0">
