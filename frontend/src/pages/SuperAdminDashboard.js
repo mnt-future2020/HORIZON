@@ -10,34 +10,53 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users, Building2, CalendarCheck, IndianRupee, Clock, Shield,
   CheckCircle, XCircle, Ban, RotateCcw, Settings, CreditCard,
   Percent, Crown, Eye, EyeOff, Save, KeyRound,
   Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy,
   FileText, Loader2, Star, Video, Plus, UserPlus, Phone,
-  ImagePlus, X, MessageCircle
+  ImagePlus, X, MessageCircle, ShieldCheck
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminSkeleton } from "@/components/SkeletonLoader";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
-function StatCard({ icon: Icon, label, value, sub, color = "text-brand-600", bgColor = "bg-brand-50" }) {
+function StatCard({ icon: Icon, label, value, sub, color = "text-brand-600", bgColor = "bg-brand-600/10" }) {
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</div>
-        <div className={`p-2 rounded-xl ${bgColor}`}>
-          <Icon className={`h-4 w-4 ${color}`} />
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -5, transition: { duration: 0.2 } }}
+      className="glass-premium rounded-[32px] p-7 border border-white/10 shadow-xl overflow-hidden relative group"
+      data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}
+    >
+      {/* Decorative gradient glow */}
+      <div className={`absolute -right-8 -top-8 w-32 h-32 rounded-full opacity-10 blur-3xl transition-opacity group-hover:opacity-20 ${bgColor}`} />
+      
+      <div className="flex items-center justify-between mb-6 relative z-10">
+        <div className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{label}</div>
+        <div className={`p-3 rounded-2xl ${bgColor} flex items-center justify-center shadow-inner`}>
+          <Icon className={`h-5 w-5 ${color} drop-shadow-[0_0_8px_rgba(var(--primary),0.5)]`} />
         </div>
       </div>
-      <div>
-        <div className="text-3xl font-light text-slate-900">{value}</div>
-        {sub && <div className="text-xs text-slate-500 mt-2 font-medium">{sub}</div>}
+
+      <div className="relative z-10">
+        <div className="text-4xl font-black font-display text-foreground tracking-tight mb-1 animate-count-slide">
+          {value}
+        </div>
+        {sub && (
+          <div className="text-[11px] text-muted-foreground/80 font-semibold flex items-center gap-1.5 mt-2 bg-white/5 py-1 px-3 rounded-full w-fit">
+            {sub}
+          </div>
+        )}
       </div>
-    </div>
+      
+      {/* Bottom accent line */}
+      <div className={`absolute bottom-0 left-0 h-[3px] bg-gradient-to-r from-transparent via-${color.replace('text-', '')} to-transparent w-full opacity-30`} />
+    </motion.div>
   );
 }
 
@@ -60,34 +79,34 @@ function OverviewTab() {
         <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} />
         <StatCard icon={Clock} label="Pending Approvals" 
           value={(data.pending_owners || 0) + (data.pending_coaches || 0)} 
-          color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-600" : "text-brand-600"} 
-          bgColor={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "bg-amber-50" : "bg-brand-50"}
+          color={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "text-amber-500" : "text-brand-600"} 
+          bgColor={(data.pending_owners || 0) + (data.pending_coaches || 0) > 0 ? "bg-amber-500/10" : "bg-brand-600/10"}
         />
       </div>
       <div>
-        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Recent Registrations</h3>
-        <div className="space-y-3">
-          {data.recent_users.map(u => {
-            const initialsColor = u.role === "venue_owner" ? "bg-purple-100 text-purple-700" : u.role === "coach" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700";
+        <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mb-4 px-1">Recent Registrations</h3>
+        <div className="bg-card rounded-[24px] border border-border/40 shadow-sm overflow-hidden">
+          {data.recent_users.map((u, i) => {
+            const initialsColor = u.role === "venue_owner" ? "bg-purple-500/10 text-purple-600" : u.role === "coach" ? "bg-blue-500/10 text-blue-600" : "bg-brand-600/10 text-brand-600";
             return (
-              <div key={u.id} className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+              <div key={u.id} className={`p-5 hover:bg-muted/50 transition-colors flex items-center justify-between ${i !== data.recent_users.length - 1 ? "border-b border-border/30" : ""}`}>
                 <div className="flex items-center gap-4">
-                  <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-base ${initialsColor}`}>
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm ${initialsColor}`}>
                     {u.name?.[0]?.toUpperCase()}
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">{u.name}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">{u.email}</div>
+                    <div className="text-sm font-semibold text-foreground tracking-tight">{u.name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{u.email}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-secondary text-muted-foreground px-2.5 py-1 rounded-md">
                     {u.role.replace("_", " ")}
                   </span>
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
-                    u.account_status === "active" ? "bg-brand-50 text-brand-600 border-brand-200" : 
-                    u.account_status === "pending" ? "bg-amber-50 text-amber-600 border-amber-200" : 
-                    "bg-red-50 text-red-600 border-red-200"
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border-none shadow-none ${
+                    u.account_status === "active" ? "bg-green-500/10 text-green-600" : 
+                    u.account_status === "pending" ? "bg-amber-500/10 text-amber-600" : 
+                    "bg-red-500/10 text-red-600"
                   }`}>
                     {u.account_status}
                   </span>
@@ -182,7 +201,7 @@ function UsersTab() {
       <div className="flex flex-wrap gap-2 mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
-            className={`px-4 py-2 rounded-full text-[11px] font-bold tracking-widest transition-all duration-300 uppercase ${filter === f ? "bg-foreground text-background shadow-md" : "bg-secondary/40 text-muted-foreground hover:bg-secondary hover:text-foreground"}`}>
+            className={`px-4 py-2 rounded-full text-[11px] font-bold tracking-widest transition-all duration-300 uppercase ${filter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"}`}>
             {f === "all" ? "All Users" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
           </button>
         ))}
@@ -195,39 +214,39 @@ function UsersTab() {
           <div className="text-muted-foreground text-sm font-medium">No users found matching this filter</div>
         </div>
       ) : (
-        <div className="space-y-2">
-          {users.map(u => (
-            <div key={u.id} className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 group" data-testid={`user-row-${u.id}`}>
+        <div className="bg-card rounded-[24px] border border-border/40 shadow-sm overflow-hidden">
+          {users.map((u, i) => (
+            <div key={u.id} className={`p-5 transition-colors duration-300 group hover:bg-muted/50 ${i !== users.length - 1 ? "border-b border-border/30" : ""}`} data-testid={`user-row-${u.id}`}>
               <div className="flex items-center justify-between flex-wrap gap-4">
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-base shrink-0 ${u.role === "venue_owner" ? "bg-purple-100 text-purple-700" : u.role === "coach" ? "bg-blue-100 text-blue-700" : "bg-brand-100 text-brand-700"}`}>
+                  <div className={`h-11 w-11 rounded-full flex items-center justify-center font-bold text-base shrink-0 ${u.role === "venue_owner" ? "bg-purple-500/10 text-purple-600" : u.role === "coach" ? "bg-blue-500/10 text-blue-600" : "bg-brand-600/10 text-brand-600"}`}>
                     {u.name?.[0]?.toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-semibold truncate text-slate-900 tracking-tight">{u.name}</div>
-                    <div className="text-xs text-slate-500 font-medium truncate mt-0.5">{u.email} {u.phone && <span className="opacity-60 px-1.5">•</span>} {u.phone}</div>
-                    {u.business_name && <div className="text-[11px] text-slate-400 font-medium mt-1.5 inline-flex items-center bg-slate-50 px-2 py-0.5 rounded-md border border-slate-100">Business: {u.business_name} {u.gst_number && <span className="opacity-60 mx-1.5">|</span>} {u.gst_number && `GST: ${u.gst_number}`}</div>}
+                    <div className="text-sm font-semibold truncate text-foreground tracking-tight">{u.name}</div>
+                    <div className="text-xs text-muted-foreground font-medium truncate mt-0.5">{u.email} {u.phone && <span className="opacity-60 px-1.5">•</span>} {u.phone}</div>
+                    {u.business_name && <div className="text-[11px] text-muted-foreground font-medium mt-1.5 inline-flex items-center bg-secondary px-2 py-0.5 rounded-md border-none shadow-none">Business: {u.business_name} {u.gst_number && <span className="opacity-60 mx-1.5">|</span>} {u.gst_number && `GST: ${u.gst_number}`}</div>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">{u.role.replace("_", " ")}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-secondary text-muted-foreground px-2.5 py-1 rounded-md">{u.role.replace("_", " ")}</span>
                   {u.role === "venue_owner" && u.subscription_plan && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-50 text-purple-600 border border-purple-100 px-2.5 py-1 rounded-md">{u.subscription_plan}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-600 border-none px-2.5 py-1 rounded-md">{u.subscription_plan}</span>
                   )}
-                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${
-                    u.account_status === "active" ? "bg-brand-50 text-brand-600 border-brand-200" : 
-                    u.account_status === "pending" ? "bg-amber-50 text-amber-600 border-amber-200" : 
-                    "bg-red-50 text-red-600 border-red-200"
+                  <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border-none shadow-none ${
+                    u.account_status === "active" ? "bg-green-500/10 text-green-600" : 
+                    u.account_status === "pending" ? "bg-amber-500/10 text-amber-600" : 
+                    "bg-red-500/10 text-red-600"
                   }`}>
                     {u.account_status}
                   </span>
                   {/* Venue owner: doc icon */}
                   {u.role === "venue_owner" && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
                     <Button size="sm" variant="ghost"
-                      className={`h-8 px-3 rounded-lg font-semibold text-xs transition-colors ${
-                        u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/5 hover:bg-amber-500/15" :
-                        u.doc_verification_status === "verified" ? "text-brand-500 bg-brand-500/5 hover:bg-brand-500/15" :
-                        "text-destructive bg-destructive/5 hover:bg-destructive/15"
+                      className={`h-8 px-3 rounded-full font-semibold text-xs transition-colors border-none ${
+                        u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500/20" :
+                        u.doc_verification_status === "verified" ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600/20" :
+                        "text-destructive bg-destructive/10 hover:bg-destructive/20"
                       }`}
                       onClick={() => openDocViewer(u.id)} data-testid={`docs-${u.id}`}>
                       <FileText className="h-4 w-4 mr-1.5" /> Docs
@@ -236,11 +255,11 @@ function UsersTab() {
                   {/* Pending: Approve/Reject for non-venue_owners */}
                   {u.account_status === "pending" && u.role !== "venue_owner" && (
                     <>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-brand-600 hover:bg-brand-50"
+                      <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-brand-600 bg-brand-600/10 hover:bg-brand-600/20"
                         onClick={() => handleAction(u.id, "approve")} data-testid={`approve-${u.id}`}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Approve
                       </Button>
-                      <Button size="sm" variant="ghost" className="h-7 px-2 text-red-600 hover:bg-red-50"
+                      <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-red-600 bg-red-500/10 hover:bg-red-500/20"
                         onClick={() => handleAction(u.id, "reject")} data-testid={`reject-${u.id}`}>
                         <XCircle className="h-3.5 w-3.5 mr-1" /> Reject
                       </Button>
@@ -248,25 +267,25 @@ function UsersTab() {
                   )}
                   {/* Pending venue_owner: show doc status badge */}
                   {u.account_status === "pending" && u.role === "venue_owner" && (
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border-none ${u.doc_verification_status === "pending_review" ? "bg-amber-500/10 text-amber-600" : "bg-blue-500/10 text-blue-600"}`}>
                       {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
                     </span>
                   )}
                   {u.account_status === "active" && (
-                    <Button size="sm" variant="ghost" className="h-7 px-2 text-amber-400 hover:bg-amber-500/10"
+                    <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-amber-500 bg-amber-500/10 hover:bg-amber-500/20"
                       onClick={() => handleAction(u.id, "suspend")} data-testid={`suspend-${u.id}`}>
                       <Ban className="h-3.5 w-3.5 mr-1" /> Suspend
                     </Button>
                   )}
                   {u.role === "coach" && u.account_status === "active" && (
-                    <Button size="sm" variant="ghost" className={`h-7 px-2 ${u.is_verified ? "text-blue-400 hover:bg-blue-500/10" : "text-muted-foreground hover:border-brand-600/10"}`}
+                    <Button size="sm" variant="ghost" className={`h-7 px-3 rounded-full ${u.is_verified ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600/20" : "text-muted-foreground bg-secondary hover:bg-muted"}`}
                       onClick={() => handleVerify(u.id)} data-testid={`verify-${u.id}`}>
                       <CheckCircle2 className={`h-3.5 w-3.5 mr-1 ${u.is_verified ? "" : "opacity-40"}`} />
                       {u.is_verified ? "Verified" : "Verify"}
                     </Button>
                   )}
                   {(u.account_status === "suspended" || u.account_status === "rejected") && (
-                    <Button size="sm" variant="ghost" className="h-7 px-2 border-brand-600 hover:border-brand-600/10"
+                    <Button size="sm" variant="ghost" className="h-7 px-3 rounded-full text-brand-600 bg-brand-600/10 hover:bg-brand-600/20"
                       onClick={() => handleAction(u.id, "activate")} data-testid={`activate-${u.id}`}>
                       <RotateCcw className="h-3.5 w-3.5 mr-1" /> Activate
                     </Button>
@@ -398,6 +417,102 @@ function UsersTab() {
   );
 }
 
+function VenueItem({ venue: v, index, onAssign, onToggle }) {
+  const hasImages = v.images && v.images.length > 0;
+  const mainImage = hasImages ? v.images[0] : null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.05 }}
+      whileHover={{ scale: 1.01, transition: { duration: 0.2 } }}
+      className="glass-premium rounded-[32px] p-6 mb-4 border border-white/5 shadow-lg group relative overflow-hidden"
+    >
+      <div className="flex items-start gap-6 relative z-10">
+        {/* Venue Thumbnail */}
+        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 border border-white/10 shadow-inner bg-muted/20">
+          {mainImage ? (
+            <img src={mediaUrl(mainImage)} alt={v.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-brand-600/5">
+              <Building2 className="h-8 w-8 text-brand-600/30" />
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 mb-2">
+            <h4 className="text-lg font-black tracking-tight text-foreground truncate">{v.name}</h4>
+            <div className="flex items-center gap-1.5">
+              <Badge variant="outline" className={`text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none ${
+                v.badge === "bookable" ? "bg-emerald-500/10 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.15)]" : "bg-amber-500/10 text-amber-500"
+              }`}>
+                {v.badge === "bookable" ? "Bookable" : "Enquiry"}
+              </Badge>
+              {v.owner_id ? (
+                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-blue-500/10 text-blue-500">
+                  Linked
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="text-[9px] font-black uppercase tracking-wider h-5 rounded-full border-none bg-orange-500/10 text-orange-500">
+                  Manual
+                </Badge>
+              )}
+            </div>
+          </div>
+          
+          <p className="text-xs text-muted-foreground font-medium mb-4 line-clamp-1 opacity-80">{v.address}{v.address && ", "}{v.city}</p>
+          
+          <div className="flex items-center gap-2 flex-wrap">
+            {v.sports?.map(sport => (
+              <span key={sport} className="text-[9px] font-black uppercase tracking-widest bg-white/5 text-muted-foreground py-1 px-3 rounded-full border border-white/5">
+                {sport}
+              </span>
+            ))}
+            <div className="h-4 w-[1px] bg-white/10 mx-1" />
+            <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
+              <Crown className="w-3 h-3" /> {v.turfs} Turfs
+            </span>
+            <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
+              <CalendarCheck className="w-3 h-3" /> {v.total_bookings} Bookings
+            </span>
+            {v.contact_phone && (
+              <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
+                <Phone className="w-3 h-3" /> {v.contact_phone}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Actions Section */}
+        <div className="flex flex-col items-end justify-between self-stretch gap-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <span className={`text-[10px] font-black uppercase tracking-tighter ${v.status === "active" ? "text-emerald-500" : "text-rose-500"}`}>
+              {v.status === "active" ? "Live" : "Inactive"}
+            </span>
+            <Switch checked={v.status === "active"} onCheckedChange={() => onToggle(v.id, v.status)} />
+          </div>
+          
+          {!v.owner_id && (
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="h-9 px-4 text-[11px] font-black uppercase tracking-wider rounded-full border-white/10 bg-white/5 hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all"
+              onClick={() => onAssign(v)}
+            >
+              <UserPlus className="h-3.5 w-3.5 mr-2" /> Assign Owner
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Background patterns */}
+      <div className="absolute top-0 right-0 w-32 h-full bg-gradient-to-l from-brand-600/5 to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+    </motion.div>
+  );
+}
+
 function VenuesTab() {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -488,51 +603,26 @@ function VenuesTab() {
   if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
   return (
     <div className="space-y-3" data-testid="admin-venues-tab">
-      <div className="flex items-center justify-between mb-6">
-        <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{venues.length} venues</span>
-        <Button size="sm" className="gap-2 h-9 px-5 text-xs font-bold tracking-wide rounded-full shadow-md hover:shadow-lg transition-all" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4" /> Add Venue
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-2xl font-black tracking-tight text-foreground uppercase">Venues</h2>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mt-1">{venues.length} Facilities Managed</p>
+        </div>
+        <Button size="sm" className="gap-2 h-11 px-6 text-xs font-black tracking-widest uppercase rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 active:scale-95 bg-brand-600 text-white" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" /> Add New Venue
         </Button>
       </div>
 
-      <div className="grid gap-3">
-      {venues.map(v => (
-        <div key={v.id} className="bg-white rounded-xl p-5 border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300 flex items-center justify-between flex-wrap gap-4" data-testid={`venue-row-${v.id}`}>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3 mb-1.5">
-              <span className="text-base font-semibold tracking-tight text-slate-900">{v.name}</span>
-              <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md border ${
-                v.badge === "bookable" ? "bg-brand-50 text-brand-600 border-brand-100" : "bg-amber-50 text-amber-600 border-amber-100"
-              }`}>
-                {v.badge === "bookable" ? "Bookable" : "Enquiry"}
-              </span>
-              <span className={`text-[10px] uppercase tracking-wider font-bold px-2.5 py-1 rounded-md border ${
-                v.owner_id ? "bg-blue-50 text-blue-600 border-blue-100" : "bg-orange-50 text-orange-600 border-orange-100"
-              }`}>
-                {v.owner_id ? "Owner Linked" : "Manual Entry"}
-              </span>
-            </div>
-            <div className="text-sm text-slate-500 font-medium mb-3">{v.address}{v.address && ", "}{v.city}</div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-50 text-slate-500 border border-slate-100 px-2.5 py-1 rounded-md">{v.sports?.join(", ")}</span>
-              <span className="text-xs text-slate-400 font-medium">{v.turfs} turfs <span className="opacity-50 mx-1.5">•</span> {v.total_bookings} bookings</span>
-              {!v.owner_id && <span className="text-[11px] text-amber-600 font-bold bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-md">No owner</span>}
-              {v.contact_phone && <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-md"><Phone className="h-3 w-3 opacity-70" />{v.contact_phone}</span>}
-            </div>
-          </div>
-          <div className="flex items-center gap-5 shrink-0">
-            {!v.owner_id && (
-              <Button size="sm" variant="outline" className="h-9 px-3.5 text-xs gap-2 font-bold rounded-lg border-slate-200 hover:bg-slate-50" onClick={() => openAssignDialog(v)}>
-                <UserPlus className="h-4 w-4 text-brand-600" /> Assign Owner
-              </Button>
-            )}
-            <div className="flex items-center gap-3 border-l border-slate-100 pl-5">
-              <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md ${v.status === "active" ? "bg-brand-50 text-brand-600" : "bg-red-50 text-red-600"}`}>{v.status}</span>
-              <Switch checked={v.status === "active"} onCheckedChange={() => toggleVenue(v.id, v.status)} data-testid={`toggle-venue-${v.id}`} />
-            </div>
-          </div>
-        </div>
-      ))}
+      <div className="grid grid-cols-1 gap-4">
+        {venues.map((v, i) => (
+          <VenueItem 
+            key={v.id} 
+            venue={v} 
+            index={i} 
+            onAssign={openAssignDialog} 
+            onToggle={toggleVenue} 
+          />
+        ))}
       </div>
 
       {/* Create Venue Dialog */}
@@ -757,6 +847,7 @@ function SettingsTab() {
   const [changingPw, setChangingPw] = useState(false);
   const [testingS3, setTestingS3] = useState(false);
   const [s3Status, setS3Status] = useState(null); // null | {ok, message}
+  const [activeSubTab, setActiveSubTab] = useState("payments");
 
   useEffect(() => {
     adminAPI.getSettings().then(r => setSettings(r.data)).catch(() => toast.error("Failed to load settings"));
@@ -829,329 +920,476 @@ function SettingsTab() {
   const s3 = settings.s3_storage || {};
   const s3Configured = !!(s3.access_key_id && s3.secret_access_key && s3.bucket_name && s3.region);
 
+  const subTabs = [
+    { id: "payments", label: "Payments", icon: CreditCard },
+    { id: "storage", label: "Cloud Storage", icon: Cloud },
+    { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
+    { id: "platform", label: "Platform", icon: Crown },
+    { id: "security", label: "Security", icon: ShieldCheck }
+  ];
+
   return (
-    <div className="space-y-8 max-w-2xl" data-testid="admin-settings-tab">
-      {/* Payment Gateway */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-brand-600/10">
-            <CreditCard className="h-5 w-5 border-brand-600" />
-          </div>
-          <h3 className="text-lg font-display font-semibold tracking-tight">Payment Gateway</h3>
-        </div>
-        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Provider</Label>
-            <Input value={settings.payment_gateway.provider} readOnly className="mt-1.5 bg-background border-border h-10 text-sm" />
-          </div>
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Key ID</Label>
-            <Input value={settings.payment_gateway.key_id} onChange={e => updateGateway("key_id", e.target.value)}
-              className="mt-1.5 bg-background border-border h-10 text-sm" placeholder="Enter Razorpay Key ID"
-              data-testid="gateway-key-id" />
-          </div>
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Key Secret</Label>
-            <div className="relative mt-1.5">
-              <Input type={showSecret ? "text" : "password"} value={settings.payment_gateway.key_secret}
-                onChange={e => updateGateway("key_secret", e.target.value)}
-                className="bg-background border-border h-10 text-sm pr-10" placeholder="Enter key secret"
-                data-testid="gateway-key-secret" />
-              <button onClick={() => setShowSecret(!showSecret)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 pt-2">
-            <Switch checked={settings.payment_gateway.is_live} onCheckedChange={v => updateGateway("is_live", v)} data-testid="gateway-live-toggle" />
-            <Label className="text-sm font-semibold">{settings.payment_gateway.is_live ? "Live Mode Active" : "Test Mode Active"}</Label>
-          </div>
-        </div>
-      </section>
+    <div className="space-y-8 max-w-4xl pb-10" data-testid="admin-settings-tab">
+      {/* Sub-tab Navigation */}
+      <div className="flex items-center gap-2 p-1.5 glass-premium rounded-2xl w-fit mb-8 border border-white/5">
+        {subTabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveSubTab(tab.id)}
+            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all duration-300 ${
+              activeSubTab === tab.id 
+                ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95" 
+                : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+            }`}
+          >
+            <tab.icon className={`w-3.5 h-3.5 ${activeSubTab === tab.id ? "text-white" : "text-muted-foreground"}`} />
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-      {/* ─── AWS S3 Storage ─── */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl border-brand-600/10">
-            <Cloud className="h-5 w-5 border-brand-600" />
-          </div>
-          <h3 className="text-lg font-display font-semibold tracking-tight">AWS S3 Storage</h3>
-          {s3Configured ? (
-            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-brand-600 font-bold bg-brand-500/10 border border-brand-500/20 px-2.5 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 inline-block mr-1" /> Configured
-            </span>
-          ) : (
-            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground font-bold bg-secondary/50 border border-border px-2.5 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block mr-1" /> Not Configured
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground font-medium mb-5 px-1">
-          Venue images, profile photos, and match videos will be stored in your S3 bucket.
-        </p>
-        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Access Key ID</Label>
-              <Input value={s3.access_key_id || ""} onChange={e => updateS3("access_key_id", e.target.value)}
-                className="mt-1.5 bg-background border-border h-10 text-sm font-mono"
-                placeholder="Enter AWS Access Key ID" />
-            </div>
-            <div>
-              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Secret Access Key</Label>
-              <div className="relative mt-1.5">
-                <Input
-                  type={showS3Secret ? "text" : "password"}
-                  value={s3.secret_access_key || ""}
-                  onChange={e => updateS3("secret_access_key", e.target.value)}
-                  className="bg-background border-border h-10 text-sm font-mono pr-10"
-                  placeholder="Enter AWS Secret Access Key" />
-                <button onClick={() => setShowS3Secret(!showS3Secret)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  {showS3Secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Bucket Name</Label>
-              <Input value={s3.bucket_name || ""} onChange={e => updateS3("bucket_name", e.target.value)}
-                className="mt-1.5 bg-background border-border h-10 text-sm"
-                placeholder="horizon-mnt-media" />
-            </div>
-            <div>
-              <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">AWS Region</Label>
-              <select
-                value={s3.region || "ap-south-1"}
-                onChange={e => updateS3("region", e.target.value)}
-                className="mt-1.5 w-full h-10 rounded-md border border-border bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:border-brand-600/50"
-              >
-                <option value="ap-south-1">ap-south-1 (Mumbai)</option>
-                <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
-                <option value="us-east-1">us-east-1 (N. Virginia)</option>
-                <option value="us-west-2">us-west-2 (Oregon)</option>
-                <option value="eu-west-1">eu-west-1 (Ireland)</option>
-                <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
-              </select>
-            </div>
-          </div>
-
-          {/* S3 Test Result */}
-          {s3Status && (
-            <div className={`flex items-start gap-2 rounded-lg p-3 text-sm ${s3Status.ok ? "bg-green-500/10 text-green-600 border border-green-500/20" : "bg-red-500/10 text-red-600 border border-red-500/20"}`}>
-              {s3Status.ok
-                ? <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" />
-                : <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />}
-              <span>{s3Status.message}</span>
-            </div>
-          )}
-
-          <Button variant="outline" onClick={handleTestS3} disabled={testingS3 || !s3Configured} className="w-full h-9 text-sm gap-2">
-            {testingS3 ? <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /> Testing...</>
-              : <><Wifi className="h-4 w-4" /> Test S3 Connection</>}
-          </Button>
-
-          <p className="text-[11px] text-muted-foreground">
-            ⚠️ Make sure your S3 bucket has public read access enabled (or use a CDN). IAM user needs <code className="bg-secondary px-1 rounded">s3:PutObject</code> and <code className="bg-secondary px-1 rounded">s3:HeadBucket</code> permissions.
-          </p>
-        </div>
-      </section>
-
-      {/* WhatsApp Business Cloud API */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-2">
-          <div className="p-2.5 rounded-xl border-brand-600/10">
-            <MessageCircle className="h-5 w-5 border-brand-600" />
-          </div>
-          <h3 className="text-lg font-display font-semibold tracking-tight">WhatsApp Business API</h3>
-          {settings.whatsapp?.phone_number_id && settings.whatsapp?.access_token ? (
-            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-brand-600 font-bold bg-brand-500/10 border border-brand-500/20 px-2.5 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-500 inline-block mr-1" /> Configured
-            </span>
-          ) : (
-            <span className="ml-auto flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground font-bold bg-secondary/50 border border-border px-2.5 py-1 rounded-md">
-              <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground inline-block mr-1" /> Not Configured
-            </span>
-          )}
-        </div>
-        <p className="text-sm text-muted-foreground font-medium mb-5 px-1">
-          Enquiry messages are sent from your business number to venue owners automatically.
-        </p>
-        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Phone Number ID</Label>
-            <Input value={settings.whatsapp?.phone_number_id || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, phone_number_id: e.target.value } }))}
-              className="mt-1.5 bg-background border-border h-10 text-sm font-mono" placeholder="e.g. 123456789012345" />
-            <p className="text-[10px] text-muted-foreground mt-1">Found in Meta Developer Console → WhatsApp → API Setup</p>
-          </div>
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Permanent Access Token</Label>
-            <div className="relative mt-1.5">
-              <Input type={showWaToken ? "text" : "password"} value={settings.whatsapp?.access_token || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, access_token: e.target.value } }))}
-                className="bg-background border-border h-10 text-sm font-mono pr-10" placeholder="EAAxxxxxxx..." />
-              <button onClick={() => setShowWaToken(!showWaToken)} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                {showWaToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Generate a permanent token from Meta Business Settings → System Users</p>
-          </div>
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Business Phone (display)</Label>
-            <div className="flex mt-1.5">
-              <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
-              <Input value={settings.whatsapp?.business_phone || ""} onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: cleanPhone(e.target.value) } }))}
-                className="bg-background border-border h-10 text-sm rounded-l-none" placeholder="98765 43210" maxLength={10} />
-            </div>
-            <p className="text-[10px] text-muted-foreground mt-1">The registered WhatsApp Business number (for reference only).</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Platform Commissions */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-brand-600/10">
-            <Percent className="h-5 w-5 border-brand-600" />
-          </div>
-          <h3 className="text-lg font-display font-semibold tracking-tight">Platform Commissions</h3>
-        </div>
-        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-5 hover:shadow-md transition-all duration-300">
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Booking Commission</Label>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Input type="number" min={0} max={50} value={settings.booking_commission_pct}
-                onChange={e => setSettings(s => ({ ...s, booking_commission_pct: Number(e.target.value) }))}
-                className="bg-background border-border h-10 text-sm w-24" data-testid="commission-input" />
-              <span className="text-sm text-muted-foreground">% of each venue booking</span>
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Coaching Commission</Label>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Input type="number" min={0} max={50} value={settings.coaching_commission_pct ?? 10}
-                onChange={e => setSettings(s => ({ ...s, coaching_commission_pct: Number(e.target.value) }))}
-                className="bg-background border-border h-10 text-sm w-24" />
-              <span className="text-sm text-muted-foreground">% of each coaching session</span>
-            </div>
-          </div>
-          <div>
-            <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Tournament Commission</Label>
-            <div className="flex items-center gap-3 mt-1.5">
-              <Input type="number" min={0} max={50} value={settings.tournament_commission_pct ?? 10}
-                onChange={e => setSettings(s => ({ ...s, tournament_commission_pct: Number(e.target.value) }))}
-                className="bg-background border-border h-10 text-sm w-24" />
-              <span className="text-sm text-muted-foreground">% of each tournament entry fee</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Subscription Plans */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-brand-600/10">
-            <Crown className="h-5 w-5 border-brand-600" />
-          </div>
-          <h3 className="text-lg font-display font-semibold tracking-tight">SaaS Subscription Plans</h3>
-        </div>
-        <div className="space-y-4">
-          {settings.subscription_plans.map((plan, idx) => (
-            <div key={plan.id} className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 space-y-4 hover:shadow-md transition-all duration-300" data-testid={`plan-${plan.id}`}>
-              <div className="flex items-center justify-between">
-                <span className="text-base font-bold tracking-tight">{plan.name}</span>
-                <Badge variant="secondary" className="text-[10px] font-bold tracking-widest uppercase bg-secondary/60 px-2.5 py-1">{plan.id}</Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-[10px] font-mono uppercase text-muted-foreground">Monthly Price</Label>
-                  <Input type="number" value={plan.price} onChange={e => updatePlan(idx, "price", Number(e.target.value))}
-                    className="mt-1 bg-background border-border h-9 text-sm" data-testid={`plan-price-${plan.id}`} />
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeSubTab}
+          initial={{ opacity: 0, x: 10 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -10 }}
+          transition={{ duration: 0.2 }}
+          className="min-h-[400px]"
+        >
+          {activeSubTab === "payments" && (
+            <section className="space-y-8 max-w-3xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                  <CreditCard className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <Label className="text-[10px] font-mono uppercase text-muted-foreground">Max Venues</Label>
-                  <Input type="number" value={plan.max_venues} onChange={e => updatePlan(idx, "max_venues", Number(e.target.value))}
-                    className="mt-1 bg-background border-border h-9 text-sm" data-testid={`plan-venues-${plan.id}`} />
+                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">Payment Gateway</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Global Transaction Settings</p>
                 </div>
               </div>
-              <div>
-                <Label className="text-[10px] font-mono uppercase text-muted-foreground">Features (comma separated)</Label>
-                <Input value={plan.features.join(", ")} onChange={e => updatePlan(idx, "features", e.target.value.split(",").map(f => f.trim()).filter(Boolean))}
-                  className="mt-1 bg-background border-border h-9 text-sm" data-testid={`plan-features-${plan.id}`} />
+              
+              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Provider</Label>
+                    <div className="h-12 flex items-center px-4 bg-white/5 rounded-2xl border border-white/10 text-sm font-bold text-foreground">
+                      {settings.payment_gateway.provider}
+                    </div>
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/10 w-fit">
+                      <Switch checked={settings.payment_gateway.is_live} onCheckedChange={v => updateGateway("is_live", v)} data-testid="gateway-live-toggle" />
+                      <Label className="text-xs font-black uppercase tracking-wider cursor-pointer">
+                        {settings.payment_gateway.is_live ? "Live Mode" : "Test Mode"}
+                      </Label>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Key ID</Label>
+                    <Input 
+                      value={settings.payment_gateway.key_id} 
+                      onChange={e => updateGateway("key_id", e.target.value)}
+                      className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-2xl focus:ring-brand-600/50" 
+                      placeholder="Enter Razorpay Key ID"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Key Secret</Label>
+                    <div className="relative">
+                      <Input 
+                        type={showSecret ? "text" : "password"} 
+                        value={settings.payment_gateway.key_secret}
+                        onChange={e => updateGateway("key_secret", e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-sm font-bold pr-12 rounded-2xl focus:ring-brand-600/50" 
+                        placeholder="Enter key secret"
+                      />
+                      <button 
+                        onClick={() => setShowSecret(!showSecret)} 
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
+            </section>
+          )}
+
+          {activeSubTab === "storage" && (
+            <section className="space-y-8 max-w-3xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                  <Cloud className="h-6 w-6 text-brand-600" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-xl font-black tracking-tight text-foreground uppercase">Cloud Storage</h3>
+                    <Badge className={`text-[9px] font-black uppercase tracking-widest border-none ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                      {s3Configured ? "Connected" : "Not Linked"}
+                    </Badge>
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Media Assets Management</p>
+                </div>
+              </div>
+
+              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6 group">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Access Key ID</Label>
+                    <Input 
+                      value={s3.access_key_id || ""} 
+                      onChange={e => updateS3("access_key_id", e.target.value)}
+                      className="h-12 bg-white/5 border-white/10 text-sm font-mono rounded-2xl focus:ring-brand-600/50"
+                      placeholder="AWS_ACCESS_KEY_ID" 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Secret Access Key</Label>
+                    <div className="relative">
+                      <Input
+                        type={showS3Secret ? "text" : "password"}
+                        value={s3.secret_access_key || ""}
+                        onChange={e => updateS3("secret_access_key", e.target.value)}
+                        className="h-12 bg-white/5 border-white/10 text-sm font-mono pr-12 rounded-2xl focus:ring-brand-600/50"
+                        placeholder="AWS_SECRET_ACCESS_KEY" 
+                      />
+                      <button 
+                        onClick={() => setShowS3Secret(!showS3Secret)}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {showS3Secret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Bucket Name</Label>
+                    <Input 
+                      value={s3.bucket_name || ""} 
+                      onChange={e => updateS3("bucket_name", e.target.value)}
+                      className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-2xl focus:ring-brand-600/50"
+                      placeholder="horizon-mnt-media" 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Region</Label>
+                    <select
+                      value={s3.region || "ap-south-1"}
+                      onChange={e => updateS3("region", e.target.value)}
+                      className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-brand-600/50 appearance-none transition-all"
+                    >
+                      <option value="ap-south-1">ap-south-1 (Mumbai)</option>
+                      <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+                      <option value="us-east-1">us-east-1 (N. Virginia)</option>
+                      <option value="us-west-2">us-west-2 (Oregon)</option>
+                      <option value="eu-west-1">eu-west-1 (Ireland)</option>
+                      <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {s3Status && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold border-none ${s3Status.ok ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}
+                  >
+                    {s3Status.ok ? <CheckCircle className="h-5 w-5 mt-0.5 shrink-0" /> : <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />}
+                    <span>{s3Status.message}</span>
+                  </motion.div>
+                )}
+
+                <div className="pt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleTestS3} 
+                    disabled={testingS3 || !s3Configured} 
+                    className="w-full h-12 rounded-2xl text-xs font-black uppercase tracking-widest gap-3 border-white/10 bg-white/5 hover:bg-white/10 text-foreground hover:text-brand-600 hover:border-brand-600/50 transition-all shadow-lg active:scale-95"
+                  >
+                    {testingS3 ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
+                    ) : (
+                      <Wifi className="h-4 w-4" />
+                    )}
+                    Test Connection
+                  </Button>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activeSubTab === "whatsapp" && (
+            <section className="space-y-8 max-w-3xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                  <MessageCircle className="h-6 w-6 text-brand-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">WhatsApp Business</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Automated Enquiry Messaging</p>
+                </div>
+              </div>
+
+              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Phone Number ID</Label>
+                    <Input 
+                      value={settings.whatsapp?.phone_number_id || ""} 
+                      onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, phone_number_id: e.target.value } }))}
+                      className="h-12 bg-white/5 border-white/10 text-sm font-mono rounded-2xl focus:ring-brand-600/50" 
+                      placeholder="123456789012345" 
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Business Phone</Label>
+                    <div className="flex">
+                      <span className="h-12 inline-flex items-center px-4 bg-white/10 border border-white/10 border-r-0 rounded-l-2xl text-[11px] font-black text-muted-foreground">+91</span>
+                      <Input 
+                        value={settings.whatsapp?.business_phone || ""} 
+                        onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: cleanPhone(e.target.value) } }))}
+                        className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-l-none rounded-r-2xl focus:ring-brand-600/50" 
+                        placeholder="98765 43210" 
+                        maxLength={10} 
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-2 block">Access Token</Label>
+                  <div className="relative">
+                    <Input 
+                      type={showWaToken ? "text" : "password"} 
+                      value={settings.whatsapp?.access_token || ""} 
+                      onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, access_token: e.target.value } }))}
+                      className="h-12 bg-white/5 border-white/10 text-sm font-mono pr-12 rounded-2xl focus:ring-brand-600/50" 
+                      placeholder="EAAxxxxxxx..." 
+                    />
+                    <button 
+                      onClick={() => setShowWaToken(!showWaToken)} 
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      {showWaToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activeSubTab === "platform" && (
+            <section className="space-y-12">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                      <Percent className="h-6 w-6 text-brand-600" />
+                    </div>
+                    <h3 className="text-lg font-black tracking-tight text-foreground uppercase">Revenue Share</h3>
+                  </div>
+                  
+                  <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+                    {[
+                      { label: "Bookings", key: "booking_commission_pct", icon: CalendarCheck },
+                      { label: "Coaching", key: "coaching_commission_pct", icon: GraduationCap },
+                      { label: "Tournaments", key: "tournament_commission_pct", icon: Trophy }
+                    ].map((comm, idx) => (
+                      <div key={comm.key} className="flex items-center justify-between group">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-xl bg-white/5 text-muted-foreground group-hover:text-brand-600 transition-colors">
+                            <comm.icon className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">{comm.label}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Input 
+                            type="number" 
+                            min={0} 
+                            max={50} 
+                            value={settings[comm.key] ?? 10}
+                            onChange={e => setSettings(s => ({ ...s, [comm.key]: Number(e.target.value) }))}
+                            className="h-10 bg-white/5 border-white/10 text-sm font-black w-20 rounded-xl focus:ring-brand-600/50 text-center" 
+                          />
+                          <span className="text-xs font-black text-muted-foreground">%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                      <Crown className="h-6 w-6 text-brand-600" />
+                    </div>
+                    <h3 className="text-lg font-black tracking-tight text-foreground uppercase">Service Limits</h3>
+                  </div>
+                  <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl flex items-center justify-center">
+                    <p className="text-sm font-bold text-muted-foreground text-center px-4">Subscription plan quotas are configured in the section below.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-8">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                    <Crown className="h-6 w-6 text-brand-600" />
+                  </div>
+                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">SaaS Subscription Models</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {settings.subscription_plans.map((plan, idx) => (
+                    <div key={plan.id} className="glass-premium rounded-[32px] p-6 border border-white/5 shadow-xl space-y-6 relative overflow-hidden group">
+                      <div className="flex items-center justify-between relative z-10">
+                        <span className="text-sm font-black tracking-tight uppercase text-brand-600">{plan.name}</span>
+                        <Badge className="text-[8px] font-black uppercase tracking-widest bg-white/10 text-white border-none py-1 px-2 rounded-full">{plan.id}</Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 gap-4 relative z-10">
+                        <div>
+                          <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Monthly Rate</Label>
+                          <div className="flex items-center">
+                            <span className="text-lg font-black mr-1 text-muted-foreground">₹</span>
+                            <Input 
+                              type="number" 
+                              value={plan.price} 
+                              onChange={e => updatePlan(idx, "price", Number(e.target.value))}
+                              className="h-9 bg-white/5 border-white/10 text-sm font-black rounded-lg focus:ring-brand-600/50" 
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Max Units</Label>
+                          <Input 
+                            type="number" 
+                            value={plan.max_venues} 
+                            onChange={e => updatePlan(idx, "max_venues", Number(e.target.value))}
+                            className="h-9 bg-white/5 border-white/10 text-sm font-black rounded-lg focus:ring-brand-600/50" 
+                          />
+                        </div>
+                      </div>
+
+                      <div className="relative z-10">
+                        <Label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mb-1.5 block">Core Features</Label>
+                        <textarea 
+                          value={plan.features.join(", ")} 
+                          onChange={e => updatePlan(idx, "features", e.target.value.split(",").map(f => f.trim()).filter(Boolean))}
+                          className="w-full bg-white/5 border border-white/10 text-[10px] font-bold p-3 rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-brand-600/50 transition-all resize-none" 
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activeSubTab === "security" && (
+            <section className="space-y-8 max-w-xl">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
+                  <ShieldCheck className="h-6 w-6 text-brand-600" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black tracking-tight text-foreground uppercase">Access Security</h3>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">Admin Credentials & Auth</p>
+                </div>
+              </div>
+
+              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+                <div>
+                  <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground mb-4 block">Reset Alpha Credentials</Label>
+                  <div className="flex gap-2">
+                    <Input 
+                      type="password" 
+                      value={newPassword} 
+                      onChange={e => setNewPassword(e.target.value)}
+                      placeholder="New password" 
+                      className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-2xl focus:ring-brand-600/50" 
+                    />
+                    <Button 
+                      onClick={handleChangePassword} 
+                      disabled={changingPw || !newPassword} 
+                      className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-[10px] bg-white/10 text-foreground hover:bg-brand-600 transition-all shadow-lg active:scale-95"
+                    >
+                      {changingPw ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Global Save */}
+      <div className="pt-8 border-t border-white/5">
+        <Button 
+          onClick={saveSettings} 
+          disabled={saving} 
+          className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white font-black text-sm uppercase tracking-[0.2em] rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
+        >
+          {saving ? (
+            <Loader2 className="h-5 w-5 animate-spin" />
+          ) : (
+            <div className="flex items-center gap-3">
+              <Save className="h-5 w-5 transition-transform group-hover:rotate-12" />
+              Commit Global Configuration
             </div>
-          ))}
-        </div>
-      </section>
-
-      <Button onClick={saveSettings} disabled={saving} className="-brand-600 border-brand-600-foreground font-bold text-sm tracking-wide w-full h-12 rounded-xl shadow-md hover:shadow-lg transition-all mb-10" data-testid="save-settings-btn">
-        {saving ? "Saving..." : <><Save className="h-4 w-4 mr-2" /> Save All Settings</>}
-      </Button>
-
-      {/* Change Password */}
-      <section className="mb-10">
-        <div className="flex items-center gap-3 mb-5">
-          <div className="p-2.5 rounded-xl border-brand-600/10">
-            <KeyRound className="h-5 w-5 border-brand-600" />
-          </div>
-          <h3 className="text-lg font-display font-semibold tracking-tight">Change Admin Password</h3>
-        </div>
-        <div className="bg-card border border-border/40 shadow-sm rounded-2xl p-6 hover:shadow-md transition-all duration-300">
-          <div className="flex gap-3">
-            <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-              placeholder="New password (min 6 chars)" className="bg-background border-border h-10 text-sm" data-testid="new-password-input" />
-            <Button onClick={handleChangePassword} disabled={changingPw} variant="outline" className="shrink-0 h-10" data-testid="change-password-btn">
-              {changingPw ? "..." : "Update"}
-            </Button>
-          </div>
-        </div>
-      </section>
+          )}
+        </Button>
+      </div>
     </div>
   );
 }
 
 export default function SuperAdminDashboard() {
   return (
-    <div className="max-w-[1400px] mx-auto px-8 py-8 min-h-screen bg-slate-50/50" data-testid="super-admin-dashboard">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Admin Console</h1>
-          <p className="text-sm text-slate-500">Horizon Platform Management</p>
-        </div>
+    <div className="min-h-screen bg-transparent pb-20 md:pb-8" data-testid="super-admin-dashboard">
+      <div className="w-full py-6 flex flex-col gap-8 items-start">
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full">
+          
+          {/* Page Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-1">Admin Console</h1>
+            <p className="text-sm text-muted-foreground">Horizon Platform Management</p>
+          </div>
 
-        <Tabs defaultValue="overview" className="w-full" data-testid="admin-tabs">
-          <TabsList className="bg-transparent border-b border-slate-200 w-full justify-start h-auto p-0 rounded-none mb-8 space-x-8 overflow-x-auto hide-scrollbar">
-            <TabsTrigger value="overview" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data-[state=active]:bg-transparent transition-all" data-testid="tab-overview">
-              Overview
-              <TabsIndicator value="overview" />
-            </TabsTrigger>
-            <TabsTrigger value="users" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data task-[state=active]:bg-transparent transition-all" data-testid="tab-users">
-              Users
-              <TabsIndicator value="users" />
-            </TabsTrigger>
-            <TabsTrigger value="venues" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data-[state=active]:bg-transparent transition-all" data-testid="tab-venues">
-              Venues
-              <TabsIndicator value="venues" />
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="relative pb-3 text-sm font-bold text-slate-500 data-[state=active]:text-brand-600 rounded-none border-none bg-transparent shadow-none data-[state=active]:bg-transparent transition-all" data-testid="tab-settings">
-              Settings
-              <TabsIndicator value="settings" />
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="overview" className="mt-0 outline-none"><OverviewTab /></TabsContent>
-          <TabsContent value="users" className="mt-0 outline-none"><UsersTab /></TabsContent>
-          <TabsContent value="venues" className="mt-0 outline-none"><VenuesTab /></TabsContent>
-          <TabsContent value="settings" className="mt-0 outline-none"><SettingsTab /></TabsContent>
-        </Tabs>
-      </motion.div>
+          <Tabs defaultValue="overview" className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
+            <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-6">
+              <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
+                {["overview", "users", "venues", "settings"].map((tab) => (
+                  <TabsTrigger key={tab} value={tab} 
+                    className="relative pb-2 text-sm font-bold text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" 
+                    data-testid={`tab-${tab}`}>
+                    {tab}
+                    <TabsIndicator />
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
+            
+            <TabsContent value="overview" className="mt-0 outline-none w-full"><OverviewTab /></TabsContent>
+            <TabsContent value="users" className="mt-0 outline-none w-full"><UsersTab /></TabsContent>
+            <TabsContent value="venues" className="mt-0 outline-none w-full"><VenuesTab /></TabsContent>
+            <TabsContent value="settings" className="mt-0 outline-none w-full"><SettingsTab /></TabsContent>
+          </Tabs>
+        </motion.div>
+      </div>
     </div>
   );
 }
 
-function TabsIndicator({ value }) {
+function TabsIndicator() {
   return (
-    <div className="absolute bottom-0 left-0 w-full h-0.5 bg-brand-600 opacity-0 transition-opacity [[data-state=active]_&]:opacity-100" />
+    <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full opacity-0 transition-opacity [[data-state=active]_&]:opacity-100" />
   );
 }
