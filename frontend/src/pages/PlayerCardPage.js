@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { playerCardAPI, recommendationAPI, socialAPI, careerAPI, coachingAPI } from "@/lib/api";
@@ -13,9 +13,14 @@ import {
   Gamepad2, Calendar, TrendingUp, Loader2, ArrowLeft, User,
   Heart, MessageCircle, UserPlus, Users, Grid3X3, Flame,
   Dumbbell, Building2, BadgeCheck, Info, X, Swords,
-  GraduationCap, CheckCircle2, Footprints, MapPin, Briefcase, Package
+  GraduationCap, CheckCircle2, Footprints, MapPin, Briefcase, Package,
+  Share2
 } from "lucide-react";
 import { toast } from "sonner";
+
+/* ═══════════════════════════════════════════
+   Constants
+   ═══════════════════════════════════════════ */
 
 const BADGE_ICONS = {
   trophy: Trophy,
@@ -39,10 +44,45 @@ const BADGE_COLORS = {
   Verified: "text-blue-400 bg-blue-400/10 border-blue-400/30",
 };
 
+/* ═══════════════════════════════════════════
+   Helper sub-components
+   ═══════════════════════════════════════════ */
+
+/** Reusable card wrapper with a label strip */
+function SectionCard({ icon: Icon, title, children, className = "" }) {
+  return (
+    <div className={`rounded-2xl border border-border/40 bg-card/80 backdrop-blur-sm overflow-hidden ${className}`}>
+      {title && (
+        <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+          {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+          <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground">{title}</h3>
+        </div>
+      )}
+      <div className="px-4 pb-4">{children}</div>
+    </div>
+  );
+}
+
+/** Tiny horizontal bar used inside breakdown rows */
+function MiniBar({ value, max = 100, color = "bg-primary" }) {
+  const pct = Math.min((value / max) * 100, 100);
+  return (
+    <div className="flex-1 h-1.5 rounded-full bg-border/30 overflow-hidden">
+      <div className={`h-full rounded-full ${color} transition-all duration-500`} style={{ width: `${pct}%` }} />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   Main Component
+   ═══════════════════════════════════════════ */
+
 export default function PlayerCardPage() {
   const { userId } = useParams();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
+
+  /* ── core state ── */
   const [card, setCard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [compatibility, setCompatibility] = useState(null);
@@ -52,9 +92,12 @@ export default function PlayerCardPage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [career, setCareer] = useState(null);
   const [showLevelUpGuide, setShowLevelUpGuide] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  /* ── coach state ── */
   const [coachData, setCoachData] = useState(null);
   const [coachPackages, setCoachPackages] = useState([]);
-  // Inline booking state (coach profile)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10));
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [coachSlots, setCoachSlots] = useState([]);
@@ -66,7 +109,37 @@ export default function PlayerCardPage() {
 
   const isOwnProfile = !userId || userId === "me" || userId === currentUser?.id;
 
-  // Admins don't have player stats — redirect to profile if viewing own card
+  /* ── helpers ── */
+
+  const getRatingTier = (rating) => {
+    if (rating >= 2000) return { name: "Elite", color: "text-amber-400" };
+    if (rating >= 1700) return { name: "Pro", color: "text-green-400" };
+    if (rating >= 1400) return { name: "Intermediate", color: "text-blue-400" };
+    return { name: "Beginner", color: "text-muted-foreground" };
+  };
+
+  const getPerformanceTypeColor = (type) => {
+    const t = (type || "").toLowerCase();
+    if (t === "win" || t === "victory") return "bg-green-500/10 text-green-400 border-green-500/20";
+    if (t === "loss" || t === "defeat") return "bg-red-500/10 text-red-400 border-red-500/20";
+    if (t === "draw") return "bg-muted/50 text-muted-foreground border-border/30";
+    if (t === "tournament") return "bg-amber-500/10 text-amber-400 border-amber-500/20";
+    if (t === "training") return "bg-violet-500/10 text-violet-400 border-violet-500/20";
+    return "bg-primary/10 text-primary border-primary/20";
+  };
+
+  const timeAgo = (d) => {
+    if (!d) return "";
+    const diff = (Date.now() - new Date(d).getTime()) / 1000;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    return `${Math.floor(diff / 86400)}d`;
+  };
+
+  /* ── data loading ── */
+
+  // Admins don't have player stats -- redirect to profile if viewing own card
   useEffect(() => {
     if (isOwnProfile && currentUser?.role === "super_admin") {
       navigate("/profile", { replace: true });
@@ -78,6 +151,7 @@ export default function PlayerCardPage() {
     const isMe = !userId || userId === "me" || userId === currentUser?.id;
     setLoading(true);
     const resolvedId = isMe ? currentUser?.id : userId;
+
     const loadCard = (isMe ? playerCardAPI.getMyCard() : playerCardAPI.getCard(userId))
       .then(res => {
         setCard(res.data);
@@ -117,22 +191,42 @@ export default function PlayerCardPage() {
     }
 
     Promise.all([loadCard, loadEngagement]).finally(() => setLoading(false));
-  }, [userId, currentUser?.id]);
+  }, [userId, currentUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (card) setIsFollowing(card.is_following);
   }, [card]);
 
+  /* ── social actions ── */
+
   const handleFollow = async () => {
     if (!card) return;
+    setFollowLoading(true);
     setIsFollowing((prev) => !prev);
     try {
       const res = await socialAPI.toggleFollow(card.user_id);
       setIsFollowing(res.data.following);
-    } catch { setIsFollowing((prev) => !prev); toast.error("Failed"); }
+    } catch {
+      setIsFollowing((prev) => !prev);
+      toast.error("Failed");
+    }
+    setFollowLoading(false);
   };
 
-  // ── Inline coaching booking ──
+  const handleShare = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${card?.name} on Lobbi`, url });
+      } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied!");
+    }
+  };
+
+  /* ── coach booking ── */
+
   const loadCoachSlots = useCallback(async (coachId, date) => {
     setSlotsLoading(true);
     try {
@@ -253,31 +347,18 @@ export default function PlayerCardPage() {
     setSubscribing(false);
   };
 
-  const timeAgo = (d) => {
-    if (!d) return "";
-    const diff = (Date.now() - new Date(d).getTime()) / 1000;
-    if (diff < 60) return "just now";
-    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
-    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
-    return `${Math.floor(diff / 86400)}d`;
-  };
+  /* ── derived values ── */
 
-  const getRatingTier = (rating) => {
-    if (rating >= 2000) return { name: "Elite", color: "text-amber-400" };
-    if (rating >= 1700) return { name: "Pro", color: "text-green-400" };
-    if (rating >= 1400) return { name: "Intermediate", color: "text-blue-400" };
-    return { name: "Beginner", color: "text-muted-foreground" };
-  };
+  const tier = useMemo(() => card ? getRatingTier(card.skill_rating) : { name: "Beginner", color: "text-muted-foreground" }, [card]);
 
-  const getPerformanceTypeColor = (type) => {
-    const t = (type || "").toLowerCase();
-    if (t === "win" || t === "victory") return "bg-green-500/10 text-green-400 border-green-500/20";
-    if (t === "loss" || t === "defeat") return "bg-red-500/10 text-red-400 border-red-500/20";
-    if (t === "draw") return "bg-muted/50 text-muted-foreground border-border/30";
-    if (t === "tournament") return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    if (t === "training") return "bg-violet-500/10 text-violet-400 border-violet-500/20";
-    return "bg-primary/10 text-primary border-primary/20";
-  };
+  const winRate = useMemo(() => {
+    if (!card || card.total_games <= 0) return 0;
+    return Math.round((card.wins / Math.max(card.wins + card.losses + card.draws, 1)) * 100);
+  }, [card]);
+
+  /* ═══════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════ */
 
   if (loading) {
     return (
@@ -304,32 +385,38 @@ export default function PlayerCardPage() {
     );
   }
 
-  const tier = getRatingTier(card.skill_rating);
-  const winRate =
-    card.total_games > 0
-      ? Math.round((card.wins / Math.max(card.wins + card.losses + card.draws, 1)) * 100)
-      : 0;
-
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* Back Button */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Button variant="ghost" size="sm" className="mb-6" onClick={() => navigate(-1)}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </Button>
-        </motion.div>
+      {/* ── Sticky Top Nav ── */}
+      <motion.div
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border/40"
+      >
+        <div className="max-w-2xl mx-auto flex items-center justify-between px-4 h-12">
+          <button onClick={() => navigate(-1)} className="p-1.5 -ml-1.5 rounded-full hover:bg-muted transition-colors">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <span className="font-display font-black text-sm tracking-wide truncate mx-4">{card.name}</span>
+          <button onClick={handleShare} className="p-1.5 -mr-1.5 rounded-full hover:bg-muted transition-colors">
+            <Share2 className="h-5 w-5" />
+          </button>
+        </div>
+      </motion.div>
 
-        {/* Player Card */}
+      <div className="max-w-2xl mx-auto px-4 pb-12 space-y-4 pt-6">
+        {/* ═══════════════════════════════════════
+            HERO CARD  (Instagram-style profile)
+            ═══════════════════════════════════════ */}
         <motion.div
-          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          initial={{ opacity: 0, y: 30, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           className="rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden shadow-lg"
         >
-          {/* Header */}
+          {/* Header area */}
           <div className="p-8 pb-6 text-center relative">
+            {/* Role badge */}
             <div className="absolute top-4 right-4">
               <Badge variant="athletic" className="text-xs font-bold uppercase">
                 {card.role}
@@ -350,6 +437,7 @@ export default function PlayerCardPage() {
               )}
             </motion.div>
 
+            {/* Name + Verified */}
             <h1 className="font-display text-2xl font-black tracking-athletic flex items-center justify-center gap-1.5">
               {card.name}
               {card.is_verified && (
@@ -432,7 +520,7 @@ export default function PlayerCardPage() {
               )
             )}
 
-            {/* City + Venue — coaches only */}
+            {/* City + Venue -- coaches only */}
             {card.role === "coach" && coachData?.city && (
               <p className="mt-2 text-xs text-muted-foreground flex items-center justify-center gap-1">
                 <MapPin className="h-3 w-3 shrink-0" />
@@ -440,7 +528,7 @@ export default function PlayerCardPage() {
               </p>
             )}
 
-            {/* Social Stats */}
+            {/* Social Stats Row */}
             <div className="flex items-center justify-center gap-6 mt-4">
               <div className="text-center">
                 <div className="font-display font-black text-lg">{card.post_count || 0}</div>
@@ -470,11 +558,16 @@ export default function PlayerCardPage() {
                 <Button
                   variant={isFollowing ? "outline" : "athletic"}
                   className="min-w-[100px]"
-                  onClick={handleFollow}>
-                  {isFollowing ? <><Users className="h-4 w-4 mr-2" /> Following</> : <><UserPlus className="h-4 w-4 mr-2" /> Follow</>}
+                  disabled={followLoading}
+                  onClick={handleFollow}
+                >
+                  {isFollowing ? (
+                    <><Users className="h-4 w-4 mr-2" /> Following</>
+                  ) : (
+                    <><UserPlus className="h-4 w-4 mr-2" /> Follow</>
+                  )}
                 </Button>
-                <Button variant="athletic-outline"
-                  onClick={() => navigate(`/chat?user=${card.user_id}`)}>
+                <Button variant="athletic-outline" onClick={() => navigate(`/chat?user=${card.user_id}`)}>
                   <MessageCircle className="h-4 w-4 mr-2" /> Message
                 </Button>
                 {card.role === "coach" && coachData && (
@@ -487,43 +580,71 @@ export default function PlayerCardPage() {
             )}
           </div>
 
-          {/* Overall Skill Score — players only */}
+          {/* ── Overall Skill Score (players only) ── */}
           {card.role !== "coach" && card.overall_score !== undefined && (
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-              className="rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-md p-6 mb-6">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mx-6 mb-6 rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-md p-6"
+            >
               <div className="flex items-center gap-6">
+                {/* Circular progress */}
                 <div className="relative w-24 h-24 shrink-0">
                   <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/20" />
-                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
-                      strokeDasharray={`${card.overall_score * 2.64} 264`} strokeLinecap="round"
-                      className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-violet-400" : card.overall_score >= 51 ? "text-brand-400" : card.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
+                    <circle
+                      cx="50" cy="50" r="42" fill="none" strokeWidth="6"
+                      strokeDasharray={`${card.overall_score * 2.64} 264`}
+                      strokeLinecap="round"
+                      className={
+                        card.overall_score >= 86 ? "text-amber-400" :
+                        card.overall_score >= 71 ? "text-violet-400" :
+                        card.overall_score >= 51 ? "text-brand-400" :
+                        card.overall_score >= 31 ? "text-blue-400" :
+                        "text-muted-foreground"
+                      }
+                    />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="font-display text-2xl font-black">{card.overall_score}</span>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Score</span>
                   </div>
                 </div>
+
+                {/* Breakdown bars */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-display text-lg font-black">Overall Rating</h3>
-                    <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : card.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" : card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                    <Badge className={`text-[10px] ${
+                      card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" :
+                      card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" :
+                      card.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" :
+                      card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" :
+                      "bg-muted text-muted-foreground"
+                    }`}>
                       {card.overall_tier}
                     </Badge>
                     {isOwnProfile && (
-                      <button onClick={() => setShowLevelUpGuide(true)}
-                        className="ml-auto p-1 rounded-full hover:bg-muted transition-colors" title="How to level up">
+                      <button
+                        onClick={() => setShowLevelUpGuide(true)}
+                        className="ml-auto p-1 rounded-full hover:bg-muted transition-colors"
+                        title="How to level up"
+                      >
                         <Info className="h-4 w-4 text-muted-foreground hover:text-primary" />
                       </button>
                     )}
                   </div>
+
                   {isOwnProfile && card.overall_score < 50 && (
                     <p className="text-[10px] text-muted-foreground mb-2">
-                      {card.overall_score < 20 ? "Play matches and stay active to start leveling up" :
-                       card.overall_score < 35 ? "Keep playing! You're building your stats" :
-                       "Almost Intermediate! Focus on winning and tournaments"}
+                      {card.overall_score < 20
+                        ? "Play matches and stay active to start leveling up"
+                        : card.overall_score < 35
+                        ? "Keep playing! You're building your stats"
+                        : "Almost Intermediate! Focus on winning and tournaments"}
                     </p>
                   )}
+
                   {card.score_breakdown && (
                     <div className="space-y-1.5">
                       {[
@@ -537,9 +658,7 @@ export default function PlayerCardPage() {
                         <div key={b.label}>
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] font-bold text-muted-foreground w-16 shrink-0">{b.label}</span>
-                            <div className="flex-1 h-1.5 rounded-full bg-border/30 overflow-hidden">
-                              <div className={`h-full rounded-full ${b.color} transition-all duration-500`} style={{ width: `${b.value}%` }} />
-                            </div>
+                            <MiniBar value={b.value} color={b.color} />
                             <span className="text-[10px] font-bold w-6 text-right">{b.value}</span>
                           </div>
                           {isOwnProfile && b.tip && (
@@ -554,15 +673,23 @@ export default function PlayerCardPage() {
             </motion.div>
           )}
 
-          {/* How to Level Up Modal */}
+          {/* ── How to Level Up Modal ── */}
           <AnimatePresence>
             {showLevelUpGuide && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-                onClick={() => setShowLevelUpGuide(false)}>
-                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                onClick={() => setShowLevelUpGuide(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.9, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.9, opacity: 0 }}
                   className="w-full max-w-md max-h-[85vh] overflow-y-auto bg-card border-2 border-border rounded-2xl shadow-2xl"
-                  onClick={e => e.stopPropagation()}>
+                  onClick={e => e.stopPropagation()}
+                >
                   <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
                     <h2 className="font-display text-lg font-black">How to Level Up</h2>
                     <button onClick={() => setShowLevelUpGuide(false)} className="p-1 rounded-full hover:bg-muted">
@@ -633,7 +760,7 @@ export default function PlayerCardPage() {
                         <Flame className="h-4 w-4 text-orange-400" /> Engagement Score
                       </h3>
                       <p className="text-[11px] text-muted-foreground mb-3">
-                        Separate from Overall Score — measures your weekly activity on the platform.
+                        Separate from Overall Score -- measures your weekly activity on the platform.
                       </p>
                       <div className="space-y-2">
                         {[
@@ -675,39 +802,15 @@ export default function PlayerCardPage() {
             )}
           </AnimatePresence>
 
-          {/* Stats Grid */}
+          {/* ── Stats Grid ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 px-6 pb-6">
-            <AthleticStatCard
-              icon={Gamepad2}
-              label="Games"
-              value={card.total_games}
-              iconColor="primary"
-              delay={0}
-            />
-            <AthleticStatCard
-              icon={Trophy}
-              label="Wins"
-              value={card.wins}
-              iconColor="amber"
-              delay={0.1}
-            />
-            <AthleticStatCard
-              icon={Target}
-              label="Win Rate"
-              value={`${winRate}%`}
-              iconColor="green"
-              delay={0.2}
-            />
-            <AthleticStatCard
-              icon={Shield}
-              label="Reliability"
-              value={`${card.reliability_score}%`}
-              iconColor="sky"
-              delay={0.3}
-            />
+            <AthleticStatCard icon={Gamepad2} label="Games" value={card.total_games} iconColor="primary" delay={0} />
+            <AthleticStatCard icon={Trophy} label="Wins" value={card.wins} iconColor="amber" delay={0.1} />
+            <AthleticStatCard icon={Target} label="Win Rate" value={`${winRate}%`} iconColor="green" delay={0.2} />
+            <AthleticStatCard icon={Shield} label="Reliability" value={`${card.reliability_score}%`} iconColor="sky" delay={0.3} />
           </div>
 
-          {/* W/L/D Row */}
+          {/* ── W / L / D Row ── */}
           <div className="px-6 pb-4">
             <div className="flex gap-2 justify-center">
               <span className="px-3 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-xs font-bold text-green-400">
@@ -722,7 +825,7 @@ export default function PlayerCardPage() {
             </div>
           </div>
 
-          {/* Compatibility Score (when viewing another player) */}
+          {/* ── Compatibility Score ── */}
           {compatibility && compatibility.score > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
@@ -765,7 +868,7 @@ export default function PlayerCardPage() {
             </motion.div>
           )}
 
-          {/* Engagement Level */}
+          {/* ── Engagement Level ── */}
           {engagementScore && engagementScore.score > 0 && (
             <div className="px-6 pb-4">
               <div className="flex items-center justify-center gap-3">
@@ -778,7 +881,7 @@ export default function PlayerCardPage() {
             </div>
           )}
 
-          {/* Review Rating */}
+          {/* ── Review Rating ── */}
           {card.avg_review_rating > 0 && (
             <div className="px-6 pb-4 text-center">
               <div className="flex items-center justify-center gap-1.5">
@@ -789,7 +892,7 @@ export default function PlayerCardPage() {
             </div>
           )}
 
-          {/* Sports Breakdown */}
+          {/* ── Sports Breakdown ── */}
           {Object.keys(card.sports_played || {}).length > 0 && (
             <div className="px-6 pb-6">
               <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3 text-center">
@@ -799,10 +902,7 @@ export default function PlayerCardPage() {
                 {Object.entries(card.sports_played)
                   .sort(([, a], [, b]) => b - a)
                   .map(([sport, count]) => (
-                    <div
-                      key={sport}
-                      className="px-3 py-1.5 rounded-lg bg-muted/30 border border-border/30"
-                    >
+                    <div key={sport} className="px-3 py-1.5 rounded-lg bg-muted/30 border border-border/30">
                       <span className="font-bold text-xs capitalize">{sport}</span>
                       <span className="text-[10px] text-muted-foreground ml-1.5">{count} games</span>
                     </div>
@@ -811,7 +911,7 @@ export default function PlayerCardPage() {
             </div>
           )}
 
-          {/* Achievement Badges */}
+          {/* ── Achievement Badges ── */}
           {card.badges && card.badges.length > 0 && (
             <div className="px-6 pb-8">
               <h3 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3 text-center">
@@ -841,191 +941,193 @@ export default function PlayerCardPage() {
             </div>
           )}
 
-          {/* Member Since */}
+          {/* ── Member Since ── */}
           <div className="px-6 pb-6 text-center">
             <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
               <span>
                 Member since{" "}
                 {card.member_since
-                  ? new Date(card.member_since).toLocaleDateString("en-IN", {
-                      month: "short",
-                      year: "numeric",
-                    })
+                  ? new Date(card.member_since).toLocaleDateString("en-IN", { month: "short", year: "numeric" })
                   : "Unknown"}
               </span>
             </div>
           </div>
         </motion.div>
+        {/* END hero card */}
 
-        {/* ═══ COACHING PROFILE ═══ */}
+        {/* ═══════════════════════════════════════
+            COACHING PROFILE
+            ═══════════════════════════════════════ */}
         {card.role === "coach" && coachData && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }}
-            className="mt-8">
-            <div className="flex items-center gap-2 mb-4">
-              <GraduationCap className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-display font-bold text-sm">Coaching Profile</h3>
-            </div>
-
-            {/* Bio + price — only render if there's content */}
-            {(coachData.coaching_bio || coachData.city || coachData.coaching_sports?.length > 0) && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <div className="flex-1 min-w-0">
-                    {coachData.coaching_bio && (
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-2">{coachData.coaching_bio}</p>
-                    )}
-                    {coachData.city && (
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <MapPin className="h-3 w-3" />{coachData.city}
-                        {coachData.coaching_venue && <span> · {coachData.coaching_venue}</span>}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-black text-xl text-primary">₹{coachData.session_price || 500}</p>
-                    <p className="text-[10px] text-muted-foreground">{coachData.session_duration_minutes || 60} min</p>
-                  </div>
-                </div>
-                {coachData.coaching_sports?.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mt-2">
-                    {coachData.coaching_sports.map(s => (
-                      <Badge key={s} variant="secondary" className="text-[10px] capitalize font-bold">{s.replace("_", " ")}</Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Coach Stats */}
-            {(coachData.coaching_rating > 0 || coachData.total_sessions > 0 || coachData.years_of_experience > 0) && (
-              <div className="flex gap-3 mb-4">
-                {coachData.coaching_rating > 0 && (
-                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
-                    <Star className="h-4 w-4 mx-auto mb-1 text-amber-400" />
-                    <p className="font-black text-base text-amber-400">{Number(coachData.coaching_rating).toFixed(1)}</p>
-                    <p className="text-[10px] text-muted-foreground">Rating</p>
-                  </div>
-                )}
-                {coachData.total_sessions > 0 && (
-                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
-                    <Users className="h-4 w-4 mx-auto mb-1 text-primary" />
-                    <p className="font-black text-base text-primary">{coachData.total_sessions}</p>
-                    <p className="text-[10px] text-muted-foreground">Sessions</p>
-                  </div>
-                )}
-                {coachData.years_of_experience > 0 && (
-                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
-                    <Briefcase className="h-4 w-4 mx-auto mb-1 text-violet-400" />
-                    <p className="font-black text-base text-violet-400">{coachData.years_of_experience}+</p>
-                    <p className="text-[10px] text-muted-foreground">Yrs Exp</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Specializations */}
-            {coachData.specializations?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Specializations</h4>
-                <div className="flex flex-wrap gap-2">
-                  {coachData.specializations.map((s, i) => (
-                    <Badge key={i} className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium">{s}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Achievements */}
-            {coachData.achievements?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Achievements</h4>
-                <div className="space-y-2">
-                  {coachData.achievements.map((a, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <Trophy className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
-                      <p className="text-sm">{typeof a === "string" ? a : a.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Awards */}
-            {coachData.awards?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Awards</h4>
-                <div className="space-y-2">
-                  {coachData.awards.map((a, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <Award className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                      <p className="text-sm">{typeof a === "string" ? a : a.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Certifications */}
-            {coachData.certifications_list?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Certifications</h4>
-                <div className="space-y-2">
-                  {coachData.certifications_list.map((c, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      <BadgeCheck className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
-                      <p className="text-sm">{typeof c === "string" ? c : c.text}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Playing History */}
-            {coachData.playing_history && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Playing History</h4>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{coachData.playing_history}</p>
-              </div>
-            )}
-
-            {/* Packages */}
-            {coachPackages.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Coaching Packages</h4>
-                <div className="space-y-3">
-                  {coachPackages.map(pkg => (
-                    <div key={pkg.id} className={`rounded-xl border-2 p-3 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 bg-secondary/20"}`}>
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-bold text-sm truncate">{pkg.name}</p>
-                          <p className="text-xs text-muted-foreground">{pkg.sessions_per_month} sessions · {pkg.duration_minutes || 60} min each</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-black text-base text-primary">₹{(pkg.price || 0).toLocaleString()}</p>
-                          <p className="text-[10px] text-muted-foreground">/month</p>
-                        </div>
-                      </div>
-                      {pkg.description && <p className="text-xs text-muted-foreground mb-2">{pkg.description}</p>}
-                      {!isOwnProfile && (
-                        pkg.subscribed ? (
-                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                            <span className="text-xs font-bold text-primary">{pkg.sessions_remaining} sessions remaining</span>
-                          </div>
-                        ) : (
-                          <button onClick={() => handleSubscribe(pkg)} disabled={subscribing}
-                            className="w-full h-9 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors disabled:opacity-60">
-                            {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Package className="h-3.5 w-3.5" />}
-                            Subscribe · ₹{(pkg.price || 0).toLocaleString()}/mo
-                          </button>
-                        )
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="mt-4"
+          >
+            <SectionCard icon={GraduationCap} title="Coaching Profile">
+              {/* Bio + price */}
+              {(coachData.coaching_bio || coachData.city || coachData.coaching_sports?.length > 0) && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="flex-1 min-w-0">
+                      {coachData.coaching_bio && (
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-2">{coachData.coaching_bio}</p>
+                      )}
+                      {coachData.city && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" />{coachData.city}
+                          {coachData.coaching_venue && <span> · {coachData.coaching_venue}</span>}
+                        </span>
                       )}
                     </div>
-                  ))}
+                    <div className="text-right shrink-0">
+                      <p className="font-black text-xl text-primary">₹{coachData.session_price || 500}</p>
+                      <p className="text-[10px] text-muted-foreground">{coachData.session_duration_minutes || 60} min</p>
+                    </div>
+                  </div>
+                  {coachData.coaching_sports?.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {coachData.coaching_sports.map(s => (
+                        <Badge key={s} variant="secondary" className="text-[10px] capitalize font-bold">{s.replace("_", " ")}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              )}
+
+              {/* Coach Stats */}
+              {(coachData.coaching_rating > 0 || coachData.total_sessions > 0 || coachData.years_of_experience > 0) && (
+                <div className="flex gap-3 mb-4">
+                  {coachData.coaching_rating > 0 && (
+                    <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                      <Star className="h-4 w-4 mx-auto mb-1 text-amber-400" />
+                      <p className="font-black text-base text-amber-400">{Number(coachData.coaching_rating).toFixed(1)}</p>
+                      <p className="text-[10px] text-muted-foreground">Rating</p>
+                    </div>
+                  )}
+                  {coachData.total_sessions > 0 && (
+                    <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                      <Users className="h-4 w-4 mx-auto mb-1 text-primary" />
+                      <p className="font-black text-base text-primary">{coachData.total_sessions}</p>
+                      <p className="text-[10px] text-muted-foreground">Sessions</p>
+                    </div>
+                  )}
+                  {coachData.years_of_experience > 0 && (
+                    <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                      <Briefcase className="h-4 w-4 mx-auto mb-1 text-violet-400" />
+                      <p className="font-black text-base text-violet-400">{coachData.years_of_experience}+</p>
+                      <p className="text-[10px] text-muted-foreground">Yrs Exp</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Specializations */}
+              {coachData.specializations?.length > 0 && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Specializations</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {coachData.specializations.map((s, i) => (
+                      <Badge key={i} className="bg-primary/10 text-primary border border-primary/20 text-xs font-medium">{s}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Achievements */}
+              {coachData.achievements?.length > 0 && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Achievements</h4>
+                  <div className="space-y-2">
+                    {coachData.achievements.map((a, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <Trophy className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                        <p className="text-sm">{typeof a === "string" ? a : a.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Awards */}
+              {coachData.awards?.length > 0 && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Awards</h4>
+                  <div className="space-y-2">
+                    {coachData.awards.map((a, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <Award className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+                        <p className="text-sm">{typeof a === "string" ? a : a.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Certifications */}
+              {coachData.certifications_list?.length > 0 && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Certifications</h4>
+                  <div className="space-y-2">
+                    {coachData.certifications_list.map((c, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <BadgeCheck className="h-4 w-4 text-sky-500 mt-0.5 shrink-0" />
+                        <p className="text-sm">{typeof c === "string" ? c : c.text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Playing History */}
+              {coachData.playing_history && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Playing History</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{coachData.playing_history}</p>
+                </div>
+              )}
+
+              {/* Packages */}
+              {coachPackages.length > 0 && (
+                <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Coaching Packages</h4>
+                  <div className="space-y-3">
+                    {coachPackages.map(pkg => (
+                      <div key={pkg.id} className={`rounded-xl border-2 p-3 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 bg-secondary/20"}`}>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-sm truncate">{pkg.name}</p>
+                            <p className="text-xs text-muted-foreground">{pkg.sessions_per_month} sessions · {pkg.duration_minutes || 60} min each</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-black text-base text-primary">₹{(pkg.price || 0).toLocaleString()}</p>
+                            <p className="text-[10px] text-muted-foreground">/month</p>
+                          </div>
+                        </div>
+                        {pkg.description && <p className="text-xs text-muted-foreground mb-2">{pkg.description}</p>}
+                        {!isOwnProfile && (
+                          pkg.subscribed ? (
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="text-xs font-bold text-primary">{pkg.sessions_remaining} sessions remaining</span>
+                            </div>
+                          ) : (
+                            <button onClick={() => handleSubscribe(pkg)} disabled={subscribing}
+                              className="w-full h-9 rounded-lg bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors disabled:opacity-60">
+                              {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Package className="h-3.5 w-3.5" />}
+                              Subscribe · ₹{(pkg.price || 0).toLocaleString()}/mo
+                            </button>
+                          )
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </SectionCard>
+
             {/* ── Inline Book a Session ── */}
             {!isOwnProfile && (() => {
               const next14 = Array.from({ length: 14 }, (_, i) => {
@@ -1042,13 +1144,16 @@ export default function PlayerCardPage() {
                 ? selectedSlot.sports
                 : (coachData.coaching_sports || []);
               return (
-                <div className="rounded-2xl border-2 border-primary/20 bg-card p-4">
+                <div id="coach-book-section" className="mt-4 rounded-2xl border-2 border-primary/20 bg-card p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
                       <h4 className="font-bold text-sm">Book a Session</h4>
                     </div>
-                    <span className="font-black text-primary">₹{coachData.session_price || 500}<span className="text-[10px] text-muted-foreground font-normal"> / {coachData.session_duration_minutes || 60} min</span></span>
+                    <span className="font-black text-primary">
+                      ₹{coachData.session_price || 500}
+                      <span className="text-[10px] text-muted-foreground font-normal"> / {coachData.session_duration_minutes || 60} min</span>
+                    </span>
                   </div>
 
                   {/* Date strip */}
@@ -1159,143 +1264,211 @@ export default function PlayerCardPage() {
           </motion.div>
         )}
 
-        {/* ═══ CAREER & PERFORMANCE ═══ */}
+        {/* ═══════════════════════════════════════
+            CAREER & PERFORMANCE
+            ═══════════════════════════════════════ */}
         {career && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45 }}
-            className="mt-8"
+            className="mt-4"
           >
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-display font-bold text-sm">Career & Performance</h3>
-            </div>
-
-            {/* Career Stats Row */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="p-2 rounded-xl bg-violet-500/10">
-                    <Dumbbell className="h-4 w-4 text-violet-400" />
+            <SectionCard icon={TrendingUp} title="Career & Performance">
+              {/* Career Stats Row */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="p-2 rounded-xl bg-violet-500/10">
+                      <Dumbbell className="h-4 w-4 text-violet-400" />
+                    </div>
+                  </div>
+                  <div className="font-display text-xl font-black">
+                    {career.training_hours ?? 0}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                    Training Hrs
                   </div>
                 </div>
-                <div className="font-display text-xl font-black">
-                  {career.training_hours ?? 0}
+
+                <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="p-2 rounded-xl bg-amber-500/10">
+                      <Trophy className="h-4 w-4 text-amber-400" />
+                    </div>
+                  </div>
+                  <div className="font-display text-xl font-black">
+                    {career.tournaments_played ?? 0}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                    Tournaments
+                  </div>
                 </div>
-                <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
-                  Training Hrs
+
+                <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+                  <div className="flex items-center justify-center mb-2">
+                    <div className="p-2 rounded-xl bg-sky-500/10">
+                      <Building2 className="h-4 w-4 text-sky-400" />
+                    </div>
+                  </div>
+                  <div className="font-display text-xl font-black">
+                    {career.venues_played ?? 0}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
+                    Venues Played
+                  </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="p-2 rounded-xl bg-amber-500/10">
-                    <Trophy className="h-4 w-4 text-amber-400" />
-                  </div>
-                </div>
-                <div className="font-display text-xl font-black">
-                  {career.tournaments_played ?? 0}
-                </div>
-                <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
-                  Tournaments
-                </div>
-              </div>
-
-              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
-                <div className="flex items-center justify-center mb-2">
-                  <div className="p-2 rounded-xl bg-sky-500/10">
-                    <Building2 className="h-4 w-4 text-sky-400" />
-                  </div>
-                </div>
-                <div className="font-display text-xl font-black">
-                  {career.organizations?.length ?? 0}
-                </div>
-                <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mt-0.5">
-                  Organizations
-                </div>
-              </div>
-            </div>
-
-            {/* Recent Performance */}
-            {career.recent_performance && career.recent_performance.length > 0 && (
-              <div className="mb-4">
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
-                  Recent Performance
-                </h4>
-                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
-                  {career.recent_performance.slice(0, 5).map((record, idx) => (
-                    <motion.div
-                      key={record.id || idx}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.5 + idx * 0.05 }}
-                      className="flex items-center gap-3 px-4 py-3"
-                    >
-                      <div className="text-[10px] text-muted-foreground font-mono w-14 flex-shrink-0">
-                        {record.date
-                          ? new Date(record.date).toLocaleDateString("en-IN", {
-                              day: "numeric",
-                              month: "short",
-                            })
-                          : "--"}
-                      </div>
-                      <Badge
-                        className={`text-[10px] font-bold px-2 py-0.5 border ${getPerformanceTypeColor(record.type)}`}
+              {/* Recent Performance */}
+              {career.recent_performance && career.recent_performance.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
+                    Recent Performance
+                  </h4>
+                  <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
+                    {career.recent_performance.slice(0, 5).map((record, idx) => (
+                      <motion.div
+                        key={record.id || idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + idx * 0.05 }}
+                        className="flex items-center gap-3 px-4 py-3"
                       >
-                        {record.type || "Match"}
-                      </Badge>
-                      <span className="text-sm font-semibold truncate flex-1">
-                        {record.title || "Untitled"}
-                      </span>
-                      {record.sport && (
-                        <Badge variant="sport" className="text-[10px] font-bold uppercase ml-auto flex-shrink-0">
-                          {record.sport}
+                        <div className="text-[10px] text-muted-foreground font-mono w-14 flex-shrink-0">
+                          {record.date
+                            ? new Date(record.date).toLocaleDateString("en-IN", { day: "numeric", month: "short" })
+                            : "--"}
+                        </div>
+                        <Badge className={`text-[10px] font-bold px-2 py-0.5 border ${getPerformanceTypeColor(record.type)}`}>
+                          {record.type || "Match"}
                         </Badge>
-                      )}
-                    </motion.div>
-                  ))}
+                        <span className="text-sm font-semibold truncate flex-1">
+                          {record.title || "Untitled"}
+                        </span>
+                        {record.sport && (
+                          <Badge variant="sport" className="text-[10px] font-bold uppercase ml-auto flex-shrink-0">
+                            {record.sport}
+                          </Badge>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Organizations List */}
-            {career.organizations && career.organizations.length > 0 && (
-              <div>
-                <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
-                  Organizations
-                </h4>
-                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
-                  {career.organizations.map((org, idx) => (
-                    <motion.div
-                      key={org.id || idx}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.55 + idx * 0.05 }}
-                      className="flex items-center gap-3 px-4 py-3"
-                    >
-                      <div className="p-1.5 rounded-lg bg-sky-500/10">
-                        <Building2 className="h-3.5 w-3.5 text-sky-400" />
-                      </div>
-                      <span className="text-sm font-semibold flex-1 truncate">
-                        {org.name}
-                      </span>
-                      {org.type && (
-                        <Badge className="text-[10px] font-bold px-2 py-0.5 bg-muted/50 text-muted-foreground border border-border/30">
-                          {org.type}
-                        </Badge>
-                      )}
-                    </motion.div>
-                  ))}
+              {/* Organizations List */}
+              {career.organizations && career.organizations.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
+                    Organizations
+                  </h4>
+                  <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
+                    {career.organizations.map((org, idx) => (
+                      <motion.div
+                        key={org.id || idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.55 + idx * 0.05 }}
+                        className="flex items-center gap-3 px-4 py-3"
+                      >
+                        <div className="p-1.5 rounded-lg bg-sky-500/10">
+                          <Building2 className="h-3.5 w-3.5 text-sky-400" />
+                        </div>
+                        <span className="text-sm font-semibold flex-1 truncate">
+                          {org.name}
+                        </span>
+                        {org.type && (
+                          <Badge className="text-[10px] font-bold px-2 py-0.5 bg-muted/50 text-muted-foreground border border-border/30">
+                            {org.type}
+                          </Badge>
+                        )}
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </SectionCard>
           </motion.div>
         )}
 
-        {/* ═══ USER'S POSTS ═══ */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
-          className="mt-8">
+        {/* ═══════════════════════════════════════
+            STATS DETAIL MODAL
+            ═══════════════════════════════════════ */}
+        <AnimatePresence>
+          {showStatsModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setShowStatsModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="w-full max-w-md max-h-[85vh] overflow-y-auto bg-card border-2 border-border rounded-2xl shadow-2xl"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
+                  <h2 className="font-display text-lg font-black">Detailed Stats</h2>
+                  <button onClick={() => setShowStatsModal(false)} className="p-1 rounded-full hover:bg-muted">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="p-4 space-y-4">
+                  {/* Stat rows */}
+                  {[
+                    { label: "Total Games", value: card.total_games, icon: Gamepad2, color: "text-primary" },
+                    { label: "Wins", value: card.wins, icon: Trophy, color: "text-amber-400" },
+                    { label: "Losses", value: card.losses, icon: Target, color: "text-red-400" },
+                    { label: "Draws", value: card.draws, icon: Shield, color: "text-muted-foreground" },
+                    { label: "Win Rate", value: `${winRate}%`, icon: TrendingUp, color: "text-green-400" },
+                    { label: "Reliability", value: `${card.reliability_score}%`, icon: Shield, color: "text-sky-400" },
+                    { label: "Skill Rating", value: card.skill_rating, icon: Star, color: tier.color },
+                  ].map(row => {
+                    const RowIcon = row.icon;
+                    return (
+                      <div key={row.label} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
+                        <div className="flex items-center gap-3">
+                          <RowIcon className={`h-4 w-4 ${row.color}`} />
+                          <span className="text-sm font-medium">{row.label}</span>
+                        </div>
+                        <span className={`font-display font-black text-lg ${row.color}`}>{row.value}</span>
+                      </div>
+                    );
+                  })}
+
+                  {/* Sports breakdown inside modal */}
+                  {Object.keys(card.sports_played || {}).length > 0 && (
+                    <div className="pt-2">
+                      <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">By Sport</h4>
+                      {Object.entries(card.sports_played)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([sport, count]) => (
+                          <div key={sport} className="flex items-center justify-between py-1.5">
+                            <span className="text-sm capitalize">{sport}</span>
+                            <span className="font-bold text-sm">{count} games</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ═══════════════════════════════════════
+            USER'S POSTS
+            ═══════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mt-4"
+        >
           <div className="flex items-center gap-2 mb-4">
             <Grid3X3 className="h-4 w-4 text-muted-foreground" />
             <h3 className="font-display font-bold text-sm">Posts</h3>
@@ -1314,11 +1487,17 @@ export default function PlayerCardPage() {
           ) : (
             <div className="space-y-3">
               {userPosts.slice(0, 10).map((post, idx) => (
-                <motion.div key={post.id}
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + idx * 0.05 }}
-                  className="p-4 rounded-2xl border border-border/50 bg-card">
+                <motion.div
+                  key={post.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 + idx * 0.05 }}
+                  className="p-4 rounded-2xl border border-border/50 bg-card"
+                >
                   {post.content && <p className="text-sm leading-relaxed mb-2">{post.content}</p>}
-                  {post.media_url && <img src={mediaUrl(post.media_url)} alt="" className="rounded-xl w-full max-h-60 object-cover mb-2" />}
+                  {post.media_url && (
+                    <img src={mediaUrl(post.media_url)} alt="" className="rounded-xl w-full max-h-60 object-cover mb-2" />
+                  )}
                   <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/30">
                     <span className="flex items-center gap-1">
                       <Heart className={`h-3 w-3 ${post.liked_by_me ? "fill-red-500 text-red-500" : ""}`} />
