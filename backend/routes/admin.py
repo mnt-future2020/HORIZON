@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Query
 from typing import Optional
+import math
 from datetime import datetime, timezone
 from database import db
 from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw
@@ -79,15 +80,23 @@ async def admin_dashboard(user=Depends(get_current_user)):
 
 
 @router.get("/admin/users")
-async def admin_list_users(user=Depends(get_current_user), role: Optional[str] = None, status: Optional[str] = None):
+async def admin_list_users(
+    user=Depends(get_current_user),
+    role: Optional[str] = None,
+    status: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
+):
     await require_admin(user)
     query = {"role": {"$ne": "super_admin"}}
     if role and role != "super_admin":
         query["role"] = role
     if status:
         query["account_status"] = status
-    users = await db.users.find(query, {"_id": 0, "password_hash": 0}).sort("created_at", -1).to_list(500)
-    return users
+    total = await db.users.count_documents(query)
+    skip = (page - 1) * limit
+    users = await db.users.find(query, {"_id": 0, "password_hash": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"users": users, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
 
 
 @router.put("/admin/users/{user_id}/approve")

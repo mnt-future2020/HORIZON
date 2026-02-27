@@ -17,7 +17,8 @@ import {
   Percent, Crown, Eye, EyeOff, Save, KeyRound,
   Cloud, Wifi, AlertCircle, CheckCircle2, GraduationCap, Trophy,
   FileText, Loader2, Star, Video, Plus, UserPlus, Phone,
-  ImagePlus, X, MessageCircle, ShieldCheck
+  ImagePlus, X, MessageCircle, ShieldCheck,
+  ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AdminSkeleton } from "@/components/SkeletonLoader";
@@ -152,6 +153,10 @@ function UsersTab() {
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const LIMIT = 20;
   // Document viewer state
   const [docViewUserId, setDocViewUserId] = useState(null);
   const [docViewData, setDocViewData] = useState(null);
@@ -159,15 +164,21 @@ function UsersTab() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectMode, setRejectMode] = useState(false);
 
-  const load = useCallback(() => {
+  const load = useCallback((p = 1) => {
     setLoading(true);
-    const params = {};
+    const params = { page: p, limit: LIMIT };
     if (filter === "pending") params.status = "pending";
     else if (filter !== "all") params.role = filter;
-    adminAPI.users(params).then(r => setUsers(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+    adminAPI.users(params).then(r => {
+      const data = r.data || {};
+      setUsers(data.users || []);
+      setTotalPages(data.pages || 1);
+      setTotalUsers(data.total || 0);
+      setPage(data.page || p);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, [filter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(1); }, [load]);
 
   const handleAction = async (userId, action) => {
     try {
@@ -176,7 +187,7 @@ function UsersTab() {
       else if (action === "suspend") await adminAPI.suspendUser(userId);
       else if (action === "activate") await adminAPI.activateUser(userId);
       toast.success(`User ${action}d`);
-      load();
+      load(page);
     } catch { toast.error(`Failed to ${action} user`); }
   };
 
@@ -407,6 +418,52 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
               onOpenDocs={openDocViewer}
             />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-8 px-2">
+          <span className="text-xs text-muted-foreground font-bold tracking-wide">
+            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, totalUsers)} of {totalUsers} users
+          </span>
+          <div className="flex items-center gap-1.5">
+            <button
+              disabled={page <= 1}
+              onClick={() => load(page - 1)}
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "..." ? (
+                  <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                ) : (
+                  <button key={p} onClick={() => load(p)}
+                    className={`h-9 min-w-[36px] px-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                      p === page
+                        ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}>
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              disabled={page >= totalPages}
+              onClick={() => load(page + 1)}
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
 
