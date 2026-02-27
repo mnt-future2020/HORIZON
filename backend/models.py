@@ -39,6 +39,23 @@ class VenueCreate(BaseModel):
     # e.g. [{"sport": "football", "turfs": [{"name": "Main Ground"}, {"name": "Mini Pitch"}]}]
 
 
+class VenueUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    sports: Optional[List[str]] = None
+    address: Optional[str] = None
+    area: Optional[str] = None
+    city: Optional[str] = None
+    amenities: Optional[List[str]] = None
+    images: Optional[List[str]] = None
+    base_price: Optional[int] = None
+    slot_duration_minutes: Optional[int] = None
+    opening_hour: Optional[int] = None
+    closing_hour: Optional[int] = None
+    turfs: Optional[int] = None
+    turf_config: Optional[List[dict]] = None
+
+
 class BookingCreate(BaseModel):
     venue_id: str
     date: str

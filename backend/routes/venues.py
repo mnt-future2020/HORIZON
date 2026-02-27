@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from database import db, get_redis, lock_key, SOFT_LOCK_TTL, HARD_LOCK_TTL
 from auth import get_current_user, get_optional_user, get_platform_settings
 from tz import now_ist
-from models import VenueCreate, SlotLockInput, PricingRuleCreate
+from models import VenueCreate, VenueUpdate, SlotLockInput, PricingRuleCreate
 import uuid
 import random
 import math
@@ -240,13 +240,20 @@ async def venue_websocket(venue_id: str, ws: WebSocket):
         logger.info(f"WS disconnected venue={venue_id}")
 
 
+VENUE_SENSITIVE_FIELDS = {"owner_id", "contact_phone", "contact_email", "gst_number", "bank_details"}
+
+
 @router.get("/venues/{venue_id}")
-async def get_venue(venue_id: str):
+async def get_venue(venue_id: str, user=Depends(get_optional_user)):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
     if not venue:
         raise HTTPException(404, "Venue not found")
     if venue.get("status") == "suspended":
         raise HTTPException(404, "Venue not found")
+    # Strip sensitive fields for non-owner requests
+    if not user or user.get("id") != venue.get("owner_id"):
+        for field in VENUE_SENSITIVE_FIELDS:
+            venue.pop(field, None)
     return venue
 
 
@@ -291,14 +298,11 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
 
 
 @router.put("/venues/{venue_id}")
-async def update_venue(venue_id: str, request: Request, user=Depends(get_current_user)):
+async def update_venue(venue_id: str, input: VenueUpdate, user=Depends(get_current_user)):
     venue = await db.venues.find_one({"id": venue_id})
     if not venue or venue["owner_id"] != user["id"]:
         raise HTTPException(403, "Not authorized")
-    data = await request.json()
-    allowed = ["name", "description", "sports", "address", "city", "amenities", "images",
-               "base_price", "slot_duration_minutes", "opening_hour", "closing_hour", "turfs", "turf_config"]
-    updates = {k: v for k, v in data.items() if k in allowed}
+    updates = input.dict(exclude_unset=True)
     # Auto-calculate turfs from turf_config
     if "turf_config" in updates and updates["turf_config"]:
         updates["turfs"] = max(sum(len(tc.get("turfs", [])) for tc in updates["turf_config"]), 1)
@@ -309,7 +313,7 @@ async def update_venue(venue_id: str, request: Request, user=Depends(get_current
     if updates:
         await db.venues.update_one({"id": venue_id}, {"$set": updates})
     updated = await db.venues.find_one({"id": venue_id}, {"_id": 0})
-    # MEDIUM FIX: Sanitize broadcast data — only send public-safe venue fields via WebSocket
+    # Only send public-safe venue fields via WebSocket
     public_fields = ["id", "name", "slug", "description", "sports", "address", "city", "area",
                      "amenities", "images", "base_price", "rating", "total_reviews",
                      "total_bookings", "turfs", "turf_config", "opening_hour", "closing_hour",
@@ -568,10 +572,8 @@ async def get_my_locks(user=Depends(get_current_user)):
     if not redis_client:
         return {"locks": [], "debug": "no redis client"}
     try:
-        all_keys = await redis_client.keys("lock:*")
-        logger.info(f"my-locks: found {len(all_keys)} lock keys, user={user['id']}")
         locks = []
-        for key in all_keys:
+        async for key in redis_client.scan_iter(match="lock:*", count=100):
             key_str = key.decode("utf-8") if isinstance(key, bytes) else str(key)
             val = await redis_client.get(key)
             if not val:

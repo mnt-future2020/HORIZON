@@ -120,6 +120,7 @@ export const bookingAPI = {
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
   testConfirm: (id) => api.post(`/bookings/${id}/test-confirm`),
   getCheckinQR: (bookingId) => api.get(`/coaching/checkin/qr/${bookingId}`),
+  verifyCheckin: (data) => api.post("/coaching/checkin/verify", data),
 };
 
 export const slotLockAPI = {

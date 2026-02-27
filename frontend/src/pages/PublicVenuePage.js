@@ -37,18 +37,24 @@ const SPORT_COLORS = {
 const AMENITY_ICONS = {
   "Parking": <Car className="w-4 h-4" />,
   "Floodlights": <Zap className="w-4 h-4" />,
+  "Changing Room": <ShieldCheck className="w-4 h-4" />,
   "Changing Rooms": <ShieldCheck className="w-4 h-4" />,
+  "Washroom": <ShieldCheck className="w-4 h-4" />,
   "AC": <Wind className="w-4 h-4" />,
   "Shower": <Droplets className="w-4 h-4" />,
+  "Drinking Water": <Droplets className="w-4 h-4" />,
+  "Water Cooler": <Droplets className="w-4 h-4" />,
   "Cafe": <Coffee className="w-4 h-4" />,
+  "Cafeteria": <Coffee className="w-4 h-4" />,
   "Pro Shop": <ShoppingBag className="w-4 h-4" />,
   "Coaching": <Trophy className="w-4 h-4" />,
   "WiFi": <Wifi className="w-4 h-4" />,
   "Video Analysis": <Video className="w-4 h-4" />,
-  "Water Cooler": <Droplets className="w-4 h-4" />,
   "First Aid": <AlertCircle className="w-4 h-4" />,
   "Nets": <CheckCircle2 className="w-4 h-4" />,
   "Bowling Machine": <CheckCircle2 className="w-4 h-4" />,
+  "Seating Area": <Users className="w-4 h-4" />,
+  "Scoreboard": <Trophy className="w-4 h-4" />,
 };
 
 export default function PublicVenuePage() {

@@ -194,7 +194,7 @@ export default function VenueDetail() {
   const [bookingDialog, setBookingDialog] = useState(false);
   const [payMode, setPayMode] = useState("full");
   const [splitCount, setSplitCount] = useState(10);
-  const [bookingLoading, setBookingLoading] = useState(false);
+
   const [confirmResults, setConfirmResults] = useState([]);
   const [payStep, setPayStep] = useState(null);
   const [copied, setCopied] = useState(false);
@@ -1074,7 +1074,7 @@ export default function VenueDetail() {
               )}
 
               <Button className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11"
-                onClick={handleCheckout} disabled={bookingLoading || checkoutLoading}>
+                onClick={handleCheckout} disabled={checkoutLoading}>
                 {checkoutLoading ? "Processing..." : payMode === "split"
                   ? `Pay ₹${Math.floor(cartTotal / splitCount)} (Your Share)`
                   : `Pay ₹${cartTotal}`}

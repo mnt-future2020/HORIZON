@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, pricingMLAPI, coachingAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, pricingMLAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -162,66 +162,37 @@ function VenueOwnerDashboardContent({ defaultView }) {
     amenities: [], images: [], turf_config: [],
   });
 
-  // Helper: add sport + auto-create turf_config entry
-  const addSport = (sport) => {
-    const s = sport.trim().toLowerCase();
-    if (!s || venueForm.sports.includes(s)) return;
-    setVenueForm(p => ({
-      ...p,
-      sports: [...p.sports, s],
-      turf_config: [...p.turf_config, { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: p.base_price }] }],
-    }));
-    setSportInput("");
-  };
-  const removeSport = (sport) => {
-    setVenueForm(p => ({
-      ...p,
-      sports: p.sports.filter(s => s !== sport),
-      turf_config: p.turf_config.filter(tc => tc.sport !== sport),
-    }));
-  };
-  const addAmenity = (amenity) => {
-    const a = amenity.trim();
-    if (!a || venueForm.amenities.includes(a)) return;
-    setVenueForm(p => ({ ...p, amenities: [...p.amenities, a] }));
-    setAmenityInput("");
-  };
-  const removeAmenity = (amenity) => {
-    setVenueForm(p => ({ ...p, amenities: p.amenities.filter(a => a !== amenity) }));
-  };
-  // Turf config helpers
-  const addTurfToSport = (sport) => {
-    setVenueForm(p => ({
-      ...p,
-      turf_config: p.turf_config.map(tc =>
-        tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: p.base_price }] } : tc
-      ),
-    }));
-  };
-  const removeTurfFromSport = (sport, idx) => {
-    setVenueForm(p => ({
-      ...p,
-      turf_config: p.turf_config.map(tc =>
-        tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc
-      ),
-    }));
-  };
-  const renameTurf = (sport, idx, name) => {
-    setVenueForm(p => ({
-      ...p,
-      turf_config: p.turf_config.map(tc =>
-        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc
-      ),
-    }));
-  };
-  const updateTurfPrice = (sport, idx, price) => {
-    setVenueForm(p => ({
-      ...p,
-      turf_config: p.turf_config.map(tc =>
-        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc
-      ),
-    }));
-  };
+  // Shared venue form helpers — used by both create and edit forms
+  const makeVenueHelpers = (setForm, setSportInp, setAmenityInp) => ({
+    addSport: (sport) => {
+      const s = sport.trim().toLowerCase();
+      setForm(p => {
+        if (!s || (p.sports || []).includes(s)) return p;
+        return { ...p, sports: [...(p.sports || []), s], turf_config: [...(p.turf_config || []), { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: p.base_price || 2000 }] }] };
+      });
+      setSportInp("");
+    },
+    removeSport: (sport) => setForm(p => ({ ...p, sports: (p.sports || []).filter(s => s !== sport), turf_config: (p.turf_config || []).filter(tc => tc.sport !== sport) })),
+    addAmenity: (amenity) => {
+      const a = amenity.trim();
+      setForm(p => {
+        if (!a || (p.amenities || []).includes(a)) return p;
+        return { ...p, amenities: [...(p.amenities || []), a] };
+      });
+      setAmenityInp("");
+    },
+    removeAmenity: (amenity) => setForm(p => ({ ...p, amenities: (p.amenities || []).filter(a => a !== amenity) })),
+    addTurf: (sport) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: p.base_price || 2000 }] } : tc) })),
+    removeTurf: (sport, idx) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc) })),
+    renameTurf: (sport, idx, name) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc) })),
+    updateTurfPrice: (sport, idx, price) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc) })),
+  });
+
+  const createH = makeVenueHelpers(setVenueForm, setSportInput, setAmenityInput);
+  const addSport = createH.addSport, removeSport = createH.removeSport;
+  const addAmenity = createH.addAmenity, removeAmenity = createH.removeAmenity;
+  const addTurfToSport = createH.addTurf, removeTurfFromSport = createH.removeTurf;
+  const renameTurf = createH.renameTurf, updateTurfPrice = createH.updateTurfPrice;
   // AM/PM helpers
   const to12h = (h24) => {
     const ampm = h24 >= 12 ? "PM" : "AM";
@@ -315,65 +286,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [editSportInput, setEditSportInput] = useState("");
   const [editAmenityInput, setEditAmenityInput] = useState("");
 
-  // Edit form helpers for sports/amenities/turfs
-  const addEditSport = (sport) => {
-    const s = sport.trim().toLowerCase();
-    if (!s || (editVenueForm.sports || []).includes(s)) return;
-    setEditVenueForm(p => ({
-      ...p,
-      sports: [...(p.sports || []), s],
-      turf_config: [...(p.turf_config || []), { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: p.base_price || 2000 }] }],
-    }));
-    setEditSportInput("");
-  };
-  const removeEditSport = (sport) => {
-    setEditVenueForm(p => ({
-      ...p,
-      sports: (p.sports || []).filter(s => s !== sport),
-      turf_config: (p.turf_config || []).filter(tc => tc.sport !== sport),
-    }));
-  };
-  const addEditAmenity = (amenity) => {
-    const a = amenity.trim();
-    if (!a || (editVenueForm.amenities || []).includes(a)) return;
-    setEditVenueForm(p => ({ ...p, amenities: [...(p.amenities || []), a] }));
-    setEditAmenityInput("");
-  };
-  const removeEditAmenity = (amenity) => {
-    setEditVenueForm(p => ({ ...p, amenities: (p.amenities || []).filter(a => a !== amenity) }));
-  };
-  const addEditTurf = (sport) => {
-    setEditVenueForm(p => ({
-      ...p,
-      turf_config: (p.turf_config || []).map(tc =>
-        tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: p.base_price || 2000 }] } : tc
-      ),
-    }));
-  };
-  const removeEditTurf = (sport, idx) => {
-    setEditVenueForm(p => ({
-      ...p,
-      turf_config: (p.turf_config || []).map(tc =>
-        tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc
-      ),
-    }));
-  };
-  const renameEditTurf = (sport, idx, name) => {
-    setEditVenueForm(p => ({
-      ...p,
-      turf_config: (p.turf_config || []).map(tc =>
-        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc
-      ),
-    }));
-  };
-  const updateEditTurfPrice = (sport, idx, price) => {
-    setEditVenueForm(p => ({
-      ...p,
-      turf_config: (p.turf_config || []).map(tc =>
-        tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc
-      ),
-    }));
-  };
+  // Edit form helpers — reuse same factory
+  const editH = makeVenueHelpers(setEditVenueForm, setEditSportInput, setEditAmenityInput);
+  const addEditSport = editH.addSport, removeEditSport = editH.removeSport;
+  const addEditAmenity = editH.addAmenity, removeEditAmenity = editH.removeAmenity;
+  const addEditTurf = editH.addTurf, removeEditTurf = editH.removeTurf;
+  const renameEditTurf = editH.renameTurf, updateEditTurfPrice = editH.updateTurfPrice;
 
   const openEditVenue = () => {
     if (!selectedVenue) return;
@@ -2243,7 +2161,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
     setVerifying(true);
     setResult(null);
     try {
-      const res = await coachingAPI.verifyCheckin({ qr_data: qrData });
+      const res = await bookingAPI.verifyCheckin({ qr_data: qrData });
       setResult(res.data);
       stopCamera();
       // On successful check-in → refresh bookings + switch to attendance
