@@ -274,7 +274,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 mb-0.5">
-            <h4 className="text-base font-semibold tracking-tight text-foreground truncate">{u.name}</h4>
+            <h4 className="text-base font-medium tracking-tight text-foreground truncate">{u.name}</h4>
             <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide h-5 rounded-full border-none px-2.5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
               {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
             </Badge>
