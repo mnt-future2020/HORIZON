@@ -171,25 +171,7 @@ export function InteractiveClean() {
         <canvas ref={displayCanvasRef} className="absolute inset-0 w-full h-full" />
         <canvas ref={maskCanvasRef} className="hidden" />
 
-        {isHovered && (
-          <motion.div
-            className="absolute z-50 pointer-events-none"
-            style={{
-              width: 200,
-              height: 200,
-              x: cursorPos.x - 100,
-              y: cursorPos.y - 100,
-            }}
-          >
-            <img
-              src="/images/panov0.png"
-              alt="Cleaning Cloth"
-              width={200}
-              height={200}
-              className="w-full h-full object-contain drop-shadow-2xl rotate-12"
-            />
-          </motion.div>
-        )}
+
       </div>
     </div>
   );

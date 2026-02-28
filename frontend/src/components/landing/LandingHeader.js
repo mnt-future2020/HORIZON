@@ -51,9 +51,9 @@ export default function LandingHeader() {
         }
       }
 
-      const tech = document.getElementById("tech");
-      if (tech) {
-        const rect = tech.getBoundingClientRect();
+      const features = document.getElementById("features");
+      if (features) {
+        const rect = features.getBoundingClientRect();
         if (rect.top <= headerOffset && rect.bottom > headerOffset) {
           newColor = "dark";
         }
@@ -75,14 +75,14 @@ export default function LandingHeader() {
     }
   }, [menuOpen]);
 
-  const menuItems = ["HOME", "VENUES", "FEATURES", "GALLERY", "CONTACT"];
+  const menuItems = ["HOME", "VENUES", "FEATURES", "HOW IT WORKS", "CONTACT"];
 
   const handleMenuClick = (item) => {
     setMenuOpen(false);
     if (item === "HOME") window.scrollTo({ top: 0, behavior: "smooth" });
     else if (item === "VENUES") navigate("/venues");
-    else if (item === "FEATURES") document.getElementById("tech")?.scrollIntoView({ behavior: "smooth" });
-    else if (item === "GALLERY") document.getElementById("masonry-gallery")?.scrollIntoView({ behavior: "smooth" });
+    else if (item === "FEATURES") document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
+    else if (item === "HOW IT WORKS") document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
     else if (item === "CONTACT") navigate("/contact");
   };
 

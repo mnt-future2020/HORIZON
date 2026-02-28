@@ -45,19 +45,17 @@ export default function MissionSection() {
 
         <div className="text-center">
           <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight text-balance leading-[1.1] xl:text-8xl">
-            <span className="text-turf-accent font-brier leading-[1.1] text-8xl">PREMIUM</span> TURFS,
+            <span className="text-turf-accent font-brier leading-[1.1] text-8xl">BOOK.</span> PLAY.
             <br />
-            BUILT FOR <span className="text-turf-accent font-brier leading-[1.1]">PERFORMANCE</span>,
+            <span className="text-turf-accent font-brier leading-[1.1]">CONNECT.</span> COMPETE.
             <br />
-            BRINGING YOUR GAME TO
+            INDIA'S ALL-IN-ONE
             <br />
-            THE NEXT LEVEL.
+            <span className="text-turf-accent font-brier leading-[1.1]">SPORTS</span> PLATFORM
             <br />
-            DEFINING THE <span className="text-turf-accent font-brier leading-[1.1]">STANDARD</span>
+            FOR PLAYERS, VENUES
             <br />
-            IN MODERN SPORTS
-            <br />
-            PRO PLAYFIELDS & ACADEMY.
+            & <span className="text-turf-accent font-brier leading-[1.1]">COACHES.</span>
           </h2>
         </div>
       </div>

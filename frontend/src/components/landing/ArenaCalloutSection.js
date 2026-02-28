@@ -19,13 +19,13 @@ export default function ArenaCalloutSection() {
               {/* Main quote */}
               <blockquote className="relative z-10 max-w-xl">
                 <p className="text-4xl md:text-5xl lg:text-6xl font-black uppercase text-turf-text-light leading-[1.1] tracking-tight mb-8">
-                  <span className="block mb-2">EVERY MATCH</span>
-                  <span className="block mb-2">FEELS</span>
+                  <span className="block mb-2">ONE PLATFORM</span>
+                  <span className="block mb-2">FOR</span>
                   <span className="block text-turf-accent font-brier normal-case text-5xl md:text-6xl -ml-1 lg:text-8xl">
-                    LEGENDARY
+                    EVERYTHING
                   </span>
-                  <span className="block mt-2">ON OUR PREMIUM</span>
-                  <span className="block">FIELDS.</span>
+                  <span className="block mt-2">IN SPORTS.</span>
+                  <span className="block">YOUR GAME STARTS HERE.</span>
                 </p>
               </blockquote>
 

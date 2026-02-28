@@ -23,7 +23,7 @@ export default function SignatureMarqueeSection() {
                 key={i}
                 className="font-brier text-[12vw] md:text-[8vw] text-[#D1FF1C] leading-[0.9] tracking-tight px-4"
               >
-                THE STANDARD FOR PLAY THE STANDARD FOR PLAY THE STANDARD FOR PLAY THE STANDARD FOR PLAY
+                BOOK · PLAY · CONNECT · COMPETE · BOOK · PLAY · CONNECT · COMPETE ·
               </h2>
             ))}
           </motion.div>
@@ -48,7 +48,7 @@ export default function SignatureMarqueeSection() {
                 key={i}
                 className="font-oswald font-bold uppercase text-[12vw] md:text-[8vw] text-white leading-[0.9] tracking-tighter px-4"
               >
-                DISCOVER ELITE TURFS DISCOVER ELITE TURFS DISCOVER ELITE TURFS DISCOVER ELITE TURFS
+                INDIA'S SPORTS COMMUNITY PLATFORM · INDIA'S SPORTS COMMUNITY PLATFORM ·
               </h2>
             ))}
           </motion.div>

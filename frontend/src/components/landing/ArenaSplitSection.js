@@ -47,7 +47,7 @@ export default function ArenaSplitSection() {
             </div>
           </motion.div>
 
-          {/* Card 2: Find Opponents */}
+          {/* Card 2: Find Your Game */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -57,7 +57,7 @@ export default function ArenaSplitSection() {
             onClick={() => navigate("/auth")}
           >
             <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.7 }} className="absolute inset-0">
-              <img src="/turf/unnamed (4).png" alt="Find Opponents" className="w-full h-full object-cover" />
+              <img src="/turf/unnamed (4).png" alt="Find Your Game" className="w-full h-full object-cover" />
             </motion.div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
 
@@ -69,9 +69,9 @@ export default function ArenaSplitSection() {
                 viewport={{ once: true }}
                 className="text-5xl md:text-7xl font-black text-white uppercase mb-8 leading-none tracking-tighter"
               >
-                FIND
+                FIND YOUR
                 <br />
-                OPPONENTS
+                GAME
               </motion.h3>
 
               <motion.button
@@ -79,7 +79,7 @@ export default function ArenaSplitSection() {
                 whileTap={{ scale: 0.95 }}
                 className="group/btn bg-white text-black font-bold h-14 px-8 rounded-xl flex items-center justify-center gap-3 transition-all duration-300 shadow-2xl"
               >
-                <span className="font-black uppercase text-sm tracking-wider">JOIN NOW</span>
+                <span className="font-black uppercase text-sm tracking-wider">MATCHMAKING</span>
                 <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
               </motion.button>
             </div>

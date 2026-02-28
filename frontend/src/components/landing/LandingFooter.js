@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import InfiniteLogoSlider from "./InfiniteLogoSlider";
 
 export default function LandingFooter() {
   const navigate = useNavigate();
@@ -8,6 +7,8 @@ export default function LandingFooter() {
   const pageLinks = [
     { label: "HOME", action: () => window.scrollTo({ top: 0, behavior: "smooth" }) },
     { label: "VENUES", action: () => navigate("/venues") },
+    { label: "COACHING", action: () => navigate("/coaching") },
+    { label: "TOURNAMENTS", action: () => navigate("/tournaments") },
     { label: "ABOUT", action: () => navigate("/about") },
     { label: "CONTACT", action: () => navigate("/contact") },
   ];
@@ -88,7 +89,7 @@ export default function LandingFooter() {
                 onClick={() => navigate("/auth")}
                 className="mt-12 z-20 bg-turf-accent text-turf-dark font-black uppercase px-8 py-4 rounded-[14px] text-sm tracking-wider hover:bg-white transition-colors flex items-center gap-2"
               >
-                BOOK YOUR SLOT
+                GET STARTED FREE
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M7 17L17 7M17 7H7M17 7V17" />
                 </svg>
@@ -115,10 +116,7 @@ export default function LandingFooter() {
             </div>
           </div>
 
-          {/* Partners Row */}
-          <div className="border-turf-text-light/10 border-t-0 mb-0 mt-32 pt-0">
-            <InfiniteLogoSlider />
-          </div>
+
         </div>
       </div>
 
@@ -140,7 +138,7 @@ export default function LandingFooter() {
       <div className="w-full max-w-[1688px] mx-auto px-8 md:px-12 relative z-20 pt-0">
         <div className="flex flex-col md:flex-row justify-between items-center text-turf-dark text-xs font-bold tracking-wider uppercase">
           <p className="text-xs mt-7 opacity-40 font-medium leading-4 text-left">
-            Lobbi is a premium sports venue booking platform. All brands and visual identities are created for demonstration purposes.
+            Lobbi is India's all-in-one sports platform — connecting players, venues, and coaches. Book. Play. Connect. Compete.
           </p>
         </div>
       </div>
