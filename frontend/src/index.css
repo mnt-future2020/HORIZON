@@ -1,11 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Alex+Brush&family=Oswald:wght@300;400;500;700&display=swap");
+
+/* Custom Landing Page Fonts */
+@font-face {
+  font-family: "Brier";
+  src: url("./fonts/Brier-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mona Sans";
+  src: url("./fonts/MonaSans-Variable.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+  font-stretch: 75% 125%;
+}
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 .material-symbols-rounded {
-  font-family: 'Material Symbols Rounded';
+  font-family: "Material Symbols Rounded";
   font-weight: normal;
   font-style: normal;
   font-size: 24px;
@@ -24,7 +42,8 @@
 
 @layer base {
   /* ====== DARK THEME (default) — Electric Blue Premium ====== */
-  :root, .dark {
+  :root,
+  .dark {
     --background: 222 47% 4.5%;
     --foreground: 210 40% 98%;
     --card: 222 44% 8.5%;
@@ -62,7 +81,7 @@
     /* Electric Blue accent gradients */
     --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
     --gradient-accent: linear-gradient(135deg, #10b981 0%, #34d399 100%);
-    --gradient-sport: linear-gradient(135deg, #F59E0B 0%, #fbbf24 100%);
+    --gradient-sport: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
     --gradient-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
     --gradient-sky: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
 
@@ -74,7 +93,11 @@
 
     /* Overlay colors for sports imagery */
     --overlay-dark: rgba(2, 6, 23, 0.88);
-    --overlay-gradient: linear-gradient(180deg, rgba(2, 6, 23, 0.2) 0%, rgba(2, 6, 23, 0.92) 100%);
+    --overlay-gradient: linear-gradient(
+      180deg,
+      rgba(2, 6, 23, 0.2) 0%,
+      rgba(2, 6, 23, 0.92) 100%
+    );
   }
 
   /* ====== LIGHT THEME — Premium Athletic Light ====== */
@@ -112,8 +135,10 @@
     --glass-bg-hover: rgba(255, 255, 255, 0.9);
 
     /* Stronger shadows for light mode — cards need visible lift */
-    --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.08);
-    --shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 40px -8px rgba(0, 0, 0, 0.12);
+    --shadow-card:
+      0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 16px -2px rgba(0, 0, 0, 0.08);
+    --shadow-elevated:
+      0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 40px -8px rgba(0, 0, 0, 0.12);
 
     /* Light theme gradients — same vibrant colors */
     --gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
@@ -129,7 +154,11 @@
     --glow-rose: 0 4px 20px rgba(225, 29, 72, 0.12);
 
     --overlay-dark: rgba(255, 255, 255, 0.6);
-    --overlay-gradient: linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.85) 100%);
+    --overlay-gradient: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.85) 100%
+    );
   }
 }
 
@@ -139,13 +168,20 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Manrope', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: "Manrope", sans-serif;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
   }
 
   /* Athletic typography base - bold and impactful */
-  h1, h2, h3, h4, h5, h6 {
-    font-family: 'Chivo', sans-serif;
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Chivo", sans-serif;
     font-weight: 900;
     letter-spacing: -0.02em;
   }
@@ -163,8 +199,10 @@
   }
 
   /* Body text optimization */
-  p, span, div {
-    font-family: 'Manrope', sans-serif;
+  p,
+  span,
+  div {
+    font-family: "Manrope", sans-serif;
   }
 
   /* Athletic label style (for category tags, stats) */
@@ -178,10 +216,21 @@
     display: contents !important;
   }
   [data-debug-wrapper="true"] > * {
-    margin-left: inherit; margin-right: inherit; margin-top: inherit; margin-bottom: inherit;
-    padding-left: inherit; padding-right: inherit; padding-top: inherit; padding-bottom: inherit;
-    column-gap: inherit; row-gap: inherit; gap: inherit;
-    border-left-width: inherit; border-right-width: inherit; border-top-width: inherit; border-bottom-width: inherit;
+    margin-left: inherit;
+    margin-right: inherit;
+    margin-top: inherit;
+    margin-bottom: inherit;
+    padding-left: inherit;
+    padding-right: inherit;
+    padding-top: inherit;
+    padding-bottom: inherit;
+    column-gap: inherit;
+    row-gap: inherit;
+    gap: inherit;
+    border-left-width: inherit;
+    border-right-width: inherit;
+    border-top-width: inherit;
+    border-bottom-width: inherit;
   }
 }
 
@@ -194,9 +243,15 @@
 }
 
 @keyframes gradientShift {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 /* Premium glassmorphism */
@@ -216,13 +271,15 @@
   position: relative;
 }
 .border-gradient-primary::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
   padding: 2px;
   background: var(--gradient-primary);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0;
@@ -242,10 +299,19 @@
 
 /* Floating orb animation for hero backgrounds */
 @keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  25% { transform: translate(20px, -30px) scale(1.05); }
-  50% { transform: translate(-10px, -50px) scale(0.95); }
-  75% { transform: translate(-20px, -20px) scale(1.02); }
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.05);
+  }
+  50% {
+    transform: translate(-10px, -50px) scale(0.95);
+  }
+  75% {
+    transform: translate(-20px, -20px) scale(1.02);
+  }
 }
 
 .animate-float {
@@ -262,9 +328,18 @@
 
 /* Pulse ring effect */
 @keyframes pulseRing {
-  0% { transform: scale(0.9); opacity: 0.6; }
-  50% { transform: scale(1.1); opacity: 0.2; }
-  100% { transform: scale(0.9); opacity: 0.6; }
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.2;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
 }
 
 .animate-pulse-ring {
@@ -288,8 +363,14 @@
 
 /* Counter animation for stats */
 @keyframes countSlideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .animate-count-slide {
@@ -297,16 +378,41 @@
 }
 
 /* Custom scrollbar */
-.dark::-webkit-scrollbar, .dark ::-webkit-scrollbar { width: 6px; }
-.dark::-webkit-scrollbar-track, .dark ::-webkit-scrollbar-track { background: hsl(225, 86%, 3.8%); }
-.dark::-webkit-scrollbar-thumb, .dark ::-webkit-scrollbar-thumb { background: hsl(220, 38%, 13%); border-radius: 3px; }
-.dark::-webkit-scrollbar-thumb:hover, .dark ::-webkit-scrollbar-thumb:hover { background: hsl(215, 18%, 28%); }
+.dark::-webkit-scrollbar,
+.dark ::-webkit-scrollbar {
+  width: 6px;
+}
+.dark::-webkit-scrollbar-track,
+.dark ::-webkit-scrollbar-track {
+  background: hsl(225, 86%, 3.8%);
+}
+.dark::-webkit-scrollbar-thumb,
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(220, 38%, 13%);
+  border-radius: 3px;
+}
+.dark::-webkit-scrollbar-thumb:hover,
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: hsl(215, 18%, 28%);
+}
 
-.light::-webkit-scrollbar, .light ::-webkit-scrollbar { width: 6px; }
-.light::-webkit-scrollbar-track, .light ::-webkit-scrollbar-track { background: hsl(0, 0%, 96%); }
-.light::-webkit-scrollbar-thumb, .light ::-webkit-scrollbar-thumb { background: hsl(214, 20%, 82%); border-radius: 3px; }
-.light::-webkit-scrollbar-thumb:hover, .light ::-webkit-scrollbar-thumb:hover { background: hsl(215, 15%, 70%); }
-
+.light::-webkit-scrollbar,
+.light ::-webkit-scrollbar {
+  width: 6px;
+}
+.light::-webkit-scrollbar-track,
+.light ::-webkit-scrollbar-track {
+  background: hsl(0, 0%, 96%);
+}
+.light::-webkit-scrollbar-thumb,
+.light ::-webkit-scrollbar-thumb {
+  background: hsl(214, 20%, 82%);
+  border-radius: 3px;
+}
+.light::-webkit-scrollbar-thumb:hover,
+.light ::-webkit-scrollbar-thumb:hover {
+  background: hsl(215, 15%, 70%);
+}
 
 /* Shimmer animation for skeleton loaders */
 @keyframes shimmer {
@@ -320,4 +426,93 @@
 
 .animate-shimmer {
   animation: shimmer 2s infinite linear;
+}
+
+/* ═══ ADMIN CONSOLE UTILITIES ═══ */
+/* Change one class here → updates across the entire Admin Console */
+
+@layer components {
+  /* Page-level title: "Admin Console" */
+  .admin-page-title {
+    @apply text-2xl font-display font-medium tracking-tight text-foreground;
+  }
+
+  /* Section headings: "Payment Gateway", "Cloud Storage", "Revenue Share", etc. */
+  .admin-heading {
+    @apply text-lg font-medium tracking-tight text-foreground;
+  }
+
+  /* Stat card big numbers: "25", "₹9,000" */
+  .admin-value {
+    @apply text-3xl font-bold font-display text-foreground tracking-tight;
+  }
+
+  /* User/venue names in lists */
+  .admin-name {
+    @apply text-base font-medium tracking-tight text-foreground;
+  }
+
+  /* Secondary info: emails, addresses */
+  .admin-secondary {
+    @apply text-sm font-medium text-muted-foreground opacity-70;
+  }
+
+  /* Field labels, stat card labels, descriptions */
+  .admin-label {
+    @apply text-sm font-medium text-muted-foreground;
+  }
+
+  /* Role/status badges (colors added inline) */
+  .admin-badge {
+    @apply text-xs font-medium uppercase tracking-wide;
+  }
+
+  /* Button text */
+  .admin-btn {
+    @apply text-xs font-medium tracking-wide;
+  }
+
+  /* Table column headers */
+  .admin-th {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+  }
+
+  /* Section divider labels: "Recent Registrations", "Line Items" */
+  .admin-section-label {
+    @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+  }
+}
+
+/* ═══ PLACEHOLDER STYLING ═══ */
+/* Make placeholder text clearly lighter than actual input text */
+input::placeholder,
+textarea::placeholder {
+  color: hsl(var(--muted-foreground) / 0.55) !important;
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* ====== LANDING PAGE — Turf Theme Variables ====== */
+:root {
+  --turf-dark: #0a0c0a;
+  --turf-light: #ffffff;
+  --turf-accent: #c8f550;
+  --turf-text-dark: #1a1f1a;
+  --turf-text-light: #f8fafc;
+}
+
+/* Landing page infinite slide animation */
+@keyframes infinite-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-infinite-slide {
+  animation: infinite-slide 40s linear infinite;
+}
+
+/* Landing page simteste class */
+.simteste {
+  color: #c8f550;
+  font-size: 1050px;
+  line-height: 600px;
 }

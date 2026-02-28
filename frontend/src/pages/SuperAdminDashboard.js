@@ -35,18 +35,18 @@ function StatCard({ icon: Icon, label, value, sub, colorClass = "text-brand-600"
       className="bg-card rounded-[28px] p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
     >
       <div className="flex items-center justify-between mb-6 relative z-10">
-        <div className="text-xs font-medium text-muted-foreground">{label}</div>
+        <div className="admin-label">{label}</div>
         <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
           <Icon className={`h-5 w-5 ${colorClass}`} />
         </div>
       </div>
 
       <div className="relative z-10">
-        <div className="text-2xl font-bold font-display text-foreground tracking-tight mb-2 flex items-baseline">
+        <div className="admin-value mb-2 flex items-baseline">
           {value}
         </div>
         {sub && (
-          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 mt-2 bg-secondary/20 py-1.5 px-3 rounded-full w-fit border border-border/40">
+          <div className="admin-label flex items-center gap-1.5 mt-2 bg-secondary/20 py-1.5 px-3 rounded-full w-fit border border-border/40">
             {sub}
           </div>
         )}
@@ -82,15 +82,15 @@ function RecentUserItem({ user: u, index }) {
           {u.name?.[0]?.toUpperCase()}
         </div>
         <div>
-          <div className="text-base font-semibold text-foreground tracking-tight">{u.name}</div>
-          <div className="text-sm text-muted-foreground font-medium opacity-70 truncate max-w-[150px] md:max-w-[200px]">{u.email}</div>
+          <div className="admin-name">{u.name}</div>
+          <div className="admin-secondary truncate max-w-[150px] md:max-w-[200px]">{u.email}</div>
         </div>
       </div>
       <div className="flex items-center gap-3">
-        <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+        <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
           {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
         </Badge>
-        <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
+        <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
           {u.account_status}
         </Badge>
       </div>
@@ -133,7 +133,7 @@ function OverviewTab() {
         transition={{ delay: 1, duration: 0.5 }}
       >
         <div className="flex items-center justify-between mb-6 px-2">
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Recent Registrations</h3>
+          <h3 className="admin-section-label">Recent Registrations</h3>
           <div className="h-[1px] flex-1 bg-border/40 ml-6" />
         </div>
         
@@ -274,12 +274,12 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2.5 mb-0.5">
-            <h4 className="text-base font-medium tracking-tight text-foreground truncate">{u.name}</h4>
-            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide h-5 rounded-full border-none px-2.5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+            <h4 className="admin-name truncate">{u.name}</h4>
+            <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none px-2.5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
               {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
             </Badge>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium opacity-70">
+          <div className="flex items-center gap-2 admin-secondary">
             <span className="truncate">{u.email}</span>
             {u.phone && (
               <>
@@ -297,69 +297,82 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 shrink-0">
-        <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
-          {u.account_status}
-        </Badge>
+      <div className="flex items-center gap-3 shrink-0">
+        {/* Status indicator */}
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2 h-2 rounded-full ${
+            u.account_status === "active" ? "bg-green-500" :
+            u.account_status === "pending" ? "bg-amber-500" :
+            u.account_status === "suspended" ? "bg-red-500" :
+            u.account_status === "rejected" ? "bg-red-500" : "bg-gray-400"
+          }`} />
+          <span className={`text-xs font-medium capitalize ${
+            u.account_status === "active" ? "text-green-600" :
+            u.account_status === "pending" ? "text-amber-600" :
+            "text-red-500"
+          }`}>{u.account_status}</span>
+        </div>
 
         {u.role === "venue_owner" && u.subscription_plan && (
-          <Badge variant="outline" className="text-xs font-semibold uppercase tracking-wide bg-purple-500/10 text-purple-600 border-none px-3 py-1 rounded-full">
-            {u.subscription_plan}
-          </Badge>
+          <span className="text-xs text-purple-600 font-medium bg-purple-500/10 px-2 py-0.5 rounded-md">{u.subscription_plan}</span>
         )}
 
-        {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
-          <Button size="sm" variant="outline"
-            className={`h-8 px-3 rounded-xl font-semibold text-xs transition-all border-transparent ${
-              u.doc_verification_status === "pending_review" ? "text-amber-500 bg-amber-500/10 hover:bg-amber-500 hover:text-white" :
-              u.doc_verification_status === "verified" ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" :
-              "text-rose-500 bg-rose-500/10 hover:bg-rose-500 hover:text-white"
-            }`}
-            onClick={() => onOpenDocs(u.id)}>
-            <FileText className="h-3.5 w-3.5 mr-1.5" /> Docs
-          </Button>
-        )}
+        {/* Grouped action toolbar */}
+        <div className="flex items-center bg-secondary/30 rounded-xl overflow-hidden border border-border/30">
+          {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
+            <button
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-r border-border/30 ${
+                u.doc_verification_status === "pending_review" ? "text-amber-600 hover:bg-amber-500/10" :
+                u.doc_verification_status === "verified" ? "text-brand-600 hover:bg-brand-600/10" :
+                "text-rose-500 hover:bg-rose-500/10"
+              }`}
+              onClick={() => onOpenDocs(u.id)}>
+              <FileText className="h-3.5 w-3.5" /> Docs
+            </button>
+          )}
 
-        {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
-          <div className="flex gap-1.5">
-            <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-brand-500 bg-brand-500/10 border-transparent hover:bg-brand-500 hover:text-white transition-all"
-              onClick={() => onAction(u.id, "approve")}>
-              <CheckCircle className="h-3.5 w-3.5 mr-1.5" /> Approve
-            </Button>
-            <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-rose-500 bg-rose-500/10 border-transparent hover:bg-rose-500 hover:text-white transition-all"
-              onClick={() => onAction(u.id, "reject")}>
-              <XCircle className="h-3.5 w-3.5 mr-1.5" /> Reject
-            </Button>
-          </div>
-        )}
+          {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
+            <>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-colors border-r border-border/30"
+                onClick={() => onAction(u.id, "approve")}>
+                <CheckCircle className="h-3.5 w-3.5" /> Approve
+              </button>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
+                onClick={() => onAction(u.id, "reject")}>
+                <XCircle className="h-3.5 w-3.5" /> Reject
+              </button>
+            </>
+          )}
 
-        {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-lg border ${u.doc_verification_status === "pending_review" ? "bg-amber-50 text-amber-600 border-amber-200" : "bg-blue-50 text-blue-600 border-blue-100"}`}>
-            {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
-          </span>
-        )}
+          {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
+            <span className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${u.doc_verification_status === "pending_review" ? "text-amber-600" : "text-blue-600"}`}>
+              <Clock className="h-3.5 w-3.5" />
+              {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
+            </span>
+          )}
 
-        {u.account_status === "active" && (
-          <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-amber-500 bg-amber-500/10 border-transparent hover:bg-amber-500 hover:text-white transition-all"
-            onClick={() => onAction(u.id, "suspend")}>
-            <Ban className="h-3.5 w-3.5 mr-1.5" /> Suspend
-          </Button>
-        )}
+          {u.account_status === "active" && (
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-500/10 transition-colors"
+              onClick={() => onAction(u.id, "suspend")}>
+              <Ban className="h-3.5 w-3.5" /> Suspend
+            </button>
+          )}
 
-        {u.role === "coach" && u.account_status === "active" && (
-          <Button size="sm" variant="outline" className={`h-8 px-3 rounded-xl font-semibold text-xs border-transparent transition-all ${u.is_verified ? "text-brand-600 bg-brand-600/10 hover:bg-brand-600 hover:text-white" : "text-muted-foreground bg-secondary/50 hover:bg-secondary hover:text-foreground"}`}
-            onClick={() => onVerify(u.id)}>
-            <CheckCircle2 className={`h-3.5 w-3.5 mr-1.5 ${u.is_verified ? "" : "opacity-40"}`} />
-            {u.is_verified ? "Verified" : "Verify"}
-          </Button>
-        )}
+          {u.role === "coach" && u.account_status === "active" && (
+            <button className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-border/30 ${u.is_verified ? "text-brand-600 hover:bg-brand-600/10" : "text-muted-foreground hover:bg-secondary/50"}`}
+              onClick={() => onVerify(u.id)}>
+              <CheckCircle2 className={`h-3.5 w-3.5 ${u.is_verified ? "" : "opacity-50"}`} />
+              {u.is_verified ? "Verified" : "Verify"}
+            </button>
+          )}
 
-        {(u.account_status === "suspended" || u.account_status === "rejected") && (
-          <Button size="sm" variant="outline" className="h-8 px-3 rounded-xl font-semibold text-xs text-brand-600 bg-brand-600/10 border-transparent hover:bg-brand-600 hover:text-white transition-all"
-            onClick={() => onAction(u.id, "activate")}>
-            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Activate
-          </Button>
-        )}
+          {(u.account_status === "suspended" || u.account_status === "rejected") && (
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-colors"
+              onClick={() => onAction(u.id, "activate")}>
+              <RotateCcw className="h-3.5 w-3.5" /> Activate
+            </button>
+          )}
+        </div>
       </div>
     </motion.div>
   );
@@ -370,7 +383,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
       <div className="flex flex-wrap gap-3 mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
-            className={`px-5 py-2 rounded-full text-xs font-semibold tracking-wide transition-all duration-300 uppercase active:scale-95 ${
+            className={`px-5 py-2 rounded-full admin-btn transition-all duration-300 active:scale-95 ${
               filter === f 
                 ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" 
                 : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
@@ -412,7 +425,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
       {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-8 px-2">
-          <span className="text-xs text-muted-foreground font-bold tracking-wide">
+          <span className="admin-section-label">
             Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, totalUsers)} of {totalUsers} users
           </span>
           <div className="flex items-center gap-1.5">
@@ -435,7 +448,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
                   <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
                 ) : (
                   <button key={p} onClick={() => load(p)}
-                    className={`h-9 min-w-[36px] px-2 rounded-xl text-xs font-bold uppercase tracking-wide transition-all ${
+                    className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${
                       p === page
                         ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
                         : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
@@ -457,10 +470,10 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
 
       {/* Document Viewer Dialog */}
       <Dialog open={!!docViewUserId} onOpenChange={(open) => { if (!open) setDocViewUserId(null); }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader className="border-b border-border/40 pb-4">
-            <DialogTitle className="text-xl font-display font-light">Verification Documents</DialogTitle>
-            <DialogDescription className="text-sm font-medium mt-1">
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto rounded-[28px] p-0">
+          <DialogHeader className="border-b border-border/40 pb-4 px-7 pt-7">
+            <DialogTitle className="admin-heading">Verification Documents</DialogTitle>
+            <DialogDescription className="admin-label mt-1">
               {docViewData?.name} {docViewData?.business_name && <span className="text-foreground"> — {docViewData.business_name}</span>}
             </DialogDescription>
           </DialogHeader>
@@ -468,17 +481,17 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
           {docViewLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin border-brand-600" /></div>
           ) : docViewData ? (
-            <div className="space-y-4">
-              <Badge className={`text-[10px] ${
-                docViewData.doc_verification_status === "pending_review" ? "bg-amber-500/20 text-amber-400" :
-                docViewData.doc_verification_status === "verified" ? "bg-brand-500/20 text-brand-400" :
-                docViewData.doc_verification_status === "rejected" ? "bg-destructive/20 text-destructive" :
-                "bg-secondary text-muted-foreground"
+            <div className="space-y-5 px-7 py-5">
+              <Badge className={`admin-btn px-3 py-1.5 rounded-lg border-0 ${
+                docViewData.doc_verification_status === "pending_review" ? "bg-amber-500 hover:bg-amber-600 text-white" :
+                docViewData.doc_verification_status === "verified" ? "bg-brand-600 hover:bg-brand-600 text-white" :
+                docViewData.doc_verification_status === "rejected" ? "bg-destructive hover:bg-destructive text-white" :
+                "bg-secondary hover:bg-secondary text-muted-foreground"
               }`}>{docViewData.doc_verification_status?.replace("_", " ") || "unknown"}</Badge>
 
               {docViewData.doc_rejection_reason && (
                 <div className="p-3 rounded-md bg-destructive/10 border border-destructive/30 text-xs text-destructive">
-                  <span className="font-bold">Previous rejection:</span> {docViewData.doc_rejection_reason}
+                  <span className="font-medium">Previous rejection:</span> {docViewData.doc_rejection_reason}
                 </div>
               )}
 
@@ -491,11 +504,11 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
                   const isPdf = doc?.url?.toLowerCase().endsWith(".pdf");
                   return (
                     <div key={key} className="bg-secondary/20 border border-border/50 rounded-xl p-4 transition-colors hover:bg-secondary/40">
-                      <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">{label}</Label>
+                      <Label className="admin-section-label text-brand-600">{label}</Label>
                       {doc?.url ? (
                         isPdf ? (
                           <a href={mediaUrl(doc.url)} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-2 mt-2 p-2 rounded-md bg-background/50 text-xs border-brand-600 hover:underline">
+                            className="flex items-center gap-2 mt-2 p-2.5 rounded-lg bg-brand-600/5 text-sm font-medium text-brand-600 border border-brand-600/20 hover:bg-brand-600/10 transition-colors">
                             <FileText className="h-4 w-4" /> View PDF
                           </a>
                         ) : (
@@ -504,7 +517,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
                             onClick={() => window.open(mediaUrl(doc.url), "_blank")} />
                         )
                       ) : (
-                        <div className="mt-2 text-[10px] text-muted-foreground/60 py-4 text-center">Not uploaded</div>
+                        <div className="mt-2 text-xs text-muted-foreground/60 py-4 text-center">Not uploaded</div>
                       )}
                     </div>
                   );
@@ -514,11 +527,11 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
               {/* Turf images */}
               {docViewData.verification_documents?.turf_images?.length > 0 && (
                 <div>
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Turf Images</Label>
+                  <Label className="admin-section-label text-brand-600">Turf Images</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {docViewData.verification_documents.turf_images.map((img, i) => (
                       <img key={i} src={mediaUrl(img.url || img)} alt={`Turf ${i + 1}`}
-                        className="w-20 h-20 rounded-md object-cover cursor-pointer"
+                        className="w-20 h-20 rounded-xl object-cover cursor-pointer border border-border/40 hover:border-brand-600/40 transition-colors"
                         onClick={() => window.open(mediaUrl(img.url || img), "_blank")} />
                     ))}
                   </div>
@@ -528,7 +541,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
               {/* Turf videos */}
               {docViewData.verification_documents?.turf_videos?.length > 0 && (
                 <div>
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Turf Videos</Label>
+                  <Label className="admin-section-label text-brand-600">Turf Videos</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {docViewData.verification_documents.turf_videos.map((vid, i) => (
                       <video key={i} src={mediaUrl(vid.url || vid)} controls className="w-40 h-28 rounded-md object-cover" />
@@ -540,11 +553,11 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
               {/* Coach: experience letters */}
               {docViewData.role === "coach" && docViewData.coach_verification_documents?.experience_letters?.length > 0 && (
                 <div>
-                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Experience Letters</Label>
+                  <Label className="admin-section-label text-brand-600">Experience Letters</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {docViewData.coach_verification_documents.experience_letters.map((doc, i) => (
                       <a key={i} href={mediaUrl(doc.url || doc)} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-2 p-2 rounded-md bg-background/50 text-xs border hover:underline">
+                        className="flex items-center gap-2 p-2.5 rounded-lg bg-brand-600/5 text-sm font-medium text-brand-600 border border-brand-600/20 hover:bg-brand-600/10 transition-colors">
                         <FileText className="h-4 w-4" /> Letter {i + 1}
                       </a>
                     ))}
@@ -557,18 +570,18 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
                 <div className="border-t border-border pt-4 space-y-3">
                   {!rejectMode ? (
                     <div className="flex gap-3">
-                      <Button className="flex-1 bg-brand-600 hover:bg-brand-700 text-white"
+                      <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn h-11 rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                         onClick={() => handleVerifyDocs(docViewUserId)}>
                         <CheckCircle className="h-4 w-4 mr-2" /> Verify & Approve
                       </Button>
-                      <Button variant="outline" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10"
+                      <Button variant="outline" className="flex-1 text-destructive border-destructive/30 hover:bg-destructive/10 admin-btn h-11 rounded-xl"
                         onClick={() => setRejectMode(true)}>
                         <XCircle className="h-4 w-4 mr-2" /> Reject
                       </Button>
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      <Label className="text-xs">Rejection Reason (required)</Label>
+                      <Label className="admin-section-label ml-1">Rejection Reason (required)</Label>
                       <Textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)}
                         placeholder="Explain what needs to be corrected..." rows={3}
                         className="bg-background border-border" />
@@ -618,19 +631,19 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
-            <h4 className="text-lg font-bold tracking-tight text-foreground truncate">{v.name}</h4>
+            <h4 className="admin-name truncate">{v.name}</h4>
             <div className="flex items-center gap-1.5">
-              <Badge variant="outline" className={`text-[10px] font-semibold uppercase tracking-wide h-5 rounded-full border-none ${
+              <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none ${
                 v.badge === "bookable" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-600"
               }`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
               </Badge>
               {v.owner_id ? (
-                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide h-5 rounded-full border-none bg-brand-600/10 text-brand-600">
+                <Badge variant="outline" className="admin-badge h-5 rounded-full border-none bg-brand-600/10 text-brand-600">
                   Linked
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-[10px] font-semibold uppercase tracking-wide h-5 rounded-full border-none bg-secondary/30 text-muted-foreground">
+                <Badge variant="outline" className="admin-badge h-5 rounded-full border-none bg-secondary/30 text-muted-foreground">
                   Manual
                 </Badge>
               )}
@@ -641,19 +654,19 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
           
           <div className="flex items-center gap-2 flex-wrap">
             {v.sports?.map(sport => (
-              <span key={sport} className="text-[10px] font-semibold uppercase tracking-wide bg-secondary/20 text-muted-foreground py-1 px-3 rounded-full border border-border/40">
+              <span key={sport} className="admin-badge bg-secondary/20 text-muted-foreground py-1 px-3 rounded-full border border-border/40">
                 {sport}
               </span>
             ))}
             <div className="h-4 w-[1px] bg-border/40 mx-1" />
-            <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
+            <span className="admin-label opacity-60 flex items-center gap-1">
               <Crown className="w-3 h-3" /> {v.turfs} Turfs
             </span>
-            <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
+            <span className="admin-label opacity-60 flex items-center gap-1">
               <CalendarCheck className="w-3 h-3" /> {v.total_bookings} Bookings
             </span>
             {v.contact_phone && (
-              <span className="text-[10px] font-bold text-muted-foreground/60 flex items-center gap-1">
+              <span className="admin-label opacity-60 flex items-center gap-1">
                 <Phone className="w-3 h-3" /> {v.contact_phone}
               </span>
             )}
@@ -663,7 +676,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
         {/* Actions Section */}
         <div className="flex flex-col items-end justify-between self-stretch gap-4 shrink-0">
           <div className="flex items-center gap-3">
-            <span className={`text-[10px] font-semibold uppercase tracking-tight ${v.status === "active" ? "text-brand-600" : "text-rose-500"}`}>
+            <span className={`admin-btn capitalize ${v.status === "active" ? "text-brand-600" : "text-rose-500"}`}>
               {v.status === "active" ? "Live" : "Inactive"}
             </span>
             <Switch checked={v.status === "active"} onCheckedChange={() => onToggle(v.id, v.status)} />
@@ -673,7 +686,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             <Button 
               size="sm" 
               variant="outline" 
-              className="h-9 px-4 text-[11px] font-semibold uppercase tracking-wide rounded-full border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all shadow-sm"
+              className="h-9 px-4 admin-btn rounded-full border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all shadow-sm"
               onClick={() => onAssign(v)}
             >
               <UserPlus className="h-3.5 w-3.5 mr-2" /> Assign Owner
@@ -777,10 +790,10 @@ function VenuesTab() {
     <div className="space-y-3" data-testid="admin-venues-tab">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">Venues</h2>
-          <p className="text-xs font-medium text-muted-foreground mt-1">{venues.length} Facilities Managed</p>
+          <h2 className="admin-heading">Venues</h2>
+          <p className="admin-label mt-1">{venues.length} Facilities Managed</p>
         </div>
-        <Button size="sm" className="gap-2 h-11 px-6 text-xs font-semibold tracking-wide uppercase rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 active:scale-95 bg-brand-600 text-white" onClick={() => setShowCreateDialog(true)}>
+        <Button size="sm" className="gap-2 h-10 px-5 admin-btn rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 hover:bg-brand-500 active:scale-95 bg-brand-600 text-white" onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4" /> Add New Venue
         </Button>
       </div>
@@ -799,46 +812,46 @@ function VenuesTab() {
 
       {/* Create Venue Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="border-b border-border/40 pb-4">
-            <DialogTitle className="flex items-center gap-3 text-xl font-display font-light">
-              <div className="p-2 rounded-xl border-brand-600/10">
-                <Building2 className="h-5 w-5 border-brand-600" />
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px] p-0">
+          <DialogHeader className="border-b border-border/40 pb-4 px-7 pt-7">
+            <DialogTitle className="flex items-center gap-3 admin-heading">
+              <div className="p-2.5 rounded-2xl bg-brand-600/10">
+                <Building2 className="h-5 w-5 text-brand-600" />
               </div> 
-              Add Venue <span className="text-muted-foreground font-sans text-sm mt-1 border border-border/60 bg-secondary/50 px-2 py-0.5 rounded-md ml-2 hidden sm:inline-block">Enquiry Mode</span>
+              Add Venue <span className="admin-badge px-2.5 py-1 rounded-lg border border-border/60 bg-secondary/50 ml-2 hidden sm:inline-block">Enquiry Mode</span>
             </DialogTitle>
-            <DialogDescription className="text-sm font-medium mt-2">This venue will be in Enquiry mode until an owner is assigned.</DialogDescription>
+            <DialogDescription className="admin-label mt-2">This venue will be in Enquiry mode until an owner is assigned.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-5 px-7 py-5">
             <div>
-              <Label className="text-xs text-muted-foreground">Venue Name *</Label>
-              <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))} placeholder="PowerPlay Arena" className="mt-1" />
+              <Label className="admin-section-label ml-1">Venue Name *</Label>
+              <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))} placeholder="PowerPlay Arena" className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Description</Label>
-              <Textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))} placeholder="Premium sports facility..." className="mt-1" rows={2} />
+              <Label className="admin-section-label ml-1">Description</Label>
+              <Textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))} placeholder="Premium sports facility..." className="mt-1.5 rounded-xl bg-secondary/20 border-border/40 px-4 py-3 font-medium" rows={2} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Address</Label>
-                <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))} placeholder="123 Main Street" className="mt-1" />
+                <Label className="admin-section-label ml-1">Address</Label>
+                <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))} placeholder="123 Main Street" className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Area</Label>
-                <Input value={venueForm.area} onChange={e => setVenueForm(p => ({ ...p, area: e.target.value }))} placeholder="Koramangala" className="mt-1" />
+                <Label className="admin-section-label ml-1">Area</Label>
+                <Input value={venueForm.area} onChange={e => setVenueForm(p => ({ ...p, area: e.target.value }))} placeholder="Koramangala" className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">City *</Label>
-              <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))} placeholder="Bengaluru" className="mt-1" />
+              <Label className="admin-section-label ml-1">City *</Label>
+              <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))} placeholder="Bengaluru" className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
             </div>
             {/* Sports */}
             <div>
-              <Label className="text-xs text-muted-foreground">Sports *</Label>
+              <Label className="admin-section-label ml-1">Sports *</Label>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {SPORTS_OPTIONS.map(s => (
                   <button key={s} type="button" onClick={() => toggleFormArray("sports", s.toLowerCase())}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "-brand-600 border-brand-600-foreground border-brand-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-brand-600/50"}`}>
+                    className={`px-3 py-1.5 rounded-xl admin-btn border transition-colors ${venueForm.sports.includes(s.toLowerCase()) ? "bg-brand-600/10 text-brand-600 border-brand-600" : "bg-secondary/20 text-muted-foreground border-border/40 hover:border-brand-600/50"}`}>
                     {s}
                   </button>
                 ))}
@@ -846,11 +859,11 @@ function VenuesTab() {
             </div>
             {/* Amenities */}
             <div>
-              <Label className="text-xs text-muted-foreground">Amenities</Label>
+              <Label className="admin-section-label ml-1">Amenities</Label>
               <div className="flex flex-wrap gap-1.5 mt-1">
                 {AMENITIES_OPTIONS.map(a => (
                   <button key={a} type="button" onClick={() => toggleFormArray("amenities", a)}
-                    className={`px-2.5 py-1 rounded-full text-[10px] font-semibold border transition-colors ${venueForm.amenities.includes(a) ? "-brand-600 border-brand-600-foreground border-brand-600" : "bg-secondary/50 text-muted-foreground border-border hover:border-brand-600/50"}`}>
+                    className={`px-3 py-1.5 rounded-xl admin-btn border transition-colors ${venueForm.amenities.includes(a) ? "bg-brand-600/10 text-brand-600 border-brand-600" : "bg-secondary/20 text-muted-foreground border-border/40 hover:border-brand-600/50"}`}>
                     {a}
                   </button>
                 ))}
@@ -858,43 +871,43 @@ function VenuesTab() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Base Price (INR/hr)</Label>
-                <Input type="number" value={venueForm.base_price} onChange={e => setVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))} className="mt-1" />
+                <Label className="admin-section-label ml-1">Base Price (INR/hr)</Label>
+                <Input type="number" value={venueForm.base_price} onChange={e => setVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Number of Turfs</Label>
-                <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1" />
+                <Label className="admin-section-label ml-1">Number of Turfs</Label>
+                <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Opening Hour</Label>
-                <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))} className="mt-1" />
+                <Label className="admin-section-label ml-1">Opening Hour</Label>
+                <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Closing Hour</Label>
-                <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))} className="mt-1" />
+                <Label className="admin-section-label ml-1">Closing Hour</Label>
+                <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Slot (min)</Label>
-                <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))} className="mt-1" />
+                <Label className="admin-section-label ml-1">Slot (min)</Label>
+                <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
               </div>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Owner's WhatsApp Number</Label>
-              <div className="flex mt-1">
-                <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
-                <Input value={venueForm.contact_phone} onChange={e => setVenueForm(p => ({ ...p, contact_phone: cleanPhone(e.target.value) }))} placeholder="98765 43210" className="rounded-l-none" maxLength={10} />
+              <Label className="admin-section-label ml-1">Owner's WhatsApp Number</Label>
+              <div className="flex mt-1.5">
+                <span className="inline-flex items-center px-3 bg-secondary/20 border border-r-0 border-border/40 rounded-l-xl admin-label select-none">+91</span>
+                <Input value={venueForm.contact_phone} onChange={e => setVenueForm(p => ({ ...p, contact_phone: cleanPhone(e.target.value) }))} placeholder="98765 43210" className="rounded-l-none h-11 rounded-r-xl bg-secondary/20 border-border/40 px-4 font-medium" maxLength={10} />
               </div>
-              <p className="text-[10px] text-muted-foreground mt-1">Enquiries from Lobbians will be sent to this WhatsApp number.</p>
+              <p className="admin-label mt-1.5 ml-1">Enquiries from Lobbians will be sent to this WhatsApp number.</p>
             </div>
             {/* Image upload */}
             <div className="space-y-2">
-              <Label className="text-xs text-muted-foreground">Venue Images</Label>
+              <Label className="admin-section-label ml-1">Venue Images</Label>
               {venueForm.images.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {venueForm.images.map((url, i) => (
-                    <div key={i} className="relative group w-16 h-16 rounded-lg overflow-hidden border border-border">
+                    <div key={i} className="relative group w-16 h-16 rounded-xl overflow-hidden border border-border/40">
                       <img src={mediaUrl(url)} alt="" className="w-full h-full object-cover" />
                       <button type="button" onClick={() => setVenueForm(p => ({ ...p, images: p.images.filter((_, idx) => idx !== i) }))}
                         className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -904,12 +917,12 @@ function VenuesTab() {
                   ))}
                 </div>
               )}
-              <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "-brand-600/40 hover:border-brand-600 hover:border-brand-600/5 text-muted-foreground hover:border-brand-600"}`}>
+              <label className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 border-dashed cursor-pointer transition-colors admin-label ${uploading ? "opacity-60 pointer-events-none border-border/40" : "border-brand-600/30 hover:border-brand-600 text-muted-foreground hover:text-brand-600"}`}>
                 {uploading ? <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />Uploading...</> : <><ImagePlus className="h-4 w-4" />{venueForm.images.length > 0 ? "Add more images" : "Upload venue images"}</>}
                 <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleImageUpload(e.target.files)} disabled={uploading} />
               </label>
             </div>
-            <Button className="w-full border-brand-600 border-brand-600-foreground font-bold" onClick={handleCreateVenue} disabled={creating}>
+            <Button className="w-full h-12 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateVenue} disabled={creating}>
               {creating ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Creating...</> : "Create Venue"}
             </Button>
           </div>
@@ -918,17 +931,17 @@ function VenuesTab() {
 
       {/* Assign Owner Dialog */}
       <Dialog open={!!assignDialog} onOpenChange={(o) => !o && setAssignDialog(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader className="border-b border-border/40 pb-4">
-            <DialogTitle className="flex items-center gap-3 text-xl font-display font-light">
-              <div className="p-2 rounded-xl border-brand-600/10">
-                <UserPlus className="h-5 w-5 border-brand-600" />
+        <DialogContent className="max-w-md rounded-[28px] p-0">
+          <DialogHeader className="border-b border-border/40 pb-4 px-7 pt-7">
+            <DialogTitle className="flex items-center gap-3 admin-heading">
+              <div className="p-2.5 rounded-2xl bg-brand-600/10">
+                <UserPlus className="h-5 w-5 text-brand-600" />
               </div> 
               Assign Owner
             </DialogTitle>
-            <DialogDescription className="text-sm font-medium mt-2">Assign a verified venue owner to <span className="text-foreground font-semibold">"{assignDialog?.name}"</span>. This will change the badge from Enquiry to Bookable.</DialogDescription>
+            <DialogDescription className="admin-label mt-2">Assign a verified venue owner to <span className="text-foreground font-medium">"{assignDialog?.name}"</span>. This will change the badge from Enquiry to Bookable.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 mt-2">
+          <div className="space-y-4 px-7 py-5">
             {venueOwners.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-4">No active venue owners found. Venue owners must register and be approved first.</p>
             ) : (
@@ -980,10 +993,10 @@ function VenuesTab() {
               const owner = venueOwners.find(o => o.id === selectedOwner);
               return (
                 <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 space-y-1.5">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-amber-400">
+                  <div className="flex items-center gap-2 text-xs font-medium text-amber-400">
                     <AlertCircle className="h-3.5 w-3.5" /> Are you sure?
                   </div>
-                  <div className="text-[11px] text-muted-foreground space-y-0.5">
+                  <div className="text-xs text-muted-foreground space-y-0.5">
                     <p>Venue: <span className="text-foreground font-medium">{assignDialog?.name}</span></p>
                     <p>Owner: <span className="text-foreground font-medium">{owner?.name} ({owner?.email})</span></p>
                     <p>Phone: <span className="text-foreground font-medium">{useOwnerPhone ? (owner?.phone || "Not set") + " (owner)" : (assignDialog?.contact_phone || owner?.phone || "Not set") + (!useOwnerPhone && assignDialog?.contact_phone ? " (by admin)" : "")}</span></p>
@@ -994,11 +1007,11 @@ function VenuesTab() {
             })()}
             <div className="flex gap-2">
               {confirmAssign && (
-                <Button variant="outline" className="flex-1 font-bold" onClick={() => setConfirmAssign(false)}>
+                <Button variant="outline" className="flex-1 admin-btn rounded-xl h-11" onClick={() => setConfirmAssign(false)}>
                   Go Back
                 </Button>
               )}
-              <Button className={`${confirmAssign ? "flex-1" : "w-full"} font-bold`} onClick={handleAssignOwner} disabled={assigning || !selectedOwner}>
+              <Button className={`${confirmAssign ? "flex-1" : "w-full"} h-11 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all`} onClick={handleAssignOwner} disabled={assigning || !selectedOwner}>
                 {assigning ? "Assigning..." : confirmAssign ? "Yes, Assign Owner" : "Assign Owner"}
               </Button>
             </div>
@@ -1109,7 +1122,7 @@ function SettingsTab() {
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-wide transition-all duration-300 ${
+            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl admin-btn transition-all duration-300 ${
               activeSubTab === tab.id
                 ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95"
                 : "text-muted-foreground hover:text-foreground hover:bg-white/5"
@@ -1137,8 +1150,8 @@ function SettingsTab() {
                   <CreditCard className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">Payment Gateway</h3>
-                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Global Transaction Settings</p>
+                  <h3 className="admin-heading">Payment Gateway</h3>
+                  <p className="admin-label mt-0.5">Global Transaction Settings</p>
                 </div>
               </div>
               
@@ -1146,14 +1159,14 @@ function SettingsTab() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Provider</Label>
-                    <div className="h-12 flex items-center px-4 bg-white/5 rounded-2xl border border-white/10 text-sm font-bold text-foreground">
+                    <div className="h-12 flex items-center px-4 bg-white/5 rounded-2xl border border-white/10 text-sm font-medium text-foreground">
                       {settings.payment_gateway.provider}
                     </div>
                   </div>
                   <div className="flex flex-col justify-end">
                     <div className="flex items-center gap-4 bg-white/5 p-3 rounded-2xl border border-white/10 w-fit">
                       <Switch checked={settings.payment_gateway.is_live} onCheckedChange={v => updateGateway("is_live", v)} data-testid="gateway-live-toggle" />
-                      <Label className="text-xs font-semibold cursor-pointer">
+                      <Label className="text-xs font-medium cursor-pointer">
                         {settings.payment_gateway.is_live ? "Live Mode" : "Test Mode"}
                       </Label>
                     </div>
@@ -1177,7 +1190,7 @@ function SettingsTab() {
                         type={showSecret ? "text" : "password"} 
                         value={settings.payment_gateway.key_secret}
                         onChange={e => updateGateway("key_secret", e.target.value)}
-                        className="h-12 bg-white/5 border-white/10 text-sm font-bold pr-12 rounded-2xl focus:ring-brand-600/50" 
+                        className="h-12 bg-white/5 border-white/10 text-sm font-medium rounded-2xl focus:ring-brand-600/50" 
                         placeholder="Enter key secret"
                       />
                       <button 
@@ -1208,7 +1221,7 @@ function SettingsTab() {
                       {showWebhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-[10px] text-muted-foreground mt-2">Found in Razorpay Dashboard → Webhooks → Secret</p>
+                  <p className="text-xs text-muted-foreground mt-2">Found in Razorpay Dashboard → Webhooks → Secret</p>
                 </div>
               </div>
             </section>
@@ -1222,8 +1235,8 @@ function SettingsTab() {
                 </div>
                 <div>
                   <div className="flex items-center gap-3">
-                    <h3 className="text-xl font-bold tracking-tight text-foreground">Cloud Storage</h3>
-                    <Badge className={`text-[10px] font-semibold uppercase tracking-wide border-none ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                    <h3 className="admin-heading">Cloud Storage</h3>
+                    <Badge className={`admin-badge border-none ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
                       {s3Configured ? "Connected" : "Not Linked"}
                     </Badge>
                   </div>
@@ -1268,7 +1281,7 @@ function SettingsTab() {
                     <Input 
                       value={s3.bucket_name || ""} 
                       onChange={e => updateS3("bucket_name", e.target.value)}
-                      className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-2xl focus:ring-brand-600/50"
+                      className="h-12 bg-white/5 border-white/10 text-sm font-medium rounded-2xl focus:ring-brand-600/50"
                       placeholder="horizon-mnt-media" 
                     />
                   </div>
@@ -1277,7 +1290,7 @@ function SettingsTab() {
                     <select
                       value={s3.region || "ap-south-1"}
                       onChange={e => updateS3("region", e.target.value)}
-                      className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-bold text-foreground focus:outline-none focus:ring-2 focus:ring-brand-600/50 appearance-none transition-all"
+                      className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-brand-600/50 appearance-none transition-all"
                     >
                       <option value="ap-south-1">ap-south-1 (Mumbai)</option>
                       <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
@@ -1293,7 +1306,7 @@ function SettingsTab() {
                   <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold border-none ${s3Status.ok ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}
+                    className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-medium border-none ${s3Status.ok ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}
                   >
                     {s3Status.ok ? <CheckCircle className="h-5 w-5 mt-0.5 shrink-0" /> : <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />}
                     <span>{s3Status.message}</span>
@@ -1305,7 +1318,7 @@ function SettingsTab() {
                     variant="outline" 
                     onClick={handleTestS3} 
                     disabled={testingS3 || !s3Configured} 
-                    className="w-full h-12 rounded-2xl text-xs font-semibold uppercase tracking-wide gap-3 border-white/10 bg-white/5 hover:bg-white/10 text-foreground hover:text-brand-600 hover:border-brand-600/50 transition-all shadow-lg active:scale-95"
+                    className="w-full h-12 rounded-2xl text-xs font-medium tracking-wide gap-3 border-white/10 bg-white/5 hover:bg-white/10 text-foreground hover:text-brand-600 hover:border-brand-600/50 transition-all shadow-lg active:scale-95"
                   >
                     {testingS3 ? (
                       <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
@@ -1326,8 +1339,8 @@ function SettingsTab() {
                   <MessageCircle className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">WhatsApp Business</h3>
-                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Automated Enquiry Messaging</p>
+                  <h3 className="admin-heading">WhatsApp Business</h3>
+                  <p className="admin-label mt-0.5">Automated Enquiry Messaging</p>
                 </div>
               </div>
 
@@ -1345,11 +1358,11 @@ function SettingsTab() {
                   <div>
                     <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Business Phone</Label>
                     <div className="flex">
-                      <span className="h-12 inline-flex items-center px-4 bg-white/10 border border-white/10 border-r-0 rounded-l-2xl text-[11px] font-bold text-muted-foreground">+91</span>
+                      <span className="h-12 inline-flex items-center px-4 bg-white/10 border border-white/10 border-r-0 rounded-l-2xl text-xs font-medium text-muted-foreground">+91</span>
                       <Input 
                         value={settings.whatsapp?.business_phone || ""} 
                         onChange={e => setSettings(s => ({ ...s, whatsapp: { ...s.whatsapp, business_phone: cleanPhone(e.target.value) } }))}
-                        className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-l-none rounded-r-2xl focus:ring-brand-600/50" 
+                        className="h-12 bg-white/5 border-white/10 text-sm font-medium rounded-l-none rounded-r-2xl focus:ring-brand-600/50" 
                         placeholder="98765 43210" 
                         maxLength={10} 
                       />
@@ -1386,7 +1399,7 @@ function SettingsTab() {
                     <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
                       <Percent className="h-6 w-6 text-brand-600" />
                     </div>
-                    <h3 className="text-lg font-bold tracking-tight text-foreground">Revenue Share</h3>
+                    <h3 className="admin-heading">Revenue Share</h3>
                   </div>
                   
                   <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
@@ -1400,7 +1413,7 @@ function SettingsTab() {
                           <div className="p-2 rounded-xl bg-white/5 text-muted-foreground group-hover:text-brand-600 transition-colors">
                             <comm.icon className="w-4 h-4" />
                           </div>
-                          <span className="text-xs font-semibold text-muted-foreground">{comm.label}</span>
+                          <span className="admin-label">{comm.label}</span>
                         </div>
                         <div className="flex items-center gap-3">
                           <Input 
@@ -1409,9 +1422,9 @@ function SettingsTab() {
                             max={50} 
                             value={settings[comm.key] ?? 10}
                             onChange={e => setSettings(s => ({ ...s, [comm.key]: Number(e.target.value) }))}
-                            className="h-10 bg-white/5 border-white/10 text-sm font-bold w-20 rounded-xl focus:ring-brand-600/50 text-center" 
+                            className="h-10 bg-white/5 border-white/10 text-sm font-medium w-20 rounded-xl focus:ring-brand-600/50 text-center" 
                           />
-                          <span className="text-xs font-bold text-muted-foreground">%</span>
+                          <span className="admin-label">%</span>
                         </div>
                       </div>
                     ))}
@@ -1423,10 +1436,10 @@ function SettingsTab() {
                     <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
                       <Crown className="h-6 w-6 text-brand-600" />
                     </div>
-                    <h3 className="text-lg font-bold tracking-tight text-foreground">Service Limits</h3>
+                    <h3 className="admin-heading">Service Limits</h3>
                   </div>
                   <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl flex items-center justify-center">
-                    <p className="text-sm font-bold text-muted-foreground text-center px-4">Subscription plan quotas are configured in the section below.</p>
+                    <p className="text-sm font-medium text-muted-foreground text-center px-4">Subscription plan quotas are configured in the section below.</p>
                   </div>
                 </div>
               </div>
@@ -1436,32 +1449,32 @@ function SettingsTab() {
                   <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
                     <Crown className="h-6 w-6 text-brand-600" />
                   </div>
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">SaaS Subscription Models</h3>
+                  <h3 className="admin-heading">SaaS Subscription Models</h3>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {settings.subscription_plans.map((plan, idx) => (
                     <div key={plan.id} className="glass-premium rounded-[32px] p-6 border border-white/5 shadow-xl space-y-6 relative overflow-hidden group">
                       <div className="flex items-center justify-between relative z-10">
-                        <span className="text-sm font-semibold tracking-tight text-brand-600">{plan.name}</span>
-                        <Badge className="text-[10px] font-semibold uppercase tracking-wide bg-brand-600/10 text-brand-600 border-none py-1 px-2 rounded-full transition-colors hover:bg-brand-600 hover:text-white pointer-events-none">{plan.id}</Badge>
+                        <span className="text-sm font-medium tracking-tight text-brand-600">{plan.name}</span>
+                        <Badge className="text-xs font-medium uppercase tracking-wide bg-brand-600/10 text-brand-600 border-none py-1 px-2 rounded-full transition-colors hover:bg-brand-600 hover:text-white pointer-events-none">{plan.id}</Badge>
                       </div>
                       
                       <div className="grid grid-cols-1 gap-4 relative z-10">
                         <div>
-                          <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Monthly Rate</Label>
+                          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Monthly Rate</Label>
                           <div className="flex items-center">
-                            <span className="text-lg font-bold mr-1 text-muted-foreground">₹</span>
+                            <span className="text-lg font-medium mr-1 text-muted-foreground">₹</span>
                             <Input 
                               type="number" 
                               value={plan.price} 
                               onChange={e => updatePlan(idx, "price", Number(e.target.value))}
-                              className="h-9 bg-white/5 border-white/10 text-sm font-bold rounded-lg focus:ring-brand-600/50" 
+                              className="h-9 bg-white/5 border-white/10 text-sm font-medium rounded-lg focus:ring-brand-600/50" 
                             />
                           </div>
                         </div>
                         <div>
-                          <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Max Units</Label>
+                          <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Max Units</Label>
                           <Input 
                             type="number" 
                             value={plan.max_venues} 
@@ -1472,11 +1485,11 @@ function SettingsTab() {
                       </div>
 
                       <div className="relative z-10">
-                        <Label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Core Features</Label>
+                        <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1.5 block">Core Features</Label>
                         <textarea 
                           value={plan.features.join(", ")} 
                           onChange={e => updatePlan(idx, "features", e.target.value.split(",").map(f => f.trim()).filter(Boolean))}
-                          className="w-full bg-white/5 border border-white/10 text-[10px] font-bold p-3 rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-brand-600/50 transition-all resize-none" 
+                          className="w-full bg-white/5 border border-white/10 text-xs font-medium p-3 rounded-xl h-24 focus:outline-none focus:ring-2 focus:ring-brand-600/50 transition-all resize-none" 
                         />
                       </div>
                     </div>
@@ -1493,8 +1506,8 @@ function SettingsTab() {
                   <ShieldCheck className="h-6 w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold tracking-tight text-foreground">Access Security</h3>
-                  <p className="text-xs font-medium text-muted-foreground mt-0.5">Admin Credentials & Auth</p>
+                  <h3 className="admin-heading">Access Security</h3>
+                  <p className="admin-label mt-0.5">Admin Credentials & Auth</p>
                 </div>
               </div>
 
@@ -1507,12 +1520,12 @@ function SettingsTab() {
                       value={newPassword} 
                       onChange={e => setNewPassword(e.target.value)}
                       placeholder="New password" 
-                      className="h-12 bg-white/5 border-white/10 text-sm font-bold rounded-2xl focus:ring-brand-600/50" 
+                      className="h-12 bg-white/5 border-white/10 text-sm font-medium rounded-2xl focus:ring-brand-600/50" 
                     />
                     <Button 
                       onClick={handleChangePassword} 
                       disabled={changingPw || !newPassword} 
-                      className="h-12 px-6 rounded-2xl font-semibold uppercase tracking-wide text-[10px] bg-white/10 text-foreground hover:bg-brand-600 transition-all shadow-lg active:scale-95"
+                      className="h-12 px-6 rounded-2xl font-medium tracking-wide text-xs bg-white/10 text-foreground hover:bg-brand-600 transition-all shadow-lg active:scale-95"
                     >
                       {changingPw ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update"}
                     </Button>
@@ -1529,7 +1542,7 @@ function SettingsTab() {
         <Button 
           onClick={saveSettings} 
           disabled={saving} 
-          className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm uppercase tracking-wide rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
+          className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm tracking-wide rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
         >
           {saving ? (
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -1644,7 +1657,7 @@ function PayoutsTab() {
             <button
               key={tab.id}
               onClick={() => { setSubTab(tab.id); setSearchQuery(""); }}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full admin-btn transition-all ${
                 subTab === tab.id
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20"
                   : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
@@ -1670,7 +1683,7 @@ function PayoutsTab() {
               size="sm"
               onClick={handleBulkProcess}
               disabled={bulkProcessing}
-              className="gap-2 h-10 px-5 text-xs font-semibold rounded-full bg-brand-600 text-white"
+              className="gap-2 h-10 px-5 admin-btn rounded-full bg-brand-600 hover:bg-brand-500 text-white"
             >
               {bulkProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <IndianRupee className="h-4 w-4" />}
               Process All
@@ -1694,14 +1707,14 @@ function PayoutsTab() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border/40">
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">User</th>
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Role</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Items</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Gross</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Commission</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Net Payout</th>
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Action</th>
+                        <th className="text-left p-4 admin-th">User</th>
+                        <th className="text-left p-4 admin-th">Role</th>
+                        <th className="text-right p-4 admin-th">Items</th>
+                        <th className="text-right p-4 admin-th">Gross</th>
+                        <th className="text-right p-4 admin-th">Commission</th>
+                        <th className="text-right p-4 admin-th">Net Payout</th>
+                        <th className="text-left p-4 admin-th">Bank</th>
+                        <th className="text-right p-4 admin-th">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1715,19 +1728,19 @@ function PayoutsTab() {
                         >
                           <td className="p-4 font-medium text-foreground">{p.user_name || "—"}</td>
                           <td className="p-4">
-                            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${roleColors[p.user_role] || "bg-secondary text-muted-foreground"}`}>
+                            <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${roleColors[p.user_role] || "bg-secondary text-muted-foreground"}`}>
                               {p.user_role === "venue_owner" ? "Venue Owner" : p.user_role}
                             </Badge>
                           </td>
                           <td className="p-4 text-right text-muted-foreground">{p.pending_items_count || 0}</td>
                           <td className="p-4 text-right font-medium">₹{(p.gross_amount || 0).toLocaleString()}</td>
                           <td className="p-4 text-right text-muted-foreground">₹{(p.commission_amount || 0).toLocaleString()}</td>
-                          <td className="p-4 text-right font-bold text-brand-600">₹{(p.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-4 text-right font-medium text-brand-600">₹{(p.net_amount || 0).toLocaleString()}</td>
                           <td className="p-4">
                             {p.has_linked_account ? (
-                              <Badge variant="outline" className="text-xs font-semibold px-3 py-1 rounded-full border-none bg-green-500/10 text-green-600">Linked</Badge>
+                              <Badge variant="outline" className="admin-badge px-3 py-1 rounded-full border-none bg-green-500/10 text-green-600">Linked</Badge>
                             ) : (
-                              <Badge variant="outline" className="text-xs font-semibold px-3 py-1 rounded-full border-none bg-red-500/10 text-red-600">Not Linked</Badge>
+                              <Badge variant="outline" className="admin-badge px-3 py-1 rounded-full border-none bg-red-500/10 text-red-600">Not Linked</Badge>
                             )}
                           </td>
                           <td className="p-4 text-right">
@@ -1735,7 +1748,7 @@ function PayoutsTab() {
                               size="sm"
                               onClick={() => handleProcessPayout(p.user_id)}
                               disabled={processing === p.user_id || !p.has_linked_account}
-                              className="gap-1.5 h-9 px-4 text-xs font-semibold rounded-full bg-brand-600 text-white disabled:opacity-50"
+                              className="gap-1.5 h-9 px-4 admin-btn rounded-full bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-50"
                             >
                               {processing === p.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <IndianRupee className="h-3.5 w-3.5" />}
                               Pay
@@ -1765,13 +1778,13 @@ function PayoutsTab() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border/40">
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Payee</th>
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Role</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Amount</th>
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
-                        <th className="text-left p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Transfer ID</th>
-                        <th className="text-right p-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Details</th>
+                        <th className="text-left p-4 admin-th">Date</th>
+                        <th className="text-left p-4 admin-th">Payee</th>
+                        <th className="text-left p-4 admin-th">Role</th>
+                        <th className="text-right p-4 admin-th">Amount</th>
+                        <th className="text-left p-4 admin-th">Status</th>
+                        <th className="text-left p-4 admin-th">Transfer ID</th>
+                        <th className="text-right p-4 admin-th">Details</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1786,13 +1799,13 @@ function PayoutsTab() {
                           <td className="p-4 text-muted-foreground text-xs">{s.created_at ? new Date(s.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
                           <td className="p-4 font-medium text-foreground">{s.user_name || "—"}</td>
                           <td className="p-4">
-                            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${roleColors[s.user_role] || "bg-secondary text-muted-foreground"}`}>
+                            <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${roleColors[s.user_role] || "bg-secondary text-muted-foreground"}`}>
                               {s.user_role === "venue_owner" ? "Venue Owner" : s.user_role}
                             </Badge>
                           </td>
-                          <td className="p-4 text-right font-bold text-brand-600">₹{(s.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-4 text-right font-medium text-brand-600">₹{(s.net_amount || 0).toLocaleString()}</td>
                           <td className="p-4">
-                            <Badge variant="outline" className={`text-xs font-semibold uppercase tracking-wide px-3 py-1 rounded-full border-none ${statusColors[s.status] || "bg-secondary text-muted-foreground"}`}>
+                            <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${statusColors[s.status] || "bg-secondary text-muted-foreground"}`}>
                               {s.status}
                             </Badge>
                           </td>
@@ -1833,7 +1846,7 @@ function PayoutsTab() {
       <Dialog open={!!detailDialog} onOpenChange={() => setDetailDialog(null)}>
         <DialogContent className="max-w-lg rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Settlement Details</DialogTitle>
+            <DialogTitle className="admin-heading">Settlement Details</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">
               {detailDialog?.id}
             </DialogDescription>
@@ -1843,7 +1856,7 @@ function PayoutsTab() {
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Payee</p>
-                  <p className="font-semibold">{detailDialog.user_name}</p>
+                  <p className="font-medium">{detailDialog.user_name}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Role</p>
@@ -1851,11 +1864,11 @@ function PayoutsTab() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Period</p>
-                  <p className="font-semibold">{detailDialog.period_start || "—"} → {detailDialog.period_end || "—"}</p>
+                  <p className="font-medium">{detailDialog.period_start || "—"} → {detailDialog.period_end || "—"}</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Status</p>
-                  <Badge variant="outline" className={`text-xs font-semibold uppercase px-3 py-1 rounded-full border-none ${statusColors[detailDialog.status] || "bg-secondary text-muted-foreground"}`}>
+                  <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${statusColors[detailDialog.status] || "bg-secondary text-muted-foreground"}`}>
                     {detailDialog.status}
                   </Badge>
                 </div>
@@ -1863,7 +1876,7 @@ function PayoutsTab() {
               <div className="bg-secondary/30 rounded-2xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Gross Amount</span><span className="font-medium">₹{(detailDialog.gross_amount || 0).toLocaleString()}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Commission ({detailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(detailDialog.commission_amount || 0).toLocaleString()}</span></div>
-                <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-semibold">Net Payout</span><span className="font-bold text-brand-600">₹{(detailDialog.net_amount || 0).toLocaleString()}</span></div>
+                <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-medium">Net Payout</span><span className="font-medium text-brand-600">₹{(detailDialog.net_amount || 0).toLocaleString()}</span></div>
               </div>
               {detailDialog.razorpay_transfer_id && (
                 <div className="text-xs text-muted-foreground">
@@ -1873,7 +1886,7 @@ function PayoutsTab() {
               )}
               {detailDialog.line_items?.length > 0 && (
                 <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Line Items ({detailDialog.line_items.length})</p>
+                  <p className="admin-section-label mb-2">Line Items ({detailDialog.line_items.length})</p>
                   <div className="max-h-48 overflow-y-auto space-y-1">
                     {detailDialog.line_items.map((item, i) => (
                       <div key={i} className="flex items-center justify-between py-2 px-3 bg-secondary/20 rounded-xl text-xs">
@@ -1881,7 +1894,7 @@ function PayoutsTab() {
                           <span className="font-medium text-foreground">{item.description || item.type}</span>
                           <span className="text-muted-foreground ml-2">{item.date}</span>
                         </div>
-                        <span className="font-semibold">₹{(item.net || 0).toLocaleString()}</span>
+                        <span className="font-medium">₹{(item.net || 0).toLocaleString()}</span>
                       </div>
                     ))}
                   </div>
@@ -1903,7 +1916,7 @@ export default function SuperAdminDashboard() {
           
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-display font-bold tracking-tight text-foreground mb-1">Admin Console</h1>
+            <h1 className="admin-page-title mb-1">Admin Console</h1>
             <p className="text-sm text-muted-foreground">Horizon Platform Management</p>
           </div>
 
@@ -1912,7 +1925,7 @@ export default function SuperAdminDashboard() {
               <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
                 {["overview", "users", "venues", "payouts", "settings"].map((tab) => (
                   <TabsTrigger key={tab} value={tab} 
-                    className="relative pb-2 text-sm font-bold text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" 
+                    className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" 
                     data-testid={`tab-${tab}`}>
                     {tab}
                     <TabsIndicator />

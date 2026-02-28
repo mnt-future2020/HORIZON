@@ -22,10 +22,10 @@ import { IoTSkeleton } from "@/components/SkeletonLoader";
 
 const TYPE_LABELS = { floodlight: "Floodlight", led_panel: "LED Panel", ambient: "Ambient", emergency: "Emergency" };
 const TYPE_COLORS = {
-  floodlight: "text-amber-400 bg-amber-500/15",
-  led_panel: "text-sky-400 bg-sky-500/15",
-  ambient: "text-violet-400 bg-violet-500/15",
-  emergency: "text-red-400 bg-red-500/15",
+  floodlight: "text-amber-400 bg-amber-500/15 hover:bg-amber-500/25",
+  led_panel: "text-sky-400 bg-sky-500/15 hover:bg-sky-500/25",
+  ambient: "text-violet-400 bg-violet-500/15 hover:bg-violet-500/25",
+  emergency: "text-red-400 bg-red-500/15 hover:bg-red-500/25",
 };
 
 const IoTStatCard = ({ icon: Icon, label, value, sub, index, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) => (
@@ -37,15 +37,15 @@ const IoTStatCard = ({ icon: Icon, label, value, sub, index, colorClass = "text-
     className="bg-card rounded-[32px] p-7 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
   >
     <div className="flex items-center justify-between mb-6 relative z-10">
-      <div className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.25em] drop-shadow-sm">{label}</div>
+      <div className="admin-label">{label}</div>
       <div className={`p-3.5 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
         <Icon className={`h-5 w-5 ${colorClass}`} />
       </div>
     </div>
 
     <div className="relative z-10">
-      <div className="text-4xl font-black tracking-tight font-display mb-1.5 text-foreground">{value}</div>
-      {sub && <div className="text-xs text-muted-foreground/70 font-bold uppercase tracking-wider">{sub}</div>}
+      <div className="admin-value mb-1.5">{value}</div>
+      {sub && <div className="admin-label">{sub}</div>}
     </div>
 
     <div className={`absolute bottom-0 left-0 right-0 h-[3px] bg-brand-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out`} />
@@ -87,17 +87,17 @@ function DeviceCard({ device, onControl, onEdit, onDelete, index }) {
             <Lightbulb className={`h-7 w-7 transition-colors duration-500 ${isOn ? "text-brand-500" : "text-muted-foreground/30"}`} />
           </div>
           <div className="min-w-0">
-            <h4 className="font-black text-[15px] tracking-tight text-foreground/90 truncate">{device.name}</h4>
+            <h4 className="admin-name truncate">{device.name}</h4>
             <div className="flex items-center gap-2.5 mt-1.5 font-display">
-              <Badge className={`text-[10px] font-black uppercase tracking-widest ${typeColor} border-0 px-2.5 py-1 rounded-lg`}>
+              <Badge className={`admin-badge ${typeColor} border-0 px-2.5 py-1 rounded-lg`}>
                 {TYPE_LABELS[device.device_type]}
               </Badge>
               {isOnline ? (
-                <span className="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-brand-600 uppercase">
+                <span className="flex items-center gap-1.5 admin-badge text-brand-600">
                   <div className="h-1.5 w-1.5 rounded-full bg-brand-600" /> ONLINE
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-[10px] font-black tracking-widest text-muted-foreground/60 uppercase">
+                <span className="flex items-center gap-1.5 admin-badge text-muted-foreground/60">
                    OFFLINE
                 </span>
               )}
@@ -126,8 +126,8 @@ function DeviceCard({ device, onControl, onEdit, onDelete, index }) {
             data-testid={`toggle-device-${device.id}`} 
           />
           <div className="flex flex-col">
-            <span className="text-[11px] font-black text-muted-foreground/60 tracking-widest uppercase mb-0.5">Energy</span>
-            <span className="text-sm font-black text-foreground/90">{device.power_watts}W</span>
+            <span className="admin-section-label mb-0.5">Energy</span>
+            <span className="admin-name">{device.power_watts}W</span>
           </div>
         </div>
         {isOn && isOnline && (
@@ -137,16 +137,16 @@ function DeviceCard({ device, onControl, onEdit, onDelete, index }) {
               onValueCommit={handleBrightness} 
               className="flex-1"
               data-testid={`brightness-${device.id}`} />
-            <span className="text-xs font-black font-mono text-brand-500 w-8 text-right">{brightness}%</span>
+            <span className="text-xs font-medium font-mono text-brand-500 w-8 text-right">{brightness}%</span>
           </div>
         )}
       </div>
 
-      <div className="flex items-center gap-4 mt-6 pt-5 border-t border-border/40 text-[10px] font-black tracking-[0.15em] text-muted-foreground/50 uppercase relative z-10">
+      <div className="flex items-center gap-4 mt-6 pt-5 border-t border-border/40 admin-badge text-muted-foreground/50 relative z-10">
         <span className="px-2.5 py-1 rounded-lg bg-secondary/10 border border-border/40">{device.protocol}</span>
         {device.ip_address && <span className="opacity-80 font-mono tracking-normal">{device.ip_address}</span>}
         {device.auto_schedule && (
-          <span className="text-brand-600 font-bold flex items-center gap-1.5 ml-auto uppercase tracking-widest text-[10px]">
+          <span className="admin-badge text-brand-600 flex items-center gap-1.5 ml-auto">
             <Clock className="h-3 w-3" /> AUTO ACTIVE
           </span>
         )}
@@ -170,12 +170,12 @@ function ZoneCard({ zone, onControl, onEdit, onDelete, index }) {
           <Layers className="h-8 w-8 text-brand-600" />
         </div>
         <div className="min-w-0">
-          <h4 className="font-black text-xl tracking-tight text-foreground/90">{zone.name}</h4>
+          <h4 className="admin-heading">{zone.name}</h4>
           <div className="flex items-center gap-3 mt-2 font-display">
-            <Badge className="bg-secondary/20 text-[10px] font-black tracking-[0.15em] uppercase text-muted-foreground/80 px-3 py-1 border border-border/40 rounded-lg">
+            <Badge className="bg-secondary/20 admin-badge text-muted-foreground/80 px-3 py-1 border border-border/40 rounded-lg">
               {zone.turf_number ? `TURF ${zone.turf_number}` : "COMMON AREA"}
             </Badge>
-            <span className="text-[11px] font-black tracking-widest text-brand-600 uppercase">
+            <span className="admin-badge text-brand-600">
               {zone.device_count || 0} DEVICES
             </span>
           </div>
@@ -187,7 +187,7 @@ function ZoneCard({ zone, onControl, onEdit, onDelete, index }) {
         <Button 
           size="sm" 
           onClick={() => onControl(zone.id, { action: "on" })} 
-          className="bg-brand-600 hover:bg-brand-500 text-white font-black text-[11px] tracking-widest uppercase h-11 px-7 rounded-2xl shadow-md shadow-brand-600/10 active:scale-95 transition-all outline-none border-0"
+          className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-11 px-7 rounded-2xl shadow-md shadow-brand-600/10 active:scale-95 transition-all outline-none border-0"
           data-testid={`zone-on-${zone.id}`}
         >
           <Power className="h-4 w-4 mr-2.5" /> ALL ON
@@ -196,7 +196,7 @@ function ZoneCard({ zone, onControl, onEdit, onDelete, index }) {
           size="sm" 
           variant="outline"
           onClick={() => onControl(zone.id, { action: "off" })} 
-          className="bg-background border-border/60 hover:border-brand-600 text-foreground font-black text-[11px] tracking-widest uppercase h-11 px-7 rounded-2xl active:scale-95 transition-all outline-none"
+          className="bg-background border-border/60 hover:border-brand-600 text-foreground admin-btn h-11 px-7 rounded-2xl active:scale-95 transition-all outline-none"
           data-testid={`zone-off-${zone.id}`}
         >
           <Moon className="h-4 w-4 mr-2.5" /> ALL OFF
@@ -396,7 +396,7 @@ export default function IoTDashboard() {
           <motion.span 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60"
+            className="admin-section-label"
           >
             IoT Control Center
           </motion.span>
@@ -404,7 +404,7 @@ export default function IoTDashboard() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="font-display text-4xl md:text-5xl font-black tracking-tight mt-2 text-foreground"
+            className="font-display text-3xl md:text-4xl font-medium tracking-tight mt-2 text-foreground"
           >
             Smart <span className="text-brand-600">Lighting</span>
           </motion.h1>
@@ -417,10 +417,10 @@ export default function IoTDashboard() {
               data-testid="mqtt-status"
             >
               <div className={`h-2 w-2 rounded-full ${mqttStatus.connected ? "bg-brand-600" : "bg-muted-foreground"}`} />
-              <span className={`text-[10px] font-black uppercase tracking-wider ${mqttStatus.connected ? "text-brand-600" : "text-muted-foreground"}`}>
+              <span className={`admin-badge ${mqttStatus.connected ? "text-brand-600" : "text-muted-foreground"}`}>
                 {mqttStatus.connected ? "MQTT Connected" : "Connection Lost"}
               </span>
-              <span className="text-[10px] text-muted-foreground/50 font-bold ml-1 border-l border-border/40 pl-2">
+              <span className="admin-label ml-1 border-l border-border/40 pl-2">
                 {mqttStatus.broker}
               </span>
             </motion.div>
@@ -431,7 +431,7 @@ export default function IoTDashboard() {
            animate={{ opacity: 1, scale: 1 }}
            transition={{ delay: 0.2 }}
         >
-          <Button size="lg" variant="outline" className="bg-card border-border/40 font-black text-xs h-12 px-6 rounded-2xl hover:bg-brand-600/5 hover:text-brand-600 hover:border-brand-600/30 transition-all active:scale-95 shadow-sm"
+          <Button size="lg" variant="outline" className="bg-card border-border/40 admin-btn h-12 px-6 rounded-2xl hover:bg-brand-600/5 hover:text-brand-600 hover:border-brand-600/30 transition-all active:scale-95 shadow-sm"
             onClick={handleSync} data-testid="sync-btn">
             <RefreshCw className="h-4 w-4 mr-2" /> SYNC BOOKINGS
           </Button>
@@ -445,7 +445,7 @@ export default function IoTDashboard() {
             <Button key={v.id} size="sm" 
               variant={selectedVenue?.id === v.id ? "default" : "outline"}
               onClick={() => setSelectedVenue(v)} 
-              className={`shrink-0 text-[10px] font-black uppercase tracking-widest px-5 h-9 rounded-xl transition-all ${
+              className={`shrink-0 admin-btn px-5 h-9 rounded-xl transition-all ${
                 selectedVenue?.id === v.id 
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" 
                   : "bg-card border-border/40 hover:border-brand-600/40 shadow-sm"
@@ -499,23 +499,23 @@ export default function IoTDashboard() {
 
       <Tabs defaultValue="devices" data-testid="iot-tabs">
         <TabsList className="bg-white/5 border border-white/5 p-1 rounded-2xl h-12 mb-8 gap-1">
-          <TabsTrigger value="devices" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white font-black text-[10px] tracking-widest uppercase rounded-xl h-full px-6 transition-all">Devices</TabsTrigger>
-          <TabsTrigger value="zones" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white font-black text-[10px] tracking-widest uppercase rounded-xl h-full px-6 transition-all" data-testid="tab-zones">Zones</TabsTrigger>
-          <TabsTrigger value="energy" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white font-black text-[10px] tracking-widest uppercase rounded-xl h-full px-6 transition-all" data-testid="tab-energy">Energy</TabsTrigger>
-          <TabsTrigger value="schedule" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white font-black text-[10px] tracking-widest uppercase rounded-xl h-full px-6 transition-all" data-testid="tab-schedule">Schedule</TabsTrigger>
+          <TabsTrigger value="devices" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all">Devices</TabsTrigger>
+          <TabsTrigger value="zones" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-zones">Zones</TabsTrigger>
+          <TabsTrigger value="energy" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-energy">Energy</TabsTrigger>
+          <TabsTrigger value="schedule" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-schedule">Schedule</TabsTrigger>
         </TabsList>
 
         {/* Devices Tab */}
         <TabsContent value="devices">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display font-black text-xl tracking-tight text-foreground">Registered Devices</h3>
-            <Button size="sm" onClick={() => openDeviceDialog()} className="bg-brand-600 hover:bg-brand-500 text-white font-black text-[10px] tracking-widest uppercase h-10 px-6 rounded-xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all"
+            <h3 className="admin-heading">Registered Devices</h3>
+            <Button size="sm" onClick={() => openDeviceDialog()} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-10 px-6 rounded-xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all"
               data-testid="add-device-btn"><Plus className="h-4 w-4 mr-2" /> ADD DEVICE</Button>
           </div>
           {devices.length === 0 ? (
             <div className="glass-premium rounded-[32px] border border-white/5 py-20 text-center text-muted-foreground">
               <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="text-sm font-black tracking-widest uppercase opacity-40">No devices found</p>
+              <p className="admin-label opacity-40">No devices found</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -530,14 +530,14 @@ export default function IoTDashboard() {
         {/* Zones Tab */}
         <TabsContent value="zones">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display font-black text-xl tracking-tight text-foreground">Control Zones</h3>
-            <Button size="sm" onClick={() => setZoneDialogOpen(true)} className="bg-brand-600 hover:bg-brand-500 text-white font-black text-[10px] tracking-widest uppercase h-10 px-6 rounded-xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all"
+            <h3 className="admin-heading">Control Zones</h3>
+            <Button size="sm" onClick={() => setZoneDialogOpen(true)} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-10 px-6 rounded-xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all"
               data-testid="add-zone-btn"><Plus className="h-4 w-4 mr-2" /> ADD ZONE</Button>
           </div>
           {zones.length === 0 ? (
             <div className="glass-premium rounded-[32px] border border-white/5 py-20 text-center text-muted-foreground">
               <Layers className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="text-sm font-black tracking-widest uppercase opacity-40">No zones configured</p>
+              <p className="admin-label opacity-40">No zones configured</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -552,13 +552,13 @@ export default function IoTDashboard() {
         {/* Energy Tab */}
         <TabsContent value="energy">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-display font-black text-xl tracking-tight text-foreground">Energy Analytics</h3>
+            <h3 className="admin-heading">Energy Analytics</h3>
             <div className="bg-white/5 border border-white/5 p-1 rounded-xl flex items-center gap-1">
               {["7d", "30d"].map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
+                  className={`px-4 py-1.5 rounded-lg admin-btn transition-all ${
                     period === p ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" : "text-muted-foreground hover:bg-white/5"
                   }`}
                 >
@@ -584,8 +584,8 @@ export default function IoTDashboard() {
                     transition={{ delay: i * 0.05 }}
                     className="bg-card rounded-3xl p-7 border border-border/40 shadow-sm flex flex-col justify-between group h-full transition-all duration-300 hover:y-[-4px] hover:border-brand-600/20"
                   >
-                    <div className="text-[11px] font-black uppercase tracking-[0.25em] text-muted-foreground/80 mb-4 drop-shadow-sm group-hover:text-foreground/70 transition-colors">{stat.label}</div>
-                    <div className={`text-3xl font-black font-display tracking-tight ${stat.color}`}>{stat.val}</div>
+                    <div className="admin-label mb-4 group-hover:text-foreground/70 transition-colors">{stat.label}</div>
+                    <div className={`admin-value ${stat.color}`}>{stat.val}</div>
                   </motion.div>
                 ))}
               </div>
@@ -598,7 +598,7 @@ export default function IoTDashboard() {
                     transition={{ delay: 0.2 }}
                     className="bg-card rounded-[32px] p-8 border border-border/40 shadow-sm"
                   >
-                    <h4 className="font-display font-black text-[11px] uppercase tracking-[0.25em] text-muted-foreground/80 mb-8 border-l-2 border-brand-500 pl-4">Energy Consumption (kWh)</h4>
+                    <h4 className="admin-section-label mb-8 border-l-2 border-brand-500 pl-4">Energy Consumption (kWh)</h4>
                     <ResponsiveContainer width="100%" height={240}>
                       <AreaChart data={energy.daily}>
                         <defs>
@@ -626,7 +626,7 @@ export default function IoTDashboard() {
                     transition={{ delay: 0.3 }}
                     className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl"
                   >
-                    <h4 className="font-display font-black text-[11px] uppercase tracking-[0.25em] text-muted-foreground/80 mb-8 border-l-2 border-amber-500 pl-4">Daily Cost ({"\u20B9"})</h4>
+                    <h4 className="admin-section-label mb-8 border-l-2 border-amber-500 pl-4">Daily Cost ({"\u20B9"})</h4>
                     <ResponsiveContainer width="100%" height={240}>
                       <BarChart data={energy.daily}>
                         <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -648,7 +648,7 @@ export default function IoTDashboard() {
           ) : (
             <div className="bg-card rounded-[32px] border border-border/40 py-20 text-center text-muted-foreground/60 shadow-sm">
               <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-10" />
-              <p className="text-sm font-black tracking-widest uppercase opacity-40">No energy data collected</p>
+              <p className="admin-label opacity-40">No energy data collected</p>
             </div>
           )}
         </TabsContent>
@@ -656,8 +656,8 @@ export default function IoTDashboard() {
         {/* Schedule Tab */}
         <TabsContent value="schedule">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="font-display font-black text-xl tracking-tight text-foreground">Lighting Schedule</h3>
-            <Button size="sm" variant="outline" className="bg-card border-border/40 font-black text-[10px] tracking-widest h-10 px-6 rounded-xl transition-all hover:bg-secondary/20 shadow-sm" onClick={handleSync} data-testid="sync-schedule-btn">
+            <h3 className="admin-heading">Lighting Schedule</h3>
+            <Button size="sm" variant="outline" className="bg-card border-border/40 admin-btn h-10 px-6 rounded-xl transition-all hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 shadow-sm" onClick={handleSync} data-testid="sync-schedule-btn">
               <RefreshCw className="h-3.5 w-3.5 mr-2" /> RE-SYNC
             </Button>
           </div>
@@ -666,8 +666,8 @@ export default function IoTDashboard() {
               <div className="relative w-max mx-auto mb-8 text-muted-foreground/10 group-hover:text-brand-600/20 transition-colors duration-700">
                 <Calendar className="h-20 w-20" />
               </div>
-              <p className="text-base font-black tracking-tight text-foreground/60">No bookings scheduled today</p>
-              <p className="text-[11px] font-black uppercase tracking-[0.25em] text-brand-600/60 mt-4 max-w-[280px] mx-auto leading-relaxed">Lights auto-activate based on real-time booking confirmation</p>
+              <p className="admin-name text-foreground/60">No bookings scheduled today</p>
+              <p className="admin-section-label text-brand-600/60 mt-4 max-w-[280px] mx-auto leading-relaxed">Lights auto-activate based on real-time booking confirmation</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -677,23 +677,23 @@ export default function IoTDashboard() {
                   whileHover={{ y: -2, borderColor: "rgba(var(--brand-600), 0.15)" }}
                   className="bg-card rounded-[22px] p-5 border border-border/40 flex items-center gap-8 shadow-sm transition-all duration-300 group" data-testid={`schedule-${i}`}>
                   <div className="shrink-0 w-28 flex flex-col items-center border-r border-border/40 pr-4">
-                    <div className="text-[15px] font-black text-brand-600 font-display tracking-tight leading-none mb-1.5">{s.slot_start}</div>
-                    <div className="text-[11px] font-black text-muted-foreground/50 uppercase tracking-[0.2em] leading-none">{s.slot_end}</div>
+                    <div className="text-[15px] font-medium text-brand-600 font-display tracking-tight leading-none mb-1.5">{s.slot_start}</div>
+                    <div className="admin-section-label text-muted-foreground/50 leading-none">{s.slot_end}</div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[15px] font-black tracking-tight text-foreground/90 truncate mb-1">{s.zone_name}</div>
+                    <div className="admin-name text-foreground/90 truncate mb-1">{s.zone_name}</div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[11px] font-black text-muted-foreground/70 uppercase tracking-widest">{s.host_name}</span>
+                      <span className="admin-section-label text-muted-foreground/70">{s.host_name}</span>
                       <div className="h-1.5 w-1.5 rounded-full bg-border" />
-                      <span className="text-[11px] font-black text-brand-600/90 uppercase tracking-[0.15em]">{s.sport}</span>
+                      <span className="admin-badge text-brand-600/90">{s.sport}</span>
                     </div>
                   </div>
                   <div className="shrink-0 flex items-center gap-6">
                     <div className="flex flex-col items-end">
-                      <div className="text-[10px] font-black text-muted-foreground/40 uppercase tracking-[0.2em] mb-2">Power Status</div>
+                      <div className="admin-section-label text-muted-foreground/40 mb-2">Power Status</div>
                       <div className="flex items-center gap-5">
-                        <div className="text-xs font-black text-brand-600 flex items-center gap-2 uppercase transition-all group-hover:scale-110"><Sun className="h-4 w-4" /> ON: {s.lights_on}</div>
-                        <div className="text-xs font-black text-muted-foreground/40 flex items-center gap-2 uppercase"><Moon className="h-4 w-4" /> OFF: {s.lights_off}</div>
+                        <div className="admin-badge text-brand-600 flex items-center gap-2 transition-all group-hover:scale-110"><Sun className="h-4 w-4" /> ON: {s.lights_on}</div>
+                        <div className="admin-badge text-muted-foreground/40 flex items-center gap-2"><Moon className="h-4 w-4" /> OFF: {s.lights_off}</div>
                       </div>
                     </div>
                   </div>
@@ -708,74 +708,74 @@ export default function IoTDashboard() {
       <Dialog open={deviceDialogOpen} onOpenChange={setDeviceDialogOpen}>
         <DialogContent className="sm:max-w-[500px] bg-card border-border/40 p-0 rounded-[32px] overflow-hidden shadow-2xl">
           <div className="p-8 pb-4">
-            <DialogTitle className="text-3xl font-black tracking-tight font-display mb-1 flex items-center gap-2">
+            <DialogTitle className="text-2xl font-medium tracking-tight font-display mb-1 flex items-center gap-2">
               <span className="text-foreground">{editingDevice ? "Edit" : "Register"}</span> <span className="text-brand-600">Device</span>
             </DialogTitle>
           </div>
           <div className="p-8 pt-2 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Device Name</Label>
+              <Label className="admin-section-label ml-1">Device Name</Label>
               <Input value={deviceForm.name} onChange={e => setDeviceForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. North Floodlight 01" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base focus-visible:ring-brand-600/30" data-testid="device-name-input" />
+                placeholder="e.g. North Floodlight 01" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base focus-visible:ring-brand-600/30" data-testid="device-name-input" />
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Type</Label>
+                <Label className="admin-section-label ml-1">Type</Label>
                 <Select value={deviceForm.device_type} onValueChange={v => setDeviceForm(p => ({ ...p, device_type: v }))}>
-                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="device-type-select"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-type-select"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/40 bg-card">
-                    <SelectItem value="floodlight" className="font-bold">Floodlight</SelectItem>
-                    <SelectItem value="led_panel" className="font-bold">LED Panel</SelectItem>
-                    <SelectItem value="ambient" className="font-bold">Ambient</SelectItem>
-                    <SelectItem value="emergency" className="font-bold">Emergency</SelectItem>
+                    <SelectItem value="floodlight" className="font-medium">Floodlight</SelectItem>
+                    <SelectItem value="led_panel" className="font-medium">LED Panel</SelectItem>
+                    <SelectItem value="ambient" className="font-medium">Ambient</SelectItem>
+                    <SelectItem value="emergency" className="font-medium">Emergency</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Protocol</Label>
+                <Label className="admin-section-label ml-1">Protocol</Label>
                 <Select value={deviceForm.protocol} onValueChange={v => setDeviceForm(p => ({ ...p, protocol: v }))}>
-                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="device-protocol-select"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-protocol-select"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/40 bg-card">
-                    <SelectItem value="mqtt" className="font-bold">MQTT</SelectItem>
-                    <SelectItem value="http" className="font-bold">HTTP</SelectItem>
-                    <SelectItem value="zigbee" className="font-bold">Zigbee</SelectItem>
+                    <SelectItem value="mqtt" className="font-medium">MQTT</SelectItem>
+                    <SelectItem value="http" className="font-medium">HTTP</SelectItem>
+                    <SelectItem value="zigbee" className="font-medium">Zigbee</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">IP Address</Label>
+                <Label className="admin-section-label ml-1">IP Address</Label>
                 <Input value={deviceForm.ip_address} onChange={e => setDeviceForm(p => ({ ...p, ip_address: e.target.value }))}
-                  placeholder="192.168.1.1" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base font-mono" data-testid="device-ip-input" />
+                  placeholder="192.168.1.1" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base font-mono" data-testid="device-ip-input" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Power (Watts)</Label>
+                <Label className="admin-section-label ml-1">Power (Watts)</Label>
                 <div className="relative">
                   <Input type="number" value={deviceForm.power_watts} onChange={e => setDeviceForm(p => ({ ...p, power_watts: Number(e.target.value) }))}
-                    className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="device-watts-input" />
-                  <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[11px] font-black text-muted-foreground/30">W</span>
+                    className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-watts-input" />
+                  <span className="absolute right-6 top-1/2 -translate-y-1/2 admin-section-label text-muted-foreground/30">W</span>
                 </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Turf Number</Label>
+                <Label className="admin-section-label ml-1">Turf Number</Label>
                 <Input type="number" value={deviceForm.turf_number} onChange={e => setDeviceForm(p => ({ ...p, turf_number: Number(e.target.value) }))}
-                  className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="device-turf-input" />
+                  className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-turf-input" />
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Zone Assignment</Label>
+                <Label className="admin-section-label ml-1">Zone Assignment</Label>
                 <Select value={deviceForm.zone_id} onValueChange={v => setDeviceForm(p => ({ ...p, zone_id: v }))}>
-                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="device-zone-select"><SelectValue placeholder="Select zone" /></SelectTrigger>
+                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-zone-select"><SelectValue placeholder="Select zone" /></SelectTrigger>
                   <SelectContent className="rounded-2xl border-border/40 bg-card">
                     <SelectItem value="none" className="font-bold opacity-40 italic">No zone</SelectItem>
-                    {zones.map(z => <SelectItem key={z.id} value={z.id} className="font-bold">{z.name}</SelectItem>)}
+                    {zones.map(z => <SelectItem key={z.id} value={z.id} className="font-medium">{z.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
             </div>
-            <Button className="w-full h-16 bg-brand-600 hover:bg-brand-500 text-white font-black text-sm tracking-widest uppercase rounded-2xl shadow-xl shadow-brand-600/20 active:scale-[0.98] transition-all mt-4 border-0" onClick={handleSaveDevice} data-testid="save-device-btn">
+            <Button className="w-full h-16 bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm rounded-2xl shadow-xl shadow-brand-600/20 active:scale-[0.98] transition-all mt-4 border-0" onClick={handleSaveDevice} data-testid="save-device-btn">
               {editingDevice ? "UPDATE DEVICE" : "REGISTER DEVICE"}
             </Button>
           </div>
@@ -786,27 +786,27 @@ export default function IoTDashboard() {
       <Dialog open={zoneDialogOpen} onOpenChange={setZoneDialogOpen}>
         <DialogContent className="sm:max-w-[400px] bg-card border-border/40 p-0 rounded-[32px] overflow-hidden shadow-2xl">
           <div className="p-8 pb-4">
-            <DialogTitle className="text-3xl font-black tracking-tight font-display mb-1 flex items-center gap-2">
+            <DialogTitle className="text-2xl font-medium tracking-tight font-display mb-1 flex items-center gap-2">
               <span className="text-foreground">Create</span> <span className="text-brand-600">Zone</span>
             </DialogTitle>
           </div>
           <div className="p-8 pt-2 space-y-6">
             <div className="space-y-2">
-              <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Zone Name</Label>
+              <Label className="admin-section-label ml-1">Zone Name</Label>
               <Input value={zoneForm.name} onChange={e => setZoneForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Main Turf North" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="zone-name-input" />
+                placeholder="e.g. Main Turf North" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="zone-name-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Turf Number</Label>
+              <Label className="admin-section-label ml-1">Turf Number</Label>
               <Input type="number" value={zoneForm.turf_number} onChange={e => setZoneForm(p => ({ ...p, turf_number: Number(e.target.value) }))}
-                className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="zone-turf-input" />
+                className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="zone-turf-input" />
             </div>
             <div className="space-y-2">
-              <Label className="text-[11px] font-black text-muted-foreground/90 uppercase tracking-[0.2em] ml-1">Description</Label>
+              <Label className="admin-section-label ml-1">Description</Label>
               <Input value={zoneForm.description} onChange={e => setZoneForm(p => ({ ...p, description: e.target.value }))}
                 placeholder="Brief description..." className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="zone-desc-input" />
             </div>
-            <Button className="w-full h-16 bg-brand-600 hover:bg-brand-500 text-white font-black text-sm tracking-widest uppercase rounded-2xl shadow-xl shadow-brand-600/20 active:scale-[0.98] transition-all mt-4 border-0" onClick={handleSaveZone} data-testid="save-zone-btn">
+            <Button className="w-full h-16 bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm rounded-2xl shadow-xl shadow-brand-600/20 active:scale-[0.98] transition-all mt-4 border-0" onClick={handleSaveZone} data-testid="save-zone-btn">
               CREATE ZONE
             </Button>
           </div>
