@@ -92,7 +92,7 @@ export default function ExplorePage() {
   ];
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
+    <div className=" mx-auto px-4 py-6 pb-24 md:pb-6">
       {/* Search Header */}
       <div className="sticky top-14 md:top-14 z-20 bg-background pb-4">
         <div className="relative mb-4">

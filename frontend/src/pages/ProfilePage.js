@@ -1,5 +1,4 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { authAPI, analyticsAPI, bookingAPI, uploadAPI, careerAPI, venueAPI, coachingAPI, organizationAPI, playerCardAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
@@ -13,13 +12,31 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
-import { User, Trophy, Star, TrendingUp, Calendar, Shield, LogOut, Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, DollarSign, Users, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, XCircle, AlertCircle, AlertTriangle, Video, Image, Info, Lock, Minus, Eye, EyeOff, Plus, X, ShieldCheck, Trash2 } from "lucide-react";
+import { Save, Camera, Loader2, BarChart3, Clock, Award, Building2, BadgeCheck, MapPin, Briefcase, MessageSquare, FileText, Upload, CheckCircle2, Video, Image, Plus, X, ShieldCheck, Trash2, LogOut, Star, Calendar } from "lucide-react";
 
-const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
+// Import new components
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { PlayerStats } from "@/components/profile/PlayerStats";
+import { VenueOwnerStats } from "@/components/profile/VenueOwnerStats";
+import { CoachStats } from "@/components/profile/CoachStats";
+import { OverallScoreCard } from "@/components/profile/OverallScoreCard";
+import { VerificationBanner } from "@/components/profile/VerificationBanner";
+import { PasswordChangeSection } from "@/components/profile/PasswordChangeSection";
+
 
 const normalizeItems = (arr) => (arr || []).map(item =>
   typeof item === "string" ? { text: item, image: "" } : item
 );
+
+const DEFAULT_FORM = { name: "", phone: "", preferred_position: "" };
+const DEFAULT_EXPERIENCE_FORM = {
+  years_of_experience: "0", 
+  specializations: [],
+  achievements: [], 
+  awards: [], 
+  certifications_list: [],
+  playing_history: "",
+};
 
 const COACH_DOC_SLOTS = [
   { key: "government_id", label: "Government ID (Aadhaar / PAN / Passport)", type: "document", required: true },
@@ -35,12 +52,12 @@ const COACH_DOC_SLOTS = [
 ];
 
 export default function ProfilePage() {
-  const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", preferred_position: "" });
+  // Use hoisted default (rerender-memo-with-default-value)
+  const [form, setForm] = useState(() => ({ ...DEFAULT_FORM }));
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [career, setCareer] = useState(null);
@@ -48,35 +65,27 @@ export default function ProfilePage() {
   const [playerCard, setPlayerCard] = useState(null);
   // Venue Owner state
   const [ownerVenues, setOwnerVenues] = useState([]);
-  const [venueAnalytics, setVenueAnalytics] = useState({});
-  const [reviewSummaries, setReviewSummaries] = useState({});
+  const [venueAnalytics, setVenueAnalytics] = useState(() => ({}));
+  const [reviewSummaries, setReviewSummaries] = useState(() => ({}));
   // Coach state
   const [coachStats, setCoachStats] = useState(null);
   const [coachOrgs, setCoachOrgs] = useState([]);
   const [coachSessions, setCoachSessions] = useState([]);
   // Document verification state
-  const [docs, setDocs] = useState({});
+  const [docs, setDocs] = useState(() => ({}));
   const [uploadingDoc, setUploadingDoc] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submittingDocs, setSubmittingDocs] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const avatarInputRef = useRef(null);
-  // Password change state
-  const [showPwChange, setShowPwChange] = useState(false);
-  const [pwForm, setPwForm] = useState({ current: "", new_pw: "", confirm: "" });
-  const [changingPw, setChangingPw] = useState(false);
-  const [showPw, setShowPw] = useState(false);
+  // Password change state removed - now handled by PasswordChangeSection component
   // Coach experience & credentials state
-  const [experienceForm, setExperienceForm] = useState({
-    years_of_experience: "0", specializations: [],
-    achievements: [], awards: [], certifications_list: [],
-    playing_history: "",
-  });
+  const [experienceForm, setExperienceForm] = useState(() => ({ ...DEFAULT_EXPERIENCE_FORM }));
   const [newSpecialization, setNewSpecialization] = useState("");
   const [newAchievement, setNewAchievement] = useState("");
   const [newAward, setNewAward] = useState("");
   const [newCertification, setNewCertification] = useState("");
 
+  // Parallelize data fetching (async-parallel)
   useEffect(() => {
     if (!user) return;
     const role = user.role;
@@ -87,7 +96,6 @@ export default function ProfilePage() {
     } else if (role === "venue_owner") {
       setForm({ name: user.name || "", phone: user.phone || "", business_name: user.business_name || "", gst_number: user.gst_number || "" });
       const rawDocs = user.verification_documents || {};
-      // Ensure turf_images and turf_videos are always arrays
       setDocs({
         ...rawDocs,
         turf_images: Array.isArray(rawDocs.turf_images) ? rawDocs.turf_images : [],
@@ -100,9 +108,7 @@ export default function ProfilePage() {
         session_price: user.session_price || "", session_duration_minutes: user.session_duration_minutes || 60,
         city: user.city || "", coaching_venue: user.coaching_venue || "",
       });
-      // Initialize coach verification documents
       setDocs(user.coach_verification_documents || {});
-      // Initialize experience form
       setExperienceForm({
         years_of_experience: String(user.years_of_experience || 0),
         specializations: user.specializations || [],
@@ -115,58 +121,68 @@ export default function ProfilePage() {
       setForm({ name: user.name || "", phone: user.phone || "" });
     }
 
-    // Role-specific data loading
+    // Parallel data loading (async-parallel)
     if (role === "player") {
       Promise.all([
         analyticsAPI.player().catch(() => ({ data: null })),
         bookingAPI.list().catch(() => ({ data: [] })),
-      ]).then(([sRes, bRes]) => {
+        user.id ? careerAPI.getCareer(user.id).catch(() => ({ data: null })) : Promise.resolve({ data: null }),
+        user.id ? playerCardAPI.getCard(user.id).catch(() => ({ data: null })) : Promise.resolve({ data: null }),
+      ]).then(([sRes, bRes, cRes, pRes]) => {
         setStats(sRes.data);
         setBookings(bRes.data || []);
+        setCareer(cRes.data);
+        setPlayerCard(pRes.data);
+        setCareerLoading(false);
       });
-      if (user.id) {
-        setCareerLoading(true);
-        careerAPI.getCareer(user.id)
-          .then((res) => setCareer(res.data))
-          .catch(() => setCareer(null))
-          .finally(() => setCareerLoading(false));
-        playerCardAPI.getCard(user.id)
-          .then((res) => setPlayerCard(res.data))
-          .catch(() => {});
-      }
     } else if (role === "venue_owner") {
-      venueAPI.getOwnerVenues().then(async (res) => {
-        const venues = res.data || [];
+      Promise.all([
+        venueAPI.getOwnerVenues(),
+        bookingAPI.list().catch(() => ({ data: [] })),
+      ]).then(async ([vRes, bRes]) => {
+        const venues = vRes.data || [];
         setOwnerVenues(venues);
-        // Fetch analytics & reviews for each venue
-        const analyticsMap = {};
-        const reviewMap = {};
-        await Promise.all(venues.map(async (v) => {
-          const [aRes, rRes] = await Promise.all([
+        setBookings(bRes.data || []);
+        
+        // Parallel venue analytics fetching
+        const venuePromises = venues.map(v => 
+          Promise.all([
             analyticsAPI.venue(v.id).catch(() => ({ data: null })),
             venueAPI.getReviewSummary(v.id).catch(() => ({ data: null })),
-          ]);
-          if (aRes.data) analyticsMap[v.id] = aRes.data;
-          if (rRes.data) reviewMap[v.id] = rRes.data;
-        }));
+          ]).then(([aRes, rRes]) => ({ id: v.id, analytics: aRes.data, reviews: rRes.data }))
+        );
+        
+        const results = await Promise.all(venuePromises);
+        const analyticsMap = {};
+        const reviewMap = {};
+        results.forEach(({ id, analytics, reviews }) => {
+          if (analytics) analyticsMap[id] = analytics;
+          if (reviews) reviewMap[id] = reviews;
+        });
         setVenueAnalytics(analyticsMap);
         setReviewSummaries(reviewMap);
       }).catch(() => {});
-      bookingAPI.list().then((res) => setBookings(res.data || [])).catch(() => {});
     } else if (role === "coach") {
-      coachingAPI.stats().then((res) => setCoachStats(res.data)).catch(() => {});
-      coachingAPI.listSessions().then((res) => setCoachSessions(res.data || [])).catch(() => {});
-      organizationAPI.my().then((res) => setCoachOrgs(res.data || [])).catch(() => {});
+      Promise.all([
+        coachingAPI.stats().catch(() => ({ data: null })),
+        coachingAPI.listSessions().catch(() => ({ data: [] })),
+        organizationAPI.my().catch(() => ({ data: [] })),
+      ]).then(([sRes, sessRes, orgRes]) => {
+        setCoachStats(sRes.data);
+        setCoachSessions(sessRes.data || []);
+        setCoachOrgs(orgRes.data || []);
+      });
     }
   }, [user]);
 
-  const handleSave = async () => {
+  // Memoize handlers (rerender-functional-setstate)
+  const handleSave = useCallback(async () => {
     setSaving(true);
     try {
       const role = user?.role;
       if (role === "coach") {
-        // Coach: dual save — auth profile + coaching profile
         const { name, phone, coaching_bio, coaching_sports, session_price, session_duration_minutes, city, coaching_venue } = form;
+        // Parallel API calls (async-parallel)
         const [authRes] = await Promise.all([
           authAPI.updateProfile({ name, phone }),
           coachingAPI.updateProfile({
@@ -192,9 +208,9 @@ export default function ProfilePage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [form, user?.role, updateUser]);
 
-  const handleAvatarUpload = async (e) => {
+  const handleAvatarUpload = useCallback(async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingAvatar(true);
@@ -210,7 +226,7 @@ export default function ProfilePage() {
       setUploadingAvatar(false);
       e.target.value = "";
     }
-  };
+  }, [updateUser]);
 
   // Document upload helpers
   const DOC_SLOTS = [
@@ -290,9 +306,7 @@ export default function ProfilePage() {
     }
   };
 
-  const allRequiredDocsUploaded = DOC_SLOTS.filter(s => s.required).every(s => docs[s.key]?.url);
-  const allRequiredCoachDocsUploaded = COACH_DOC_SLOTS.filter(s => s.required).every(s => docs[s.key]?.url);
-  const docStatus = user?.doc_verification_status || "not_uploaded";
+
 
   // Coach document handlers
   const handleCoachDocUpload = async (slotKey, files) => {
@@ -383,291 +397,134 @@ export default function ProfilePage() {
     } catch { toast.error("Image upload failed"); }
   };
 
-  const getRatingTier = (r) => {
+  // Memoize expensive computations (rerender-memo)
+  const getRatingTier = useCallback((r) => {
     if (r >= 2500) return { label: "Diamond", color: "text-cyan-400", bg: "bg-cyan-500/10" };
     if (r >= 2000) return { label: "Gold", color: "text-amber-400", bg: "bg-amber-500/10" };
     if (r >= 1500) return { label: "Silver", color: "text-slate-300", bg: "bg-slate-500/10" };
     return { label: "Bronze", color: "text-orange-400", bg: "bg-orange-500/10" };
-  };
+  }, []);
 
-  const tier = getRatingTier(user?.skill_rating || 1500);
+  const tier = useMemo(() => getRatingTier(user?.skill_rating || 1500), [user?.skill_rating, getRatingTier]);
+  
+  // Memoize computed values (rerender-derived-state)
+  const allRequiredDocsUploaded = useMemo(() => 
+    DOC_SLOTS.filter(s => s.required).every(s => docs[s.key]?.url),
+    [docs]
+  );
+  
+  const allRequiredCoachDocsUploaded = useMemo(() => 
+    COACH_DOC_SLOTS.filter(s => s.required).every(s => docs[s.key]?.url),
+    [docs]
+  );
+  
+  const docStatus = useMemo(() => user?.doc_verification_status || "not_uploaded", [user?.doc_verification_status]);
 
   if (!user) return null;
 
   return (
-    <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="profile-page">
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-        {/* Profile Header */}
-        <div className="glass-card rounded-lg p-6 mb-6">
-          <div className="flex items-center gap-4 mb-6">
-            {/* Clickable avatar with camera overlay */}
-            <div className="relative group">
-              <button
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                className="w-16 h-16 rounded-full overflow-hidden bg-primary/20 flex items-center justify-center relative focus:outline-none focus:ring-2 focus:ring-primary"
-                title="Change profile photo"
-              >
-                {user?.avatar ? (
-                  <img src={mediaUrl(user.avatar)} alt={user.name} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="font-display font-black text-2xl text-primary">{user?.name?.[0]?.toUpperCase()}</span>
-                )}
-                {/* Dark overlay on hover */}
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
-                  {uploadingAvatar
-                    ? <Loader2 className="h-5 w-5 text-white animate-spin" />
-                    : <Camera className="h-5 w-5 text-white" />}
-                </div>
-              </button>
-              <input
-                ref={avatarInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleAvatarUpload}
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h1 className="font-display text-xl font-bold text-foreground">{user?.name}</h1>
-                {(user?.is_verified || playerCard?.is_verified || (user?.role === "coach" && user?.doc_verification_status === "verified")) && (
-                  <BadgeCheck className="h-5 w-5 text-blue-400 shrink-0" />
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <Badge variant="secondary" className="mt-1 text-[10px]">{user?.role === "player" ? "LOBBIAN" : user?.role?.replace("_", " ").toUpperCase()}</Badge>
-            </div>
-          </div>
+    <div className="mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="profile-page">
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+        <ProfileHeader 
+          user={user} 
+          playerCard={playerCard}
+          uploadingAvatar={uploadingAvatar}
+          onAvatarUpload={handleAvatarUpload}
+        />
 
-          {/* Role-specific stats grid */}
-          {user?.role === "player" && (
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Trophy className={`h-5 w-5 mx-auto mb-1 ${tier.color}`} />
-                <div className={`text-lg font-display font-black ${tier.color}`}>{user?.skill_rating || 1500}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">{tier.label}</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <TrendingUp className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <div className="text-lg font-display font-black">{stats?.total_games || 0}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Games</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Star className="h-5 w-5 mx-auto mb-1 text-amber-400" />
-                <div className="text-lg font-display font-black">
-                  {stats?.total_games ? `${Math.round((stats.wins / stats.total_games) * 100)}%` : "0%"}
-                </div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Win Rate</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <CheckCircle2 className="h-5 w-5 mx-auto mb-1 text-brand-400" />
-                <div className="text-lg font-display font-black text-brand-400">{stats?.wins || 0}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Wins</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <XCircle className="h-5 w-5 mx-auto mb-1 text-red-400" />
-                <div className="text-lg font-display font-black text-red-400">{stats?.losses || user?.losses || 0}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Losses</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Minus className="h-5 w-5 mx-auto mb-1 text-amber-400" />
-                <div className="text-lg font-display font-black text-amber-400">{stats?.draws || user?.draws || 0}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Draws</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Shield className="h-5 w-5 mx-auto mb-1 text-sky-400" />
-                <div className="text-lg font-display font-black">{user?.reliability_score || 100}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Reliability</div>
-                {(user?.no_shows > 0) && <div className="text-[9px] text-red-400 mt-0.5">{user.no_shows} no-show{user.no_shows > 1 ? "s" : ""}</div>}
-              </div>
-            </div>
-          )}
-
-          {user?.role === "venue_owner" && (() => {
-            const totalBookings = Object.values(venueAnalytics || {}).reduce((s, a) => s + (a?.total_bookings || 0), 0);
-            const totalRevenue = Object.values(venueAnalytics || {}).reduce((s, a) => s + (a?.total_revenue || 0), 0);
-            const ratings = Object.values(reviewSummaries || {}).filter(r => r?.average_rating > 0);
-            const ratingSum = ratings.reduce((s, r) => s + (Number(r.average_rating) || 0), 0);
-            const avgRating = ratings.length > 0 ? (ratingSum / ratings.length).toFixed(1) : "N/A";
-            return (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-3 rounded-lg bg-background/50">
-                  <Building2 className="h-5 w-5 mx-auto mb-1 text-primary" />
-                  <div className="text-lg font-display font-black">{ownerVenues.length}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono uppercase">Venues</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-background/50">
-                  <Calendar className="h-5 w-5 mx-auto mb-1 text-brand-400" />
-                  <div className="text-lg font-display font-black">{totalBookings}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono uppercase">Bookings</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-background/50">
-                  <DollarSign className="h-5 w-5 mx-auto mb-1 text-amber-400" />
-                  <div className="text-lg font-display font-black">{"\u20B9"}{(totalRevenue || 0).toLocaleString("en-IN")}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono uppercase">Revenue</div>
-                </div>
-                <div className="text-center p-3 rounded-lg bg-background/50">
-                  <Star className="h-5 w-5 mx-auto mb-1 text-violet-400" />
-                  <div className="text-lg font-display font-black">{avgRating}</div>
-                  <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
-                </div>
-              </div>
-            );
-          })()}
-
-          {user?.role === "coach" && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Calendar className="h-5 w-5 mx-auto mb-1 text-primary" />
-                <div className="text-lg font-display font-black">{coachStats?.total_sessions || 0}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Sessions</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <DollarSign className="h-5 w-5 mx-auto mb-1 text-brand-400" />
-                <div className="text-lg font-display font-black">{"\u20B9"}{(coachStats?.total_revenue || 0).toLocaleString("en-IN")}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Revenue</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Star className="h-5 w-5 mx-auto mb-1 text-amber-400" />
-                <div className="text-lg font-display font-black">{coachStats?.average_rating?.toFixed(1) || "N/A"}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
-              </div>
-              <div className="text-center p-3 rounded-lg bg-background/50">
-                <Users className="h-5 w-5 mx-auto mb-1 text-violet-400" />
-                <div className="text-lg font-display font-black">{coachStats?.active_subscribers || 0}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase">Subscribers</div>
-              </div>
-            </div>
-          )}
-
-          {playerCard?.overall_score !== undefined && (
-            <div className="flex items-center gap-4 mt-4 p-4 rounded-xl bg-background/50">
-              <div className="relative w-16 h-16 shrink-0">
-                <svg className="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="7" className="text-muted-foreground/20" />
-                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="7"
-                    strokeDasharray={`${playerCard.overall_score * 2.64} 264`} strokeLinecap="round"
-                    className={playerCard.overall_score >= 86 ? "text-amber-400" : playerCard.overall_score >= 71 ? "text-violet-400" : playerCard.overall_score >= 51 ? "text-brand-400" : playerCard.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="font-display text-xl font-black">{playerCard.overall_score}</span>
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="font-display text-sm font-black">Overall Score</div>
-                  <button onClick={() => navigate(`/lobbian/${user?.id}`)}
-                    className="p-0.5 rounded-full hover:bg-muted transition-colors" title="View full breakdown & how to level up">
-                    <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
-                  </button>
-                </div>
-                <Badge className={`text-[10px] mt-1 ${playerCard.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : playerCard.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : playerCard.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" : playerCard.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
-                  {playerCard.overall_tier}
-                </Badge>
-                {playerCard.overall_score < 50 && (
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {playerCard.overall_score < 20 ? "Play matches to start leveling up" :
-                     playerCard.overall_score < 35 ? "Keep playing to improve your stats" :
-                     "Almost Intermediate! Keep it up"}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Venue Owner: Verification status banner */}
-        {user?.role === "venue_owner" && docStatus !== "verified" && user?.account_status !== "active" && (
-          <div className={`rounded-lg p-4 mb-6 border ${
-            docStatus === "rejected" ? "bg-destructive/10 border-destructive/30" :
-            docStatus === "pending_review" ? "bg-amber-500/10 border-amber-500/30" :
-            "bg-blue-500/10 border-blue-500/30"
-          }`}>
-            {docStatus === "rejected" && (<>
-              <div className="font-bold text-sm text-destructive mb-1 flex items-center gap-1.5">
-                <XCircle className="h-4 w-4" /> Documents Rejected
-              </div>
-              <div className="text-xs text-muted-foreground">{user.doc_rejection_reason || "Please re-upload corrected documents."}</div>
-            </>)}
-            {docStatus === "pending_review" && (<>
-              <div className="font-bold text-sm text-amber-400 mb-1 flex items-center gap-1.5">
-                <AlertCircle className="h-4 w-4" /> Documents Under Review
-              </div>
-              <div className="text-xs text-muted-foreground">Your documents are being reviewed by the admin. You will be notified once approved.</div>
-            </>)}
-            {(docStatus === "not_uploaded" || !docStatus) && (<>
-              <div className="font-bold text-sm text-blue-400 mb-1 flex items-center gap-1.5">
-                <Upload className="h-4 w-4" /> Upload Verification Documents
-              </div>
-              <div className="text-xs text-muted-foreground">Please upload your business documents to get your account verified.</div>
-            </>)}
-          </div>
+        {/* Role-specific stats grid - Now using components */}
+        {user?.role === "player" && (
+          <PlayerStats user={user} stats={stats} tier={tier} />
         )}
 
-        {/* Coach: Verification status banner */}
-        {user?.role === "coach" && user?.coach_type === "individual" && docStatus !== "verified" && (
-          <div className={`rounded-lg p-4 mb-6 border ${
-            docStatus === "rejected" ? "bg-destructive/10 border-destructive/30" :
-            docStatus === "pending_review" ? "bg-blue-500/10 border-blue-500/30" :
-            "bg-amber-500/10 border-amber-500/30"
-          }`}>
-            {docStatus === "rejected" && (<>
-              <div className="font-bold text-sm text-destructive mb-1 flex items-center gap-1.5">
-                <XCircle className="h-4 w-4" /> Verification Rejected
-              </div>
-              <div className="text-xs text-muted-foreground">{user.doc_rejection_reason || "Please re-upload corrected documents."}</div>
-            </>)}
-            {docStatus === "pending_review" && (<>
-              <div className="font-bold text-sm text-blue-400 mb-1 flex items-center gap-1.5">
-                <AlertCircle className="h-4 w-4" /> Documents Under Review
-              </div>
-              <div className="text-xs text-muted-foreground">Your documents are being reviewed by the admin. You will be notified once approved.</div>
-            </>)}
-            {(docStatus === "not_uploaded" || !docStatus) && (<>
-              <div className="font-bold text-sm text-amber-400 mb-1 flex items-center gap-1.5">
-                <AlertTriangle className="h-4 w-4" /> Complete Your Profile Verification
-              </div>
-              <div className="text-xs text-muted-foreground">Upload your documents below to get verified and start coaching.</div>
-            </>)}
-          </div>
+        {user?.role === "venue_owner" && (
+          <VenueOwnerStats 
+            ownerVenues={ownerVenues}
+            venueAnalytics={venueAnalytics}
+            reviewSummaries={reviewSummaries}
+          />
         )}
 
-        <Tabs defaultValue="info" data-testid="profile-tabs">
-          <TabsList className="bg-secondary/50 mb-6">
-            <TabsTrigger value="info" className="font-bold">Info</TabsTrigger>
+        {user?.role === "coach" && (
+          <CoachStats coachStats={coachStats} />
+        )}
+
+        <OverallScoreCard playerCard={playerCard} userId={user?.id} />
+
+        {/* Verification Banner - Now using component */}
+        <VerificationBanner 
+          role={user?.role}
+          docStatus={docStatus}
+          accountStatus={user?.account_status}
+          rejectionReason={user?.doc_rejection_reason}
+          coachType={user?.coach_type}
+        />
+
+        <Tabs defaultValue="info" data-testid="profile-tabs" className="w-full">
+          {/* Improved tab list with horizontal scroll on mobile */}
+          <TabsList className="bg-secondary/50 mb-4 sm:mb-6 w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap">
+            <TabsTrigger value="info" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Info</TabsTrigger>
             {user?.role === "player" && <>
-              <TabsTrigger value="history" className="font-bold">History</TabsTrigger>
-              <TabsTrigger value="performance" className="font-bold">Performance</TabsTrigger>
+              <TabsTrigger value="history" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">History</TabsTrigger>
+              <TabsTrigger value="performance" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Performance</TabsTrigger>
             </>}
             {user?.role === "venue_owner" && <>
-              <TabsTrigger value="documents" className="font-bold">Documents</TabsTrigger>
-              <TabsTrigger value="venues" className="font-bold">Venues</TabsTrigger>
-              <TabsTrigger value="reviews" className="font-bold">Reviews</TabsTrigger>
+              <TabsTrigger value="documents" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Documents</TabsTrigger>
+              <TabsTrigger value="venues" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Venues</TabsTrigger>
+              <TabsTrigger value="reviews" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Reviews</TabsTrigger>
             </>}
             {user?.role === "coach" && <>
               {user?.coach_type === "individual" && (
-                <TabsTrigger value="documents" className="font-bold">Documents</TabsTrigger>
+                <TabsTrigger value="documents" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Documents</TabsTrigger>
               )}
-              <TabsTrigger value="credentials" className="font-bold">Credentials</TabsTrigger>
-              <TabsTrigger value="sessions" className="font-bold">Sessions</TabsTrigger>
-              <TabsTrigger value="organizations" className="font-bold">Organizations</TabsTrigger>
+              <TabsTrigger value="credentials" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Credentials</TabsTrigger>
+              <TabsTrigger value="sessions" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Sessions</TabsTrigger>
+              <TabsTrigger value="organizations" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Organizations</TabsTrigger>
             </>}
           </TabsList>
 
           {/* ===== INFO TAB (all roles) ===== */}
-          <TabsContent value="info">
-            <div className="glass-card rounded-lg p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-display font-bold">Personal Info</h3>
+          <TabsContent value="info" className="focus:outline-none">
+            <div className="glass-card rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-6">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="font-display font-bold text-base sm:text-lg">Personal Info</h3>
                 {!editing ? (
-                  <Button size="sm" variant="outline" onClick={() => setEditing(true)} data-testid="edit-profile-btn">Edit</Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setEditing(true)} 
+                    data-testid="edit-profile-btn"
+                    className="min-h-[44px] min-w-[44px] sm:min-w-0 cursor-pointer touch-manipulation"
+                    aria-label="Edit profile"
+                  >
+                    <span className="hidden sm:inline">Edit</span>
+                    <span className="sm:hidden">✏️</span>
+                  </Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleSave} disabled={saving} data-testid="save-profile-btn"
-                      className="bg-primary text-primary-foreground">
-                      <Save className="h-3.5 w-3.5 mr-1" /> Save
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      onClick={() => setEditing(false)}
+                      className="min-h-[44px] cursor-pointer touch-manipulation"
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      onClick={handleSave} 
+                      disabled={saving} 
+                      data-testid="save-profile-btn"
+                      className="bg-primary text-primary-foreground min-h-[44px] cursor-pointer touch-manipulation"
+                    >
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                      ) : (
+                        <>
+                          <Save className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" /> 
+                          <span>Save</span>
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
@@ -832,60 +689,17 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Password Change */}
-              <div className="mt-6 border border-border rounded-lg overflow-hidden">
-                <button onClick={() => setShowPwChange(p => !p)}
-                  className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-foreground hover:bg-secondary/30 transition-colors">
-                  <span className="flex items-center gap-2"><Lock className="h-4 w-4 text-muted-foreground" /> Change Password</span>
-                  <span className="text-muted-foreground text-xs">{showPwChange ? "▲" : "▼"}</span>
-                </button>
-                {showPwChange && (
-                  <div className="px-4 pb-4 space-y-3">
-                    <div><Label className="text-xs text-muted-foreground">Current Password</Label>
-                      <div className="relative mt-1">
-                        <Input type={showPw ? "text" : "password"} value={pwForm.current}
-                          onChange={e => setPwForm(p => ({ ...p, current: e.target.value }))}
-                          className="bg-background border-border pr-10" placeholder="Enter current password" />
-                        <button type="button" onClick={() => setShowPw(p => !p)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                          {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div><Label className="text-xs text-muted-foreground">New Password</Label>
-                      <Input type={showPw ? "text" : "password"} value={pwForm.new_pw}
-                        onChange={e => setPwForm(p => ({ ...p, new_pw: e.target.value }))}
-                        className="mt-1 bg-background border-border" placeholder="Min 8 chars, 1 upper, 1 lower, 1 number" />
-                    </div>
-                    <div><Label className="text-xs text-muted-foreground">Confirm New Password</Label>
-                      <Input type={showPw ? "text" : "password"} value={pwForm.confirm}
-                        onChange={e => setPwForm(p => ({ ...p, confirm: e.target.value }))}
-                        className="mt-1 bg-background border-border" placeholder="Re-enter new password" />
-                    </div>
-                    <Button className="w-full font-bold" disabled={changingPw || !pwForm.current || !pwForm.new_pw || !pwForm.confirm}
-                      onClick={async () => {
-                        if (pwForm.new_pw !== pwForm.confirm) { toast.error("Passwords don't match"); return; }
-                        setChangingPw(true);
-                        try {
-                          const res = await authAPI.changePassword({ current_password: pwForm.current, new_password: pwForm.new_pw });
-                          localStorage.setItem("horizon_token", res.data.token);
-                          localStorage.setItem("horizon_refresh_token", res.data.refresh_token);
-                          toast.success("Password changed!");
-                          setPwForm({ current: "", new_pw: "", confirm: "" });
-                          setShowPwChange(false);
-                        } catch (err) {
-                          toast.error(err?.response?.data?.detail || "Failed to change password");
-                        } finally { setChangingPw(false); }
-                      }}>
-                      {changingPw ? <Loader2 className="h-4 w-4 animate-spin" /> : "Update Password"}
-                    </Button>
-                  </div>
-                )}
-              </div>
+              {/* Password Change - Now using component */}
+              <PasswordChangeSection />
 
-              <Button variant="outline" className="w-full text-destructive hover:bg-destructive/10 mt-4"
-                onClick={logout} data-testid="profile-logout-btn">
-                <LogOut className="h-4 w-4 mr-2" /> Logout
+              <Button 
+                variant="outline" 
+                className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive mt-4 min-h-[48px] cursor-pointer touch-manipulation font-semibold transition-colors duration-200"
+                onClick={logout} 
+                data-testid="profile-logout-btn"
+              >
+                <LogOut className="h-4 w-4 mr-2" aria-hidden="true" /> 
+                <span>Logout</span>
               </Button>
             </div>
           </TabsContent>
