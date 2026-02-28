@@ -84,7 +84,7 @@ module.exports = {
         turf: {
           dark: '#0a0c0a',
           light: '#ffffff',
-          accent: '#c8f550',
+          accent: '#059669',
           'text-dark': '#1a1f1a',
           'text-light': '#f8fafc',
         }

@@ -65,7 +65,7 @@ function HotspotPoint({ spot, isActive, onHover, onLeave }) {
           transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.2 }}
           className="absolute inset-0 bg-turf-accent/30 rounded-full"
         />
-        <div className="relative w-3 h-3 bg-turf-accent rounded-full shadow-[0_0_15px_rgba(163,230,53,1)] ring-2 ring-black/20" />
+        <div className="relative w-3 h-3 bg-turf-accent rounded-full shadow-[0_0_15px_rgba(5,150,105,1)] ring-2 ring-black/20" />
       </div>
 
       <AnimatePresence>
@@ -82,13 +82,13 @@ function HotspotPoint({ spot, isActive, onHover, onLeave }) {
             {!opensUpward && (
               <>
                 <div className="absolute -top-4 left-1/2 w-px h-4 bg-gradient-to-b from-transparent to-turf-accent/50" />
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-turf-accent rounded-full shadow-[0_0_10px_#a3e635]" />
+                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-turf-accent rounded-full shadow-[0_0_10px_#059669]" />
               </>
             )}
             {opensUpward && (
               <>
                 <div className="absolute -bottom-4 left-1/2 w-px h-4 bg-gradient-to-t from-transparent to-turf-accent/50" />
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-turf-accent rounded-full shadow-[0_0_10px_#a3e635]" />
+                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-turf-accent rounded-full shadow-[0_0_10px_#059669]" />
               </>
             )}
 
@@ -146,14 +146,14 @@ export default function PlatformFeaturesSection() {
   const [activeHotspot, setActiveHotspot] = useState(null);
 
   return (
-    <section id="features" className="relative bg-turf-accent py-24 px-6 md:px-12 overflow-hidden">
+    <section id="features" className="relative bg-[#f5f1e8] py-24 px-6 md:px-12 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <div className="mb-8 md:mb-12">
           <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-tight">
             <span className="block font-sans leading-[0.85] text-turf-dark">PLATFORM</span>
-            <span className="block font-brier text-turf-dark text-9xl">Features</span>
+            <span className="block font-brier text-turf-accent text-9xl">Features</span>
           </h2>
-          <p className="text-base mt-6 max-w-2xl text-turf-dark md:text-base">
+          <p className="text-base mt-6 max-w-2xl text-turf-dark/60 md:text-base">
             Everything players, venue owners, and coaches need — in one platform.
             Hover over the points to discover each feature.
           </p>

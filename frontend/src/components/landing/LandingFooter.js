@@ -15,7 +15,7 @@ export default function LandingFooter() {
 
   return (
     <footer className="bg-turf-accent pt-0 px-4 md:px-8 min-h-screen flex flex-col justify-end relative pb-5">
-      <div className="absolute top-0 left-0 right-0 h-72 bg-gradient-to-b from-[#f5f1e8] to-turf-accent z-0" />
+
 
       {/* Main Dark Card Container */}
       <div className="relative flex-1 flex flex-col w-full max-w-[1688px] mx-auto mt-12 z-10">

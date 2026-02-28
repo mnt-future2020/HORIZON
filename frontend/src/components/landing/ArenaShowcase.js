@@ -86,9 +86,9 @@ export default function ArenaShowcase() {
                 transition={{ duration: 0.3 }}
                 className="relative aspect-square overflow-hidden rounded-2xl bg-[#0a0a0a]
                            border-2 border-gray-800
-                           group-hover:border-[#CFFF04]
+                           group-hover:border-[#059669]
                            group-hover:shadow-2xl
-                           group-hover:shadow-[#CFFF04]/20
+                           group-hover:shadow-[#059669]/20
                            transition-all duration-300"
               >
                 <div className="absolute inset-0 flex items-center justify-center p-8">
@@ -103,7 +103,7 @@ export default function ArenaShowcase() {
                   <p className="text-xs md:text-sm font-bold text-white/70 group-hover:text-white transition-colors duration-300">
                     {arena.name}
                   </p>
-                  <p className="text-sm md:text-base font-black text-[#CFFF04] group-hover:scale-110 group-hover:text-white transition-all duration-300 inline-block">
+                  <p className="text-sm md:text-base font-black text-[#059669] group-hover:scale-110 group-hover:text-white transition-all duration-300 inline-block">
                     {arena.year}
                   </p>
                 </div>

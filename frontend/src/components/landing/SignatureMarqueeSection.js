@@ -21,7 +21,7 @@ export default function SignatureMarqueeSection() {
             {[...Array(4)].map((_, i) => (
               <h2
                 key={i}
-                className="font-brier text-[12vw] md:text-[8vw] text-[#D1FF1C] leading-[0.9] tracking-tight px-4"
+                className="font-brier text-[12vw] md:text-[8vw] text-[#059669] leading-[0.9] tracking-tight px-4"
               >
                 BOOK · PLAY · CONNECT · COMPETE · BOOK · PLAY · CONNECT · COMPETE ·
               </h2>

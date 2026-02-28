@@ -192,7 +192,7 @@ export default function LandingHeader() {
                 {["INSTAGRAM", "TIKTOK", "YOUTUBE"].map((social) => (
                   <motion.a
                     key={social}
-                    whileHover={{ scale: 1.1, color: "#c8f550" }}
+                    whileHover={{ scale: 1.1, color: "#059669" }}
                     href="#"
                     className="text-sm font-bold text-white/60 hover:text-turf-accent transition-colors"
                   >
