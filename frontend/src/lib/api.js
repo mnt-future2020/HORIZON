@@ -203,6 +203,7 @@ export const academyAPI = {
 
 export const analyticsAPI = {
   venue: (id) => api.get(`/analytics/venue/${id}`),
+  venueInsights: (id, days = 90) => api.get(`/analytics/venue/${id}/insights`, { params: { days } }),
   player: () => api.get("/analytics/player"),
 };
 
@@ -340,14 +341,6 @@ export const complianceAPI = {
   getAuditLog: (limit) => api.get("/compliance/audit-log", { params: { limit } }),
   getNotificationPrefs: () => api.get("/compliance/notification-preferences"),
   updateNotificationPrefs: (data) => api.put("/compliance/notification-preferences", data),
-};
-
-export const pricingMLAPI = {
-  suggest: (params) => api.get("/pricing/ml-suggest", { params }),
-  demandForecast: (venueId, date) => api.get("/pricing/demand-forecast", { params: { venue_id: venueId, date } }),
-  trainModel: (venueId) => api.post(`/pricing/train-model?venue_id=${venueId}`),
-  getMode: (venueId) => api.get("/pricing/pricing-mode", { params: { venue_id: venueId } }),
-  setMode: (venueId, mode) => api.put(`/pricing/pricing-mode?venue_id=${venueId}&mode=${mode}`),
 };
 
 export const reviewSentimentAPI = {

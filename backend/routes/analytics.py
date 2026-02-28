@@ -1,8 +1,213 @@
 from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from auth import get_current_user
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter()
+
+DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+
+@router.get("/analytics/venue/{venue_id}/insights")
+async def venue_insights(venue_id: str, days: int = 90, user=Depends(get_current_user)):
+    """Booking analytics insights — heatmap, occupancy, key stats, actionable text.
+    days=0 means all-time (no date filter).
+    """
+    venue = await db.venues.find_one({"id": venue_id}, {"_id": 0})
+    if not venue:
+        raise HTTPException(404, "Venue not found")
+    if user.get("role") not in ("super_admin",) and venue.get("owner_id") != user["id"]:
+        raise HTTPException(403, "Not authorized")
+
+    query: dict = {"venue_id": venue_id}
+    if days > 0:
+        since_str = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+        query["date"] = {"$gte": since_str}
+
+    period_label = f"{days} days" if days > 0 else "all time"
+
+    bookings = await db.bookings.find(
+        query,
+        {"_id": 0, "status": 1, "date": 1, "start_time": 1, "end_time": 1,
+         "turf_number": 1, "sport": 1, "total_amount": 1, "host_id": 1, "created_at": 1},
+    ).to_list(5000)
+
+    confirmed = [b for b in bookings if b.get("status") in ("confirmed", "completed")]
+    cancelled  = [b for b in bookings if b.get("status") == "cancelled"]
+
+    # ── Heatmap: booking count per (hour, dow) ──────────────────────────────
+    freq: dict = {}
+    for b in confirmed:
+        try:
+            h = int(b.get("start_time", "12:00").split(":")[0])
+        except (ValueError, IndexError):
+            h = 12
+        try:
+            dow = datetime.strptime(b.get("date", "2025-01-01"), "%Y-%m-%d").weekday()
+        except ValueError:
+            dow = 0
+        key = f"{h}_{dow}"
+        freq[key] = freq.get(key, 0) + 1
+
+    heatmap = [
+        {"hour": int(k.split("_")[0]), "dow": int(k.split("_")[1]), "count": v}
+        for k, v in freq.items()
+    ]
+
+    # ── Per-turf heatmap ────────────────────────────────────────────────────
+    freq_by_turf: dict = {}
+    for b in confirmed:
+        try:
+            h = int(b.get("start_time", "12:00").split(":")[0])
+        except (ValueError, IndexError):
+            h = 12
+        try:
+            dow = datetime.strptime(b.get("date", "2025-01-01"), "%Y-%m-%d").weekday()
+        except ValueError:
+            dow = 0
+        t = b.get("turf_number", 1)
+        key = f"{h}_{dow}"
+        if t not in freq_by_turf:
+            freq_by_turf[t] = {}
+        freq_by_turf[t][key] = freq_by_turf[t].get(key, 0) + 1
+
+    heatmap_by_turf = {
+        str(t): [
+            {"hour": int(k.split("_")[0]), "dow": int(k.split("_")[1]), "count": v}
+            for k, v in tfreq.items()
+        ]
+        for t, tfreq in freq_by_turf.items()
+    }
+
+    # ── Turf list from venue config ─────────────────────────────────────────
+    turf_list = []
+    turf_config = venue.get("turf_config", [])
+    if turf_config:
+        idx = 1
+        for tc in turf_config:
+            for t in tc.get("turfs", []):
+                turf_list.append({
+                    "turf_number": idx,
+                    "name": t.get("name", f"Turf {idx}"),
+                    "sport": tc.get("sport", ""),
+                })
+                idx += 1
+    else:
+        for i in range(1, venue.get("turfs", 1) + 1):
+            turf_list.append({"turf_number": i, "name": f"Turf {i}", "sport": ""})
+
+    # ── Occupancy per turf ───────────────────────────────────────────────────
+    slot_min   = venue.get("slot_duration_minutes", 60)
+    open_h     = venue.get("opening_hour", 6)
+    close_h    = venue.get("closing_hour", 23)
+    slots_per_day = (close_h - open_h) * 60 // slot_min
+    days_in_period = days if days > 0 else 365
+
+    turf_bookings: dict = {}
+    for b in confirmed:
+        t = b.get("turf_number", 1)
+        turf_bookings[t] = turf_bookings.get(t, 0) + 1
+
+    total_slots_per_turf = slots_per_day * days_in_period
+    occupancy_by_turf = {
+        str(t): round(cnt / max(total_slots_per_turf, 1) * 100, 1)
+        for t, cnt in turf_bookings.items()
+    }
+    avg_occupancy = round(
+        sum(occupancy_by_turf.values()) / max(len(occupancy_by_turf), 1), 1
+    ) if occupancy_by_turf else 0.0
+
+    # ── Cancellation rate ───────────────────────────────────────────────────
+    total = len(bookings)
+    cancellation_rate = round(len(cancelled) / max(total, 1) * 100, 1)
+
+    # ── Repeat customer rate ────────────────────────────────────────────────
+    user_counts: dict = {}
+    for b in confirmed:
+        uid = b.get("host_id", "")
+        if uid:
+            user_counts[uid] = user_counts.get(uid, 0) + 1
+    total_unique = len(user_counts)
+    repeat_users = sum(1 for c in user_counts.values() if c > 1)
+    repeat_customer_rate = round(repeat_users / max(total_unique, 1) * 100, 1)
+
+    # ── Average lead time (days between booking creation and slot date) ─────
+    lead_times = []
+    for b in confirmed:
+        try:
+            slot_date = datetime.strptime(b["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            created   = b.get("created_at")
+            if isinstance(created, str):
+                created = datetime.fromisoformat(created.replace("Z", "+00:00"))
+            if created and slot_date > created:
+                lead_times.append((slot_date - created).days)
+        except Exception:
+            pass
+    avg_lead_time = round(sum(lead_times) / max(len(lead_times), 1), 1)
+
+    # ── Revenue by sport / turf ─────────────────────────────────────────────
+    revenue_by_sport: dict = {}
+    revenue_by_turf: dict = {}
+    for b in confirmed:
+        amt = b.get("total_amount", 0)
+        revenue_by_sport[b.get("sport", "other")] = revenue_by_sport.get(b.get("sport", "other"), 0) + amt
+        tk = str(b.get("turf_number", 1))
+        revenue_by_turf[tk] = revenue_by_turf.get(tk, 0) + amt
+
+    # ── Insights ─────────────────────────────────────────────────────────────
+    insights = []
+    if heatmap:
+        peak = max(heatmap, key=lambda x: x["count"])
+        insights.append({
+            "type": "peak",
+            "text": f"Busiest slot: {peak['hour']:02d}:00 on {DAYS[peak['dow']]}s "
+                    f"({peak['count']} bookings, {period_label})",
+            "hour": peak["hour"],
+            "dow": peak["dow"],
+        })
+        dead_candidates = [h for h in heatmap if h["count"] < peak["count"] * 0.3]
+        if dead_candidates:
+            dead = min(dead_candidates, key=lambda x: x["count"])
+            insights.append({
+                "type": "low",
+                "text": f"Low bookings at {dead['hour']:02d}:00 on {DAYS[dead['dow']]}s "
+                        f"— a discount or promotion could help",
+                "hour": dead["hour"],
+                "dow": dead["dow"],
+            })
+
+    if repeat_customer_rate >= 30:
+        insights.append({
+            "type": "loyalty",
+            "text": f"{int(repeat_customer_rate)}% of your customers return — great retention!",
+        })
+    elif repeat_customer_rate < 15 and total_unique > 5:
+        insights.append({
+            "type": "loyalty",
+            "text": "Most bookings are from new customers — consider a loyalty discount",
+        })
+
+    if cancellation_rate > 15:
+        insights.append({
+            "type": "warning",
+            "text": f"High cancellation rate ({cancellation_rate}%) — consider a stricter policy",
+        })
+
+    return {
+        "heatmap": heatmap,
+        "occupancy_by_turf": occupancy_by_turf,
+        "avg_occupancy": avg_occupancy,
+        "cancellation_rate": cancellation_rate,
+        "repeat_customer_rate": repeat_customer_rate,
+        "avg_lead_time_days": avg_lead_time,
+        "revenue_by_sport": revenue_by_sport,
+        "revenue_by_turf": revenue_by_turf,
+        "insights": insights,
+        "heatmap_by_turf": heatmap_by_turf,
+        "turf_list": turf_list,
+        "confirmed_count": len(confirmed),
+        "period_days": days,
+    }
 
 
 @router.get("/analytics/venue/{venue_id}")

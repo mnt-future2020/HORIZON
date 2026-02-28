@@ -30,7 +30,6 @@ from routes.pos import router as pos_router
 from routes.waitlist import router as waitlist_router
 from routes.compliance import router as compliance_router
 from routes.subscriptions import router as subscriptions_router
-from routes.pricing_ml import router as pricing_ml_router
 from routes.social import router as social_router
 from routes.tournaments import router as tournaments_router
 from routes.coaching import router as coaching_router
@@ -103,7 +102,7 @@ API_PREFIX = os.environ.get("API_PREFIX", "/api")
 for r in [auth_router, venues_router, bookings_router, matchmaking_router,
           notifications_router, admin_router, academies_router, analytics_router,
           ratings_router, highlights_router, iot_router, reviews_router, pos_router,
-          waitlist_router, compliance_router, subscriptions_router, pricing_ml_router,
+          waitlist_router, compliance_router, subscriptions_router,
           social_router, tournaments_router, coaching_router, coach_clients_router,
           coach_offline_router, coach_finance_router, communities_router,
           recommendations_router, organizations_router, performance_router,

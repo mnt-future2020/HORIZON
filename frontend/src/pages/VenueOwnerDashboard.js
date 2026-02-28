@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, pricingMLAPI, payoutAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, payoutAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Banknote, Eye } from "lucide-react";
+import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Banknote, Eye, Lightbulb } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 // Professional / venue owner imagery
@@ -146,6 +146,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [bookingView, setBookingView] = useState("list");
+  const [pricingView, setPricingView] = useState("rules");
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState(false);
@@ -751,97 +753,71 @@ function VenueOwnerDashboardContent({ defaultView }) {
         />
       </div>
 
-      {/* Venue Selector - Athletic Pills */}
-      {venues.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
-          className="mb-8 space-y-4"
-        >
-          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Your Venues</h2>
-          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
-            {venues.map((v, idx) => (
-              <motion.button
-                key={v.id}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.6 + idx * 0.05 }}
-                onClick={() => handleSelectVenue(v)}
-                data-testid={`venue-tab-${v.id}`}
-                className={`shrink-0 px-6 py-3 rounded-xl font-bold uppercase tracking-wide text-sm transition-all duration-300 border-2 ${
-                  selectedVenue?.id === v.id
-                    ? "bg-primary/20 border-primary text-primary shadow-glow-primary scale-105"
-                    : "bg-card/50 border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary hover:scale-105"
-                }`}
-              >
-                {v.name}
-              </motion.button>
-            ))}
+      {/* Analytics — Revenue + Chart on Dashboard */}
+      {analytics && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+            <div className="glass-card rounded-lg p-4">
+              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
+              <div className="text-xl sm:text-2xl font-display font-black text-primary mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
+            </div>
+            <div className="glass-card rounded-lg p-4">
+              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
+              <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
+            </div>
+            <div className="glass-card rounded-lg p-4">
+              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
+              <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
+            </div>
           </div>
-          {/* Public page actions for selected venue */}
-          {selectedVenue?.slug && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5">
-                <Globe className="w-3.5 h-3.5" />
-                <span className="font-mono">/venue/{selectedVenue.slug}</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={() => navigate(`/venue/${selectedVenue.slug}`)}
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                View Public Page
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={() => setShowVenueQR(true)}
-              >
-                <QrCode className="w-3.5 h-3.5" />
-                QR Code
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={async () => {
-                  const url = `${window.location.origin}/venue/${selectedVenue.slug}`;
-                  await navigator.clipboard.writeText(url);
-                  setCopiedSlug(true);
-                  toast.success("Public link copied!");
-                  setTimeout(() => setCopiedSlug(false), 2000);
-                }}
-              >
-                {copiedSlug ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                {copiedSlug ? "Copied!" : "Copy Link"}
-              </Button>
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1.5 bg-primary text-primary-foreground"
-                onClick={openEditVenue}
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Edit Details
-              </Button>
+          {analytics.daily_revenue?.length > 0 && (
+            <div className="glass-card rounded-lg p-4 sm:p-6">
+              <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={analytics.daily_revenue}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2, 32.6%, 17.5%)" />
+                  <XAxis dataKey="date" tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} />
+                  <YAxis tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} width={40} />
+                  <Tooltip contentStyle={{ background: "hsl(222.2, 47.4%, 11.2%)", border: "1px solid hsl(217.2, 32.6%, 17.5%)", borderRadius: 8 }}
+                    labelStyle={{ color: "hsl(210, 40%, 98%)" }} />
+                  <Bar dataKey="revenue" fill="hsl(160, 84%, 39.4%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           )}
         </motion.div>
       )}
       </>)}
 
-      {/* Compact venue selector on manage view */}
-      {isManageView && venues.length > 1 && (
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
-          {venues.map(v => (
-            <button key={v.id} onClick={() => handleSelectVenue(v)}
-              className={`shrink-0 px-4 py-2 rounded-lg font-bold text-xs transition-all border ${selectedVenue?.id === v.id ? "bg-brand-500/10 border-brand-500/30 text-brand-500" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-500/30"}`}>
-              {v.name}
-            </button>
-          ))}
+      {/* Venue selector + actions on manage view */}
+      {isManageView && venues.length > 0 && (
+        <div className="mb-6 space-y-3">
+          <div className="flex gap-2 items-center overflow-x-auto pb-1">
+            {venues.map(v => (
+              <button key={v.id} onClick={() => handleSelectVenue(v)}
+                className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all border-2 flex items-center gap-2 ${selectedVenue?.id === v.id ? "bg-primary/20 border-primary text-primary" : "bg-card/50 border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary"}`}>
+                {v.name}
+                {selectedVenue?.id === v.id && (
+                  <span onClick={e => { e.stopPropagation(); openEditVenue(); }}
+                    className="p-1 rounded-md hover:bg-primary/20 transition-colors" title="Edit venue">
+                    <Pencil className="h-3 w-3" />
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          {selectedVenue?.slug && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                onClick={() => window.open(`/venue/${selectedVenue.slug}`, "_blank")}>
+                <ExternalLink className="w-3.5 h-3.5" /> View Public Page
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
+                onClick={() => setShowVenueQR(true)}>
+                <QrCode className="w-3.5 h-3.5" /> QR Code
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -852,17 +828,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <TabsTrigger value="slots" className="font-bold text-xs" data-testid="tab-slots">
             <CalendarDays className="h-3 w-3 mr-1" />Slots
           </TabsTrigger>
-          <TabsTrigger value="history" className="font-bold text-xs" data-testid="tab-history">
-            <History className="h-3 w-3 mr-1" />History
-          </TabsTrigger>
           <TabsTrigger value="reviews" className="font-bold text-xs" data-testid="tab-reviews">
             <Star className="h-3 w-3 mr-1" />Reviews
           </TabsTrigger>
           <TabsTrigger value="pricing" className="font-bold text-xs" data-testid="tab-pricing">Pricing</TabsTrigger>
-          <TabsTrigger value="analytics" className="font-bold text-xs">Analytics</TabsTrigger>
-          <TabsTrigger value="ml-pricing" className="font-bold text-xs" data-testid="tab-ml-pricing">
-            <Brain className="h-3 w-3 mr-1" />AI Pricing
-          </TabsTrigger>
           <TabsTrigger value="checkin" className="font-bold text-xs" data-testid="tab-checkin">
             <QrCode className="h-3 w-3 mr-1" />Check-in
           </TabsTrigger>
@@ -870,7 +839,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <TabsTrigger value="payouts" className="font-bold text-xs" data-testid="tab-payouts">Payouts</TabsTrigger>
         </TabsList>
 
-        {/* Bookings - Enhanced with filters, detail view */}
+        {/* Bookings - Enhanced with filters, detail view, and timeline */}
         <TabsContent value="bookings">
           {/* Quick Stats Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
@@ -888,88 +857,176 @@ function VenueOwnerDashboardContent({ defaultView }) {
             ))}
           </div>
 
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2 mb-4" data-testid="booking-filters">
-            <div className="flex items-center gap-1.5">
-              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground font-mono uppercase">Filters</span>
-            </div>
-            <div className="flex gap-1.5 flex-wrap">
-              {["all", "upcoming", "past"].map(f => (
-                <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${timeFilter === f ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                  {f === "all" ? "All Time" : f === "upcoming" ? "Upcoming" : "Past"}
-                </button>
-              ))}
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="confirmed">Confirmed</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="payment_pending">Awaiting Pay</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
-                <SelectItem value="expired">Expired</SelectItem>
-              </SelectContent>
-            </Select>
-            <button onClick={() => setSortOrder(s => s === "desc" ? "asc" : "desc")}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-secondary/50 text-xs text-muted-foreground hover:text-foreground transition-all"
-              data-testid="sort-toggle">
-              <ArrowUpDown className="h-3 w-3" /> {sortOrder === "desc" ? "Newest" : "Oldest"}
-            </button>
+          {/* View Toggle: List / Timeline */}
+          <div className="flex gap-1.5 mb-4">
+            {[{ key: "list", label: "List" }, { key: "timeline", label: "Timeline" }].map(v => (
+              <button key={v.key} onClick={() => setBookingView(v.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${bookingView === v.key ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                {v.label}
+              </button>
+            ))}
           </div>
 
-          {/* Booking List */}
-          {filteredBookings.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Calendar className="h-8 w-8 mx-auto mb-3" />
-              <p className="text-sm">{statusFilter !== "all" || timeFilter !== "all" ? "No bookings match your filters" : "No bookings yet"}</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <p className="text-xs text-muted-foreground mb-2">{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</p>
-              <AnimatePresence mode="popLayout">
-                {filteredBookings.map((b, idx) => {
-                  const sc = statusConfig[b.status] || statusConfig.pending;
-                  const isPast = b.date < today;
-                  return (
-                    <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                      transition={{ delay: idx * 0.02 }}
-                      onClick={() => openBookingDetail(b)}
-                      className={`glass-card rounded-lg p-4 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
-                      data-testid={`booking-row-${b.id}`}>
-                      <div className="flex items-start justify-between gap-3 mb-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-foreground truncate">{b.host_name}</span>
-                            {b.payment_mode === "split" && (
-                              <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">
-                                <Users className="h-2.5 w-2.5 mr-0.5" />Split
-                              </Badge>
+          {/* ── List View ── */}
+          {bookingView === "list" && (
+            <>
+              {/* Filters */}
+              <div className="flex flex-wrap items-center gap-2 mb-4" data-testid="booking-filters">
+                <div className="flex items-center gap-1.5">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground font-mono uppercase">Filters</span>
+                </div>
+                <div className="flex gap-1.5 flex-wrap">
+                  {["all", "upcoming", "past"].map(f => (
+                    <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${timeFilter === f ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                      {f === "all" ? "All Time" : f === "upcoming" ? "Upcoming" : "Past"}
+                    </button>
+                  ))}
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="payment_pending">Awaiting Pay</SelectItem>
+                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    <SelectItem value="expired">Expired</SelectItem>
+                  </SelectContent>
+                </Select>
+                <button onClick={() => setSortOrder(s => s === "desc" ? "asc" : "desc")}
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-secondary/50 text-xs text-muted-foreground hover:text-foreground transition-all"
+                  data-testid="sort-toggle">
+                  <ArrowUpDown className="h-3 w-3" /> {sortOrder === "desc" ? "Newest" : "Oldest"}
+                </button>
+              </div>
+
+              {/* Booking List */}
+              {filteredBookings.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Calendar className="h-8 w-8 mx-auto mb-3" />
+                  <p className="text-sm">{statusFilter !== "all" || timeFilter !== "all" ? "No bookings match your filters" : "No bookings yet"}</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground mb-2">{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</p>
+                  <AnimatePresence mode="popLayout">
+                    {filteredBookings.map((b, idx) => {
+                      const sc = statusConfig[b.status] || statusConfig.pending;
+                      const isPast = b.date < today;
+                      return (
+                        <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                          transition={{ delay: idx * 0.02 }}
+                          onClick={() => openBookingDetail(b)}
+                          className={`glass-card rounded-lg p-4 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
+                          data-testid={`booking-row-${b.id}`}>
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-sm text-foreground truncate">{b.host_name}</span>
+                                {b.payment_mode === "split" && (
+                                  <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">
+                                    <Users className="h-2.5 w-2.5 mr-0.5" />Split
+                                  </Badge>
+                                )}
+                              </div>
+                              <span className="text-xs text-muted-foreground">{b.venue_name} - Turf #{b.turf_number}</span>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
+                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
+                              <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
+                            </div>
+                            <span className="font-bold text-primary text-sm">{"\u20B9"}{b.total_amount}</span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Timeline View (merged from History tab) ── */}
+          {bookingView === "timeline" && (
+            <div className="space-y-6" data-testid="booking-history-tab">
+              {bookings.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <History className="h-8 w-8 mx-auto mb-3" />
+                  <p className="text-sm">No booking history</p>
+                </div>
+              ) : (() => {
+                const sorted = [...bookings].sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
+                const grouped = {};
+                sorted.forEach(b => {
+                  const key = b.date;
+                  if (!grouped[key]) grouped[key] = [];
+                  grouped[key].push(b);
+                });
+                return (
+                  <div className="space-y-6">
+                    {Object.entries(grouped).map(([date, dateBookings]) => {
+                      const isPast = date < today;
+                      const isToday = date === today;
+                      const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? b.total_amount : 0), 0);
+                      return (
+                        <div key={date} data-testid={`history-date-${date}`}>
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-2 h-2 rounded-full ${isToday ? "bg-primary animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
+                              <span className="text-sm font-bold text-foreground">
+                                {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                              </span>
+                              <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
+                            </div>
+                            {totalAmount > 0 && (
+                              <span className="text-xs font-bold text-primary">{"\u20B9"}{totalAmount.toLocaleString()}</span>
                             )}
                           </div>
-                          <span className="text-xs text-muted-foreground">{b.venue_name} - Turf #{b.turf_number}</span>
+                          <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
+                            {dateBookings.map(b => {
+                              const sc = statusConfig[b.status] || statusConfig.pending;
+                              return (
+                                <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
+                                  onClick={() => openBookingDetail(b)}
+                                  className={`glass-card rounded-lg p-3 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
+                                  data-testid={`history-booking-${b.id}`}>
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
+                                        <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
+                                        <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
+                                        {b.payment_mode === "split" && <Badge variant="outline" className="text-[9px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
+                                      </div>
+                                      <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className="text-sm font-bold text-primary">{"\u20B9"}{b.total_amount}</span>
+                                      <Badge className={`text-[9px] border ${sc.color}`}>{sc.label}</Badge>
+                                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <div className="flex items-center gap-3">
-                          <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
-                          <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
-                        </div>
-                        <span className="font-bold text-primary text-sm">{"\u20B9"}{b.total_amount}</span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </TabsContent>
@@ -1151,88 +1208,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
           {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} />}
         </TabsContent>
 
-        {/* History Tab - Comprehensive booking timeline */}
-        <TabsContent value="history">
-          <div className="space-y-6" data-testid="booking-history-tab">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <h3 className="font-display font-bold text-base sm:text-lg">Booking History</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Complete timeline of all bookings across your venues</p>
-              </div>
-            </div>
-
-            {/* History by Date Groups */}
-            {bookings.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <History className="h-8 w-8 mx-auto mb-3" />
-                <p className="text-sm">No booking history</p>
-              </div>
-            ) : (() => {
-              const sorted = [...bookings].sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
-              const grouped = {};
-              sorted.forEach(b => {
-                const key = b.date;
-                if (!grouped[key]) grouped[key] = [];
-                grouped[key].push(b);
-              });
-              return (
-                <div className="space-y-6">
-                  {Object.entries(grouped).map(([date, dateBookings]) => {
-                    const isPast = date < today;
-                    const isToday = date === today;
-                    const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? b.total_amount : 0), 0);
-                    return (
-                      <div key={date} data-testid={`history-date-${date}`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${isToday ? "bg-primary animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
-                            <span className="text-sm font-bold text-foreground">
-                              {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
-                            </span>
-                            <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
-                          </div>
-                          {totalAmount > 0 && (
-                            <span className="text-xs font-bold text-primary">{"\u20B9"}{totalAmount.toLocaleString()}</span>
-                          )}
-                        </div>
-                        <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
-                          {dateBookings.map(b => {
-                            const sc = statusConfig[b.status] || statusConfig.pending;
-                            return (
-                              <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
-                                onClick={() => openBookingDetail(b)}
-                                className={`glass-card rounded-lg p-3 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
-                                data-testid={`history-booking-${b.id}`}>
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="min-w-0 flex-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
-                                      <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
-                                      <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
-                                      {b.payment_mode === "split" && <Badge variant="outline" className="text-[9px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <span className="text-sm font-bold text-primary">{"\u20B9"}{b.total_amount}</span>
-                                    <Badge className={`text-[9px] border ${sc.color}`}>{sc.label}</Badge>
-                                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                  </div>
-                                </div>
-                              </motion.div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-          </div>
-        </TabsContent>
-
-
         {/* Reviews Tab */}
         <TabsContent value="reviews">
           <div className="space-y-4" data-testid="owner-reviews-tab">
@@ -1310,6 +1285,18 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
         {/* Pricing Rules - Enhanced P2 */}
         <TabsContent value="pricing">
+          {/* View Toggle: Rules / AI */}
+          <div className="flex gap-1.5 mb-4">
+            {[{ key: "rules", label: "Rules" }, { key: "analytics", label: "Analytics" }].map(v => (
+              <button key={v.key} onClick={() => setPricingView(v.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${pricingView === v.key ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {pricingView === "rules" && (
+          <>
           <div className="flex items-center justify-between mb-4 gap-3">
             <div className="min-w-0">
               <h3 className="font-display font-bold text-base sm:text-lg truncate">
@@ -1477,50 +1464,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
             </DialogContent>
           </Dialog>
-        </TabsContent>
+          </>
+          )}
 
-        <TabsContent value="analytics">
-          {analytics ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                <div className="glass-card rounded-lg p-4">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
-                  <div className="text-xl sm:text-2xl font-display font-black text-primary mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
-                </div>
-                <div className="glass-card rounded-lg p-4">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
-                  <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
-                </div>
-                <div className="glass-card rounded-lg p-4">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
-                  <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
-                </div>
-              </div>
-              {analytics.daily_revenue?.length > 0 && (
-                <div className="glass-card rounded-lg p-4 sm:p-6">
-                  <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={analytics.daily_revenue}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2, 32.6%, 17.5%)" />
-                      <XAxis dataKey="date" tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} />
-                      <YAxis tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} width={40} />
-                      <Tooltip contentStyle={{ background: "hsl(222.2, 47.4%, 11.2%)", border: "1px solid hsl(217.2, 32.6%, 17.5%)", borderRadius: 8 }}
-                        labelStyle={{ color: "hsl(210, 40%, 98%)" }} />
-                      <Bar dataKey="revenue" fill="hsl(160, 84%, 39.4%)" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground"><BarChart3 className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No analytics data</p></div>
+          {/* ── Analytics View ── */}
+          {pricingView === "analytics" && selectedVenue && (
+            <VenueAnalyticsPanel venueId={selectedVenue.id} />
           )}
         </TabsContent>
 
-        {/* ML Pricing Tab */}
-        <TabsContent value="ml-pricing" data-testid="ml-pricing-tab-content">
-          {selectedVenue && <MLPricingPanel venueId={selectedVenue.id} venueName={selectedVenue.name} />}
-        </TabsContent>
 
         <TabsContent value="plan" data-testid="plan-tab-content">
           {planData ? (
@@ -2003,170 +1955,189 @@ function VenueOwnerDashboardContent({ defaultView }) {
   );
 }
 
-// ─── ML Pricing Panel Component ─────────────────────────────────────────────
-function MLPricingPanel({ venueId, venueName }) {
-  const [pricingMode, setPricingMode] = useState("rule_based");
-  const [forecast, setForecast] = useState(null);
-  const [forecastDate, setForecastDate] = useState(new Date().toISOString().split("T")[0]);
-  const [training, setTraining] = useState(false);
-  const [trainResult, setTrainResult] = useState(null);
-  const [loadingForecast, setLoadingForecast] = useState(false);
-  const [switching, setSwitching] = useState(false);
+// ─── Venue Analytics Panel ───────────────────────────────────────────────────
+function VenueAnalyticsPanel({ venueId }) {
+  const [insights, setInsights] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedTurf, setSelectedTurf] = useState("all");
+  const [period, setPeriod] = useState(90);
 
   useEffect(() => {
-    pricingMLAPI.getMode(venueId).then(r => setPricingMode(r.data.pricing_mode || "rule_based")).catch(() => {});
-  }, [venueId]);
-
-  const loadForecast = useCallback(async () => {
-    setLoadingForecast(true);
-    try {
-      const res = await pricingMLAPI.demandForecast(venueId, forecastDate);
-      setForecast(res.data);
-    } catch {
-      setForecast(null);
-    } finally {
-      setLoadingForecast(false);
-    }
-  }, [venueId, forecastDate]);
-
-  useEffect(() => { loadForecast(); }, [loadForecast]);
-
-  const handleToggleMode = async () => {
-    const newMode = pricingMode === "rule_based" ? "ml" : "rule_based";
-    setSwitching(true);
-    try {
-      await pricingMLAPI.setMode(venueId, newMode);
-      setPricingMode(newMode);
-      toast.success(`Pricing mode switched to ${newMode === "ml" ? "AI/ML" : "Rule-based"}`);
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Failed to switch mode");
-    } finally {
-      setSwitching(false);
-    }
-  };
-
-  const handleTrain = async () => {
-    setTraining(true);
-    setTrainResult(null);
-    try {
-      const res = await pricingMLAPI.trainModel(venueId);
-      setTrainResult(res.data);
-      if (res.data.status === "trained") {
-        toast.success("ML model trained successfully!");
-      } else {
-        toast.info(res.data.message);
+    const load = async () => {
+      setLoading(true);
+      setSelectedTurf("all");
+      try {
+        const res = await analyticsAPI.venueInsights(venueId, period);
+        setInsights(res.data);
+      } catch {
+        setInsights(null);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Training failed");
-    } finally {
-      setTraining(false);
-    }
+    };
+    load();
+  }, [venueId, period]);
+
+  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const activeHeatmap = !insights ? [] :
+    selectedTurf === "all" ? insights.heatmap :
+    (insights.heatmap_by_turf?.[selectedTurf] || []);
+  const maxCount = activeHeatmap.length > 0 ? Math.max(...activeHeatmap.map(h => h.count), 1) : 1;
+
+  const heatColor = (count) => {
+    const ratio = count / maxCount;
+    if (ratio >= 0.75) return "bg-brand-500/80 text-white";
+    if (ratio >= 0.5)  return "bg-brand-500/50 text-foreground";
+    if (ratio >= 0.25) return "bg-brand-500/25 text-foreground";
+    if (ratio > 0)     return "bg-brand-500/10 text-muted-foreground";
+    return "bg-secondary/20 text-muted-foreground/40";
   };
 
-  const demandColor = (level) => {
-    if (level === "high") return "text-brand-400 bg-brand-500/15";
-    if (level === "medium") return "text-amber-400 bg-amber-500/15";
-    return "text-muted-foreground bg-secondary/50";
+  const insightIcon = (type) => {
+    if (type === "peak")    return <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />;
+    if (type === "low")     return <TrendingDown className="h-4 w-4 text-blue-400 shrink-0" />;
+    if (type === "loyalty") return <Users className="h-4 w-4 text-amber-400 shrink-0" />;
+    if (type === "warning") return <Zap className="h-4 w-4 text-destructive shrink-0" />;
+    return <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0" />;
   };
+
+  const insightBg = (type) => {
+    if (type === "peak")    return "bg-brand-500/10 border-brand-500/20";
+    if (type === "low")     return "bg-blue-500/10 border-blue-500/20";
+    if (type === "loyalty") return "bg-amber-500/10 border-amber-500/20";
+    if (type === "warning") return "bg-destructive/10 border-destructive/20";
+    return "bg-secondary/50 border-border";
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-16">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!insights) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <BarChart2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+        <p className="text-sm">Could not load analytics. Try again later.</p>
+      </div>
+    );
+  }
+
+  // Build a 24×7 grid (hours 0–23, dow 0–6)
+  const countMap = {};
+  activeHeatmap.forEach(h => { countMap[`${h.hour}_${h.dow}`] = h.count; });
+  const activeHours = [...new Set(activeHeatmap.map(h => h.hour))].sort((a, b) => a - b);
+
+  const periodLabel = period === 0 ? "all time" : `last ${period} days`;
 
   return (
-    <div className="space-y-5" data-testid="ml-pricing-panel">
-      {/* Mode Toggle Card */}
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Brain className="h-5 w-5 text-primary" />
-              <h3 className="font-bold text-sm">AI Dynamic Pricing</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {pricingMode === "ml"
-                ? "ML model is actively adjusting prices based on demand patterns"
-                : "Using rule-based pricing. Switch to ML for AI-driven dynamic prices."}
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-foreground">Rule-based</span>
-            <button onClick={handleToggleMode} disabled={switching}
-              className={`w-12 h-6 rounded-full transition-all relative ${pricingMode === "ml" ? "bg-primary" : "bg-secondary"}`}>
-              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${pricingMode === "ml" ? "left-6" : "left-0.5"}`} />
+    <div className="space-y-4" data-testid="analytics-panel">
+      {/* Period selector */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <p className="text-xs text-muted-foreground">Showing data for <span className="text-foreground font-semibold">{periodLabel}</span></p>
+        <div className="flex gap-1">
+          {[{ label: "30d", days: 30 }, { label: "90d", days: 90 }, { label: "180d", days: 180 }, { label: "All", days: 0 }].map(p => (
+            <button key={p.days} onClick={() => setPeriod(p.days)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${period === p.days ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+              {p.label}
             </button>
-            <span className="text-xs font-bold text-primary">AI/ML</span>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Train Model Card */}
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div>
-            <h3 className="font-bold text-sm mb-1">Train ML Model</h3>
-            <p className="text-xs text-muted-foreground">
-              Train the pricing model using your venue's historical booking data.
-              Requires at least 50 confirmed bookings.
-            </p>
+      {/* Stats row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: "Avg Occupancy", value: `${insights.avg_occupancy}%`, sub: periodLabel },
+          { label: "Cancellation", value: `${insights.cancellation_rate}%`, sub: "of all bookings" },
+          { label: "Repeat Customers", value: `${insights.repeat_customer_rate}%`, sub: "returning users" },
+          { label: "Avg Lead Time", value: `${insights.avg_lead_time_days}d`, sub: "before slot date" },
+        ].map(s => (
+          <div key={s.label} className="glass-card rounded-xl p-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{s.label}</p>
+            <p className="font-display font-bold text-xl text-foreground">{s.value}</p>
+            <p className="text-[10px] text-muted-foreground mt-0.5">{s.sub}</p>
           </div>
-          <Button onClick={handleTrain} disabled={training}
-            className="bg-primary text-primary-foreground font-bold text-xs h-9"
-            data-testid="train-model-btn">
-            {training ? (
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
-            ) : (
-              <Zap className="h-4 w-4 mr-1" />
-            )}
-            {training ? "Training..." : "Train Model"}
-          </Button>
-        </div>
-        {trainResult && (
-          <div className={`mt-3 p-3 rounded-lg text-xs ${trainResult.status === "trained" ? "bg-brand-500/10 text-brand-400" : "bg-amber-500/10 text-amber-400"}`}>
-            {trainResult.message}
-          </div>
-        )}
+        ))}
       </div>
 
-      {/* Demand Forecast */}
-      <div className="glass-card rounded-xl p-5">
-        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
-          <div>
-            <h3 className="font-bold text-sm mb-1">Demand Forecast</h3>
-            <p className="text-xs text-muted-foreground">Predicted demand and ML-suggested prices for each slot</p>
-          </div>
-          <Input type="date" value={forecastDate}
-            onChange={e => setForecastDate(e.target.value)}
-            className="w-40 h-9 bg-background border-border text-xs" />
+      {/* Heatmap */}
+      <div className="glass-card rounded-xl p-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+          <h3 className="font-bold text-sm flex items-center gap-2">
+            <BarChart2 className="h-4 w-4 text-primary" />
+            Booking Heatmap
+            <span className="text-[10px] text-muted-foreground font-normal">— how often each slot gets booked</span>
+          </h3>
+          {insights.turf_list?.length > 1 && (
+            <div className="flex gap-1 flex-wrap">
+              <button onClick={() => setSelectedTurf("all")}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${selectedTurf === "all" ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                All
+              </button>
+              {insights.turf_list.map(t => (
+                <button key={t.turf_number} onClick={() => setSelectedTurf(String(t.turf_number))}
+                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${selectedTurf === String(t.turf_number) ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
-        {loadingForecast ? (
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : forecast?.forecasts?.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {forecast.forecasts.map((f, i) => (
-              <div key={i} className="glass-card rounded-lg p-3 text-center">
-                <div className="text-xs font-mono text-muted-foreground mb-1">{f.start_time}</div>
-                <div className={`text-lg font-display font-black ${f.ml_price ? "text-primary" : "text-foreground"}`}>
-                  ₹{f.ml_price || f.base_price || "—"}
-                </div>
-                {f.demand_level && (
-                  <Badge className={`text-[9px] mt-1 ${demandColor(f.demand_level)}`}>
-                    {f.demand_level}
-                  </Badge>
-                )}
-                {f.confidence != null && (
-                  <div className="text-[9px] text-muted-foreground mt-0.5">
-                    {Math.round(f.confidence * 100)}% conf
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+        {activeHours.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-4 text-center">No confirmed bookings yet in the last 90 days.</p>
         ) : (
-          <div className="text-center py-8 text-muted-foreground">
-            <Brain className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            <p className="text-xs">No forecast data. Train the model with 50+ bookings first.</p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-[10px] border-collapse">
+              <thead>
+                <tr>
+                  <th className="text-left pr-2 py-1 text-muted-foreground font-medium w-10">Time</th>
+                  {DAYS.map(d => (
+                    <th key={d} className="text-center px-1 py-1 text-muted-foreground font-medium">{d}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {activeHours.map(h => (
+                  <tr key={h}>
+                    <td className="pr-2 py-0.5 font-mono text-muted-foreground whitespace-nowrap">{String(h).padStart(2, "0")}:00</td>
+                    {DAYS.map((_, dow) => {
+                      const cnt = countMap[`${h}_${dow}`] || 0;
+                      return (
+                        <td key={dow} className="px-0.5 py-0.5">
+                          <div className={`rounded text-center py-1 px-1 min-w-[28px] font-bold ${heatColor(cnt)}`}>
+                            {cnt > 0 ? cnt : ""}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <p className="text-[9px] text-muted-foreground mt-2">Numbers = bookings in last 90 days · darker = more bookings</p>
           </div>
         )}
       </div>
+
+      {/* Insights */}
+      {insights.insights?.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="font-bold text-sm flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-amber-400" />
+            Insights
+          </h3>
+          {insights.insights.map((ins, i) => (
+            <div key={i} className={`rounded-lg p-3 border flex items-start gap-3 ${insightBg(ins.type)}`}>
+              {insightIcon(ins.type)}
+              <p className="text-xs leading-relaxed">{ins.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
