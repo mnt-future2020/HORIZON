@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { chatAPI, userSearchAPI, socialAPI, groupAPI } from "@/lib/api";
@@ -26,6 +26,12 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const startWithUser = searchParams.get("user");
+
+  // Check for reduced motion preference (must be before any conditional returns)
+  const prefersReducedMotion = useMemo(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
 
   const [conversations, setConversations] = useState([]);
   const [filteredConvos, setFilteredConvos] = useState([]);
@@ -791,7 +797,7 @@ export default function ChatPage() {
   );
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Loading conversations" /></div>;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -799,13 +805,14 @@ export default function ChatPage() {
   // ═══════════════════════════════════════════════════════════════════════════
   if (activeConvo) {
     return (
-      <div className="flex flex-col bg-background" style={{ height: "100dvh" }}>
+      <div className="flex flex-col bg-background" style={{ height: "100dvh", touchAction: 'manipulation' }}>
         {/* Chat Header — WhatsApp style */}
         <div className="bg-primary/5 border-b border-border px-3 py-2.5 flex-shrink-0">
           <div className="max-w-3xl mx-auto flex items-center gap-3">
             <button onClick={() => { setActiveConvo(null); setOnlineStatus(null); setIsTyping(false); loadConversations(); }}
-              className="text-muted-foreground hover:text-foreground p-1">
-              <ArrowLeft className="h-5 w-5" />
+              className="text-muted-foreground hover:text-foreground p-1"
+              aria-label="Back to conversations">
+              <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </button>
             <div className="relative cursor-pointer" onClick={() => navigate(`/player-card/${activeConvo.other_user?.id}`)}>
               <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
@@ -831,21 +838,21 @@ export default function ChatPage() {
                 )}
               </p>
             </div>
-            <button onClick={loadPinnedMessages} className="p-2 rounded-full hover:bg-secondary/50" title="Pinned messages">
-              <Pin className="h-4 w-4 text-foreground/70" />
+            <button onClick={loadPinnedMessages} className="p-2 rounded-full hover:bg-secondary/50" title="Pinned messages" aria-label="View pinned messages">
+              <Pin className="h-4 w-4 text-foreground/70" aria-hidden="true" />
             </button>
-            <button onClick={loadMediaGallery} className="p-2 rounded-full hover:bg-secondary/50" title="Media gallery">
-              <Image className="h-4 w-4 text-foreground/70" />
+            <button onClick={loadMediaGallery} className="p-2 rounded-full hover:bg-secondary/50" title="Media gallery" aria-label="View media gallery">
+              <Image className="h-4 w-4 text-foreground/70" aria-hidden="true" />
             </button>
-            <button onClick={handleToggleMute} className="p-2 rounded-full hover:bg-secondary/50" title={isMuted ? "Unmute" : "Mute"}>
-              {isMuted ? <BellOff className="h-4 w-4 text-orange-400" /> : <Bell className="h-4 w-4 text-foreground/70" />}
+            <button onClick={handleToggleMute} className="p-2 rounded-full hover:bg-secondary/50" title={isMuted ? "Unmute" : "Mute"} aria-label={isMuted ? "Unmute conversation" : "Mute conversation"}>
+              {isMuted ? <BellOff className="h-4 w-4 text-orange-400" aria-hidden="true" /> : <Bell className="h-4 w-4 text-foreground/70" aria-hidden="true" />}
             </button>
             <button onClick={() => { setShowMsgSearch(!showMsgSearch); setMsgSearchQuery(""); setMsgSearchResults([]); }}
-              className="p-2 rounded-full hover:bg-secondary/50" title="Search messages">
-              <Search className="h-4 w-4 text-foreground/70" />
+              className="p-2 rounded-full hover:bg-secondary/50" title="Search messages" aria-label="Search messages">
+              <Search className="h-4 w-4 text-foreground/70" aria-hidden="true" />
             </button>
-            <button onClick={() => setShowClearConfirm(true)} className="p-2 rounded-full hover:bg-secondary/50" title="Clear chat">
-              <Eraser className="h-4 w-4 text-foreground/70" />
+            <button onClick={() => setShowClearConfirm(true)} className="p-2 rounded-full hover:bg-secondary/50" title="Clear chat" aria-label="Clear chat">
+              <Eraser className="h-4 w-4 text-foreground/70" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -861,7 +868,7 @@ export default function ChatPage() {
               {activeConvo.requester_id === user?.id ? (
                 // Requester sees "waiting" indicator
                 <div className="flex items-center gap-2">
-                  <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 text-amber-500 animate-spin" aria-hidden="true" />
                   <span className="text-xs font-medium text-amber-600">
                     Request sent — waiting for {activeConvo.other_user?.name} to accept
                   </span>
@@ -874,11 +881,11 @@ export default function ChatPage() {
                   </span>
                   <Button size="sm" variant="athletic" className="h-7 text-xs px-3 rounded-full"
                     onClick={() => handleAcceptRequest(activeConvo)}>
-                    <ShieldCheck className="h-3 w-3 mr-1" /> Accept
+                    <ShieldCheck className="h-3 w-3 mr-1" aria-hidden="true" /> Accept
                   </Button>
                   <Button size="sm" variant="outline" className="h-7 text-xs px-3 rounded-full text-destructive border-destructive/30 hover:bg-destructive/10"
                     onClick={() => { handleDeclineRequest(activeConvo); setActiveConvo(null); }}>
-                    <ShieldX className="h-3 w-3 mr-1" /> Decline
+                    <ShieldX className="h-3 w-3 mr-1" aria-hidden="true" /> Decline
                   </Button>
                 </div>
               )}
@@ -889,13 +896,24 @@ export default function ChatPage() {
         {/* Clear Chat Confirmation */}
         <AnimatePresence>
           {showClearConfirm && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            <motion.div 
+              initial={prefersReducedMotion ? {} : { opacity: 0 }} 
+              animate={prefersReducedMotion ? {} : { opacity: 1 }} 
+              exit={prefersReducedMotion ? {} : { opacity: 0 }}
+              transition={prefersReducedMotion ? { duration: 0 } : {}}
               className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-              onClick={() => setShowClearConfirm(false)}>
-              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
+              onClick={() => setShowClearConfirm(false)}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="clear-chat-title">
+              <motion.div 
+                initial={prefersReducedMotion ? {} : { scale: 0.9 }} 
+                animate={prefersReducedMotion ? {} : { scale: 1 }} 
+                exit={prefersReducedMotion ? {} : { scale: 0.9 }}
+                transition={prefersReducedMotion ? { duration: 0 } : {}}
                 className="bg-card rounded-2xl p-6 w-full max-w-xs shadow-xl border border-border"
                 onClick={e => e.stopPropagation()}>
-                <h3 className="font-bold text-base mb-2">Clear Chat?</h3>
+                <h3 id="clear-chat-title" className="font-bold text-base mb-2">Clear Chat?</h3>
                 <p className="text-xs text-muted-foreground mb-4">
                   Messages will be cleared only for you. The other person will still see their chat history.
                 </p>
@@ -1218,42 +1236,46 @@ export default function ChatPage() {
             <p className="text-xs text-muted-foreground">Accept the request to reply</p>
           </div>
         ) : (
-        <div className="bg-background border-t border-border px-3 py-2 flex-shrink-0"
-          style={{ paddingBottom: "max(env(safe-area-inset-bottom, 8px), 8px)" }}>
+        <div className="bg-background border-t border-border px-3 sm:px-4 py-2 sm:py-3 flex-shrink-0"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom, 12px), 12px)" }}>
           <div className="max-w-3xl mx-auto flex items-end gap-2">
             {/* Attachment button */}
             <input ref={fileInputRef} type="file" className="hidden"
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" onChange={handleFileSelect} />
             <button onClick={() => fileInputRef.current?.click()}
-              className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground">
-              <Paperclip className="h-5 w-5" />
+              className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground touch-manipulation"
+              aria-label="Attach file">
+              <Paperclip className="h-5 w-5" aria-hidden="true" />
             </button>
             {/* Poll button */}
             <button onClick={() => setShowPollCreate(true)}
-              className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground"
-              title="Create poll">
-              <BarChart3 className="h-5 w-5" />
+              className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 hover:bg-secondary/50 text-muted-foreground touch-manipulation"
+              title="Create poll"
+              aria-label="Create poll">
+              <BarChart3 className="h-5 w-5" aria-hidden="true" />
             </button>
 
-            <div className="flex-1 bg-card rounded-2xl border border-border/50 px-4 py-2 min-h-[44px] flex items-center">
+            <div className="flex-1 bg-card rounded-2xl border border-border/50 px-3 sm:px-4 py-2 min-h-[44px] flex items-center">
               <textarea
                 ref={inputRef}
                 value={msgText}
                 onChange={e => { setMsgText(e.target.value); handleTyping(); }}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Message..."
-                className="w-full bg-transparent border-none outline-none resize-none text-sm placeholder:text-muted-foreground max-h-[120px]"
+                className="w-full bg-transparent border-none outline-none resize-none text-base sm:text-sm placeholder:text-muted-foreground max-h-[120px] touch-manipulation"
                 rows={1}
-                style={{ height: "auto" }}
+                style={{ height: "auto", fontSize: "16px" }}
                 onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
+                aria-label="Type a message"
               />
             </div>
 
             {/* Send or Mic button */}
             {msgText.trim() || pendingFile ? (
               <button onClick={handleSend} disabled={sending || uploading}
-                className="h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground shadow-lg transition-all">
-                {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground shadow-lg transition-all touch-manipulation active:scale-95 disabled:opacity-50"
+                aria-label="Send message">
+                {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
               </button>
             ) : (
               <button
@@ -1262,10 +1284,11 @@ export default function ChatPage() {
                 onMouseLeave={() => { if (isRecording) stopRecording(); }}
                 onTouchStart={startRecording}
                 onTouchEnd={stopRecording}
-                className={`h-11 w-11 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
+                className={`h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all touch-manipulation ${
                   isRecording ? "bg-red-500 text-white animate-pulse scale-110" : "bg-secondary text-muted-foreground hover:bg-secondary/80"
-                }`}>
-                <Mic className="h-4 w-4" />
+                }`}
+                aria-label={isRecording ? "Recording voice message" : "Hold to record voice message"}>
+                <Mic className="h-4 w-4" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -1279,50 +1302,55 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
               onClick={() => setLongPressMsg(null)}>
               <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8"
-                onClick={e => e.stopPropagation()}>
-                <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-4" />
+                className="w-full max-w-md bg-card rounded-t-2xl sm:rounded-2xl border-t border-border p-4 sm:p-5 pb-8 sm:pb-6"
+                onClick={e => e.stopPropagation()}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="message-actions-title">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-4 sm:hidden" aria-hidden="true" />
+                <h2 id="message-actions-title" className="sr-only">Message actions</h2>
                 {/* Quick reactions */}
-                <div className="flex justify-center gap-2 mb-4">
+                <div className="flex justify-center gap-2 sm:gap-3 mb-4">
                   {EMOJI_LIST.map(([key, emoji]) => (
                     <button key={key} onClick={() => { handleReaction(longPressMsg, key); setLongPressMsg(null); }}
-                      className="h-10 w-10 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center text-lg hover:scale-110 transition-transform">
+                      className="h-11 w-11 sm:h-10 sm:w-10 rounded-full bg-secondary/50 hover:bg-secondary flex items-center justify-center text-lg hover:scale-110 transition-transform touch-manipulation"
+                      aria-label={`React with ${key}`}>
                       {emoji}
                     </button>
                   ))}
                 </div>
-                <div className="p-3 rounded-xl bg-secondary/30 mb-4 text-sm line-clamp-2">
+                <div className="p-3 sm:p-2.5 rounded-xl bg-secondary/30 mb-4 text-sm line-clamp-2">
                   {longPressMsg.content || (longPressMsg.media_type === "voice" ? "Voice message" : longPressMsg.file_name || "Media")}
                 </div>
                 <div className="space-y-1">
                   <button onClick={() => { setReplyTo(longPressMsg); setLongPressMsg(null); inputRef.current?.focus(); }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
-                    <Reply className="h-5 w-5 text-muted-foreground" />
+                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                    <Reply className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm font-medium">Reply</span>
                   </button>
                   {/* Pin / Unpin */}
                   <button onClick={() => { longPressMsg.pinned ? handleUnpinMessage(longPressMsg) : handlePinMessage(longPressMsg); setLongPressMsg(null); }}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
-                    {longPressMsg.pinned ? <PinOff className="h-5 w-5 text-muted-foreground" /> : <Pin className="h-5 w-5 text-muted-foreground" />}
+                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                    {longPressMsg.pinned ? <PinOff className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" /> : <Pin className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />}
                     <span className="text-sm font-medium">{longPressMsg.pinned ? "Unpin Message" : "Pin Message"}</span>
                   </button>
                   {/* Forward */}
                   <button onClick={() => openForwardModal(longPressMsg)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
-                    <Forward className="h-5 w-5 text-muted-foreground" />
+                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                    <Forward className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm font-medium">Forward</span>
                   </button>
                   {longPressMsg.content && (
                     <button onClick={() => { navigator.clipboard.writeText(longPressMsg.content); setLongPressMsg(null); toast.success("Copied!"); }}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors text-left">
-                      <MessageCircle className="h-5 w-5 text-muted-foreground" />
+                      className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                      <MessageCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium">Copy Text</span>
                     </button>
                   )}
                   {longPressMsg.sender_id === user?.id && (
                     <button onClick={() => handleDeleteMessage(longPressMsg)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-destructive/10 transition-colors text-left text-destructive">
-                      <Trash2 className="h-5 w-5" />
+                      className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-destructive/10 transition-colors text-left text-destructive min-h-[44px] touch-manipulation">
+                      <Trash2 className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium">Delete Message</span>
                     </button>
                   )}

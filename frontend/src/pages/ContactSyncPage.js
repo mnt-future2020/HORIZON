@@ -135,7 +135,7 @@ export default function ContactSyncPage() {
 
   const renderUserCard = (u, listType) => (
     <motion.div key={u.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      className="flex items-center gap-3 p-4 rounded-2xl border border-border/50 bg-card">
+      className="flex items-center gap-3 p-4 rounded-2xl border border-border/50 bg-card hover:border-brand-600/30 hover:shadow-sm transition-all">
       <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
         onClick={() => navigate(`/player-card/${u.id}`)}>
         {u.avatar ? <img src={mediaUrl(u.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
@@ -150,13 +150,13 @@ export default function ContactSyncPage() {
         </div>
       </div>
       <div className="flex gap-1.5 flex-shrink-0">
-        <Button variant="outline" size="sm" className="h-8 w-8 p-0"
+        <Button variant="outline" size="sm" className="h-11 w-11 sm:h-8 sm:w-8 p-0"
           onClick={() => navigate(`/chat?user=${u.id}`)}>
           <MessageCircle className="h-3.5 w-3.5 text-primary" />
         </Button>
         <Button
           variant={u.is_following ? "outline" : "athletic"}
-          size="sm" className="h-8 text-[11px] min-w-[80px]"
+          size="sm" className="h-11 sm:h-8 text-[11px] min-w-[80px]"
           onClick={() => handleFollow(u.id, listType)}>
           {u.is_following ? "Following" : <><UserPlus className="h-3 w-3 mr-1" /> Follow</>}
         </Button>
@@ -165,11 +165,11 @@ export default function ContactSyncPage() {
   );
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
+    <div className=" mx-auto px-4 py-6 pb-24 md:pb-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button onClick={() => navigate(-1)}
-          className="h-9 w-9 rounded-xl bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
+          className="h-11 w-11 sm:h-9 sm:w-9 rounded-xl bg-secondary/50 flex items-center justify-center hover:bg-secondary transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
         <div>
@@ -181,16 +181,17 @@ export default function ContactSyncPage() {
       {/* Tabs */}
       <div className="flex gap-1 bg-secondary/30 rounded-lg p-1 mb-6">
         {[
-          { id: "sync", label: "Sync Contacts", icon: ContactRound },
-          { id: "manual", label: "Search", icon: Search },
-          { id: "invite", label: "Invite", icon: Share2 },
+          { id: "sync", label: "Sync Contacts", shortLabel: "Sync", icon: ContactRound },
+          { id: "manual", label: "Search", shortLabel: "Search", icon: Search },
+          { id: "invite", label: "Invite", shortLabel: "Invite", icon: Share2 },
         ].map((t) => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all ${
+            className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 rounded-md text-[9px] sm:text-xs font-bold transition-all min-h-[44px] ${
               activeTab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-            }`}>
-            <t.icon className="h-3.5 w-3.5" />
-            {t.label}
+            }`}
+            aria-label={t.label}>
+            <t.icon className="h-4 w-4 sm:h-3.5 sm:w-3.5 flex-shrink-0" />
+            <span className="leading-tight text-center">{t.shortLabel}</span>
           </button>
         ))}
       </div>

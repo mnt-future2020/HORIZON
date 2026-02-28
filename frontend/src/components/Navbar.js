@@ -99,7 +99,7 @@ export default function Navbar() {
     ],
     super_admin: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/admin", icon: Shield, label: "Admin Console" },
+      { to: "/admin", icon: Shield, label: "Admin" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
       { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
@@ -300,7 +300,7 @@ export default function Navbar() {
 
       {/* Spacers */}
       <div className="hidden md:block h-[72px]" />
-      <div className="md:hidden h-[64px]" />
+      <div className="hidden h-[64px]" />
     </>
   );
 }
