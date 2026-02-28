@@ -23,6 +23,12 @@ import { OverallScoreCard } from "@/components/profile/OverallScoreCard";
 import { VerificationBanner } from "@/components/profile/VerificationBanner";
 import { PasswordChangeSection } from "@/components/profile/PasswordChangeSection";
 
+// Helper functions
+const cleanPhone = (v) => { 
+  let d = v.replace(/\D/g, ""); 
+  if (d.length > 10 && d.startsWith("91")) d = d.slice(2); 
+  return d.slice(0, 10); 
+};
 
 const normalizeItems = (arr) => (arr || []).map(item =>
   typeof item === "string" ? { text: item, image: "" } : item
@@ -460,44 +466,97 @@ export default function ProfilePage() {
           coachType={user?.coach_type}
         />
 
-        <Tabs defaultValue="info" data-testid="profile-tabs" className="w-full">
-          {/* Improved tab list with horizontal scroll on mobile */}
-          <TabsList className="bg-secondary/50 mb-4 sm:mb-6 w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap">
-            <TabsTrigger value="info" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Info</TabsTrigger>
+        <Tabs defaultValue="info" data-testid="profile-tabs" className="w-full mt-6">
+          {/* Enhanced tab list with better styling */}
+          <TabsList className="bg-secondary mb-6 w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap border-b border-border rounded-t-xl p-1">
+            <TabsTrigger 
+              value="info" 
+              className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+            >
+              Info
+            </TabsTrigger>
             {user?.role === "player" && <>
-              <TabsTrigger value="history" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">History</TabsTrigger>
-              <TabsTrigger value="performance" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Performance</TabsTrigger>
+              <TabsTrigger 
+                value="history" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                History
+              </TabsTrigger>
+              <TabsTrigger 
+                value="performance" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Performance
+              </TabsTrigger>
             </>}
             {user?.role === "venue_owner" && <>
-              <TabsTrigger value="documents" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Documents</TabsTrigger>
-              <TabsTrigger value="venues" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Venues</TabsTrigger>
-              <TabsTrigger value="reviews" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Reviews</TabsTrigger>
+              <TabsTrigger 
+                value="documents" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Documents
+              </TabsTrigger>
+              <TabsTrigger 
+                value="venues" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Venues
+              </TabsTrigger>
+              <TabsTrigger 
+                value="reviews" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Reviews
+              </TabsTrigger>
             </>}
             {user?.role === "coach" && <>
               {user?.coach_type === "individual" && (
-                <TabsTrigger value="documents" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Documents</TabsTrigger>
+                <TabsTrigger 
+                  value="documents" 
+                  className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+                >
+                  Documents
+                </TabsTrigger>
               )}
-              <TabsTrigger value="credentials" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Credentials</TabsTrigger>
-              <TabsTrigger value="sessions" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Sessions</TabsTrigger>
-              <TabsTrigger value="organizations" className="font-bold text-xs sm:text-sm whitespace-nowrap min-h-[44px] px-4 sm:px-6">Organizations</TabsTrigger>
+              <TabsTrigger 
+                value="credentials" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Credentials
+              </TabsTrigger>
+              <TabsTrigger 
+                value="sessions" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Sessions
+              </TabsTrigger>
+              <TabsTrigger 
+                value="organizations" 
+                className="font-display font-semibold text-xs sm:text-sm whitespace-nowrap min-h-[48px] px-5 sm:px-7 rounded-lg data-[state=active]:bg-brand-600 dark:data-[state=active]:bg-brand-500 data-[state=active]:text-white data-[state=active]:shadow transition-all duration-200"
+              >
+                Organizations
+              </TabsTrigger>
             </>}
           </TabsList>
 
           {/* ===== INFO TAB (all roles) ===== */}
           <TabsContent value="info" className="focus:outline-none">
-            <div className="glass-card rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-6">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="font-display font-bold text-base sm:text-lg">Personal Info</h3>
+            <div className="rounded-2xl p-5 sm:p-7 space-y-5 sm:space-y-7 bg-background border border-border">
+              {/* Decorative background */}
+              
+              
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="font-display font-black text-lg sm:text-xl tracking-tight">Personal Info</h3>
                 {!editing ? (
                   <Button 
                     size="sm" 
                     variant="outline" 
                     onClick={() => setEditing(true)} 
                     data-testid="edit-profile-btn"
-                    className="min-h-[44px] min-w-[44px] sm:min-w-0 cursor-pointer touch-manipulation"
+                    className="min-h-[48px] min-w-[48px] sm:min-w-0 cursor-pointer touch-manipulation font-semibold hover:bg-brand-50 dark:hover:bg-brand-950 hover:border-brand-400 dark:hover:border-brand-600 transition-all"
                     aria-label="Edit profile"
                   >
-                    <span className="hidden sm:inline">Edit</span>
+                    <span className="hidden sm:inline">Edit Profile</span>
                     <span className="sm:hidden">✏️</span>
                   </Button>
                 ) : (
@@ -506,7 +565,7 @@ export default function ProfilePage() {
                       size="sm" 
                       variant="ghost" 
                       onClick={() => setEditing(false)}
-                      className="min-h-[44px] cursor-pointer touch-manipulation"
+                      className="min-h-[48px] cursor-pointer touch-manipulation font-semibold hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400"
                     >
                       Cancel
                     </Button>
@@ -515,14 +574,14 @@ export default function ProfilePage() {
                       onClick={handleSave} 
                       disabled={saving} 
                       data-testid="save-profile-btn"
-                      className="bg-primary text-primary-foreground min-h-[44px] cursor-pointer touch-manipulation"
+                      className="bg-brand-600 hover:bg-brand-700 dark:bg-brand-500 dark:hover:bg-brand-600 text-white min-h-[48px] cursor-pointer touch-manipulation font-semibold shadow"
                     >
                       {saving ? (
                         <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                       ) : (
                         <>
-                          <Save className="h-3.5 w-3.5 mr-1.5" aria-hidden="true" /> 
-                          <span>Save</span>
+                          <Save className="h-4 w-4 mr-2" aria-hidden="true" /> 
+                          <span>Save Changes</span>
                         </>
                       )}
                     </Button>
@@ -531,23 +590,23 @@ export default function ProfilePage() {
               </div>
 
               {editing ? (
-                <div className="space-y-3">
-                  <div><Label className="text-xs text-muted-foreground">Name</Label>
+                <div className="space-y-4">
+                  <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Name</Label>
                     <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                      className="mt-1 bg-background border-border" data-testid="profile-name-input" /></div>
-                  <div><Label className="text-xs text-muted-foreground">Phone</Label>
-                    <div className="flex mt-1">
-                      <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
+                      className="bg-background border-border h-12 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors" data-testid="profile-name-input" /></div>
+                  <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Phone</Label>
+                    <div className="flex">
+                      <span className="inline-flex items-center px-4 bg-secondary border border-r-0 border-border/50 rounded-l-xl text-sm font-semibold text-muted-foreground select-none">+91</span>
                       <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
-                        className="bg-background border-border rounded-l-none" data-testid="profile-phone-input" placeholder="98765 43210" maxLength={10} />
+                        className="bg-background border-border rounded-l-none h-12 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors" data-testid="profile-phone-input" placeholder="98765 43210" maxLength={10} />
                     </div></div>
                   {/* Lobbian-specific edit fields */}
                   {user?.role === "player" && (<>
-                    <div><Label className="text-xs text-muted-foreground">Bio</Label>
+                    <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Bio</Label>
                       <Textarea value={form.bio} onChange={e => setForm(p => ({ ...p, bio: e.target.value }))}
                         placeholder="Tell Lobbians about yourself..." rows={3}
-                        className="mt-1 bg-background border-border" /></div>
-                    <div><Label className="text-xs text-muted-foreground">Sports (comma separated)</Label>
+                        className="bg-background border-border focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors resize-none" /></div>
+                    <div><Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Sports (comma separated)</Label>
                       <Input value={form.sports} onChange={e => setForm(p => ({ ...p, sports: e.target.value }))}
                         placeholder="Football, Cricket, Badminton" className="mt-1 bg-background border-border" /></div>
                     <div><Label className="text-xs text-muted-foreground">Preferred Position</Label>
@@ -694,7 +753,7 @@ export default function ProfilePage() {
 
               <Button 
                 variant="outline" 
-                className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive mt-4 min-h-[48px] cursor-pointer touch-manipulation font-semibold transition-colors duration-200"
+                className="w-full text-destructive hover:bg-red-50 dark:hover:bg-red-950 hover:text-red-600 dark:hover:text-red-400 mt-4 min-h-[48px] cursor-pointer touch-manipulation font-semibold transition-colors duration-200"
                 onClick={logout} 
                 data-testid="profile-logout-btn"
               >
@@ -716,11 +775,11 @@ export default function ProfilePage() {
                   {bookings.slice(0, 15).map(b => (
                     <div key={b.id} className="glass-card rounded-lg p-4 flex items-center justify-between" data-testid={`history-card-${b.id}`}>
                       <div>
-                        <div className="font-bold text-sm text-foreground">{b.venue_name}</div>
+                        <div className="font-semibold text-sm text-foreground">{b.venue_name}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">{b.date} | {fmt12h(b.start_time)}-{fmt12h(b.end_time)} | {b.sport}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-display font-bold text-foreground">{"\u20B9"}{b.total_amount}</div>
+                        <div className="font-display font-semibold text-foreground">{"\u20B9"}{b.total_amount}</div>
                         <Badge variant={b.status === "confirmed" ? "default" : b.status === "cancelled" ? "destructive" : "secondary"}
                           className="text-[10px]">{b.status}</Badge>
                       </div>
@@ -747,22 +806,22 @@ export default function ProfilePage() {
               ) : (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-4 text-center">
                       <BarChart3 className="h-5 w-5 mx-auto mb-2 text-primary" />
                       <div className="text-2xl font-display font-black text-foreground">{career.total_records || 0}</div>
                       <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Total Records</div>
                     </div>
-                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-4 text-center">
                       <Clock className="h-5 w-5 mx-auto mb-2 text-blue-400" />
                       <div className="text-2xl font-display font-black text-foreground">{career.training_hours || 0}</div>
                       <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Training Hours</div>
                     </div>
-                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-4 text-center">
                       <Award className="h-5 w-5 mx-auto mb-2 text-amber-400" />
                       <div className="text-2xl font-display font-black text-foreground">{career.tournaments_played || 0}</div>
                       <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">Tournaments</div>
                     </div>
-                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-4 text-center">
+                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-4 text-center">
                       <Building2 className="h-5 w-5 mx-auto mb-2 text-brand-400" />
                       <div className="text-2xl font-display font-black text-foreground">
                         {career.organizations ? (Array.isArray(career.organizations) ? career.organizations.length : career.organizations) : 0}
@@ -771,8 +830,8 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-5">
-                    <h3 className="font-display font-bold text-foreground mb-4">Records Timeline</h3>
+                  <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-5">
+                    <h3 className="font-display font-semibold text-foreground mb-4">Records Timeline</h3>
                     {career.recent_records && career.recent_records.length > 0 ? (
                       <div className="space-y-3">
                         {career.recent_records.map((record, idx) => {
@@ -820,8 +879,8 @@ export default function ProfilePage() {
                   </div>
 
                   {career.records_by_sport && Object.keys(career.records_by_sport).length > 0 && (
-                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-5">
-                      <h3 className="font-display font-bold text-foreground mb-4">Sport Breakdown</h3>
+                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-5">
+                      <h3 className="font-display font-semibold text-foreground mb-4">Sport Breakdown</h3>
                       <div className="flex flex-wrap gap-2">
                         {Object.entries(career.records_by_sport).map(([sport, count]) => (
                           <Badge key={sport} variant="secondary" className="text-xs px-3 py-1.5 font-mono">
@@ -833,13 +892,13 @@ export default function ProfilePage() {
                   )}
 
                   {career.records_by_source && Object.keys(career.records_by_source).length > 0 && (
-                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-xl p-5">
-                      <h3 className="font-display font-bold text-foreground mb-4">Source Breakdown</h3>
+                    <div className="bg-card/80 dark:bg-card/50 border border-border rounded-lg p-5">
+                      <h3 className="font-display font-semibold text-foreground mb-4">Source Breakdown</h3>
                       <div className="space-y-2">
                         {Object.entries(career.records_by_source).map(([source, count]) => (
                           <div key={source} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
                             <span className="text-sm text-foreground">{source}</span>
-                            <span className="text-sm font-display font-bold text-muted-foreground">{count}</span>
+                            <span className="text-sm font-display font-semibold text-muted-foreground">{count}</span>
                           </div>
                         ))}
                       </div>
@@ -863,7 +922,7 @@ export default function ProfilePage() {
                     return (
                       <div key={slot.key} className="glass-card rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
-                          <Label className="text-xs font-bold uppercase flex items-center gap-1">
+                          <Label className="text-xs font-semibold uppercase flex items-center gap-1">
                             {slot.label}
                             {slot.required && <span className="text-destructive">*</span>}
                           </Label>
@@ -918,7 +977,7 @@ export default function ProfilePage() {
                   const isUploading = uploadingDoc === slot.key;
                   return (
                     <div key={slot.key} className="glass-card rounded-lg p-4">
-                      <Label className="text-xs font-bold uppercase mb-3 block">{slot.label}</Label>
+                      <Label className="text-xs font-semibold uppercase mb-3 block">{slot.label}</Label>
                       <div className="flex flex-wrap gap-2 mb-3">
                         {items.map((img, i) => (
                           <div key={i} className="relative group">
@@ -952,7 +1011,7 @@ export default function ProfilePage() {
                   const isUploading = uploadingDoc === slot.key;
                   return (
                     <div key={slot.key} className="glass-card rounded-lg p-4">
-                      <Label className="text-xs font-bold uppercase mb-3 block">{slot.label}</Label>
+                      <Label className="text-xs font-semibold uppercase mb-3 block">{slot.label}</Label>
                       <div className="flex flex-wrap gap-2 mb-3">
                         {items.map((vid, i) => (
                           <div key={i} className="relative group">
@@ -1025,7 +1084,7 @@ export default function ProfilePage() {
                       <div key={v.id} className="glass-card rounded-lg p-4">
                         <div className="flex items-center justify-between mb-2">
                           <div>
-                            <div className="font-bold text-sm text-foreground">{v.name}</div>
+                            <div className="font-semibold text-sm text-foreground">{v.name}</div>
                             <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
                               <MapPin className="h-3 w-3" /> {v.city}{v.area ? `, ${v.area}` : ""}
                             </div>
@@ -1039,15 +1098,15 @@ export default function ProfilePage() {
                         )}
                         <div className="grid grid-cols-3 gap-2 mt-2">
                           <div className="text-center p-2 rounded-md bg-background/50">
-                            <div className="text-sm font-display font-bold">{va.total_bookings || 0}</div>
+                            <div className="text-sm font-display font-semibold">{va.total_bookings || 0}</div>
                             <div className="text-[9px] text-muted-foreground font-mono uppercase">Bookings</div>
                           </div>
                           <div className="text-center p-2 rounded-md bg-background/50">
-                            <div className="text-sm font-display font-bold">{"\u20B9"}{(va.total_revenue || 0).toLocaleString("en-IN")}</div>
+                            <div className="text-sm font-display font-semibold">{"\u20B9"}{(va.total_revenue || 0).toLocaleString("en-IN")}</div>
                             <div className="text-[9px] text-muted-foreground font-mono uppercase">Revenue</div>
                           </div>
                           <div className="text-center p-2 rounded-md bg-background/50">
-                            <div className="text-sm font-display font-bold flex items-center justify-center gap-0.5">
+                            <div className="text-sm font-display font-semibold flex items-center justify-center gap-0.5">
                               <Star className="h-3 w-3 text-amber-400" /> {reviewSummaries[v.id]?.average_rating?.toFixed(1) || "N/A"}
                             </div>
                             <div className="text-[9px] text-muted-foreground font-mono uppercase">Rating</div>
@@ -1075,8 +1134,8 @@ export default function ProfilePage() {
                     return (
                       <div key={v.id} className="glass-card rounded-lg p-5">
                         <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-display font-bold text-sm">{v.name}</h4>
-                          <div className="flex items-center gap-1 text-sm font-display font-bold">
+                          <h4 className="font-display font-semibold text-sm">{v.name}</h4>
+                          <div className="flex items-center gap-1 text-sm font-display font-semibold">
                             <Star className="h-4 w-4 text-amber-400" /> {rs.average_rating?.toFixed(1) || "N/A"}
                           </div>
                         </div>
@@ -1112,7 +1171,7 @@ export default function ProfilePage() {
             <TabsContent value="documents">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-display font-bold flex items-center gap-2">
+                  <h3 className="font-display font-semibold flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-primary" /> Verification Documents
                   </h3>
                   {docStatus === "verified" && (
@@ -1141,7 +1200,7 @@ export default function ProfilePage() {
                     return (
                       <div key={slot.key} className={`glass-card rounded-lg p-4 ${isUploaded ? "border border-green-500/30 bg-green-500/5" : ""}`}>
                         <div className="flex items-center justify-between mb-2">
-                          <Label className="text-xs font-bold uppercase flex items-center gap-1">
+                          <Label className="text-xs font-semibold uppercase flex items-center gap-1">
                             {slot.label} {slot.required && <span className="text-destructive">*</span>}
                           </Label>
                           {isUploaded && !isUploading && (
@@ -1247,7 +1306,7 @@ export default function ProfilePage() {
               <div className="space-y-6">
                 {/* Experience & Credentials */}
                 <div className="glass-card rounded-lg p-6 space-y-4">
-                  <h3 className="font-display font-bold flex items-center gap-2">
+                  <h3 className="font-display font-semibold flex items-center gap-2">
                     <Award className="h-4 w-4 text-primary" /> Experience & Credentials
                   </h3>
                   <p className="text-xs text-muted-foreground">Shown on your public profile. Add images as proof to build trust.</p>
@@ -1422,7 +1481,7 @@ export default function ProfilePage() {
                       className="mt-1 bg-background border-border" />
                   </div>
 
-                  <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveExperience}>
+                  <Button className="w-full bg-primary text-primary-foreground font-semibold" onClick={handleSaveExperience}>
                     <Save className="h-4 w-4 mr-2" /> Save Experience & Credentials
                   </Button>
                 </div>
@@ -1442,13 +1501,13 @@ export default function ProfilePage() {
                   {coachSessions.slice(0, 20).map(s => (
                     <div key={s.id} className="glass-card rounded-lg p-4 flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-sm text-foreground">{s.student_name || s.player_name || "Lobbian"}</div>
+                        <div className="font-semibold text-sm text-foreground">{s.student_name || s.player_name || "Lobbian"}</div>
                         <div className="text-xs text-muted-foreground mt-0.5">
                           {s.sport} | {s.date} {s.start_time && `| ${s.start_time}`}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-display font-bold text-foreground">{"\u20B9"}{s.amount || s.price || 0}</div>
+                        <div className="font-display font-semibold text-foreground">{"\u20B9"}{s.amount || s.price || 0}</div>
                         <Badge variant={s.status === "completed" ? "default" : s.status === "cancelled" ? "destructive" : "secondary"}
                           className="text-[10px]">{s.status}</Badge>
                       </div>
@@ -1471,16 +1530,16 @@ export default function ProfilePage() {
                   {coachOrgs.map(org => (
                     <div key={org.id} className="glass-card rounded-lg p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="font-bold text-sm text-foreground">{org.name}</div>
+                        <div className="font-semibold text-sm text-foreground">{org.name}</div>
                         <Badge variant="secondary" className="text-[10px]">{org.sport || "Multi-sport"}</Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <div className="text-center p-2 rounded-md bg-background/50">
-                          <div className="text-sm font-display font-bold">{org.players?.length || org.player_count || 0}</div>
+                          <div className="text-sm font-display font-semibold">{org.players?.length || org.player_count || 0}</div>
                           <div className="text-[9px] text-muted-foreground font-mono uppercase">Lobbians</div>
                         </div>
                         <div className="text-center p-2 rounded-md bg-background/50">
-                          <div className="text-sm font-display font-bold">{org.staff?.length || org.staff_count || 0}</div>
+                          <div className="text-sm font-display font-semibold">{org.staff?.length || org.staff_count || 0}</div>
                           <div className="text-[9px] text-muted-foreground font-mono uppercase">Staff</div>
                         </div>
                       </div>
@@ -1495,3 +1554,7 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+
+
+

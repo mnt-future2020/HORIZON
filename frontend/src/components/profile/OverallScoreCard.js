@@ -30,50 +30,53 @@ export function OverallScoreCard({ playerCard, userId }) {
   };
 
   return (
-    <div className="flex items-center gap-4 mt-4 p-4 rounded-xl bg-background/50">
-      <div className="relative w-16 h-16 shrink-0">
-        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 100 100">
+    <div className="flex items-center gap-5 mt-6 p-5 sm:p-6 rounded-2xl bg-background border border-border hover:border-brand-400 dark:hover:border-brand-600 transition-colors">
+      <div className="relative w-20 h-20 shrink-0">
+        <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
           <circle
             cx="50"
             cy="50"
             r="42"
             fill="none"
             stroke="currentColor"
-            strokeWidth="7"
-            className="text-muted-foreground/20"
+            strokeWidth="6"
+            className="text-muted-foreground/10"
           />
           <circle
             cx="50"
             cy="50"
             r="42"
             fill="none"
-            strokeWidth="7"
+            strokeWidth="6"
             strokeDasharray={`${playerCard.overall_score * 2.64} 264`}
             strokeLinecap="round"
-            className={getScoreColor(playerCard.overall_score)}
+            className={`${getScoreColor(playerCard.overall_score)} transition-all duration-500`}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className="font-display text-xl font-black">{playerCard.overall_score}</span>
+          <span className={`font-display text-2xl font-bold ${getScoreColor(playerCard.overall_score)}`}>
+            {playerCard.overall_score}
+          </span>
         </div>
       </div>
-      <div className="flex-1">
-        <div className="flex items-center gap-2">
-          <div className="font-display text-sm font-black">Overall Score</div>
+      
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2.5 mb-2">
+          <div className="font-display text-base sm:text-lg font-bold">Overall Score</div>
           <button
             onClick={() => navigate(`/lobbian/${userId}`)}
-            className="p-0.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
+            className="p-1.5 rounded-full hover:bg-brand-100 dark:hover:bg-brand-900 transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 touch-manipulation"
             title="View full breakdown & how to level up"
             aria-label="View score breakdown"
           >
-            <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary" />
+            <Info className="h-4 w-4 text-muted-foreground hover:text-brand-600 dark:hover:text-brand-400 transition-colors" aria-hidden="true" />
           </button>
         </div>
-        <Badge className={`text-[10px] mt-1 ${getBadgeColor(playerCard.overall_score)}`}>
+        <Badge className={`text-[11px] font-semibold uppercase tracking-wider px-3 py-1 ${getBadgeColor(playerCard.overall_score)}`}>
           {playerCard.overall_tier}
         </Badge>
         {playerCard.overall_score < 50 && (
-          <p className="text-[10px] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-2">
             {getHelpText(playerCard.overall_score)}
           </p>
         )}
