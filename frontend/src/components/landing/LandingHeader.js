@@ -2,66 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 
 export default function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [logoColor, setLogoColor] = useState("dark");
   const navigate = useNavigate();
   const { user } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScroll = window.scrollY;
-      setScrolled(currentScroll >= 300);
-
-      let newColor = "dark";
-
-      if (currentScroll > 2) {
-        newColor = "white";
-      }
-
-      const headerOffset = 100;
-
-      const masonry = document.getElementById("masonry-gallery");
-      if (masonry) {
-        const rect = masonry.getBoundingClientRect();
-        if (rect.top <= headerOffset && rect.bottom > headerOffset) {
-          const progress = (headerOffset - rect.top) / rect.height;
-          if (progress > 0.65) {
-            newColor = "dark";
-          }
-        }
-      }
-
-      const arenas = document.getElementById("arenas");
-      if (arenas) {
-        const rect = arenas.getBoundingClientRect();
-        if (rect.top <= headerOffset && rect.bottom > headerOffset) {
-          newColor = "white";
-        }
-      }
-
-      const social = document.getElementById("social-section");
-      if (social) {
-        const rect = social.getBoundingClientRect();
-        if (rect.top <= headerOffset && rect.bottom > headerOffset) {
-          newColor = "dark";
-        }
-      }
-
-      const features = document.getElementById("features");
-      if (features) {
-        const rect = features.getBoundingClientRect();
-        if (rect.top <= headerOffset && rect.bottom > headerOffset) {
-          newColor = "dark";
-        }
-      }
-
-      setLogoColor(newColor);
+      setScrolled(window.scrollY > 20);
     };
-
     handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -73,137 +24,124 @@ export default function LandingHeader() {
     } else {
       document.body.style.overflow = "unset";
     }
+    return () => {
+      document.body.style.overflow = "unset";
+    };
   }, [menuOpen]);
 
-  const menuItems = ["HOME", "VENUES", "FEATURES", "HOW IT WORKS", "CONTACT"];
-
-  const handleMenuClick = (item) => {
-    setMenuOpen(false);
-    if (item === "HOME") window.scrollTo({ top: 0, behavior: "smooth" });
-    else if (item === "VENUES") navigate("/venues");
-    else if (item === "FEATURES") document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
-    else if (item === "HOW IT WORKS") document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" });
-    else if (item === "CONTACT") navigate("/contact");
-  };
+  const navLinks = [
+    { label: "Home", path: "/" },
+    { label: "Venues", path: "/venues" },
+    { label: "Tournaments", path: user ? "/tournaments" : "/auth" },
+    { label: "Communities", path: user ? "/communities" : "/auth" },
+    { label: "Contact", path: "/contact" },
+  ];
 
   return (
     <>
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "backdrop-blur-md" : "bg-transparent"
-        }`}
+      {/* Navbar */}
+      <nav
+        className="fixed top-0 left-0 right-0 z-50 bg-transparent"
+        data-testid="landing-header"
       >
-        <div className="mx-auto px-6 md:px-12 flex items-center justify-between h-16">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex flex-col justify-center items-start mix-blend-difference"
-          >
-            <h1
-              className={`font-brier text-4xl leading-none mt-1 tracking-tight font-bold transition-colors duration-300 ${
-                logoColor === "white" ? "text-white" : "text-turf-dark"
-              }`}
+        <div className="px-6 md:px-12 py-5">
+          <div className="flex items-center justify-between">
+            {/* Logo - Left */}
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              className="text-3xl md:text-4xl font-black tracking-tighter text-brand-600 font-brier"
+              data-testid="logo-button"
             >
               LOBBI
-            </h1>
-          </motion.div>
+            </button>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="flex items-center gap-4 mix-blend-difference"
-          >
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="p-2 bg-turf-dark/80 border border-white/30 hover:bg-turf-dark rounded-lg transition-colors text-white px-3 py-2.5"
-              aria-label="Menu"
-            >
-              {menuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-            </motion.button>
-          </motion.div>
-        </div>
-      </motion.header>
-
-      <AnimatePresence>
-        {menuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 bg-turf-dark/95 backdrop-blur-xl z-40 flex items-center justify-center"
-            onClick={() => setMenuOpen(false)}
-          >
-            <motion.nav
-              initial="closed"
-              animate="open"
-              exit="closed"
-              variants={{
-                open: { transition: { staggerChildren: 0.1, delayChildren: 0.2 } },
-                closed: { transition: { staggerChildren: 0.05, staggerDirection: -1 } },
-              }}
-              className="text-center"
-            >
-              <motion.ul className="space-y-6 text-4xl md:text-6xl font-black uppercase text-white">
-                {menuItems.map((item) => (
-                  <motion.li
-                    key={item}
-                    variants={{
-                      open: { opacity: 1, y: 0, rotate: 0 },
-                      closed: { opacity: 0, y: 20, rotate: -5 },
-                    }}
-                  >
-                    <button
-                      onClick={() => handleMenuClick(item)}
-                      className="inline-block hover:text-turf-accent transition-colors duration-300 hover:scale-110 transform"
-                    >
-                      {item}
-                    </button>
-                  </motion.li>
-                ))}
-                <motion.li
-                  variants={{
-                    open: { opacity: 1, y: 0, rotate: 0 },
-                    closed: { opacity: 0, y: 20, rotate: -5 },
-                  }}
-                >
-                  <button
-                    onClick={() => { setMenuOpen(false); navigate(user ? "/feed" : "/auth"); }}
-                    className="inline-block text-turf-accent hover:text-white transition-colors duration-300 hover:scale-110 transform"
-                  >
-                    {user ? "DASHBOARD" : "GET STARTED"}
-                  </button>
-                </motion.li>
-              </motion.ul>
-
-              <motion.div
-                variants={{
-                  open: { opacity: 1, y: 0 },
-                  closed: { opacity: 0, y: 20 },
-                }}
-                className="mt-12 flex justify-center gap-6"
+            {/* Right Side - CTA + Hamburger */}
+            <div className="flex items-center gap-3 md:gap-4">
+              <button
+                onClick={() => navigate(user ? "/feed" : "/auth")}
+                className="hidden sm:inline-flex items-center px-5 md:px-6 py-2 md:py-2.5 bg-turf-accent text-white font-bold text-sm rounded-full hover:bg-turf-accent/90 transition-all hover:scale-105"
+                data-testid="cta-button"
               >
-                {["INSTAGRAM", "TIKTOK", "YOUTUBE"].map((social) => (
-                  <motion.a
-                    key={social}
-                    whileHover={{ scale: 1.1, color: "#059669" }}
-                    href="#"
-                    className="text-sm font-bold text-white/60 hover:text-turf-accent transition-colors"
-                  >
-                    {social}
-                  </motion.a>
-                ))}
-              </motion.div>
-            </motion.nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                {user ? "Dashboard" : "Get Started"}
+              </button>
+
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="p-2.5 md:p-3 rounded-lg bg-turf-dark/80 border border-white/20 hover:border-turf-accent/40 text-white hover:bg-turf-dark transition-all"
+                aria-label="Toggle menu"
+                data-testid="menu-button"
+              >
+                {menuOpen ? <X className="w-5 h-5 md:w-6 md:h-6" /> : <Menu className="w-5 h-5 md:w-6 md:h-6" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Full Screen Menu */}
+      <div
+        className={`fixed inset-0 z-40 bg-[#0a0c0a] transition-all duration-500 ${
+          menuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
+        }`}
+        data-testid="menu-overlay"
+      >
+        <div className="flex flex-col items-center justify-center h-full px-6">
+          <div
+            className={`flex flex-col items-center gap-8 transition-all duration-700 delay-100 ${
+              menuOpen
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8"
+            }`}
+          >
+            {navLinks.map((link, index) => (
+              <button
+                key={link.label}
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (link.path === "/") {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  } else {
+                    navigate(link.path);
+                  }
+                }}
+                className="text-5xl md:text-7xl font-black text-white hover:text-turf-accent transition-colors uppercase font-brier"
+                style={{
+                  transitionDelay: `${index * 50}ms`,
+                }}
+                data-testid={`menu-item-${link.label.toLowerCase()}`}
+              >
+                {link.label}
+              </button>
+            ))}
+            <button
+              onClick={() => {
+                setMenuOpen(false);
+                navigate(user ? "/feed" : "/auth");
+              }}
+              className="mt-8 inline-flex items-center px-8 py-4 bg-turf-accent text-white font-black text-lg rounded-full hover:bg-turf-accent/90 transition-colors uppercase"
+              data-testid="menu-cta"
+            >
+              {user ? "Dashboard" : "Get Started"}
+            </button>
+
+            {/* Social Links */}
+            <div className="flex gap-8 mt-12">
+              {["Instagram", "TikTok", "YouTube"].map((social) => (
+                <a
+                  key={social}
+                  href="#"
+                  className="text-sm text-white/50 hover:text-turf-accent transition-colors uppercase font-bold"
+                  data-testid={`social-${social.toLowerCase()}`}
+                >
+                  {social}
+                </a>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </>
   );
 }
