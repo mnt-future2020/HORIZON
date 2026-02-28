@@ -7,6 +7,11 @@ module.exports = {
       fontFamily: {
         display: ['Chivo', 'sans-serif'],
         body: ['Manrope', 'sans-serif'],
+        brier: ['Brier', 'sans-serif'],
+        mona: ['Mona Sans', 'sans-serif'],
+        oswald: ['Oswald', 'sans-serif'],
+        roboto: ['Roboto', 'sans-serif'],
+        serif: ['Libre Baskerville', 'Georgia', 'serif'],
       },
       // Athletic typography scale - bold and impactful
       fontSize: {
@@ -75,6 +80,13 @@ module.exports = {
           900: '#064e3b',
           950: '#022c22',
           DEFAULT: '#059669',
+        },
+        turf: {
+          dark: '#0a0c0a',
+          light: '#ffffff',
+          accent: '#c8f550',
+          'text-dark': '#1a1f1a',
+          'text-light': '#f8fafc',
         }
       },
       // Electric Blue gradient utilities

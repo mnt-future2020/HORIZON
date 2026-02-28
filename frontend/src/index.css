@@ -1,4 +1,22 @@
 @import url("https://fonts.googleapis.com/css2?family=Chivo:wght@400;700;900&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Alex+Brush&family=Oswald:wght@300;400;500;700&display=swap");
+
+/* Custom Landing Page Fonts */
+@font-face {
+  font-family: "Brier";
+  src: url("./fonts/Brier-Bold.woff2") format("woff2");
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Mona Sans";
+  src: url("./fonts/MonaSans-Variable.woff2") format("woff2");
+  font-weight: 200 900;
+  font-display: swap;
+  font-stretch: 75% 125%;
+}
 
 @tailwind base;
 @tailwind components;
@@ -472,4 +490,29 @@ textarea::placeholder {
   color: hsl(var(--muted-foreground) / 0.55) !important;
   font-style: italic;
   font-weight: 400;
+}
+
+/* ====== LANDING PAGE — Turf Theme Variables ====== */
+:root {
+  --turf-dark: #0a0c0a;
+  --turf-light: #ffffff;
+  --turf-accent: #c8f550;
+  --turf-text-dark: #1a1f1a;
+  --turf-text-light: #f8fafc;
+}
+
+/* Landing page infinite slide animation */
+@keyframes infinite-slide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-infinite-slide {
+  animation: infinite-slide 40s linear infinite;
+}
+
+/* Landing page simteste class */
+.simteste {
+  color: #c8f550;
+  font-size: 1050px;
+  line-height: 600px;
 }
