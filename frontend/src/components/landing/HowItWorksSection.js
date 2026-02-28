@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, MapPin, Swords, GraduationCap, Trophy } from "lucide-react";
+import { ChevronDown, MapPin, Swords, GraduationCap, Trophy, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const journeys = [
@@ -15,6 +15,19 @@ const journeys = [
       { step: "02", title: "BOOK & SPLIT", detail: "Select a slot, pay solo or split 2–22 ways with a shareable link. QR code for check-in.", time: "2 min" },
       { step: "03", title: "PLAY & RATE", detail: "Show up, scan QR, play your game. Leave a review and build your profile.", time: "1 hour" },
       { step: "04", title: "TRACK PROGRESS", detail: "View your player card, skill rating, win rate, tournament performance & badges.", time: "Always" },
+    ],
+  },
+  {
+    id: "venues",
+    icon: Building2,
+    title: "FOR VENUES",
+    subtitle: "List your venue & manage bookings",
+    accentColor: "text-turf-accent",
+    steps: [
+      { step: "01", title: "LIST YOUR VENUE", detail: "Add your venue with photos, amenities, sports supported, and pricing per slot.", time: "10 min" },
+      { step: "02", title: "MANAGE SLOTS", detail: "Set availability, block dates, enable dynamic pricing. Accept bookings in real-time.", time: "Ongoing" },
+      { step: "03", title: "SMART CONTROLS", detail: "IoT lighting control, POS system with offline sync, and automated check-in via QR.", time: "Real-time" },
+      { step: "04", title: "TRACK REVENUE", detail: "Dashboard with booking analytics, revenue reports, reviews, and customer insights.", time: "Always" },
     ],
   },
   {
@@ -72,7 +85,7 @@ export default function HowItWorksSection() {
             <h1 className="font-brier text-5xl text-zinc-400 leading-none md:-mt-2 md:text-7xl mt-2.5">Works</h1>
           </div>
           <p className="text-zinc-500 text-sm md:text-base max-w-xs md:text-right font-medium">
-            Four ways to use Lobbi — whether you're a player, coach, venue owner, or competitor.
+            Five ways to use Lobbi — whether you're a player, coach, venue owner, or competitor.
           </p>
         </div>
 

@@ -12,12 +12,12 @@ const socialImages = [
 ];
 
 const handIcons = [
-  "/images/icon/icon-hand1.png",
-  "/images/icon/icon-hand2.png",
-  "/images/icon/icon-hand3.png",
-  "/images/icon/icon-hand4.png",
-  "/images/icon/icon-hand5.png",
-  "/images/icon/icon-hand6.png",
+  "/images/icon/hand1.png",
+  "/images/icon/hand2.png",
+  "/images/icon/hand3.png",
+  "/images/icon/hand4.png",
+  "/images/icon/hand5.png",
+  "/images/icon/hand6.png",
 ];
 
 export default function SocialSection() {
