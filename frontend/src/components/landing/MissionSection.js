@@ -37,7 +37,7 @@ export default function MissionSection() {
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="relative h-32 flex items-center justify-center mt-16">
           <img
-            src="/images/icon/ico-helmet-w.png"
+            src="/images/icon/turf-icon.png"
             className="h-full w-auto max-h-[60px] object-contain"
             alt="Icon"
           />
