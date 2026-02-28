@@ -97,3 +97,6 @@ docker-compose.override.yml
 .agents/skills/
 .kiro/skills/
 .claude/
+
+# References
+references/lobbiturf/
