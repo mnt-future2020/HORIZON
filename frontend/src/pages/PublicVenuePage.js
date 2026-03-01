@@ -594,7 +594,7 @@ export default function PublicVenuePage() {
 
       {/* QR Code Dialog */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-[95vw] sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Scan QR Code</DialogTitle>
           </DialogHeader>

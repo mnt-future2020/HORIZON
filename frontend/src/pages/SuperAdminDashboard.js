@@ -470,7 +470,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
 
       {/* Document Viewer Dialog */}
       <Dialog open={!!docViewUserId} onOpenChange={(open) => { if (!open) setDocViewUserId(null); }}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto rounded-[28px] p-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[80vh] overflow-y-auto rounded-[28px] p-0">
           <DialogHeader className="border-b border-border/40 pb-4 px-7 pt-7">
             <DialogTitle className="admin-heading">Verification Documents</DialogTitle>
             <DialogDescription className="admin-label mt-1">
@@ -812,7 +812,7 @@ function VenuesTab() {
 
       {/* Create Venue Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px] p-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px] p-0">
           <DialogHeader className="border-b border-border/40 pb-4 px-7 pt-7">
             <DialogTitle className="flex items-center gap-3 admin-heading">
               <div className="p-2.5 rounded-2xl bg-brand-600/10">
@@ -925,7 +925,7 @@ function VenuesTab() {
 
       {/* Assign Owner Dialog */}
       <Dialog open={!!assignDialog} onOpenChange={(o) => !o && setAssignDialog(null)}>
-        <DialogContent className="max-w-md rounded-[28px] p-0">
+        <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[28px] p-0">
           <DialogHeader className="border-b border-border/40 pb-4 px-7 pt-7">
             <DialogTitle className="flex items-center gap-3 admin-heading">
               <div className="p-2.5 rounded-2xl bg-brand-600/10">
@@ -1838,7 +1838,7 @@ function PayoutsTab() {
 
       {/* Settlement Detail Dialog */}
       <Dialog open={!!detailDialog} onOpenChange={() => setDetailDialog(null)}>
-        <DialogContent className="max-w-lg rounded-[28px]">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg rounded-[28px]">
           <DialogHeader>
             <DialogTitle className="admin-heading">Settlement Details</DialogTitle>
             <DialogDescription className="text-sm text-muted-foreground">

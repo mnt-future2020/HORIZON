@@ -1438,7 +1438,7 @@ export default function CoachDashboard({ defaultView }) {
             </Button>
           </div>
           <Dialog open={showCreatePkg} onOpenChange={setShowCreatePkg}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
               <DialogHeader><DialogTitle className="font-medium">Create Package</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 {/* Name */}
@@ -1890,7 +1890,7 @@ export default function CoachDashboard({ defaultView }) {
                           <UserPlus className="h-3.5 w-3.5 mr-1" /> Add Student
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                      <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
                         <DialogHeader><DialogTitle className="font-medium">Add Student Manually</DialogTitle></DialogHeader>
                         <div className="space-y-3">
                           <div><Label className="text-xs text-muted-foreground">Name</Label>
@@ -1976,7 +1976,7 @@ export default function CoachDashboard({ defaultView }) {
                             <UserPlus className="h-3.5 w-3.5 mr-1" /> Assign Student
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                        <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
                           <DialogHeader><DialogTitle className="font-medium">Assign Student to Batch</DialogTitle></DialogHeader>
                           <div className="space-y-3">
                             <div><Label className="text-xs text-muted-foreground">Batch</Label>
@@ -1999,7 +1999,7 @@ export default function CoachDashboard({ defaultView }) {
                             <Plus className="h-3.5 w-3.5 mr-1" /> Create Batch
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                        <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
                           <DialogHeader><DialogTitle className="font-medium">Create Batch</DialogTitle></DialogHeader>
                           <div className="space-y-3">
                             <div><Label className="text-xs text-muted-foreground">Batch Name</Label>
@@ -2150,7 +2150,7 @@ export default function CoachDashboard({ defaultView }) {
                           <IndianRupee className="h-3.5 w-3.5 mr-1" /> Collect Fee
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                      <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
                         <DialogHeader><DialogTitle className="font-medium">Collect Fee</DialogTitle></DialogHeader>
                         <div className="space-y-3">
                           <div><Label className="text-xs text-muted-foreground">Student</Label>
@@ -2245,7 +2245,7 @@ export default function CoachDashboard({ defaultView }) {
                           <Plus className="h-3.5 w-3.5 mr-1" /> Add Assessment
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                      <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
                         <DialogHeader><DialogTitle className="font-medium">Add Progress Assessment</DialogTitle></DialogHeader>
                         <div className="space-y-3">
                           <div><Label className="text-xs text-muted-foreground">Student</Label>
@@ -2381,7 +2381,7 @@ export default function CoachDashboard({ defaultView }) {
           )}
 
           <Dialog open={availOpen} onOpenChange={setAvailOpen}>
-            <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
               <DialogHeader><DialogTitle className="font-medium">Add Availability</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
@@ -2942,7 +2942,7 @@ export default function CoachDashboard({ defaultView }) {
                               : s.status === "completed"
                               ? <Badge className="bg-green-500/15 text-green-400 text-[10px]">Completed</Badge>
                               : <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>}
-                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[9px]">Offline</Badge>}
+                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
@@ -2981,7 +2981,7 @@ export default function CoachDashboard({ defaultView }) {
                             {s.status === "payment_pending"
                               ? <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">Awaiting Payment</Badge>
                               : <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>}
-                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[9px]">Offline</Badge>}
+                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
@@ -3017,7 +3017,7 @@ export default function CoachDashboard({ defaultView }) {
                             <span className="font-bold text-sm">{s.player_name}</span>
                             <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                             {s.rating && <Badge className="bg-amber-500/15 text-amber-400 text-[10px]"><Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{s.rating}/5</Badge>}
-                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[9px]">Offline</Badge>}
+                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground">{s.date} · {s.start_time} · ₹{s.price}
                             {s.review && <span className="ml-2 italic">"{s.review}"</span>}
@@ -3120,7 +3120,7 @@ export default function CoachDashboard({ defaultView }) {
                         <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : s.payment_status === "waived" ? "bg-secondary text-muted-foreground" : "bg-amber-500/15 text-amber-500"}`}>
                           {s.payment_status}
                         </Badge>
-                        {s.payment_mode && <Badge variant="outline" className="text-[9px] capitalize">{s.payment_mode}</Badge>}
+                        {s.payment_mode && <Badge variant="outline" className="text-[10px] capitalize">{s.payment_mode}</Badge>}
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-3">
                         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
@@ -3155,7 +3155,7 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Log Offline Session Dialog */}
           <Dialog open={logSessionOpen} onOpenChange={setLogSessionOpen}>
-            <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
               <DialogHeader><DialogTitle className="font-medium">Log Offline Session</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
@@ -3226,7 +3226,7 @@ export default function CoachDashboard({ defaultView }) {
                   className={`flex items-center gap-1 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${clientFilter === f.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                   {f.label}
                   {f.count !== null && f.count > 0 && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${clientFilter === f.id ? "bg-brand-600/15 text-brand-600" : "bg-secondary/60 text-muted-foreground"}`}>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${clientFilter === f.id ? "bg-brand-600/15 text-brand-600" : "bg-secondary/60 text-muted-foreground"}`}>
                       {f.count}
                     </span>
                   )}
@@ -3356,7 +3356,7 @@ export default function CoachDashboard({ defaultView }) {
                           {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
                         </div>
                       </div>
-                      <Badge className={`text-[9px] ${c.client_source === "online" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-400"}`}>
+                      <Badge className={`text-[10px] ${c.client_source === "online" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-400"}`}>
                         {c.client_source || "offline"}
                       </Badge>
                     </div>
@@ -3405,7 +3405,7 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Add Client Dialog */}
           <Dialog open={addClientOpen} onOpenChange={setAddClientOpen}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
               <DialogHeader><DialogTitle className="font-medium">Add Offline Client</DialogTitle></DialogHeader>
               <div className="space-y-4 pb-1">
 
@@ -3517,7 +3517,7 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Client Profile Dialog */}
           <Dialog open={!!viewClientId} onOpenChange={(o) => { if (!o) { setViewClientId(null); setViewClientData(null); } }}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[88vh] overflow-y-auto p-0 rounded-[28px]">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[88vh] overflow-y-auto p-0 rounded-[28px]">
               {clientProfileLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -3563,8 +3563,8 @@ export default function CoachDashboard({ defaultView }) {
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-bold">{s.date}</span>
-                                  <Badge variant="secondary" className="text-[9px] capitalize">{s.sport}</Badge>
-                                  <Badge className={`text-[9px] ${s.status === "completed" ? "bg-brand-600/15 text-brand-600" : s.status === "confirmed" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-500"}`}>
+                                  <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
+                                  <Badge className={`text-[10px] ${s.status === "completed" ? "bg-brand-600/15 text-brand-600" : s.status === "confirmed" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-500"}`}>
                                     {s.status}
                                   </Badge>
                                 </div>
@@ -3587,7 +3587,7 @@ export default function CoachDashboard({ defaultView }) {
                             <div key={sub.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3">
                               <div className="flex items-center justify-between gap-2 mb-1">
                                 <span className="text-xs font-bold">{sub.package_name}</span>
-                                <Badge className={`text-[9px] ${sub.status === "active" ? "bg-brand-600/15 text-brand-600" : "bg-slate-500/15 text-slate-400"}`}>{sub.status}</Badge>
+                                <Badge className={`text-[10px] ${sub.status === "active" ? "bg-brand-600/15 text-brand-600" : "bg-slate-500/15 text-slate-400"}`}>{sub.status}</Badge>
                               </div>
                               <p className="text-[10px] text-muted-foreground">
                                 {sub.sessions_used || 0} / {sub.sessions_per_month} sessions used · expires {sub.current_period_end?.slice(0, 10)}
@@ -3680,8 +3680,8 @@ export default function CoachDashboard({ defaultView }) {
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-bold">{s.date}</span>
-                                  {s.sport && <Badge variant="secondary" className="text-[9px] capitalize">{s.sport}</Badge>}
-                                  <Badge className={`text-[9px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : "bg-amber-500/15 text-amber-500"}`}>
+                                  {s.sport && <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>}
+                                  <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : "bg-amber-500/15 text-amber-500"}`}>
                                     {s.payment_status}
                                   </Badge>
                                 </div>
@@ -3704,7 +3704,7 @@ export default function CoachDashboard({ defaultView }) {
                                 {p.notes && <p className="text-[10px] text-muted-foreground">{p.notes}</p>}
                               </div>
                               <div className="flex items-center gap-2">
-                                <Badge variant="secondary" className="text-[9px] capitalize">{p.mode || p.payment_mode}</Badge>
+                                <Badge variant="secondary" className="text-[10px] capitalize">{p.mode || p.payment_mode}</Badge>
                                 <span className="text-xs font-bold text-brand-600">₹{p.amount}</span>
                               </div>
                             </div>
@@ -3763,7 +3763,7 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Create / Edit Package Dialog */}
           <Dialog open={showCreatePkg} onOpenChange={(o) => { setShowCreatePkg(o); if (!o) setEditPkgId(null); }}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
               <DialogHeader>
                 <DialogTitle className="font-medium">{editPkgId ? "Edit Package" : "Create Package"}</DialogTitle>
               </DialogHeader>
@@ -4141,10 +4141,10 @@ export default function CoachDashboard({ defaultView }) {
                           <span className="font-bold text-sm truncate">
                             {txn.type === "income" ? (txn.client_name || txn.description) : txn.description || txn.category}
                           </span>
-                          <Badge className={`text-[9px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>
+                          <Badge className={`text-[10px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>
                             {txn.type}
                           </Badge>
-                          <Badge variant="outline" className="text-[9px] capitalize">{txn.payment_mode?.replace("_", " ")}</Badge>
+                          <Badge variant="outline" className="text-[10px] capitalize">{txn.payment_mode?.replace("_", " ")}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground capitalize">{txn.date} · {txn.category?.replace("_", " ")}</p>
                       </div>
@@ -4184,8 +4184,8 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           <span className="font-bold text-sm capitalize">{exp.category?.replace("_", " ")}</span>
-                          <Badge variant="outline" className="text-[9px] capitalize">{exp.payment_mode?.replace("_", " ")}</Badge>
-                          {exp.recurring && <Badge className="text-[9px] bg-violet-500/10 text-violet-400">Recurring</Badge>}
+                          <Badge variant="outline" className="text-[10px] capitalize">{exp.payment_mode?.replace("_", " ")}</Badge>
+                          {exp.recurring && <Badge className="text-[10px] bg-violet-500/10 text-violet-400">Recurring</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground">{exp.date}{exp.description ? ` · ${exp.description}` : ""}</p>
                       </div>
@@ -4210,7 +4210,7 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Add/Edit Expense Dialog */}
               <Dialog open={addExpenseOpen} onOpenChange={(o) => { setAddExpenseOpen(o); if (!o) setEditExpenseId(null); }}>
-                <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
                   <DialogHeader>
                     <DialogTitle className="font-medium">{editExpenseId ? "Edit Expense" : "Add Expense"}</DialogTitle>
                   </DialogHeader>
@@ -4310,7 +4310,7 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="font-bold text-sm">{c.client_name}</span>
-                            <Badge className={`text-[9px] ${c.status === "overdue" ? "bg-destructive/10 text-destructive" : c.status === "pending" ? "bg-amber-500/10 text-amber-400" : "bg-brand-600/10 text-brand-600"}`}>
+                            <Badge className={`text-[10px] ${c.status === "overdue" ? "bg-destructive/10 text-destructive" : c.status === "pending" ? "bg-amber-500/10 text-amber-400" : "bg-brand-600/10 text-brand-600"}`}>
                               {c.status}
                             </Badge>
                           </div>
@@ -4376,7 +4376,7 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* GST Settings Dialog */}
               <Dialog open={showGSTSettings} onOpenChange={setShowGSTSettings}>
-                <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
                   <DialogHeader><DialogTitle className="font-medium">GST & Invoice Settings</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
@@ -4428,7 +4428,7 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Create Invoice Dialog */}
               <Dialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
-                <DialogContent className="bg-card border-border max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
+                <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
                   <DialogHeader><DialogTitle className="font-medium">Create Invoice</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     {/* Client info */}
@@ -4795,7 +4795,7 @@ export default function CoachDashboard({ defaultView }) {
               {/* Payout Detail Dialog */}
               {payoutDetailDialog && (
                 <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
-                  <DialogContent className="max-w-md rounded-[28px]">
+                  <DialogContent className="max-w-[95vw] sm:max-w-md rounded-[28px]">
                     <DialogHeader>
                       <DialogTitle>Payout Details</DialogTitle>
                     </DialogHeader>
@@ -5000,7 +5000,7 @@ export default function CoachDashboard({ defaultView }) {
 
       {/* Create Academy Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+        <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
           <DialogHeader><DialogTitle className="font-medium">Create Academy</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label className="text-xs text-muted-foreground">Academy Name</Label>
@@ -5135,7 +5135,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
           className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${scanMode === "attendance" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
           <ClipboardList className="h-3.5 w-3.5" />Attendance
           {todaySessions.length > 0 && (
-            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/20 text-[9px] font-bold flex items-center justify-center">
+            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/20 text-[10px] font-bold flex items-center justify-center">
               {checkedIn.length}/{todaySessions.length}
             </span>
           )}

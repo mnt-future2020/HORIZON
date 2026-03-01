@@ -8,7 +8,7 @@ export default function SmoothScroll({ children }) {
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       smoothWheel: true,
       smoothTouch: false,
-      touchMultiplier: 2,
+      touchMultiplier: 1.5,
     });
 
     function raf(time) {

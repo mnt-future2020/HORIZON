@@ -940,7 +940,7 @@ export default function VenueDetail() {
 
       {/* ─── Booking Dialog (Payment Flow) ─── */}
       <Dialog open={bookingDialog} onOpenChange={handleDialogClose}>
-        <DialogContent className="bg-card border-2 border-border/50 max-w-md p-8">
+        <DialogContent className="bg-card border-2 border-border/50 max-w-[95vw] sm:max-w-md p-8">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl font-black uppercase tracking-wide text-foreground">
               {payStep === "done" || (confirmResults.length > 0 && !payStep) ? "Booking Confirmed!" :

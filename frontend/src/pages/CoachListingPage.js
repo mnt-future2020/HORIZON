@@ -502,7 +502,7 @@ export default function CoachListingPage() {
 
       {/* ─── Booking Dialog ─── */}
       <Dialog open={!!selectedCoach} onOpenChange={open => { if (!open) { setSelectedCoach(null); setSelectedSlot(null); setBookingTab("session"); } }}>
-        <DialogContent className="bg-card border-border/40 max-w-lg max-h-[92vh] flex flex-col p-0 overflow-hidden gap-0 rounded-[28px]">
+        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-lg max-h-[92vh] flex flex-col p-0 overflow-hidden gap-0 rounded-[28px]">
           {selectedCoach && (() => {
             const next14 = Array.from({ length: 14 }, (_, i) => {
               const d = new Date(); d.setDate(d.getDate() + i);
@@ -533,7 +533,7 @@ export default function CoachListingPage() {
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {selectedCoach.city && <span className="text-[11px] text-muted-foreground flex items-center gap-0.5"><MapPin className="h-3 w-3" />{selectedCoach.city}</span>}
                       {selectedCoach.coaching_sports?.slice(0, 2).map(s => (
-                        <Badge key={s} variant="secondary" className="text-[9px] capitalize">{s.replace("_", " ")}</Badge>
+                        <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>
                       ))}
                     </div>
                   </div>
@@ -578,7 +578,7 @@ export default function CoachListingPage() {
                               }`}>
                               <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-brand-600" : "text-muted-foreground"}`}>{d.day}</span>
                               <span className="text-lg font-black leading-tight">{d.date}</span>
-                              <span className={`text-[9px] ${selectedDate === d.value ? "text-brand-600/70" : "text-muted-foreground"}`}>{d.month}</span>
+                              <span className={`text-[10px] ${selectedDate === d.value ? "text-brand-600/70" : "text-muted-foreground"}`}>{d.month}</span>
                               {d.isToday && <span className="text-[8px] admin-btn text-brand-600 mt-0.5">Today</span>}
                             </button>
                           ))}
@@ -615,7 +615,7 @@ export default function CoachListingPage() {
                                 <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-brand-600/70" : "text-muted-foreground"}`}>
                                   {slot.end_time}
                                 </span>
-                                {!slot.available && <span className="text-[9px] text-red-400/70 mt-0.5">Booked</span>}
+                                {!slot.available && <span className="text-[10px] text-red-400/70 mt-0.5">Booked</span>}
                               </button>
                             ))}
                           </div>
@@ -674,7 +674,7 @@ export default function CoachListingPage() {
                           {pkg.description && <p className="text-xs text-muted-foreground mb-2">{pkg.description}</p>}
                           {pkg.sports?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mb-3">
-                              {pkg.sports.map(s => <Badge key={s} variant="secondary" className="text-[9px] capitalize">{s.replace("_", " ")}</Badge>)}
+                              {pkg.sports.map(s => <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>)}
                             </div>
                           )}
                           {pkg.subscribed ? (
@@ -730,7 +730,7 @@ export default function CoachListingPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={!!qrData} onOpenChange={open => { if (!open) setQrData(null); }}>
-        <DialogContent className="bg-card border-border/40 max-w-xs text-center rounded-[28px]">
+        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-xs text-center rounded-[28px]">
           <DialogHeader>
             <DialogTitle className="admin-heading">Check-in QR Code</DialogTitle>
           </DialogHeader>

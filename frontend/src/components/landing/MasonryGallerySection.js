@@ -54,28 +54,27 @@ export default function MasonryGallerySection() {
     <section
       ref={sectionRef}
       id="masonry-gallery"
-      className="relative"
-      style={{ height: "400vh" }}
+      className="relative h-[250vh] md:h-[400vh]"
     >
       <motion.div className="sticky top-0 h-screen w-full overflow-hidden" style={{ backgroundColor }}>
-        <motion.div style={{ y }} className="relative w-full max-w-[1400px] mx-auto px-4 md:px-8 py-32">
-          <div className="flex flex-col md:flex-row gap-8 w-full">
+        <motion.div style={{ y }} className="relative w-full max-w-[1400px] mx-auto px-4 md:px-8 py-16 md:py-32">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-8 w-full">
             {/* Column 1 */}
-            <div className="flex flex-col gap-8 w-full md:w-1/3">
+            <div className="flex flex-col gap-4 md:gap-8 w-full md:w-1/3">
               {column1.map((image, index) => (
                 <MasonryCard key={`col1-${index}`} image={image} index={index * 3} />
               ))}
             </div>
 
             {/* Column 2 */}
-            <div className="flex flex-col gap-8 w-full md:w-1/3">
+            <div className="flex flex-col gap-4 md:gap-8 w-full md:w-1/3">
               {column2.map((image, index) => (
                 <MasonryCard key={`col2-${index}`} image={image} index={index * 3 + 1} />
               ))}
             </div>
 
             {/* Column 3 */}
-            <div className="flex flex-col gap-8 w-full md:w-1/3">
+            <div className="flex flex-col gap-4 md:gap-8 w-full md:w-1/3">
               {column3.map((image, index) => (
                 <MasonryCard key={`col3-${index}`} image={image} index={index * 3 + 2} />
               ))}

@@ -926,7 +926,7 @@ export default function GroupDetailPage() {
                               )}
                               <div className="relative">
                                 <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${isMe ? "bg-brand-600 text-white rounded-br-md" : "bg-secondary/50 text-foreground rounded-bl-md"}`}>
-                                  {msg.forwarded_from && <div className="text-[9px] opacity-70 mb-1">Forwarded from {msg.forwarded_from}</div>}
+                                  {msg.forwarded_from && <div className="text-[10px] opacity-70 mb-1">Forwarded from {msg.forwarded_from}</div>}
                                   {msg.pinned && <Pin className="inline h-3 w-3 mr-1 opacity-50" />}
                                   {renderContent(msg.content)}
                                   {msg.media_url && msg.media_type === "voice" ? (
@@ -981,7 +981,7 @@ export default function GroupDetailPage() {
                                 )}
                               </div>
                               {renderReactions(msg)}
-                              <span className={`text-[9px] text-muted-foreground/60 mt-0.5 block ${isMe ? "text-right mr-1" : "ml-1"}`}>{formatTime(msg.created_at)}</span>
+                              <span className={`text-[10px] text-muted-foreground/60 mt-0.5 block ${isMe ? "text-right mr-1" : "ml-1"}`}>{formatTime(msg.created_at)}</span>
                             </div>
                           </div>
                         );

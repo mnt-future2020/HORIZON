@@ -30,7 +30,7 @@ export default function HeroSection() {
   const exitOpacity = useTransform(smoothProgress, [0.9, 1], [1, 0]);
 
   return (
-    <section ref={containerRef} className="relative h-[300vh] bg-[#0a0c0a]">
+    <section ref={containerRef} className="relative h-[200vh] md:h-[300vh] bg-[#0a0c0a]">
       <div className="sticky top-0 h-screen w-full overflow-hidden flex items-center justify-center bg-white">
         {/* Background Text Layer */}
         <motion.div

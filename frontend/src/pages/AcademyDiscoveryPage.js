@@ -195,7 +195,7 @@ export default function AcademyDiscoveryPage() {
 
       {/* Enrollment Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="bg-card border-border max-w-md">
+        <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display">{selected?.name}</DialogTitle>
           </DialogHeader>

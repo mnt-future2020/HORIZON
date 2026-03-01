@@ -139,7 +139,7 @@ export default function Navbar() {
   return (
     <>
       {/* Desktop Top Header (Logo + Profile) */}
-      <header className="hidden md:flex fixed top-0 left-0 w-full z-50 h-[72px] items-center justify-between px-8 bg-card/90 backdrop-blur-xl border-b border-border shadow-sm"
+      <header className="hidden md:flex fixed top-0 left-0 w-full z-50 h-[72px] items-center justify-between px-4 lg:px-8 bg-card/90 backdrop-blur-xl border-b border-border shadow-sm"
         data-testid="desktop-navbar">
         <div className="flex items-center flex-1 pr-8">
           <div className="w-64 mr-6 shrink-0">
@@ -151,7 +151,7 @@ export default function Navbar() {
           {/* Search Bar */}
           <div className="relative flex-1 max-w-md hidden lg:block">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-            <input className="w-full bg-secondary/20 border-2 border-brand-600/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-brand-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text" />
+            <input className="w-full bg-secondary/20 border border-border/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-brand-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text" />
           </div>
         </div>
 
@@ -262,7 +262,7 @@ export default function Navbar() {
                 : "text-muted-foreground active:text-foreground"
             }`}>
             <l.icon className={`h-[22px] w-[22px] shrink-0 ${path === l.to || path.startsWith(l.to + "/") ? "stroke-[2.5]" : ""}`} />
-            <span className="text-[9px] font-bold leading-tight">{l.label}</span>
+            <span className="text-[10px] font-medium leading-tight">{l.label}</span>
           </Link>
         ))}
         {/* Notification tab */}
@@ -273,12 +273,12 @@ export default function Navbar() {
           <div className="relative">
             <Bell className={`h-[22px] w-[22px] shrink-0 ${path === "/notifications" ? "stroke-[2.5]" : ""}`} />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 h-3.5 min-w-[14px] px-0.5 rounded-full bg-red-500 text-white text-[8px] font-bold flex items-center justify-center border-2 border-background">
+              <span className="absolute -top-1 -right-1.5 h-4 min-w-[16px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-semibold flex items-center justify-center border-2 border-background">
                 {unreadCount > 9 ? "9+" : unreadCount}
               </span>
             )}
           </div>
-          <span className="text-[9px] font-bold leading-tight">Alerts</span>
+          <span className="text-[10px] font-medium leading-tight">Alerts</span>
         </Link>
         {/* Profile tab */}
         <Link to="/profile" data-testid="mobile-nav-profile"
@@ -294,7 +294,7 @@ export default function Navbar() {
               ? <img src={mediaUrl(user.avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
               : <User className="h-4 w-4 text-muted-foreground" />}
           </div>
-          <span className="text-[9px] font-bold leading-tight">Me</span>
+          <span className="text-[10px] font-medium leading-tight">Me</span>
         </Link>
       </nav>
 

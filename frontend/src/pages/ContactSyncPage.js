@@ -186,7 +186,7 @@ export default function ContactSyncPage() {
           { id: "invite", label: "Invite", shortLabel: "Invite", icon: Share2 },
         ].map((t) => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 rounded-md text-[9px] sm:text-xs font-bold transition-all min-h-[44px] ${
+            className={`flex-1 flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-2.5 sm:py-2 rounded-md text-[10px] sm:text-xs font-bold transition-all min-h-[44px] ${
               activeTab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
             }`}
             aria-label={t.label}>

@@ -146,11 +146,11 @@ export default function LeaderboardPage() {
                         {isMe && <Badge variant="outline" className="text-[8px] h-4 px-1 border-primary/30 text-primary">You</Badge>}
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <Badge className={`text-[9px] h-4 px-1.5 border ${tier.bg} ${tier.color}`}>
+                        <Badge className={`text-[10px] h-4 px-1.5 border ${tier.bg} ${tier.color}`}>
                           {tier.label}
                         </Badge>
                         {p.sports?.slice(0, 2).map(s => (
-                          <span key={s} className="text-[9px] text-muted-foreground capitalize">{s}</span>
+                          <span key={s} className="text-[10px] text-muted-foreground capitalize">{s}</span>
                         ))}
                       </div>
                     </div>

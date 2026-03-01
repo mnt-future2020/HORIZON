@@ -89,7 +89,7 @@ export default function LandingHeader() {
       >
         <div className="flex flex-col items-center justify-center h-full px-6">
           <div
-            className={`flex flex-col items-center gap-8 transition-all duration-700 delay-100 ${
+            className={`flex flex-col items-center gap-5 sm:gap-8 transition-all duration-700 delay-100 ${
               menuOpen
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 translate-y-8"
@@ -106,7 +106,7 @@ export default function LandingHeader() {
                     navigate(link.path);
                   }
                 }}
-                className="text-5xl md:text-7xl font-black text-white hover:text-turf-accent transition-colors uppercase font-brier"
+                className="text-3xl sm:text-4xl md:text-7xl font-black text-white hover:text-turf-accent transition-colors uppercase font-brier"
                 style={{
                   transitionDelay: `${index * 50}ms`,
                 }}
@@ -120,14 +120,14 @@ export default function LandingHeader() {
                 setMenuOpen(false);
                 navigate(user ? "/feed" : "/auth");
               }}
-              className="mt-8 inline-flex items-center px-8 py-4 bg-turf-accent text-white font-black text-lg rounded-full hover:bg-turf-accent/90 transition-colors uppercase"
+              className="mt-6 sm:mt-8 inline-flex items-center px-6 py-3 sm:px-8 sm:py-4 bg-turf-accent text-white font-black text-base sm:text-lg rounded-full hover:bg-turf-accent/90 transition-colors uppercase"
               data-testid="menu-cta"
             >
               {user ? "Dashboard" : "Get Started"}
             </button>
 
             {/* Social Links */}
-            <div className="flex gap-8 mt-12">
+            <div className="flex gap-6 sm:gap-8 mt-8 sm:mt-12">
               {["Instagram", "TikTok", "YouTube"].map((social) => (
                 <a
                   key={social}

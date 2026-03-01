@@ -565,7 +565,7 @@ export default function TournamentDetailPage() {
 
       {/* ─── Result Submission Dialog ─── */}
       <Dialog open={!!resultDialog} onOpenChange={() => setResultDialog(null)}>
-        <DialogContent className="bg-card border-border/40 max-w-sm rounded-[28px]">
+        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-sm rounded-[28px]">
           <DialogHeader>
             <DialogTitle className="admin-heading flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-brand-400" /> Submit Result
@@ -987,7 +987,7 @@ function MatchCard({ match, nameMap, isOrganizer, onSubmitResult, horizontal }) 
           <Hash className="h-2.5 w-2.5" />{match.match_number}
         </span>
         {isDone && <CheckCircle className="h-3 w-3 text-brand-400" />}
-        {isBye && <Badge className="text-[9px] bg-secondary text-muted-foreground">BYE</Badge>}
+        {isBye && <Badge className="text-[10px] bg-secondary text-muted-foreground">BYE</Badge>}
       </div>
       {/* Player A */}
       <div className={`flex items-center justify-between py-1.5 px-2 rounded-md mb-1 text-sm ${match.winner === match.player_a ? "bg-brand-600/10 font-bold" : ""}`}>

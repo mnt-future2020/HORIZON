@@ -48,21 +48,21 @@ export default function ArenaShowcase() {
   };
 
   return (
-    <section id="arenas" className="relative bg-[#0a0c0a] py-24 px-6 md:px-12 overflow-hidden">
+    <section id="arenas" className="relative bg-[#0a0c0a] py-12 md:py-24 px-4 md:px-12 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="mb-20"
+          className="mb-10 md:mb-20"
         >
-          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight">
             <span className="text-white">OUR</span>
             <br />
-            <span className="text-turf-accent font-brier text-8xl">PREMIUM VENUES</span>
+            <span className="text-turf-accent font-brier text-4xl sm:text-5xl md:text-6xl lg:text-8xl">PREMIUM VENUES</span>
           </h2>
-          <p className="text-base md:text-lg text-white/60 mt-6 max-w-2xl">
+          <p className="text-sm md:text-lg text-white/60 mt-4 md:mt-6 max-w-2xl">
             From indoor floodlit turfs to massive outdoor stadiums, Lobbi provides the best-in-class infrastructure
             for football, cricket, and more.
           </p>
@@ -91,7 +91,7 @@ export default function ArenaShowcase() {
                            group-hover:shadow-[#059669]/20
                            transition-all duration-300"
               >
-                <div className="absolute inset-0 flex items-center justify-center p-8">
+                <div className="absolute inset-0 flex items-center justify-center p-2 md:p-8">
                   <img
                     src={arena.image || "/placeholder.svg"}
                     alt={arena.name}
@@ -99,7 +99,7 @@ export default function ArenaShowcase() {
                   />
                 </div>
 
-                <div className="absolute bottom-4 right-4 text-right">
+                <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4 text-right">
                   <p className="text-xs md:text-sm font-bold text-white/70 group-hover:text-white transition-colors duration-300">
                     {arena.name}
                   </p>

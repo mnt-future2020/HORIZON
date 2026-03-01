@@ -230,7 +230,7 @@ function AppRoutes() {
       <DocVerificationPopup />
       <Suspense fallback={<PageLoader />}>
         {user ? (
-          <div className="flex flex-1 w-full gap-8 relative px-6 max-w-[1600px] mx-auto">
+          <div className="flex flex-1 w-full gap-4 lg:gap-8 relative px-3 sm:px-4 md:px-6 max-w-[1600px] mx-auto">
             <Sidebar />
             <main className="flex-1 min-w-0 pb-24 md:pb-8">
                <AppRouteDefinitions />

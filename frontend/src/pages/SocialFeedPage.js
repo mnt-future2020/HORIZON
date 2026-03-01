@@ -727,7 +727,7 @@ export default function SocialFeedPage() {
                       <span className="text-lg font-black block tabular-nums leading-none">
                         {engagement.followers_count}
                       </span>
-                      <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider mt-1 block">
+                      <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mt-1 block">
                         Followers
                       </span>
                     </button>
@@ -738,7 +738,7 @@ export default function SocialFeedPage() {
                       <span className="text-lg font-black block tabular-nums leading-none">
                         {engagement.following_count}
                       </span>
-                      <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider mt-1 block">
+                      <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mt-1 block">
                         Following
                       </span>
                     </button>
@@ -746,7 +746,7 @@ export default function SocialFeedPage() {
                       <span className="text-lg font-black block tabular-nums leading-none">
                         {engagement.posts_count || 0}
                       </span>
-                      <span className="text-[9px] font-semibold text-white/70 uppercase tracking-wider mt-1 block">
+                      <span className="text-[10px] font-semibold text-white/70 uppercase tracking-wider mt-1 block">
                         Posts
                       </span>
                     </div>
@@ -1382,7 +1382,7 @@ export default function SocialFeedPage() {
               <h3 className="font-display font-bold text-foreground mb-6 text-sm flex items-center justify-between">
                 Performance Stats
                 {engScore && (
-                  <Badge className="bg-brand-600 text-white border-none shadow-none uppercase text-[9px] tracking-wider hover:bg-brand-700">
+                  <Badge className="bg-brand-600 text-white border-none shadow-none uppercase text-[10px] tracking-wider hover:bg-brand-700">
                     <Zap className="h-3 w-3 mr-1" /> Level {engScore.level}
                   </Badge>
                 )}
@@ -1470,7 +1470,7 @@ export default function SocialFeedPage() {
                   Suggested for you
                 </h3>
                 {algoPlayers.length > 0 && (
-                  <span className="text-[9px] bg-brand-600/10 text-brand-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                  <span className="text-[10px] bg-brand-600/10 text-brand-600 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
                     AI Ranked
                   </span>
                 )}

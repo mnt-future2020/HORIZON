@@ -133,7 +133,7 @@ function RecordRow({ record, index }) {
           <div className="text-xs font-semibold text-foreground flex items-center gap-2">
             vs {record.opponent_snapshot?.[0]?.name || "Unknown"}
             {record.opponent_snapshot?.length > 1 && <span className="text-muted-foreground">+{record.opponent_snapshot.length - 1}</span>}
-            <Badge variant="secondary" className="text-[9px] h-4 capitalize">{record.sport}</Badge>
+            <Badge variant="secondary" className="text-[10px] h-4 capitalize">{record.sport}</Badge>
           </div>
           <span className="text-[10px] text-muted-foreground">{record.match_date}</span>
         </div>

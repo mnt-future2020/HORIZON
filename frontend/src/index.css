@@ -513,6 +513,6 @@ textarea::placeholder {
 /* Landing page simteste class */
 .simteste {
   color: #c8f550;
-  font-size: 1050px;
-  line-height: 600px;
+  font-size: clamp(80px, 25vw, 1050px);
+  line-height: clamp(60px, 15vw, 600px);
 }

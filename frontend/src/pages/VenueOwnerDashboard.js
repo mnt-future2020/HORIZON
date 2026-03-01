@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AthleticStatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -92,9 +91,9 @@ function VenueImageUpload({ images = [], onChange }) {
         </div>
       )}
       {/* Upload button */}
-      <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-primary/40 hover:border-primary hover:bg-primary/5 text-muted-foreground hover:text-primary"}`}>
+      <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-brand-600/40 hover:border-brand-600 hover:bg-brand-600/5 text-muted-foreground hover:text-brand-600"}`}>
         {uploading ? (
-          <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />Uploading {uploadProgress > 0 ? `${uploadProgress}%` : "..."}</>
+          <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />Uploading {uploadProgress > 0 ? `${uploadProgress}%` : "..."}</>
         ) : (
           <><ImagePlus className="h-4 w-4" />{images.length > 0 ? "Add more images" : "Upload venue images"}</>
         )}
@@ -112,7 +111,7 @@ export default function VenueOwnerDashboard({ defaultView }) {
   if (user?.account_status === "pending") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="pending-approval-screen">
-        <div className="glass-card rounded-lg p-8 space-y-4">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-8 space-y-4">
           <ShieldAlert className="h-12 w-12 text-amber-400 mx-auto" />
           <h1 className="font-display text-xl font-black">Account Pending Approval</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -128,7 +127,7 @@ export default function VenueOwnerDashboard({ defaultView }) {
   if (user?.account_status === "rejected" || user?.account_status === "suspended") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="account-blocked-screen">
-        <div className="glass-card rounded-lg p-8 space-y-4">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-8 space-y-4">
           <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
           <h1 className="font-display text-xl font-black">Account {user.account_status === "rejected" ? "Not Approved" : "Suspended"}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -698,7 +697,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
   );
 
   return (
@@ -708,14 +707,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden"
+        className="mb-10 rounded-[28px] border border-border/40 bg-card/50 backdrop-blur-md overflow-hidden"
       >
         <div className="grid md:grid-cols-3 gap-0">
           {/* Text Content */}
           <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Venue Owner</span>
-            <h1 className="font-display text-display-md md:text-display-lg font-black tracking-athletic mt-2 truncate">
-              Welcome, <span className="bg-gradient-athletic bg-clip-text text-transparent">{user?.name}</span>
+            <h1 className="font-display text-3xl md:text-4xl font-bold mt-2 truncate">
+              Welcome, <span className="text-brand-600">{user?.name}</span>
             </h1>
             <p className="text-muted-foreground font-semibold mt-3 text-base">
               Manage your venues, track revenue, and grow your sports business.
@@ -723,7 +722,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
             <div className="flex items-center gap-3 mt-5">
               <Button
                 onClick={() => setCreateVenueOpen(true)}
-                className="bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-black uppercase tracking-wide h-12 px-6 shrink-0 rounded-xl"
+                className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-12 px-6 shrink-0 rounded-xl"
                 data-testid="create-venue-btn"
               >
                 <Plus className="h-5 w-5 mr-2" /> Add Venue
@@ -743,7 +742,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       </motion.div>
 
       <Dialog open={createVenueOpen} onOpenChange={(o) => { setCreateVenueOpen(o); if (!o) setBaseTurf(null); }}>
-          <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div><Label className="text-xs text-muted-foreground">Name *</Label>
@@ -752,7 +751,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
               <div><Label className="text-xs text-muted-foreground">Description</Label>
                 <textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))}
                   rows={6} placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
-                  className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50" data-testid="venue-desc-input" /></div>
+                  className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand-600/50" data-testid="venue-desc-input" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label className="text-xs text-muted-foreground">Address</Label>
                   <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))}
@@ -779,14 +778,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Added sports chips + remaining suggestions */}
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {venueForm.sports.map(s => (
-                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
                       {s}
                       <button type="button" onClick={() => removeSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                     </span>
                   ))}
                   {SPORT_SUGGESTIONS.filter(s => !venueForm.sports.includes(s.toLowerCase())).map(s => (
                     <button key={s} type="button" onClick={() => addSport(s)}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
                       + {s}
                     </button>
                   ))}
@@ -807,14 +806,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Added amenities chips + remaining suggestions */}
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {venueForm.amenities.map(a => (
-                    <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                    <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
                       {a}
                       <button type="button" onClick={() => removeAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                     </span>
                   ))}
                   {AMENITY_SUGGESTIONS.filter(a => !venueForm.amenities.includes(a)).map(a => (
                     <button key={a} type="button" onClick={() => addAmenity(a)}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
                       + {a}
                     </button>
                   ))}
@@ -829,7 +828,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     {venueForm.turf_config.map(tc => (
                       <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-primary">{tc.sport}</span>
+                          <span className="text-xs font-bold uppercase tracking-wider text-brand-600">{tc.sport}</span>
                           <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addTurfToSport(tc.sport)}>
                             <Plus className="h-3 w-3 mr-1" /> Add Turf
                           </Button>
@@ -843,8 +842,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                 <label className="flex items-center gap-1 cursor-pointer shrink-0" title="Set as base price">
                                   <input type="radio" name="base_turf_create" checked={isBase}
                                     onChange={() => setBaseTurf({ sport: tc.sport, idx })}
-                                    className="accent-primary w-3 h-3" />
-                                  <span className={`text-[9px] font-bold uppercase w-8 ${isBase ? "text-primary" : "text-transparent"}`}>BASE</span>
+                                    className="accent-brand-600 w-3 h-3" />
+                                  <span className={`text-[10px] font-bold uppercase w-8 ${isBase ? "text-brand-600" : "text-transparent"}`}>BASE</span>
                                 </label>
                                 <Input value={t.name} onChange={e => renameTurf(tc.sport, idx, e.target.value)}
                                   placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
@@ -908,7 +907,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <input type="checkbox" id="allow30min"
                   checked={venueForm.slot_duration_minutes === 30}
                   onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: e.target.checked ? 30 : 60 }))}
-                  className="h-4 w-4 rounded border-border accent-primary" />
+                  className="h-4 w-4 rounded border-border accent-brand-600" />
                 <Label htmlFor="allow30min" className="text-xs text-muted-foreground cursor-pointer">Allow 30-minute bookings (default: 1 hour)</Label>
               </div>
 
@@ -916,39 +915,43 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 images={venueForm.images}
                 onChange={imgs => setVenueForm(p => ({ ...p, images: imgs }))}
               />
-              <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
+              <Button className="w-full bg-brand-600 text-white font-bold" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
             </div>
           </DialogContent>
         </Dialog>
 
       {/* Stats - Athletic Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <AthleticStatCard
+        <StatCard
           icon={Building2}
           label="Total Venues"
           value={venues.length}
-          iconColor="primary"
+          colorClass="text-brand-600"
+          bgClass="bg-brand-600/10"
           delay={0.1}
         />
-        <AthleticStatCard
+        <StatCard
           icon={Calendar}
           label="Total Bookings"
           value={totalBookings}
-          iconColor="violet"
+          colorClass="text-violet-500"
+          bgClass="bg-violet-500/10"
           delay={0.2}
         />
-        <AthleticStatCard
+        <StatCard
           icon={IndianRupee}
           label="Total Revenue"
           value={`₹${(totalRevenue / 1000).toFixed(1)}K`}
-          iconColor="amber"
+          colorClass="text-amber-500"
+          bgClass="bg-amber-500/10"
           delay={0.3}
         />
-        <AthleticStatCard
+        <StatCard
           icon={TrendingUp}
           label="Avg Booking"
           value={`₹${analytics?.avg_booking_value || 0}`}
-          iconColor="sky"
+          colorClass="text-sky-500"
+          bgClass="bg-sky-500/10"
           delay={0.4}
         />
       </div>
@@ -957,21 +960,21 @@ function VenueOwnerDashboardContent({ defaultView }) {
       {analytics && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-10">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-            <div className="glass-card rounded-lg p-4">
+            <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4">
               <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-primary mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
+              <div className="text-xl sm:text-2xl font-display font-black text-brand-600 mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
             </div>
-            <div className="glass-card rounded-lg p-4">
+            <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4">
               <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
               <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
             </div>
-            <div className="glass-card rounded-lg p-4">
+            <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4">
               <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
               <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
             </div>
           </div>
           {analytics.daily_revenue?.length > 0 && (
-            <div className="glass-card rounded-lg p-4 sm:p-6">
+            <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 sm:p-6">
               <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={analytics.daily_revenue}>
@@ -995,11 +998,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <div className="flex gap-2 items-center overflow-x-auto pb-1">
             {venues.map(v => (
               <button key={v.id} onClick={() => handleSelectVenue(v)}
-                className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all border-2 flex items-center gap-2 ${selectedVenue?.id === v.id ? "bg-primary/20 border-primary text-primary" : "bg-card/50 border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary"}`}>
+                className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all border border-border/40 flex items-center gap-2 ${selectedVenue?.id === v.id ? "bg-brand-600/20 border-brand-600 text-brand-600" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"}`}>
                 {v.name}
                 {selectedVenue?.id === v.id && (
                   <span onClick={e => { e.stopPropagation(); openEditVenue(); }}
-                    className="p-1 rounded-md hover:bg-primary/20 transition-colors" title="Edit venue">
+                    className="p-1 rounded-md hover:bg-brand-600/20 transition-colors" title="Edit venue">
                     <Pencil className="h-3 w-3" />
                   </span>
                 )}
@@ -1050,7 +1053,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
               { label: "Cancelled", value: bookingStats.cancelled, color: "text-destructive" },
               { label: "Upcoming", value: bookingStats.upcoming, color: "text-sky-400" },
             ].map(s => (
-              <div key={s.label} className="glass-card rounded-lg p-3 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
+              <div key={s.label} className="bg-card rounded-2xl border border-border/40 shadow-sm p-3 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
                 <div className={`text-lg font-display font-black ${s.color}`}>{s.value}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{s.label}</div>
               </div>
@@ -1061,7 +1064,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <div className="flex gap-1.5 mb-4">
             {[{ key: "list", label: "List" }, { key: "timeline", label: "Timeline" }].map(v => (
               <button key={v.key} onClick={() => setBookingView(v.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${bookingView === v.key ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${bookingView === v.key ? "bg-brand-600 text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
                 {v.label}
               </button>
             ))}
@@ -1079,7 +1082,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <div className="flex gap-1.5 flex-wrap">
                   {["all", "upcoming", "past"].map(f => (
                     <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${timeFilter === f ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${timeFilter === f ? "bg-brand-600 text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
                       {f === "all" ? "All Time" : f === "upcoming" ? "Upcoming" : "Past"}
                     </button>
                   ))}
@@ -1121,7 +1124,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                           transition={{ delay: idx * 0.02 }}
                           onClick={() => openBookingDetail(b)}
-                          className={`glass-card rounded-lg p-4 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
+                          className={`bg-card rounded-2xl border border-border/40 shadow-sm p-4 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
                           data-testid={`booking-row-${b.id}`}>
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="min-w-0 flex-1">
@@ -1137,7 +1140,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -1146,7 +1149,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
                               <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
                             </div>
-                            <span className="font-bold text-primary text-sm">{"\u20B9"}{b.total_amount}</span>
+                            <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{b.total_amount}</span>
                           </div>
                         </motion.div>
                       );
@@ -1183,14 +1186,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <div key={date} data-testid={`history-date-${date}`}>
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${isToday ? "bg-primary animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
+                              <div className={`w-2 h-2 rounded-full ${isToday ? "bg-brand-600 animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
                               <span className="text-sm font-bold text-foreground">
                                 {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                               </span>
                               <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
                             </div>
                             {totalAmount > 0 && (
-                              <span className="text-xs font-bold text-primary">{"\u20B9"}{totalAmount.toLocaleString()}</span>
+                              <span className="text-xs font-bold text-brand-600">{"\u20B9"}{totalAmount.toLocaleString()}</span>
                             )}
                           </div>
                           <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
@@ -1199,7 +1202,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               return (
                                 <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
                                   onClick={() => openBookingDetail(b)}
-                                  className={`glass-card rounded-lg p-3 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
+                                  className={`bg-card rounded-2xl border border-border/40 shadow-sm p-3 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
                                   data-testid={`history-booking-${b.id}`}>
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0 flex-1">
@@ -1207,14 +1210,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                         <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
                                         <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
                                         <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
-                                        {b.payment_mode === "split" && <Badge variant="outline" className="text-[9px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
+                                        {b.payment_mode === "split" && <Badge variant="outline" className="text-[10px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
                                       </div>
                                       <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-sm font-bold text-primary">{"\u20B9"}{b.total_amount}</span>
-                                      <Badge className={`text-[9px] border ${sc.color}`}>{sc.label}</Badge>
-                                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                      <span className="text-sm font-bold text-brand-600">{"\u20B9"}{b.total_amount}</span>
+                                      <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
+                                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                                     </div>
                                   </div>
                                 </motion.div>
@@ -1233,7 +1236,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
         {/* Booking Detail Dialog */}
         <Dialog open={bookingDetailOpen} onOpenChange={setBookingDetailOpen}>
-          <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="font-display text-lg">Booking Details</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">Booking ID: {selectedBooking?.id?.slice(0, 8)}...</DialogDescription>
@@ -1256,7 +1259,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Booking Info Grid */}
-                <div className="glass-card rounded-lg p-4 space-y-3" data-testid="booking-detail-info">
+                <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-info">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Venue</span>
@@ -1292,15 +1295,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Payment Details */}
-                <div className="glass-card rounded-lg p-4 space-y-3" data-testid="booking-detail-payment">
+                <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-payment">
                   <div className="flex items-center gap-2 mb-1">
-                    <CreditCard className="h-4 w-4 text-primary" />
+                    <CreditCard className="h-4 w-4 text-brand-600" />
                     <span className="text-xs font-bold uppercase tracking-wider">Payment</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Total Amount</span>
-                      <p className="text-lg font-display font-black text-primary mt-0.5">{"\u20B9"}{selectedBooking.total_amount}</p>
+                      <p className="text-lg font-display font-black text-brand-600 mt-0.5">{"\u20B9"}{selectedBooking.total_amount}</p>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Commission</span>
@@ -1337,7 +1340,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* Split Payment Info */}
                 {selectedBooking.split_config && (
-                  <div className="glass-card rounded-lg p-4 space-y-3" data-testid="booking-detail-split">
+                  <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-split">
                     <div className="flex items-center gap-2 mb-1">
                       <Users className="h-4 w-4 text-violet-400" />
                       <span className="text-xs font-bold uppercase tracking-wider">Split Payment</span>
@@ -1371,7 +1374,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 )}
 
                 {/* Timestamps */}
-                <div className="glass-card rounded-lg p-4 space-y-2" data-testid="booking-detail-timestamps">
+                <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 space-y-2" data-testid="booking-detail-timestamps">
                   <div className="flex items-center gap-2 mb-1">
                     <History className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs font-bold uppercase tracking-wider">Timeline</span>
@@ -1432,18 +1435,18 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     const r5 = venueReviews.filter(r => r.rating === 5).length;
                     return (
                       <>
-                        <div className="glass-card rounded-lg p-3 text-center">
+                        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <Star className="h-4 w-4 text-primary fill-primary" />
-                            <span className="font-display font-black text-xl text-primary">{avg.toFixed(1)}</span>
+                            <Star className="h-4 w-4 text-brand-600 fill-brand-600" />
+                            <span className="font-display font-black text-xl text-brand-600">{avg.toFixed(1)}</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
                         </div>
-                        <div className="glass-card rounded-lg p-3 text-center">
+                        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-3 text-center">
                           <div className="font-display font-black text-xl text-foreground">{venueReviews.length}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Total</div>
                         </div>
-                        <div className="glass-card rounded-lg p-3 text-center">
+                        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-3 text-center">
                           <div className="font-display font-black text-xl text-brand-400">{r5}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">5-Star</div>
                         </div>
@@ -1455,17 +1458,17 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Review Cards */}
                 <div className="space-y-2">
                   {venueReviews.map(r => (
-                    <div key={r.id} className="glass-card rounded-lg p-4" data-testid={`owner-review-${r.id}`}>
+                    <div key={r.id} className="bg-card rounded-2xl border border-border/40 shadow-sm p-4" data-testid={`owner-review-${r.id}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                          <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center text-xs font-bold text-brand-600">
                             {r.user_name?.[0]?.toUpperCase()}
                           </div>
                           <div>
                             <span className="font-bold text-sm">{r.user_name}</span>
                             <div className="flex gap-0.5 mt-0.5">
                               {[1, 2, 3, 4, 5].map(s => (
-                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/40"}`} />
+                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-brand-600 fill-brand-600" : "text-muted-foreground/40"}`} />
                               ))}
                             </div>
                           </div>
@@ -1489,7 +1492,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <div className="flex gap-1.5 mb-4">
             {[{ key: "rules", label: "Rules" }, { key: "analytics", label: "Analytics" }].map(v => (
               <button key={v.key} onClick={() => setPricingView(v.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${pricingView === v.key ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${pricingView === v.key ? "bg-brand-600 text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
                 {v.label}
               </button>
             ))}
@@ -1502,9 +1505,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
               <h3 className="font-display font-bold text-base sm:text-lg truncate">
                 Pricing Rules {selectedVenue && <span className="text-muted-foreground font-normal text-sm">- {selectedVenue.name}</span>}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Base price: <span className="text-primary font-bold">{"\u20B9"}{basePrice}/hr</span></p>
+              <p className="text-xs text-muted-foreground mt-0.5">Base price: <span className="text-brand-600 font-bold">{"\u20B9"}{basePrice}/hr</span></p>
             </div>
-            <Button size="sm" onClick={openCreateRule} className="bg-primary text-primary-foreground font-bold text-xs h-8 shrink-0" data-testid="create-rule-btn">
+            <Button size="sm" onClick={openCreateRule} className="bg-brand-600 text-white font-bold text-xs h-8 shrink-0" data-testid="create-rule-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Rule
             </Button>
           </div>
@@ -1530,7 +1533,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   : `${r.conditions?.days?.length > 0 ? r.conditions.days.map(d => DAY_LABELS[d]).join(", ") : "Every day"}${r.conditions?.time_range ? `, ${r.conditions.time_range.start}–${r.conditions.time_range.end}` : ""}`;
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isDiscount ? "border-l-brand-500" : "border-l-amber-500") : "border-l-muted-foreground/30 opacity-60"}`}
+                    className={`bg-card rounded-2xl border border-border/40 shadow-sm p-4 border-l-4 ${r.is_active ? (isDiscount ? "border-l-brand-500" : "border-l-amber-500") : "border-l-muted-foreground/30 opacity-60"}`}
                     data-testid={`rule-card-${r.id}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -1574,7 +1577,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
           {/* Rule Create/Edit Dialog — redesigned */}
           <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-            <DialogContent className="bg-card border-border max-w-md max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display">{editingRule ? "Edit" : "Create"} Pricing Rule</DialogTitle>
               </DialogHeader>
@@ -1593,7 +1596,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   <div className="grid grid-cols-2 gap-2">
                     {[{ key: "discount", label: "🏷 Offer / Discount", desc: "Reduce price" }, { key: "surge", label: "⚡ Peak / Surge", desc: "Increase price" }].map(t => (
                       <button key={t.key} onClick={() => setRuleForm(p => ({ ...p, rule_type: t.key }))}
-                        className={`p-3 rounded-lg border text-left transition-all ${ruleForm.rule_type === t.key ? "border-primary bg-primary/10" : "border-border bg-secondary/30 hover:border-primary/50"}`}>
+                        className={`p-3 rounded-lg border text-left transition-all ${ruleForm.rule_type === t.key ? "border-brand-600 bg-brand-600/10" : "border-border bg-secondary/30 hover:border-brand-600/40"}`}>
                         <p className="text-xs font-bold">{t.label}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
                       </button>
@@ -1613,7 +1616,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
                       {[{ key: "percent", label: "%" }, { key: "amount", label: "₹" }].map(vt => (
                         <button key={vt.key} onClick={() => setRuleForm(p => ({ ...p, value_type: vt.key }))}
-                          className={`px-3 py-2 text-sm font-bold transition-all ${ruleForm.value_type === vt.key ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}>
+                          className={`px-3 py-2 text-sm font-bold transition-all ${ruleForm.value_type === vt.key ? "bg-brand-600 text-white" : "bg-background text-muted-foreground hover:text-foreground"}`}>
                           {vt.label}
                         </button>
                       ))}
@@ -1627,7 +1630,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {[{ key: "recurring", label: "🔁 Recurring", desc: "Repeats every week" }, { key: "one_time", label: "📅 One-time", desc: "Specific dates only" }].map(s => (
                       <button key={s.key} onClick={() => setRuleForm(p => ({ ...p, schedule_type: s.key }))}
-                        className={`p-3 rounded-lg border text-left transition-all ${ruleForm.schedule_type === s.key ? "border-primary bg-primary/10" : "border-border bg-secondary/30 hover:border-primary/50"}`}>
+                        className={`p-3 rounded-lg border text-left transition-all ${ruleForm.schedule_type === s.key ? "border-brand-600 bg-brand-600/10" : "border-border bg-secondary/30 hover:border-brand-600/40"}`}>
                         <p className="text-xs font-bold">{s.label}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{s.desc}</p>
                       </button>
@@ -1642,7 +1645,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <div className="flex gap-1.5 flex-wrap">
                           {DAY_LABELS.map((label, i) => (
                             <button key={i} onClick={() => toggleDay(i)} data-testid={`day-btn-${i}`}
-                              className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${(ruleForm.conditions.days||[]).includes(i) ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                              className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${(ruleForm.conditions.days||[]).includes(i) ? "bg-brand-600 text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
                               {label}
                             </button>
                           ))}
@@ -1704,7 +1707,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Live Preview */}
-                <div className="glass-card rounded-lg p-3" data-testid="rule-preview">
+                <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-3" data-testid="rule-preview">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Price Preview</p>
                   {ruleForm.value_type === "amount" ? (
                     <p className={`text-base font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>
@@ -1728,7 +1731,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   )}
                 </div>
 
-                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveRule} data-testid="submit-rule-btn">
+                <Button className="w-full bg-brand-600 text-white font-bold" onClick={handleSaveRule} data-testid="submit-rule-btn">
                   {editingRule ? "Update Rule" : "Create Rule"}
                 </Button>
               </div>
@@ -1747,16 +1750,16 @@ function VenueOwnerDashboardContent({ defaultView }) {
         <TabsContent value="plan" data-testid="plan-tab-content">
           {planData ? (
             <div className="space-y-6">
-              <div className="glass-card rounded-lg p-4 sm:p-5" data-testid="current-plan-card">
+              <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 sm:p-5" data-testid="current-plan-card">
                 <div className="flex items-center gap-3 mb-4">
-                  <Crown className="h-5 w-5 text-primary shrink-0" />
+                  <Crown className="h-5 w-5 text-brand-600 shrink-0" />
                   <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-primary">{planData.current_plan?.name}</span></h3>
+                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-brand-600">{planData.current_plan?.name}</span></h3>
                     <p className="text-xs text-muted-foreground">{planData.venues_used} / {planData.venues_limit} venues used</p>
                   </div>
                 </div>
                 <div className="w-full bg-secondary/50 rounded-full h-2 mb-2">
-                  <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${Math.min(100, (planData.venues_used / planData.venues_limit) * 100)}%` }} />
+                  <div className="bg-brand-600 rounded-full h-2 transition-all" style={{ width: `${Math.min(100, (planData.venues_used / planData.venues_limit) * 100)}%` }} />
                 </div>
               </div>
 
@@ -1765,10 +1768,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {(planData.all_plans || []).map(plan => {
                   const isCurrent = plan.id === planData.current_plan?.id;
                   return (
-                    <div key={plan.id} className={`glass-card rounded-lg p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-primary" : "border-transparent hover:border-primary/30"}`}
+                    <div key={plan.id} className={`bg-card rounded-2xl border border-border/40 shadow-sm p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-brand-600" : "border-transparent hover:border-brand-600/30"}`}
                       data-testid={`plan-card-${plan.id}`}>
                       <div className="text-sm font-bold mb-1">{plan.name}</div>
-                      <div className="text-2xl font-display font-black text-primary mb-3">
+                      <div className="text-2xl font-display font-black text-brand-600 mb-3">
                         {!plan.price ? "Free" : `\u20B9${Number(plan.price).toLocaleString()}`}
                         {plan.price > 0 && <span className="text-xs text-muted-foreground font-normal">/mo</span>}
                       </div>
@@ -1776,12 +1779,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <ul className="space-y-1 mb-4">
                         {(plan.features || []).map((f, i) => (
                           <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <CheckCircle className="h-3 w-3 text-primary shrink-0" /> {f}
+                            <CheckCircle className="h-3 w-3 text-brand-600 shrink-0" /> {f}
                           </li>
                         ))}
                       </ul>
                       {isCurrent ? (
-                        <Badge className="w-full justify-center bg-primary/20 text-primary text-xs py-1">Current Plan</Badge>
+                        <Badge className="w-full justify-center bg-brand-600/20 text-brand-600 text-xs py-1">Current Plan</Badge>
                       ) : (
                         <Button size="sm" className="w-full text-xs font-bold" disabled={upgrading}
                           onClick={() => handleUpgrade(plan.id)} data-testid={`upgrade-${plan.id}`}>
@@ -1794,7 +1797,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
             </div>
           ) : (
-            <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+            <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
           )}
         </TabsContent>
 
@@ -1966,7 +1969,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-0.5">
                             <span className="font-bold text-sm truncate">{txn.type === "income" ? (txn.client_name || txn.description) : txn.description || txn.category}</span>
-                            <Badge className={`text-[9px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>{txn.type}</Badge>
+                            <Badge className={`text-[10px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>{txn.type}</Badge>
                           </div>
                           <p className="text-xs text-muted-foreground capitalize">{txn.date} · {txn.category?.replace("_", " ")}</p>
                         </div>
@@ -2006,8 +2009,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-0.5">
                             <span className="font-bold text-sm capitalize">{exp.category?.replace("_", " ")}</span>
-                            <Badge variant="outline" className="text-[9px] capitalize">{exp.payment_mode?.replace("_", " ")}</Badge>
-                            {exp.recurring && <Badge className="text-[9px] bg-violet-500/10 text-violet-400">Recurring</Badge>}
+                            <Badge variant="outline" className="text-[10px] capitalize">{exp.payment_mode?.replace("_", " ")}</Badge>
+                            {exp.recurring && <Badge className="text-[10px] bg-violet-500/10 text-violet-400">Recurring</Badge>}
                           </div>
                           <p className="text-xs text-muted-foreground">{exp.date}{exp.description ? ` · ${exp.description}` : ""}</p>
                         </div>
@@ -2032,7 +2035,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* Add/Edit Expense Dialog */}
                 <Dialog open={addExpenseOpen} onOpenChange={(o) => { setAddExpenseOpen(o); if (!o) setEditExpenseId(null); }}>
-                  <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                  <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
                     <DialogHeader>
                       <DialogTitle className="font-display admin-heading">{editExpenseId ? "Edit Expense" : "Add Expense"}</DialogTitle>
                       <DialogDescription className="text-xs text-muted-foreground admin-label">Track your venue operating expenses</DialogDescription>
@@ -2118,7 +2121,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* GST Settings Dialog */}
                 <Dialog open={showGSTSettings} onOpenChange={setShowGSTSettings}>
-                  <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                  <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
                     <DialogHeader>
                       <DialogTitle className="font-display admin-heading">GST & Invoice Settings</DialogTitle>
                       <DialogDescription className="text-xs text-muted-foreground admin-label">Configure GST for your venue invoices</DialogDescription>
@@ -2171,7 +2174,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* Create Invoice Dialog */}
                 <Dialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
-                  <DialogContent className="bg-card border-border max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
+                  <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
                     <DialogHeader>
                       <DialogTitle className="font-display admin-heading">Create Invoice</DialogTitle>
                       <DialogDescription className="text-xs text-muted-foreground admin-label">Create a manual invoice for your venue</DialogDescription>
@@ -2489,7 +2492,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Payout Detail Dialog */}
                 {payoutDetailDialog && (
                   <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
-                    <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                    <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
                       <DialogHeader>
                         <DialogTitle className="admin-heading">Payout Details</DialogTitle>
                       </DialogHeader>
@@ -2538,11 +2541,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
       {/* Edit Venue Dialog */}
       <Dialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
-        <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display">Edit Venue Details</DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground pt-1">
-              Changes will be pushed <span className="text-primary font-semibold">live</span> to all viewers of the public page instantly.
+              Changes will be pushed <span className="text-brand-600 font-semibold">live</span> to all viewers of the public page instantly.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-1">
@@ -2558,7 +2561,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 onChange={e => setEditVenueForm(p => ({ ...p, description: e.target.value }))}
                 rows={6}
                 placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
-                className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand-600/50"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -2592,14 +2595,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {(editVenueForm.sports || []).map(s => (
-                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
                     {s}
                     <button type="button" onClick={() => removeEditSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
                 {SPORT_SUGGESTIONS.filter(s => !(editVenueForm.sports || []).includes(s.toLowerCase())).map(s => (
                   <button key={s} type="button" onClick={() => addEditSport(s)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
                     + {s}
                   </button>
                 ))}
@@ -2619,14 +2622,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {(editVenueForm.amenities || []).map(a => (
-                  <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                  <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
                     {a}
                     <button type="button" onClick={() => removeEditAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
                 {AMENITY_SUGGESTIONS.filter(a => !(editVenueForm.amenities || []).includes(a)).map(a => (
                   <button key={a} type="button" onClick={() => addEditAmenity(a)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
                     + {a}
                   </button>
                 ))}
@@ -2641,7 +2644,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   {(editVenueForm.turf_config || []).map(tc => (
                     <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-primary">{tc.sport}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-brand-600">{tc.sport}</span>
                         <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addEditTurf(tc.sport)}>
                           <Plus className="h-3 w-3 mr-1" /> Add Turf
                         </Button>
@@ -2655,8 +2658,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               <label className="flex items-center gap-1 cursor-pointer shrink-0" title="Set as base price">
                                 <input type="radio" name="base_turf_edit" checked={isBase}
                                   onChange={() => setEditBaseTurf({ sport: tc.sport, idx })}
-                                  className="accent-primary w-3 h-3" />
-                                <span className={`text-[9px] font-bold uppercase w-8 ${isBase ? "text-primary" : "text-transparent"}`}>BASE</span>
+                                  className="accent-brand-600 w-3 h-3" />
+                                <span className={`text-[10px] font-bold uppercase w-8 ${isBase ? "text-brand-600" : "text-transparent"}`}>BASE</span>
                               </label>
                               <Input value={t.name} onChange={e => renameEditTurf(tc.sport, idx, e.target.value)}
                                 placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
@@ -2720,7 +2723,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
               <input type="checkbox" id="edit-allow30min"
                 checked={(editVenueForm.slot_duration_minutes || 60) === 30}
                 onChange={e => setEditVenueForm(p => ({ ...p, slot_duration_minutes: e.target.checked ? 30 : 60 }))}
-                className="h-4 w-4 rounded border-border accent-primary" />
+                className="h-4 w-4 rounded border-border accent-brand-600" />
               <Label htmlFor="edit-allow30min" className="text-xs text-muted-foreground cursor-pointer">Allow 30-minute bookings (default: 1 hour)</Label>
             </div>
 
@@ -2730,7 +2733,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
             />
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditVenueOpen(false)}>Cancel</Button>
-              <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleSaveVenue} disabled={savingVenue}>
+              <Button className="flex-1 bg-brand-600 text-white font-bold" onClick={handleSaveVenue} disabled={savingVenue}>
                 {savingVenue ? "Saving..." : "Save & Go Live"}
               </Button>
             </div>
@@ -2740,7 +2743,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
       {/* Venue QR Code Dialog */}
       <Dialog open={showVenueQR} onOpenChange={setShowVenueQR}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-[95vw] sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Venue QR Code</DialogTitle>
           </DialogHeader>
@@ -2828,7 +2831,7 @@ function VenueAnalyticsPanel({ venueId }) {
   if (loading) {
     return (
       <div className="flex justify-center py-16">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -2875,7 +2878,7 @@ function VenueAnalyticsPanel({ venueId }) {
         <div className="flex gap-1">
           {[{ label: "30d", days: 30 }, { label: "90d", days: 90 }, { label: "180d", days: 180 }, { label: "All", days: 0 }].map(p => (
             <button key={p.days} onClick={() => setPeriod(p.days)}
-              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${period === p.days ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${period === p.days ? "bg-brand-600 text-white" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
               {p.label}
             </button>
           ))}
@@ -2910,7 +2913,7 @@ function VenueAnalyticsPanel({ venueId }) {
             icon: <Calendar className="h-4 w-4 text-purple-400" />,
           },
         ].map(s => (
-          <div key={s.label} className="glass-card rounded-xl p-4 flex flex-col gap-1">
+          <div key={s.label} className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
               {s.icon}
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
@@ -2925,7 +2928,7 @@ function VenueAnalyticsPanel({ venueId }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* Busiest Days */}
-        <div className="glass-card rounded-xl p-4 space-y-3">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="font-bold text-sm">📅 Busiest Days</h3>
             {insights.turf_list?.length > 1 && (
@@ -2967,7 +2970,7 @@ function VenueAnalyticsPanel({ venueId }) {
         </div>
 
         {/* Busiest Hours */}
-        <div className="glass-card rounded-xl p-4 space-y-3">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 space-y-3">
           <h3 className="font-bold text-sm">⏰ Busiest Hours</h3>
           {activeHourEntries.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">No bookings yet.</p>
@@ -3114,20 +3117,20 @@ function SlotAvailabilityPanel({ venueId }) {
 
       {/* Stats Bar */}
       <div className="flex flex-wrap gap-3">
-        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
           <p className="font-display font-black text-lg">{stats.total}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total</p>
         </div>
-        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
           <p className="font-display font-black text-lg text-emerald-500">{stats.available}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Available</p>
         </div>
-        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
           <p className="font-display font-black text-lg text-red-500">{stats.booked}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Booked</p>
         </div>
         {stats.held > 0 && (
-          <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+          <div className="bg-card rounded-2xl border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
             <p className="font-display font-black text-lg text-amber-500">{stats.held}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Held</p>
           </div>
@@ -3137,7 +3140,7 @@ function SlotAvailabilityPanel({ venueId }) {
       {/* Grid */}
       {loadingSlots ? (
         <div className="flex items-center justify-center py-16 gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
           <span className="text-sm text-muted-foreground">Loading slots...</span>
         </div>
       ) : slots.length === 0 ? (
@@ -3283,7 +3286,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
           <ClipboardList className="h-3.5 w-3.5" />Attendance
           {todayBookings.length > 0 && (
-            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
               {checkedIn.length}/{todayBookings.length}
             </span>
           )}
@@ -3292,10 +3295,10 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Camera */}
       {scanMode === "camera" && (
-        <div className="glass-card rounded-xl p-6">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Camera className="h-6 w-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
+              <Camera className="h-6 w-6 text-brand-600" />
             </div>
             <div>
               <h3 className="font-display font-bold text-base">Scan Lobbian's QR Code</h3>
@@ -3312,7 +3315,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 <p className="text-sm text-muted-foreground mb-1">Camera preview will appear here</p>
                 {cameraError && <p className="text-xs text-destructive mt-2 px-4">{cameraError}</p>}
               </div>
-              <Button className="bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover" onClick={startCamera}>
+              <Button className="bg-brand-600 text-white font-bold shadow-md shadow-brand-600/20" onClick={startCamera}>
                 <Camera className="h-4 w-4 mr-2" /> Start Camera Scanner
               </Button>
             </div>
@@ -3333,10 +3336,10 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Upload QR Image */}
       {scanMode === "upload" && (
-        <div className="glass-card rounded-xl p-6">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Upload className="h-6 w-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
+              <Upload className="h-6 w-6 text-brand-600" />
             </div>
             <div>
               <h3 className="font-display font-bold text-base">Upload QR Image</h3>
@@ -3344,7 +3347,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             </div>
           </div>
           <div className="space-y-3">
-            <label className="flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border-2 border-dashed border-border cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
+            <label className="flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border-2 border-dashed border-border cursor-pointer hover:border-brand-600/40 hover:bg-brand-600/5 transition-all">
               <ImagePlus className="h-10 w-10 text-muted-foreground mb-2" />
               <span className="text-sm font-bold text-muted-foreground">Click to select QR image</span>
               <span className="text-[10px] text-muted-foreground/60 mt-1">JPG, PNG, or screenshot</span>
@@ -3373,11 +3376,11 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Attendance */}
       {scanMode === "attendance" && (
-        <div className="glass-card rounded-xl p-5">
+        <div className="bg-card rounded-2xl border border-border/40 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ClipboardList className="h-5 w-5 text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+                <ClipboardList className="h-5 w-5 text-brand-600" />
               </div>
               <div>
                 <h3 className="font-display font-bold text-sm">Today's Attendance — {venueName}</h3>
@@ -3386,7 +3389,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             </div>
             {todayBookings.length > 0 && (
               <div className="text-right">
-                <div className="font-display font-black text-xl text-primary">{checkedIn.length}/{todayBookings.length}</div>
+                <div className="font-display font-black text-xl text-brand-600">{checkedIn.length}/{todayBookings.length}</div>
                 <div className="text-[10px] text-muted-foreground font-bold">Checked In</div>
               </div>
             )}
@@ -3394,7 +3397,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
           {todayBookings.length > 0 && (
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-gradient-athletic rounded-full transition-all duration-500"
+              <div className="h-full bg-brand-600 rounded-full transition-all duration-500"
                 style={{ width: `${(checkedIn.length / todayBookings.length) * 100}%` }} />
             </div>
           )}

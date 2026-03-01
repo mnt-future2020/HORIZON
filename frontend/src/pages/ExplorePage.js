@@ -253,7 +253,7 @@ export default function ExplorePage() {
                           <span className="admin-label text-[10px]">·</span>
                           <span className="admin-label text-[10px]">{u.post_count || 0} posts</span>
                           {u.sport && (
-                            <span className="px-2 py-0.5 rounded-full bg-brand-600/10 text-brand-600 text-[9px] font-medium border border-brand-600/15">
+                            <span className="px-2 py-0.5 rounded-full bg-brand-600/10 text-brand-600 text-[10px] font-medium border border-brand-600/15">
                               {u.sport}
                             </span>
                           )}

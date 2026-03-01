@@ -308,7 +308,7 @@ function ResultDialog({ match, onSubmit, userId }) {
           <FileCheck className="h-3.5 w-3.5" /> Report Result
         </button>
       </DialogTrigger>
-      <DialogContent className="bg-card border border-border/40 rounded-[28px] max-w-lg p-7">
+      <DialogContent className="bg-card border border-border/40 rounded-[28px] max-w-[95vw] sm:max-w-lg p-7">
         <DialogHeader>
           <DialogTitle className="admin-heading text-xl mb-1">Report Match Result</DialogTitle>
         </DialogHeader>
@@ -618,7 +618,7 @@ export default function MatchmakingPage() {
                 <Plus className="h-4 w-4" /> Create
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border border-border/40 rounded-[28px] max-w-md overflow-hidden p-0">
+            <DialogContent className="bg-card border border-border/40 rounded-[28px] max-w-[95vw] sm:max-w-md overflow-hidden p-0">
               {/* Modal Header */}
               <div className="border-b border-border/40 px-7 pt-7 pb-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">

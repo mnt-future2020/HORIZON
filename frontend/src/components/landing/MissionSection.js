@@ -32,7 +32,7 @@ export default function MissionSection() {
     <section
       id="mission"
       ref={sectionRef}
-      className="relative min-h-screen bg-turf-dark text-turf-text-light py-24 flex items-center justify-center"
+      className="relative min-h-screen bg-turf-dark text-turf-text-light py-12 md:py-24 flex items-center justify-center"
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="relative h-32 flex items-center justify-center mt-16">
@@ -44,8 +44,8 @@ export default function MissionSection() {
         </div>
 
         <div className="text-center">
-          <h2 className="text-4xl md:text-6xl lg:text-7xl font-black uppercase tracking-tight text-balance leading-[1.1] xl:text-8xl">
-            <span className="text-turf-accent font-brier leading-[1.1] text-8xl">BOOK.</span> PLAY.
+          <h2 className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase tracking-tight text-balance leading-[1.1]">
+            <span className="text-turf-accent font-brier leading-[1.1] text-3xl sm:text-4xl md:text-6xl lg:text-8xl">BOOK.</span> PLAY.
             <br />
             <span className="text-turf-accent font-brier leading-[1.1]">CONNECT.</span> COMPETE.
             <br />

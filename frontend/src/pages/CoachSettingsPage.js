@@ -233,7 +233,7 @@ export default function CoachSettingsPage() {
                             <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
                             <span>{slot.start_time} - {slot.end_time}</span>
                             {(slot.sports || []).map(s => (
-                              <Badge key={s} variant="secondary" className="text-[9px] capitalize">{s.replace("_", " ")}</Badge>
+                              <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>
                             ))}
                             <button onClick={() => handleRemoveSlot(slot.id)}
                               className="text-destructive hover:text-red-400 ml-1 shrink-0"><X className="h-3 w-3" /></button>
@@ -248,7 +248,7 @@ export default function CoachSettingsPage() {
 
             {/* Add Availability Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-              <DialogContent className="bg-card border-border/40 max-w-sm rounded-[28px]">
+              <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-sm rounded-[28px]">
                 <DialogHeader><DialogTitle className="admin-heading">Add Availability Slot</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   {/* Days */}
@@ -262,7 +262,7 @@ export default function CoachSettingsPage() {
                             <button key={label} type="button"
                               disabled={availableDays.length === 0}
                               onClick={() => setForm(p => ({ ...p, days_of_week: availableDays }))}
-                              className={`px-2 py-0.5 rounded-md text-[9px] font-bold border transition-all ${
+                              className={`px-2 py-0.5 rounded-md text-[10px] font-bold border transition-all ${
                                 availableDays.length === 0
                                   ? "border-border text-muted-foreground/30 cursor-not-allowed opacity-40"
                                   : "border-border/40 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"
@@ -497,7 +497,7 @@ export default function CoachSettingsPage() {
                     className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border transition-all capitalize ${active ? "bg-brand-600 border-brand-600 text-white shadow-md shadow-brand-600/20" : "border-border/40 text-muted-foreground hover:border-brand-600/50 hover:text-foreground"}`}>
                     {active && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
                     {sport.replace(/_/g, " ")}
-                    {isCustom && <span className="ml-1 text-[9px] opacity-60">custom</span>}
+                    {isCustom && <span className="ml-1 text-[10px] opacity-60">custom</span>}
                   </button>
                 );
               })}

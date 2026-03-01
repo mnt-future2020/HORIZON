@@ -75,14 +75,14 @@ export default function HowItWorksSection() {
   const [activeJourney, setActiveJourney] = useState("players");
 
   return (
-    <div id="how-it-works" className="w-full bg-[#111111] py-20 px-4">
+    <div id="how-it-works" className="w-full bg-[#111111] py-12 md:py-20 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-16 gap-4 md:gap-6">
           <div className="flex flex-col">
-            <h2 className="font-oswald text-4xl md:text-6xl font-bold uppercase leading-none text-white tracking-tighter">
+            <h2 className="font-oswald text-2xl sm:text-3xl md:text-6xl font-bold uppercase leading-none text-white tracking-tighter">
               HOW IT
             </h2>
-            <h1 className="font-brier text-5xl text-zinc-400 leading-none md:-mt-2 md:text-7xl mt-2.5">Works</h1>
+            <h1 className="font-brier text-3xl sm:text-4xl md:text-7xl text-zinc-400 leading-none md:-mt-2 mt-1.5 md:mt-2.5">Works</h1>
           </div>
           <p className="text-zinc-500 text-sm md:text-base max-w-xs md:text-right font-medium">
             Five ways to use Lobbi — whether you're a player, coach, venue owner, or competitor.
@@ -105,19 +105,19 @@ export default function HowItWorksSection() {
                       : "bg-transparent text-white hover:bg-white/5"
                   )}
                 >
-                  <div className="flex items-center gap-4 md:gap-6">
+                  <div className="flex items-center gap-3 md:gap-6">
                     <ChevronDown
                       className={cn(
-                        "w-6 h-6 md:w-8 md:h-8 transition-transform duration-300",
+                        "w-5 h-5 md:w-8 md:h-8 flex-shrink-0 transition-transform duration-300",
                         isActive ? "rotate-180 text-black" : "text-white -rotate-90"
                       )}
                     />
                     <Icon className={cn(
-                      "w-6 h-6 md:w-8 md:h-8 transition-colors",
+                      "w-5 h-5 md:w-8 md:h-8 flex-shrink-0 transition-colors",
                       isActive ? "text-black" : "text-turf-accent"
                     )} />
                     <div className="text-left">
-                      <span className="font-oswald font-bold text-3xl md:text-5xl tracking-tighter leading-none block">
+                      <span className="font-oswald font-bold text-xl sm:text-2xl md:text-5xl tracking-tighter leading-none block">
                         {journey.title}
                       </span>
                       <span className={cn(
@@ -139,7 +139,8 @@ export default function HowItWorksSection() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden bg-zinc-900/30"
                     >
-                      <div className="grid grid-cols-12 gap-4 py-4 px-6 text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
+                      {/* Desktop table header */}
+                      <div className="hidden md:grid grid-cols-12 gap-4 py-4 px-6 text-[10px] md:text-xs font-bold text-zinc-500 uppercase tracking-widest border-b border-white/10">
                         <div className="col-span-1">#</div>
                         <div className="col-span-4">Step</div>
                         <div className="col-span-5">Details</div>
@@ -150,25 +151,25 @@ export default function HowItWorksSection() {
                         {journey.steps.map((step, index) => (
                           <div
                             key={index}
-                            className="grid grid-cols-12 gap-4 py-4 px-6 border-b border-white/5 text-white hover:bg-white/5 transition-colors items-center group"
+                            className="flex flex-col gap-2 md:grid md:grid-cols-12 md:gap-4 py-3 md:py-4 px-4 md:px-6 border-b border-white/5 text-white hover:bg-white/5 transition-colors md:items-center group"
                           >
-                            <div className="col-span-1">
-                              <span className="font-oswald font-bold text-2xl text-zinc-600">
+                            <div className="flex items-center gap-3 md:contents">
+                              <span className="font-oswald font-bold text-lg md:text-2xl text-zinc-600 md:col-span-1">
                                 {step.step}
                               </span>
-                            </div>
-
-                            <div className="col-span-4 flex items-center gap-3">
-                              <span className="font-oswald font-bold text-xl md:text-3xl uppercase tracking-tighter leading-none text-white/90">
+                              <span className="font-oswald font-bold text-base sm:text-lg md:text-3xl uppercase tracking-tighter leading-none text-white/90 md:col-span-4">
                                 {step.title}
+                              </span>
+                              <span className="ml-auto font-oswald font-bold text-sm text-turf-accent md:hidden">
+                                {step.time}
                               </span>
                             </div>
 
-                            <div className="col-span-5 text-sm text-white/50 leading-snug">
+                            <div className="text-xs md:text-sm text-white/50 leading-snug md:col-span-5 pl-9 md:pl-0">
                               {step.detail}
                             </div>
 
-                            <div className="col-span-2 text-right font-oswald font-bold text-base text-turf-accent">
+                            <div className="hidden md:block md:col-span-2 text-right font-oswald font-bold text-base text-turf-accent">
                               {step.time}
                             </div>
                           </div>

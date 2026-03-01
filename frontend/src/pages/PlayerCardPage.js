@@ -541,7 +541,7 @@ export default function PlayerCardPage() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="font-display text-2xl font-black">{card.overall_score}</span>
-                    <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">Score</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Score</span>
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
@@ -583,7 +583,7 @@ export default function PlayerCardPage() {
                             <span className="text-[10px] font-bold w-6 text-right">{b.value}</span>
                           </div>
                           {isOwnProfile && b.tip && (
-                            <p className="text-[9px] text-muted-foreground/70 ml-[72px] mt-0.5">{b.tip}</p>
+                            <p className="text-[10px] text-muted-foreground/70 ml-[72px] mt-0.5">{b.tip}</p>
                           )}
                         </div>
                       ))}
@@ -630,7 +630,7 @@ export default function PlayerCardPage() {
                               <div className="flex items-center gap-2 mb-1.5">
                                 <Icon className={`h-4 w-4 ${s.color}`} />
                                 <span className="font-bold text-xs">{s.label}</span>
-                                <Badge variant="secondary" className="text-[9px] ml-auto">{s.weight}</Badge>
+                                <Badge variant="secondary" className="text-[10px] ml-auto">{s.weight}</Badge>
                               </div>
                               <ul className="space-y-0.5">
                                 {s.items.map((item, i) => (
@@ -703,7 +703,7 @@ export default function PlayerCardPage() {
                           { level: "Bench", min: "<20" },
                         ].map(l => (
                           <div key={l.level} className="rounded-md bg-background/50 border border-border/40 p-1.5">
-                            <div className="font-bold text-[9px]">{l.level}</div>
+                            <div className="font-bold text-[10px]">{l.level}</div>
                             <div className="text-[8px] text-muted-foreground">{l.min}</div>
                           </div>
                         ))}
@@ -1103,7 +1103,7 @@ export default function PlayerCardPage() {
                         }`}>
                         <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-primary" : "text-muted-foreground"}`}>{d.day}</span>
                         <span className="text-base font-black leading-tight">{d.date}</span>
-                        <span className={`text-[9px] ${selectedDate === d.value ? "text-primary/70" : "text-muted-foreground"}`}>{d.month}</span>
+                        <span className={`text-[10px] ${selectedDate === d.value ? "text-primary/70" : "text-muted-foreground"}`}>{d.month}</span>
                         {d.isToday && <span className="text-[8px] font-bold text-primary mt-0.5">Today</span>}
                       </button>
                     ))}
@@ -1136,7 +1136,7 @@ export default function PlayerCardPage() {
                           }`}>
                           <span className={slot.available ? "" : "line-through"}>{slot.start_time}</span>
                           <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-primary/70" : "text-muted-foreground"}`}>{slot.end_time}</span>
-                          {!slot.available && <span className="text-[9px] text-red-400/70 mt-0.5">Booked</span>}
+                          {!slot.available && <span className="text-[10px] text-red-400/70 mt-0.5">Booked</span>}
                         </button>
                       ))}
                     </div>

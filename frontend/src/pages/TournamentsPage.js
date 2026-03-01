@@ -326,7 +326,7 @@ export default function TournamentsPage() {
 
       {/* Create Tournament Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border/40 max-w-md max-h-[85vh] overflow-y-auto rounded-[28px]">
+        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-md max-h-[85vh] overflow-y-auto rounded-[28px]">
           <DialogHeader>
             <DialogTitle className="admin-heading flex items-center gap-2">
               <Trophy className="h-5 w-5 text-amber-400" /> Create Tournament

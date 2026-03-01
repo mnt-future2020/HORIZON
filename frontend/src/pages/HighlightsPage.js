@@ -281,7 +281,7 @@ function AnalysisDialog({ highlight, open, onClose, baseUrl }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="bg-card border-border max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" /> AI Match Analysis

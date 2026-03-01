@@ -479,7 +479,7 @@ export default function ProfilePage() {
                 <Shield className="h-5 w-5 mx-auto mb-1 text-sky-400" />
                 <div className="text-lg font-display font-black">{user?.reliability_score || 100}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase">Reliability</div>
-                {(user?.no_shows > 0) && <div className="text-[9px] text-red-400 mt-0.5">{user.no_shows} no-show{user.no_shows > 1 ? "s" : ""}</div>}
+                {(user?.no_shows > 0) && <div className="text-[10px] text-red-400 mt-0.5">{user.no_shows} no-show{user.no_shows > 1 ? "s" : ""}</div>}
               </div>
             </div>
           )}
@@ -1121,7 +1121,7 @@ export default function ProfilePage() {
                           <label className="w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed rounded-md cursor-pointer border-border hover:border-primary/30">
                             {isUploading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : (<>
                               <Image className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-[9px] text-muted-foreground mt-0.5">Add</span>
+                              <span className="text-[10px] text-muted-foreground mt-0.5">Add</span>
                             </>)}
                             <input type="file" accept={slot.accept} multiple className="hidden" disabled={isUploading}
                               onChange={(e) => handleDocUpload(slot.key, e.target.files, slot.type)} />
@@ -1154,7 +1154,7 @@ export default function ProfilePage() {
                           <label className="w-36 h-24 flex flex-col items-center justify-center border-2 border-dashed rounded-md cursor-pointer border-border hover:border-primary/30">
                             {isUploading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : (<>
                               <Video className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-[9px] text-muted-foreground mt-0.5">Add Video</span>
+                              <span className="text-[10px] text-muted-foreground mt-0.5">Add Video</span>
                             </>)}
                             <input type="file" accept={slot.accept} multiple className="hidden" disabled={isUploading}
                               onChange={(e) => handleDocUpload(slot.key, e.target.files, slot.type)} />
@@ -1226,17 +1226,17 @@ export default function ProfilePage() {
                         <div className="grid grid-cols-3 gap-2 mt-2">
                           <div className="text-center p-2 rounded-md bg-background/50">
                             <div className="text-sm font-display font-bold">{va.total_bookings || 0}</div>
-                            <div className="text-[9px] text-muted-foreground font-mono uppercase">Bookings</div>
+                            <div className="text-[10px] text-muted-foreground font-mono uppercase">Bookings</div>
                           </div>
                           <div className="text-center p-2 rounded-md bg-background/50">
                             <div className="text-sm font-display font-bold">{"\u20B9"}{(va.total_revenue || 0).toLocaleString("en-IN")}</div>
-                            <div className="text-[9px] text-muted-foreground font-mono uppercase">Revenue</div>
+                            <div className="text-[10px] text-muted-foreground font-mono uppercase">Revenue</div>
                           </div>
                           <div className="text-center p-2 rounded-md bg-background/50">
                             <div className="text-sm font-display font-bold flex items-center justify-center gap-0.5">
                               <Star className="h-3 w-3 text-amber-400" /> {reviewSummaries[v.id]?.average_rating?.toFixed(1) || "N/A"}
                             </div>
-                            <div className="text-[9px] text-muted-foreground font-mono uppercase">Rating</div>
+                            <div className="text-[10px] text-muted-foreground font-mono uppercase">Rating</div>
                           </div>
                         </div>
                       </div>
@@ -1663,11 +1663,11 @@ export default function ProfilePage() {
                       <div className="grid grid-cols-2 gap-2 mt-2">
                         <div className="text-center p-2 rounded-md bg-background/50">
                           <div className="text-sm font-display font-bold">{org.players?.length || org.player_count || 0}</div>
-                          <div className="text-[9px] text-muted-foreground font-mono uppercase">Lobbians</div>
+                          <div className="text-[10px] text-muted-foreground font-mono uppercase">Lobbians</div>
                         </div>
                         <div className="text-center p-2 rounded-md bg-background/50">
                           <div className="text-sm font-display font-bold">{org.staff?.length || org.staff_count || 0}</div>
-                          <div className="text-[9px] text-muted-foreground font-mono uppercase">Staff</div>
+                          <div className="text-[10px] text-muted-foreground font-mono uppercase">Staff</div>
                         </div>
                       </div>
                     </div>

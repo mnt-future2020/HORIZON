@@ -201,11 +201,11 @@ export default function CommunitiesPage() {
                     </div>
                     <div className="flex gap-1 mb-3 flex-wrap">
                       {g.sport && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-brand-600/10 text-brand-600 font-medium capitalize">
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-600/10 text-brand-600 font-medium capitalize">
                           {SPORT_EMOJI[g.sport]} {g.sport}
                         </span>
                       )}
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground font-medium capitalize">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary/50 text-muted-foreground font-medium capitalize">
                         {g.rec_reason === "friends_are_in" ? "Friends here" :
                          g.rec_reason === "matches_sport" ? "Your sport" : "Popular"}
                       </span>

@@ -75,7 +75,7 @@ function HotspotPoint({ spot, isActive, onHover, onLeave }) {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: opensUpward ? -10 : 10 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`absolute left-1/2 -translate-x-1/2 z-50 w-[320px] md:w-[360px] ${
+            className={`absolute left-1/2 -translate-x-1/2 z-50 w-[260px] sm:w-[320px] md:w-[360px] ${
               opensUpward ? "bottom-full mb-4" : "top-full mt-4"
             }`}
           >
@@ -146,14 +146,14 @@ export default function PlatformFeaturesSection() {
   const [activeHotspot, setActiveHotspot] = useState(null);
 
   return (
-    <section id="features" className="relative bg-[#f5f1e8] py-24 px-6 md:px-12 overflow-hidden">
+    <section id="features" className="relative bg-[#f5f1e8] py-12 md:py-24 px-4 md:px-12 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        <div className="mb-8 md:mb-12">
-          <h2 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-tight">
+        <div className="mb-6 md:mb-12">
+          <h2 className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-tight">
             <span className="block font-sans leading-[0.85] text-turf-dark">PLATFORM</span>
-            <span className="block font-brier text-turf-accent text-9xl">Features</span>
+            <span className="block font-brier text-turf-accent text-4xl sm:text-5xl md:text-7xl lg:text-9xl">Features</span>
           </h2>
-          <p className="text-base mt-6 max-w-2xl text-turf-dark/60 md:text-base">
+          <p className="text-sm md:text-base mt-4 md:mt-6 max-w-2xl text-turf-dark/60">
             Everything players, venue owners, and coaches need — in one platform.
             Hover over the points to discover each feature.
           </p>

@@ -31,9 +31,9 @@ export default function SocialSection() {
   }, []);
 
   return (
-    <section id="social-section" className="relative bg-[#F5F1E8] text-black py-24 px-6 md:px-12 overflow-hidden">
+    <section id="social-section" className="relative bg-[#F5F1E8] text-black py-12 md:py-24 px-4 md:px-12 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        <div className="relative h-32 flex items-center justify-center mt-16">
+        <div className="relative h-20 md:h-32 flex items-center justify-center mt-8 md:mt-16">
           <div className="relative h-full w-auto max-h-[60px] aspect-square">
             {handIcons.map((icon, index) => (
               <div
@@ -59,10 +59,10 @@ export default function SocialSection() {
           viewport={{ once: true }}
           className="text-center mb-2.5"
         >
-          <h2 className="text-5xl md:text-7xl font-black uppercase leading-none leading-[2.25] text-turf-dark lg:text-6xl">
+          <h2 className="text-3xl sm:text-4xl md:text-7xl lg:text-6xl font-black uppercase leading-none leading-[2.25] text-turf-dark">
             WHAT'S UP
           </h2>
-          <h3 className="text-4xl md:text-6xl font-brier mt-2 lg:text-6xl leading-10 text-turf-dark">ON SOCIALS</h3>
+          <h3 className="text-2xl sm:text-3xl md:text-6xl lg:text-6xl font-brier mt-2 leading-10 text-turf-dark">ON SOCIALS</h3>
         </motion.div>
 
         <motion.div
@@ -70,7 +70,7 @@ export default function SocialSection() {
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="relative h-[600px] md:h-[700px] mb-16 flex items-center justify-center"
+          className="relative h-[350px] sm:h-[450px] md:h-[700px] mb-8 md:mb-16 flex items-center justify-center"
         >
           {socialImages.map((image, i) => (
             <motion.div
@@ -80,8 +80,8 @@ export default function SocialSection() {
                 opacity: 1,
                 rotate: (i - 3) * 6,
                 scale: 1 - Math.abs(i - 3) * 0.02,
-                x: (i - 3) * 90,
-                y: Math.abs(i - 3) * 35,
+                x: (i - 3) * (window.innerWidth < 640 ? 40 : window.innerWidth < 768 ? 60 : 90),
+                y: Math.abs(i - 3) * (window.innerWidth < 640 ? 15 : 35),
               }}
               transition={{
                 duration: 0.8,
@@ -98,7 +98,7 @@ export default function SocialSection() {
                 y: -40,
                 transition: { duration: 0.3 },
               }}
-              className="absolute w-60 md:w-80 h-80 md:h-[480px] bg-white rounded-3xl shadow-2xl overflow-hidden cursor-pointer origin-bottom"
+              className="absolute w-36 sm:w-48 md:w-80 h-48 sm:h-64 md:h-[480px] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden cursor-pointer origin-bottom"
               style={{ zIndex: 10 - Math.abs(i - 3) }}
             >
               <div className="relative w-full h-full">

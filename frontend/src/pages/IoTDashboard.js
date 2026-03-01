@@ -706,8 +706,8 @@ export default function IoTDashboard() {
 
       {/* Add/Edit Device Dialog */}
       <Dialog open={deviceDialogOpen} onOpenChange={setDeviceDialogOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-card border-border/40 p-0 rounded-[32px] overflow-hidden shadow-2xl">
-          <div className="p-8 pb-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[500px] bg-card border-border/40 p-0 rounded-[28px] overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="p-6 sm:p-8 pb-4">
             <DialogTitle className="text-2xl font-medium tracking-tight font-display mb-1 flex items-center gap-2">
               <span className="text-foreground">{editingDevice ? "Edit" : "Register"}</span> <span className="text-brand-600">Device</span>
             </DialogTitle>
@@ -784,8 +784,8 @@ export default function IoTDashboard() {
 
       {/* Add Zone Dialog */}
       <Dialog open={zoneDialogOpen} onOpenChange={setZoneDialogOpen}>
-        <DialogContent className="sm:max-w-[400px] bg-card border-border/40 p-0 rounded-[32px] overflow-hidden shadow-2xl">
-          <div className="p-8 pb-4">
+        <DialogContent className="max-w-[95vw] sm:max-w-[400px] bg-card border-border/40 p-0 rounded-[28px] overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto">
+          <div className="p-6 sm:p-8 pb-4">
             <DialogTitle className="text-2xl font-medium tracking-tight font-display mb-1 flex items-center gap-2">
               <span className="text-foreground">Create</span> <span className="text-brand-600">Zone</span>
             </DialogTitle>

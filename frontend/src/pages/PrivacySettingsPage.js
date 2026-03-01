@@ -312,7 +312,7 @@ export default function PrivacySettingsPage() {
 
       {/* Erasure Confirmation Dialog */}
       <Dialog open={erasureDialog} onOpenChange={setErasureDialog}>
-        <DialogContent className="bg-card border border-destructive/30 max-w-md">
+        <DialogContent className="bg-card border border-destructive/30 max-w-[95vw] sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-black text-destructive flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />

@@ -193,7 +193,7 @@ export default function PlayerDashboard() {
       </motion.div>
 
       {/* ── Stat Cards ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
         <StatCard icon={Trophy}     label="Skill Rating"  value={<span className={tier.color}>{user?.skill_rating || 1500}</span>} colorClass="text-brand-600"  bgClass="bg-brand-600/10"  delay={0} />
         <StatCard icon={TrendingUp} label="Games Played"  value={user?.total_games || 0}                                           colorClass="text-emerald-500" bgClass="bg-emerald-500/10" delay={0.08} />
         <StatCard icon={Star}       label="Win Rate"      value={user?.total_games ? `${Math.round((user.wins / user.total_games) * 100)}%` : "0%"} colorClass="text-amber-500"  bgClass="bg-amber-500/10"  delay={0.16} />
@@ -234,7 +234,7 @@ export default function PlayerDashboard() {
       </motion.div>
 
       {/* ── Quick Actions ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-10">
         {[
           { icon: MapPin,   label: "Find Venue",  desc: "Browse available turfs",    to: "/venues",       colorClass: "text-brand-600",  bgClass: "bg-brand-600/10"  },
           { icon: Swords,   label: "Find Game",   desc: "Join or create matches",    to: "/matchmaking",  colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10" },
@@ -264,7 +264,7 @@ export default function PlayerDashboard() {
 
       {/* ── Engagement + Venue Recommendations ───────────────────────────── */}
       {(engagementScore || venueRecs.length > 0) && (
-        <div className="mb-10 grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="mb-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
 
           {/* Engagement score */}
           {engagementScore && (
@@ -506,7 +506,7 @@ export default function PlayerDashboard() {
                         style={{ height: `${Math.max(height, 6)}%` }}
                         title={`${m.month}: ${m.count} bookings`}
                       />
-                      <span className="text-[9px] admin-label">{m.month?.slice(-2) || ""}</span>
+                      <span className="text-[10px] admin-label">{m.month?.slice(-2) || ""}</span>
                     </div>
                   );
                 })}
@@ -576,7 +576,7 @@ export default function PlayerDashboard() {
 
       {/* ── Booking Receipt Dialog ────────────────────────────────────────── */}
       <Dialog open={!!selectedBooking} onOpenChange={open => { if (!open) setSelectedBooking(null); }}>
-        <DialogContent className="rounded-[28px] bg-card border-border/40 max-w-sm p-0">
+        <DialogContent className="rounded-[28px] bg-card border-border/40 max-w-[95vw] sm:max-w-sm p-0">
           <DialogHeader className="px-6 pt-6 pb-4 border-b border-border/20">
             <DialogTitle className="admin-heading">Booking Receipt</DialogTitle>
           </DialogHeader>

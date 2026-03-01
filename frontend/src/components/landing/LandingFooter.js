@@ -14,7 +14,7 @@ export default function LandingFooter() {
   ];
 
   return (
-    <footer className="bg-turf-accent pt-0 px-4 md:px-8 min-h-screen flex flex-col justify-end relative pb-5">
+    <footer className="bg-turf-accent pt-0 px-3 md:px-8 min-h-[70vh] md:min-h-screen flex flex-col justify-end relative pb-5">
 
 
       {/* Main Dark Card Container */}
@@ -42,7 +42,7 @@ export default function LandingFooter() {
           />
         </div>
 
-        <div className="relative z-20 flex flex-col h-full px-8 md:px-24 py-12 md:py-20 md:pb-12 md:pl-0 md:pr-0">
+        <div className="relative z-20 flex flex-col h-full px-4 md:px-24 py-8 md:py-20 md:pb-12 md:pl-0 md:pr-0">
           {/* Main Content Grid */}
           <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch mt-0">
             {/* Left Column - Pages */}
@@ -69,7 +69,7 @@ export default function LandingFooter() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
-                  className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-turf-text-light mix-blend-overlay opacity-90"
+                  className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-turf-text-light mix-blend-overlay opacity-90"
                 >
                   <span className="font-sans block">ALWAYS
                     <span className="font-brier text-turf-accent"> BRINGING</span>
@@ -87,7 +87,7 @@ export default function LandingFooter() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/auth")}
-                className="mt-12 z-20 bg-turf-accent text-turf-dark font-black uppercase px-8 py-4 rounded-[14px] text-sm tracking-wider hover:bg-white transition-colors flex items-center gap-2"
+                className="mt-8 md:mt-12 z-20 bg-turf-accent text-turf-dark font-black uppercase px-6 py-3 md:px-8 md:py-4 rounded-[14px] text-xs md:text-sm tracking-wider hover:bg-white transition-colors flex items-center gap-2"
               >
                 GET STARTED FREE
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -121,7 +121,7 @@ export default function LandingFooter() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="w-full max-w-[1688px] mx-auto px-8 md:px-12 relative z-20 pt-0">
+      <div className="w-full max-w-[1688px] mx-auto px-4 md:px-12 relative z-20 pt-0">
         <div className="flex flex-col md:flex-row justify-between items-center text-turf-dark text-xs font-bold tracking-wider uppercase">
           <p>&copy; {new Date().getFullYear()} Lobbi. All rights reserved</p>
           <div className="flex gap-6 mt-2 md:mt-0">
@@ -135,7 +135,7 @@ export default function LandingFooter() {
         </div>
       </div>
 
-      <div className="w-full max-w-[1688px] mx-auto px-8 md:px-12 relative z-20 pt-0">
+      <div className="w-full max-w-[1688px] mx-auto px-4 md:px-12 relative z-20 pt-0">
         <div className="flex flex-col md:flex-row justify-between items-center text-turf-dark text-xs font-bold tracking-wider uppercase">
           <p className="text-xs mt-7 opacity-40 font-medium leading-4 text-left">
             Lobbi is India's all-in-one sports platform — connecting players, venues, and coaches. Book. Play. Connect. Compete.

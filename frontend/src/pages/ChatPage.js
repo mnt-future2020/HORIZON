@@ -882,7 +882,7 @@ export default function ChatPage() {
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] text-muted-foreground capitalize">{u.role === "player" ? "lobbian" : (u.role || "lobbian")}</span>
           {u.skill_rating && <span className="text-[10px] text-muted-foreground">{u.skill_rating} SR</span>}
-          {badge && <span className="text-[9px] text-brand-600 font-bold capitalize bg-brand-600/10 px-1.5 py-0.5 rounded-full">{badge}</span>}
+          {badge && <span className="text-[10px] text-brand-600 font-bold capitalize bg-brand-600/10 px-1.5 py-0.5 rounded-full">{badge}</span>}
         </div>
       </div>
       <div className="h-8 w-8 rounded-full bg-brand-600/10 flex items-center justify-center flex-shrink-0">
@@ -1067,7 +1067,7 @@ export default function ChatPage() {
                       className={`flex ${isMe ? "justify-end" : "justify-start"} ${showTail ? "mt-2" : "mt-0.5"} transition-all`}
                       onContextMenu={(e) => { e.preventDefault(); if (!isDeleted) setLongPressMsg(msg); }}
                       onClick={() => { if (longPressMsg && longPressMsg.id !== msg.id) setLongPressMsg(null); }}>
-                      <div className={`max-w-[78%] relative group ${isMe ? "items-end" : "items-start"}`}>
+                      <div className={`max-w-[85%] sm:max-w-[78%] relative group ${isMe ? "items-end" : "items-start"}`}>
                         {/* Reply preview */}
                         {(msg.reply_preview || msg.reply_to) && !isDeleted && (
                           <div className={`mx-1 mb-0.5 px-3 py-1.5 rounded-t-xl text-[10px] border-l-2 ${
@@ -1161,21 +1161,21 @@ export default function ChatPage() {
                                       </button>
                                     );
                                   })}
-                                  <span className="text-[9px] opacity-60">{msg.poll.options.reduce((s, o) => s + (o.votes || 0), 0)} votes</span>
+                                  <span className="text-[10px] opacity-60">{msg.poll.options.reduce((s, o) => s + (o.votes || 0), 0)} votes</span>
                                 </div>
                               )}
                               {/* Forwarded indicator */}
                               {msg.forwarded && (
                                 <div className="flex items-center gap-1 mt-0.5 opacity-60">
                                   <Forward className="h-2.5 w-2.5" />
-                                  <span className="text-[9px] italic">Forwarded</span>
+                                  <span className="text-[10px] italic">Forwarded</span>
                                 </div>
                               )}
                               {/* Pin indicator */}
                               {msg.pinned && (
                                 <div className="flex items-center gap-1 mt-0.5 opacity-60">
                                   <Pin className="h-2.5 w-2.5" />
-                                  <span className="text-[9px] italic">Pinned</span>
+                                  <span className="text-[10px] italic">Pinned</span>
                                 </div>
                               )}
                             </>
@@ -1196,7 +1196,7 @@ export default function ChatPage() {
 
                         {/* Time + read receipt */}
                         <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
-                          <span className="text-[9px] text-muted-foreground/50">{formatTime(msg.created_at)}</span>
+                          <span className="text-[10px] text-muted-foreground/50">{formatTime(msg.created_at)}</span>
                           {isMe && !isDeleted && (
                             String(msg.id).startsWith("temp-")
                               ? <Clock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
@@ -1278,7 +1278,7 @@ export default function ChatPage() {
             className="absolute bottom-4 right-4 h-10 w-10 rounded-full bg-brand-600 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center z-20 hover:bg-brand-500 transition-all active:scale-95"
             aria-label="Scroll to latest messages">
             {newMsgWhileAway > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+              <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                 {newMsgWhileAway > 9 ? "9+" : newMsgWhileAway}
               </span>
             )}
@@ -1522,7 +1522,7 @@ export default function ChatPage() {
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10px] font-bold text-primary">{msg.sender_name}</span>
                         <div className="flex items-center gap-2">
-                          <span className="text-[9px] text-muted-foreground">{formatTime(msg.created_at)}</span>
+                          <span className="text-[10px] text-muted-foreground">{formatTime(msg.created_at)}</span>
                           <button onClick={() => handleUnpinMessage(msg)} className="text-muted-foreground hover:text-destructive">
                             <PinOff className="h-3 w-3" />
                           </button>
@@ -1602,7 +1602,7 @@ export default function ChatPage() {
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <FileText className="h-6 w-6 text-muted-foreground" />
-                              <span className="text-[9px] text-muted-foreground mt-1 block">{item.media_type}</span>
+                              <span className="text-[10px] text-muted-foreground mt-1 block">{item.media_type}</span>
                             </div>
                           )}
                         </button>

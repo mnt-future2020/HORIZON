@@ -80,10 +80,10 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
             {venue.name}
           </h3>
           {venue.badge === "bookable" && (
-            <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-brand-500/20 text-brand-400 border border-brand-500/30">Bookable</Badge>
+            <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-brand-500/20 text-brand-400 border border-brand-500/30">Bookable</Badge>
           )}
           {venue.badge === "enquiry" && (
-            <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-amber-500/20 text-amber-500 border border-amber-500/30">Enquiry</Badge>
+            <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-amber-500/20 text-amber-500 border border-amber-500/30">Enquiry</Badge>
           )}
         </div>
 
