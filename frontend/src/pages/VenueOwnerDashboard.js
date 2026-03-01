@@ -130,6 +130,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isManageView = location.pathname === "/owner/manage";
+  const searchParams = new URLSearchParams(location.search);
+  const urlTab = searchParams.get("tab");
+  const VALID_TABS = ["bookings", "slots", "reviews", "pricing", "checkin", "plan", "payouts"];
+  const activeTab = VALID_TABS.includes(urlTab) ? urlTab : "bookings";
+  const setActiveTab = (tab) => {
+    const sp = new URLSearchParams(location.search);
+    sp.set("tab", tab);
+    navigate({ search: sp.toString() }, { replace: true });
+  };
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -154,13 +163,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [editVenueOpen, setEditVenueOpen] = useState(false);
   const [editVenueForm, setEditVenueForm] = useState({});
   const [savingVenue, setSavingVenue] = useState(false);
+  const [baseTurf, setBaseTurf] = useState(null);     // { sport, idx } — create form selected base
+  const [editBaseTurf, setEditBaseTurf] = useState(null); // edit form selected base
   const SPORT_SUGGESTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis", "Hockey", "Pickleball", "Swimming"];
   const AMENITY_SUGGESTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
   const [sportInput, setSportInput] = useState("");
   const [amenityInput, setAmenityInput] = useState("");
   const [venueForm, setVenueForm] = useState({
     name: "", description: "", sports: [], address: "", area: "", city: "Bengaluru",
-    base_price: 2000, slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23,
+    slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23,
     amenities: [], images: [], turf_config: [],
   });
 
@@ -170,7 +181,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       const s = sport.trim().toLowerCase();
       setForm(p => {
         if (!s || (p.sports || []).includes(s)) return p;
-        return { ...p, sports: [...(p.sports || []), s], turf_config: [...(p.turf_config || []), { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: p.base_price || 2000 }] }] };
+        return { ...p, sports: [...(p.sports || []), s], turf_config: [...(p.turf_config || []), { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: 2000 }] }] };
       });
       setSportInp("");
     },
@@ -184,7 +195,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       setAmenityInp("");
     },
     removeAmenity: (amenity) => setForm(p => ({ ...p, amenities: (p.amenities || []).filter(a => a !== amenity) })),
-    addTurf: (sport) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: p.base_price || 2000 }] } : tc) })),
+    addTurf: (sport) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: 2000 }] } : tc) })),
     removeTurf: (sport, idx) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc) })),
     renameTurf: (sport, idx, name) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc) })),
     updateTurfPrice: (sport, idx, price) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc) })),
@@ -206,9 +217,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
     return h12 === 12 ? 12 : h12 + 12;
   };
   const emptyRule = {
-    name: "", priority: 10,
+    name: "",
+    rule_type: "discount",
+    value_type: "percent",
+    value: 20,
+    schedule_type: "recurring",
     conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
-    action: { type: "multiplier", value: 1.2 },
+    date_from: "", date_to: "",
+    time_from: "18:00", time_to: "22:00",
     is_active: true,
   };
   const [ruleForm, setRuleForm] = useState({ ...emptyRule });
@@ -292,9 +308,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
       } else {
         payload.turfs = 1;
       }
+      // Compute base_price from selected base turf
+      const bt = baseTurf || { sport: payload.turf_config?.[0]?.sport, idx: 0 };
+      const baseTc = payload.turf_config?.find(tc => tc.sport === bt.sport);
+      payload.base_price = baseTc?.turfs?.[bt.idx]?.price || 2000;
       await venueAPI.create(payload);
       toast.success("Venue created!");
       setCreateVenueOpen(false);
+      setBaseTurf(null);
       loadData();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed");
@@ -329,7 +350,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
       city: selectedVenue.city || "",
       sports: selectedVenue.sports || [],
       amenities: selectedVenue.amenities || [],
-      base_price: selectedVenue.base_price || 2000,
       opening_hour: selectedVenue.opening_hour || 6,
       closing_hour: selectedVenue.closing_hour || 23,
       turf_config: selectedVenue.turf_config || [],
@@ -338,6 +358,16 @@ function VenueOwnerDashboardContent({ defaultView }) {
     });
     setEditSportInput("");
     setEditAmenityInput("");
+    // Init editBaseTurf: find turf whose price matches existing base_price
+    let foundBT = null;
+    for (const tc of (selectedVenue.turf_config || [])) {
+      const idx = (tc.turfs || []).findIndex(t => t.price === selectedVenue.base_price);
+      if (idx >= 0) { foundBT = { sport: tc.sport, idx }; break; }
+    }
+    if (!foundBT && selectedVenue.turf_config?.[0]) {
+      foundBT = { sport: selectedVenue.turf_config[0].sport, idx: 0 };
+    }
+    setEditBaseTurf(foundBT);
     setEditVenueOpen(true);
   };
 
@@ -349,6 +379,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
       if (payload.turf_config?.length) {
         payload.turfs = payload.turf_config.reduce((sum, tc) => sum + tc.turfs.length, 0);
       }
+      // Compute base_price from selected base turf
+      const bt = editBaseTurf || { sport: payload.turf_config?.[0]?.sport, idx: 0 };
+      const baseTc = payload.turf_config?.find(tc => tc.sport === bt.sport);
+      payload.base_price = baseTc?.turfs?.[bt.idx]?.price || 2000;
       const res = await venueAPI.update(selectedVenue.id, payload);
       setSelectedVenue(res.data);
       setVenues(prev => prev.map(v => v.id === res.data.id ? res.data : v));
@@ -370,13 +404,16 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const openEditRule = (rule) => {
     setEditingRule(rule);
     setRuleForm({
-      name: rule.name,
-      priority: rule.priority,
-      conditions: {
-        days: rule.conditions?.days || [],
-        time_range: rule.conditions?.time_range || { start: "18:00", end: "22:00" },
-      },
-      action: rule.action || { type: "multiplier", value: 1.2 },
+      name: rule.name || "",
+      rule_type: rule.rule_type || (rule.action?.type === "multiplier" ? "surge" : "discount"),
+      value_type: rule.value_type || "percent",
+      value: rule.value ?? (rule.action?.value ? Math.round(rule.action.value * 100) : 20),
+      schedule_type: rule.schedule_type || "recurring",
+      conditions: { days: rule.conditions?.days || [], time_range: rule.conditions?.time_range || { start: "18:00", end: "22:00" } },
+      date_from: rule.date_from || "",
+      date_to: rule.date_to || "",
+      time_from: rule.time_from || rule.conditions?.time_range?.start || "18:00",
+      time_to: rule.time_to || rule.conditions?.time_range?.end || "22:00",
       is_active: rule.is_active !== false,
     });
     setRuleDialogOpen(true);
@@ -441,6 +478,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
   const basePrice = selectedVenue?.base_price || 2000;
   const previewPrice = (rule) => {
+    const val = parseFloat(rule.value) || 0;
+    const vtype = rule.value_type || "percent";
+    if (rule.rule_type === "discount") {
+      return vtype === "percent" ? Math.max(Math.round(basePrice * (1 - val / 100)), 0) : Math.max(basePrice - val, 0);
+    }
+    if (rule.rule_type === "surge") {
+      return vtype === "percent" ? Math.round(basePrice * (1 + val / 100)) : basePrice + val;
+    }
+    // legacy
     if (rule.action?.type === "multiplier") return Math.round(basePrice * (rule.action.value || 1));
     if (rule.action?.type === "discount") return Math.round(basePrice * (1 - (rule.action.value || 0)));
     return basePrice;
@@ -552,7 +598,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
         </div>
       </motion.div>
 
-      <Dialog open={createVenueOpen} onOpenChange={setCreateVenueOpen}>
+      <Dialog open={createVenueOpen} onOpenChange={(o) => { setCreateVenueOpen(o); if (!o) setBaseTurf(null); }}>
           <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
@@ -645,21 +691,31 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           </Button>
                         </div>
                         <div className="space-y-1.5">
-                          {tc.turfs.map((t, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                              <Input value={t.name} onChange={e => renameTurf(tc.sport, idx, e.target.value)}
-                                placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-muted-foreground">₹</span>
-                                <Input type="number" value={t.price ?? venueForm.base_price} onChange={e => updateTurfPrice(tc.sport, idx, e.target.value)}
-                                  placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                          {tc.turfs.map((t, idx) => {
+                            const isBase = baseTurf ? (baseTurf.sport === tc.sport && baseTurf.idx === idx)
+                              : (venueForm.turf_config[0]?.sport === tc.sport && idx === 0);
+                            return (
+                              <div key={idx} className="flex items-center gap-2">
+                                <label className="flex items-center gap-1 cursor-pointer shrink-0" title="Set as base price">
+                                  <input type="radio" name="base_turf_create" checked={isBase}
+                                    onChange={() => setBaseTurf({ sport: tc.sport, idx })}
+                                    className="accent-primary w-3 h-3" />
+                                  <span className={`text-[9px] font-bold uppercase w-8 ${isBase ? "text-primary" : "text-transparent"}`}>BASE</span>
+                                </label>
+                                <Input value={t.name} onChange={e => renameTurf(tc.sport, idx, e.target.value)}
+                                  placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] text-muted-foreground">₹</span>
+                                  <Input type="number" value={t.price ?? 2000} onChange={e => updateTurfPrice(tc.sport, idx, e.target.value)}
+                                    placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                                </div>
+                                {tc.turfs.length > 1 && (
+                                  <button type="button" onClick={() => removeTurfFromSport(tc.sport, idx)}
+                                    className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
+                                )}
                               </div>
-                              {tc.turfs.length > 1 && (
-                                <button type="button" onClick={() => removeTurfFromSport(tc.sport, idx)}
-                                  className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
@@ -822,7 +878,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       )}
 
       {isManageView && (
-      <Tabs defaultValue="bookings" data-testid="owner-tabs">
+      <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="owner-tabs">
         <TabsList className="bg-secondary/50 mb-6 flex-wrap h-auto gap-1 p-1">
           <TabsTrigger value="bookings" className="font-bold text-xs" data-testid="tab-bookings">Bookings</TabsTrigger>
           <TabsTrigger value="slots" className="font-bold text-xs" data-testid="tab-slots">
@@ -1320,53 +1376,50 @@ function VenueOwnerDashboardContent({ defaultView }) {
               {pricingRules.map(r => {
                 const effectivePrice = previewPrice(r);
                 const diff = effectivePrice - basePrice;
-                const isUp = diff > 0;
+                const isDiscount = r.rule_type === "discount" || (!r.rule_type && r.action?.type === "discount");
+                const schedType = r.schedule_type || "recurring";
+                const valLabel = r.rule_type
+                  ? (r.value_type === "percent" ? `${r.value}%` : `₹${r.value}`)
+                  : (r.action?.type === "multiplier" ? `${r.action.value}x` : `-${Math.round((r.action?.value||0)*100)}%`);
+                const scheduleLabel = schedType === "one_time"
+                  ? `${r.date_from || "?"} → ${r.date_to || "?"}, ${r.time_from||""}–${r.time_to||""}`
+                  : `${r.conditions?.days?.length > 0 ? r.conditions.days.map(d => DAY_LABELS[d]).join(", ") : "Every day"}${r.conditions?.time_range ? `, ${r.conditions.time_range.start}–${r.conditions.time_range.end}` : ""}`;
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isUp ? "border-l-amber-500" : "border-l-brand-500") : "border-l-muted-foreground/30 opacity-60"}`}
+                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isDiscount ? "border-l-brand-500" : "border-l-amber-500") : "border-l-muted-foreground/30 opacity-60"}`}
                     data-testid={`rule-card-${r.id}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold text-sm text-foreground">{r.name}</span>
-                          <Badge className={`text-[10px] ${r.action?.type === "multiplier" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : "bg-brand-500/15 text-brand-400 border-brand-500/20"} border`}>
-                            {r.action?.type === "multiplier" ? `${r.action.value}x` : `-${Math.round((r.action.value || 0) * 100)}%`}
+                          <Badge className={`text-[10px] border ${isDiscount ? "bg-brand-500/15 text-brand-400 border-brand-500/20" : "bg-amber-500/15 text-amber-400 border-amber-500/20"}`}>
+                            {isDiscount ? "🏷 Offer" : "⚡ Peak"} {valLabel} {isDiscount ? "off" : "extra"}
                           </Badge>
-                          <span className="text-[10px] text-muted-foreground">P{r.priority}</span>
+                          {schedType === "one_time" && <Badge className="text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/20">One-time</Badge>}
                         </div>
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-muted-foreground">
-                          {r.conditions?.time_range && (
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{r.conditions.time_range.start}-{r.conditions.time_range.end}</span>
-                          )}
-                          {r.conditions?.days?.length > 0 && (
-                            <span className="flex items-center gap-1">
-                              {r.conditions.days.map(d => DAY_LABELS[d]).join(", ")}
-                            </span>
-                          )}
-                          {(!r.conditions?.days || r.conditions.days.length === 0) && <span>All days</span>}
-                        </div>
+                        <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                          <Clock className="h-3 w-3 shrink-0" />{scheduleLabel}
+                        </p>
                         {r.is_active && (
-                          <div className="mt-2 text-xs">
-                            <span className="text-muted-foreground">Effect: </span>
-                            <span className="text-muted-foreground">{"\u20B9"}{basePrice}</span>
-                            <span className="text-muted-foreground mx-1">{"\u2192"}</span>
-                            <span className={`font-bold ${isUp ? "text-amber-400" : "text-brand-400"}`}>{"\u20B9"}{effectivePrice}</span>
-                            <span className={`ml-1 text-[10px] ${isUp ? "text-amber-400" : "text-brand-400"}`}>
-                              ({isUp ? "+" : ""}{"\u20B9"}{diff})
-                            </span>
-                          </div>
+                          <p className="text-xs mt-1.5">
+                            {r.value_type === "amount" ? (
+                              <span className={`font-bold ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>
+                                ₹{r.value} {isDiscount ? "off" : "added to"} each turf's price
+                              </span>
+                            ) : (
+                              <>
+                                <span className="text-muted-foreground">e.g. ₹{basePrice} → </span>
+                                <span className={`font-bold ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>₹{effectivePrice}</span>
+                                <span className={`ml-1 text-[10px] ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>({diff > 0 ? "+" : ""}₹{diff})</span>
+                              </>
+                            )}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <Switch checked={r.is_active !== false} onCheckedChange={() => handleToggleRule(r.id)} data-testid={`toggle-rule-${r.id}`} />
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground"
-                          onClick={() => openEditRule(r)} data-testid={`edit-rule-${r.id}`}>
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeleteRule(r.id)} data-testid={`delete-rule-${r.id}`}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditRule(r)} data-testid={`edit-rule-${r.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteRule(r.id)} data-testid={`delete-rule-${r.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                   </motion.div>
@@ -1375,87 +1428,160 @@ function VenueOwnerDashboardContent({ defaultView }) {
             </div>
           )}
 
-          {/* Rule Create/Edit Dialog */}
+          {/* Rule Create/Edit Dialog — redesigned */}
           <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-            <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogContent className="bg-card border-border max-w-md max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="font-display">{editingRule ? "Edit" : "Create"} Pricing Rule</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4">
+              <div className="space-y-5">
+
+                {/* Name */}
                 <div>
                   <Label className="text-xs text-muted-foreground">Rule Name</Label>
                   <Input value={ruleForm.name} onChange={e => setRuleForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="Weekend Peak Hours" className="mt-1 bg-background border-border" data-testid="rule-name-input" />
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Priority (higher = applied first)</Label>
-                  <Input type="number" value={ruleForm.priority} onChange={e => setRuleForm(p => ({ ...p, priority: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" data-testid="rule-priority-input" />
+                    placeholder="Diwali Offer / Friday Peak" className="mt-1 bg-background border-border" data-testid="rule-name-input" />
                 </div>
 
-                {/* Days of week */}
+                {/* Rule Type */}
                 <div>
-                  <Label className="text-xs text-muted-foreground">Days of Week</Label>
-                  <p className="text-[10px] text-muted-foreground mb-2">Leave empty for all days</p>
-                  <div className="flex gap-1.5 flex-wrap">
-                    {DAY_LABELS.map((label, i) => (
-                      <button key={i} onClick={() => toggleDay(i)} data-testid={`day-btn-${i}`}
-                        className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
-                          (ruleForm.conditions.days || []).includes(i)
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-secondary/50 text-muted-foreground hover:text-foreground"
-                        }`}>{label}</button>
+                  <Label className="text-xs text-muted-foreground mb-2 block">Type</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[{ key: "discount", label: "🏷 Offer / Discount", desc: "Reduce price" }, { key: "surge", label: "⚡ Peak / Surge", desc: "Increase price" }].map(t => (
+                      <button key={t.key} onClick={() => setRuleForm(p => ({ ...p, rule_type: t.key }))}
+                        className={`p-3 rounded-lg border text-left transition-all ${ruleForm.rule_type === t.key ? "border-primary bg-primary/10" : "border-border bg-secondary/30 hover:border-primary/50"}`}>
+                        <p className="text-xs font-bold">{t.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
+                      </button>
                     ))}
                   </div>
                 </div>
 
-                {/* Time range */}
+                {/* Value */}
                 <div>
-                  <Label className="text-xs text-muted-foreground">Time Range</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
-                    <Input value={ruleForm.conditions.time_range?.start || ""}
-                      onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
-                      placeholder="18:00" className="bg-background border-border" data-testid="rule-time-start" />
-                    <Input value={ruleForm.conditions.time_range?.end || ""}
-                      onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
-                      placeholder="22:00" className="bg-background border-border" data-testid="rule-time-end" />
+                  <Label className="text-xs text-muted-foreground mb-2 block">
+                    {ruleForm.rule_type === "discount" ? "Discount" : "Surge"} Amount
+                  </Label>
+                  <div className="flex gap-2">
+                    <Input type="number" min="0" value={ruleForm.value}
+                      onChange={e => setRuleForm(p => ({ ...p, value: Number(e.target.value) }))}
+                      className="bg-background border-border flex-1" data-testid="rule-value-input" />
+                    <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+                      {[{ key: "percent", label: "%" }, { key: "amount", label: "₹" }].map(vt => (
+                        <button key={vt.key} onClick={() => setRuleForm(p => ({ ...p, value_type: vt.key }))}
+                          className={`px-3 py-2 text-sm font-bold transition-all ${ruleForm.value_type === vt.key ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground hover:text-foreground"}`}>
+                          {vt.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Action */}
+                {/* Schedule Type */}
                 <div>
-                  <Label className="text-xs text-muted-foreground">Action Type</Label>
-                  <Select value={ruleForm.action.type} onValueChange={v => setRuleForm(p => ({ ...p, action: { ...p.action, type: v } }))}>
-                    <SelectTrigger className="mt-1 bg-background border-border" data-testid="rule-action-select"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="multiplier">Multiplier (e.g., 1.2 = +20%)</SelectItem>
-                      <SelectItem value="discount">Discount (e.g., 0.15 = -15%)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Value</Label>
-                  <Input type="number" step="0.01" value={ruleForm.action.value}
-                    onChange={e => setRuleForm(p => ({ ...p, action: { ...p.action, value: Number(e.target.value) } }))}
-                    className="mt-1 bg-background border-border" data-testid="rule-value-input" />
+                  <Label className="text-xs text-muted-foreground mb-2 block">Schedule</Label>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    {[{ key: "recurring", label: "🔁 Recurring", desc: "Repeats every week" }, { key: "one_time", label: "📅 One-time", desc: "Specific dates only" }].map(s => (
+                      <button key={s.key} onClick={() => setRuleForm(p => ({ ...p, schedule_type: s.key }))}
+                        className={`p-3 rounded-lg border text-left transition-all ${ruleForm.schedule_type === s.key ? "border-primary bg-primary/10" : "border-border bg-secondary/30 hover:border-primary/50"}`}>
+                        <p className="text-xs font-bold">{s.label}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.desc}</p>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Recurring: days + time */}
+                  {ruleForm.schedule_type === "recurring" && (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1.5">Days <span className="text-[10px]">(leave empty = every day)</span></p>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {DAY_LABELS.map((label, i) => (
+                            <button key={i} onClick={() => toggleDay(i)} data-testid={`day-btn-${i}`}
+                              className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${(ruleForm.conditions.days||[]).includes(i) ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                              {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1.5">Time Range</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <p className="text-[10px] text-muted-foreground mb-1">From</p>
+                            <input type="time" value={ruleForm.conditions.time_range?.start || "18:00"}
+                              onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                          </div>
+                          <div>
+                            <p className="text-[10px] text-muted-foreground mb-1">To</p>
+                            <input type="time" value={ruleForm.conditions.time_range?.end || "22:00"}
+                              onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* One-time: date range + time */}
+                  {ruleForm.schedule_type === "one_time" && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">Start Date</p>
+                          <input type="date" value={ruleForm.date_from || ""}
+                            onChange={e => setRuleForm(p => ({ ...p, date_from: e.target.value }))}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">End Date</p>
+                          <input type="date" value={ruleForm.date_to || ""}
+                            onChange={e => setRuleForm(p => ({ ...p, date_to: e.target.value }))}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">From Time</p>
+                          <input type="time" value={ruleForm.time_from || "18:00"}
+                            onChange={e => setRuleForm(p => ({ ...p, time_from: e.target.value }))}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1">To Time</p>
+                          <input type="time" value={ruleForm.time_to || "22:00"}
+                            onChange={e => setRuleForm(p => ({ ...p, time_to: e.target.value }))}
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Live Preview */}
                 <div className="glass-card rounded-lg p-3" data-testid="rule-preview">
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Price Preview</span>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-sm text-muted-foreground">{"\u20B9"}{basePrice}</span>
-                    <span className="text-muted-foreground">{"\u2192"}</span>
-                    <span className="text-lg font-display font-bold text-primary">{"\u20B9"}{previewPrice(ruleForm)}</span>
-                    {(() => {
-                      const d = previewPrice(ruleForm) - basePrice;
-                      return d !== 0 && (
-                        <Badge className={`text-[10px] ${d > 0 ? "bg-amber-500/15 text-amber-400" : "bg-brand-500/15 text-brand-400"}`}>
-                          {d > 0 ? "+" : ""}{"\u20B9"}{d}
-                        </Badge>
-                      );
-                    })()}
-                  </div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Price Preview</p>
+                  {ruleForm.value_type === "amount" ? (
+                    <p className={`text-base font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>
+                      ₹{parseFloat(ruleForm.value) || 0} {ruleForm.rule_type === "discount" ? "off" : "added to"} each turf's price
+                    </p>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-muted-foreground">e.g.</span>
+                      <span className="text-sm text-muted-foreground line-through">₹{basePrice}</span>
+                      <span className="text-muted-foreground">→</span>
+                      <span className={`text-lg font-display font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>₹{previewPrice(ruleForm)}</span>
+                      {(() => {
+                        const d = previewPrice(ruleForm) - basePrice;
+                        return d !== 0 && (
+                          <Badge className={`text-[10px] ${d < 0 ? "bg-brand-500/15 text-brand-400" : "bg-amber-500/15 text-amber-400"}`}>
+                            {d > 0 ? "+" : ""}₹{d}
+                          </Badge>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveRule} data-testid="submit-rule-btn">
@@ -1828,21 +1954,31 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         </Button>
                       </div>
                       <div className="space-y-1.5">
-                        {tc.turfs.map((t, idx) => (
-                          <div key={idx} className="flex items-center gap-2">
-                            <Input value={t.name} onChange={e => renameEditTurf(tc.sport, idx, e.target.value)}
-                              placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-muted-foreground">₹</span>
-                              <Input type="number" value={t.price ?? editVenueForm.base_price ?? 2000} onChange={e => updateEditTurfPrice(tc.sport, idx, e.target.value)}
-                                placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                        {tc.turfs.map((t, idx) => {
+                          const isBase = editBaseTurf ? (editBaseTurf.sport === tc.sport && editBaseTurf.idx === idx)
+                            : ((editVenueForm.turf_config || [])[0]?.sport === tc.sport && idx === 0);
+                          return (
+                            <div key={idx} className="flex items-center gap-2">
+                              <label className="flex items-center gap-1 cursor-pointer shrink-0" title="Set as base price">
+                                <input type="radio" name="base_turf_edit" checked={isBase}
+                                  onChange={() => setEditBaseTurf({ sport: tc.sport, idx })}
+                                  className="accent-primary w-3 h-3" />
+                                <span className={`text-[9px] font-bold uppercase w-8 ${isBase ? "text-primary" : "text-transparent"}`}>BASE</span>
+                              </label>
+                              <Input value={t.name} onChange={e => renameEditTurf(tc.sport, idx, e.target.value)}
+                                placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
+                              <div className="flex items-center gap-1">
+                                <span className="text-[10px] text-muted-foreground">₹</span>
+                                <Input type="number" value={t.price ?? 2000} onChange={e => updateEditTurfPrice(tc.sport, idx, e.target.value)}
+                                  placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                              </div>
+                              {tc.turfs.length > 1 && (
+                                <button type="button" onClick={() => removeEditTurf(tc.sport, idx)}
+                                  className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
+                              )}
                             </div>
-                            {tc.turfs.length > 1 && (
-                              <button type="button" onClick={() => removeEditTurf(tc.sport, idx)}
-                                className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
@@ -1979,19 +2115,6 @@ function VenueAnalyticsPanel({ venueId }) {
   }, [venueId, period]);
 
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const activeHeatmap = !insights ? [] :
-    selectedTurf === "all" ? insights.heatmap :
-    (insights.heatmap_by_turf?.[selectedTurf] || []);
-  const maxCount = activeHeatmap.length > 0 ? Math.max(...activeHeatmap.map(h => h.count), 1) : 1;
-
-  const heatColor = (count) => {
-    const ratio = count / maxCount;
-    if (ratio >= 0.75) return "bg-brand-500/80 text-white";
-    if (ratio >= 0.5)  return "bg-brand-500/50 text-foreground";
-    if (ratio >= 0.25) return "bg-brand-500/25 text-foreground";
-    if (ratio > 0)     return "bg-brand-500/10 text-muted-foreground";
-    return "bg-secondary/20 text-muted-foreground/40";
-  };
 
   const insightIcon = (type) => {
     if (type === "peak")    return <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />;
@@ -2026,101 +2149,159 @@ function VenueAnalyticsPanel({ venueId }) {
     );
   }
 
-  // Build a 24×7 grid (hours 0–23, dow 0–6)
-  const countMap = {};
-  activeHeatmap.forEach(h => { countMap[`${h.hour}_${h.dow}`] = h.count; });
-  const activeHours = [...new Set(activeHeatmap.map(h => h.hour))].sort((a, b) => a - b);
+  const activeHeatmap = selectedTurf === "all"
+    ? insights.heatmap
+    : (insights.heatmap_by_turf?.[selectedTurf] || []);
+
+  // Aggregate totals per day and per hour
+  const dayTotals = Array(7).fill(0);
+  const hourTotalsMap = {};
+  activeHeatmap.forEach(h => {
+    dayTotals[h.dow] = (dayTotals[h.dow] || 0) + h.count;
+    hourTotalsMap[h.hour] = (hourTotalsMap[h.hour] || 0) + h.count;
+  });
+  const maxDay = Math.max(...dayTotals, 1);
+  const activeHourEntries = Object.entries(hourTotalsMap)
+    .map(([h, c]) => ({ hour: Number(h), count: c }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6); // top 6 busiest hours
+  const maxHour = activeHourEntries.length > 0 ? Math.max(...activeHourEntries.map(e => e.count), 1) : 1;
 
   const periodLabel = period === 0 ? "all time" : `last ${period} days`;
+  const totalBookings = insights.confirmed_count ?? 0;
 
   return (
     <div className="space-y-4" data-testid="analytics-panel">
-      {/* Period selector */}
+
+      {/* Header: summary + period pills */}
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-xs text-muted-foreground">Showing data for <span className="text-foreground font-semibold">{periodLabel}</span></p>
+        <p className="text-sm text-muted-foreground">
+          <span className="text-foreground font-bold text-base">{totalBookings}</span>
+          {" "}bookings in the {periodLabel}
+        </p>
         <div className="flex gap-1">
           {[{ label: "30d", days: 30 }, { label: "90d", days: 90 }, { label: "180d", days: 180 }, { label: "All", days: 0 }].map(p => (
             <button key={p.days} onClick={() => setPeriod(p.days)}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${period === p.days ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+              className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${period === p.days ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
               {p.label}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Stats row */}
+      {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Avg Occupancy", value: `${insights.avg_occupancy}%`, sub: periodLabel },
-          { label: "Cancellation", value: `${insights.cancellation_rate}%`, sub: "of all bookings" },
-          { label: "Repeat Customers", value: `${insights.repeat_customer_rate}%`, sub: "returning users" },
-          { label: "Avg Lead Time", value: `${insights.avg_lead_time_days}d`, sub: "before slot date" },
+          {
+            label: "Slots Filled",
+            value: `${insights.avg_occupancy}%`,
+            sub: "avg turf occupancy",
+            icon: <BarChart2 className="h-4 w-4 text-brand-400" />,
+          },
+          {
+            label: "Cancelled",
+            value: `${insights.cancellation_rate}%`,
+            sub: "of all bookings",
+            icon: <TrendingDown className="h-4 w-4 text-blue-400" />,
+          },
+          {
+            label: "Return Visitors",
+            value: `${insights.repeat_customer_rate}%`,
+            sub: "booked more than once",
+            icon: <Users className="h-4 w-4 text-amber-400" />,
+          },
+          {
+            label: "Booked Ahead",
+            value: `${insights.avg_lead_time_days}d`,
+            sub: "avg days before slot",
+            icon: <Calendar className="h-4 w-4 text-purple-400" />,
+          },
         ].map(s => (
-          <div key={s.label} className="glass-card rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="font-display font-bold text-xl text-foreground">{s.value}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{s.sub}</p>
+          <div key={s.label} className="glass-card rounded-xl p-4 flex flex-col gap-1">
+            <div className="flex items-center gap-1.5">
+              {s.icon}
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
+            </div>
+            <p className="font-display font-bold text-2xl text-foreground leading-none">{s.value}</p>
+            <p className="text-[10px] text-muted-foreground">{s.sub}</p>
           </div>
         ))}
       </div>
 
-      {/* Heatmap */}
-      <div className="glass-card rounded-xl p-4">
-        <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-          <h3 className="font-bold text-sm flex items-center gap-2">
-            <BarChart2 className="h-4 w-4 text-primary" />
-            Booking Heatmap
-            <span className="text-[10px] text-muted-foreground font-normal">— how often each slot gets booked</span>
-          </h3>
-          {insights.turf_list?.length > 1 && (
-            <div className="flex gap-1 flex-wrap">
-              <button onClick={() => setSelectedTurf("all")}
-                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${selectedTurf === "all" ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                All
-              </button>
-              {insights.turf_list.map(t => (
-                <button key={t.turf_number} onClick={() => setSelectedTurf(String(t.turf_number))}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${selectedTurf === String(t.turf_number) ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                  {t.name}
-                </button>
-              ))}
+      {/* Charts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+        {/* Busiest Days */}
+        <div className="glass-card rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-bold text-sm">📅 Busiest Days</h3>
+            {insights.turf_list?.length > 1 && (
+              <select
+                value={selectedTurf}
+                onChange={e => setSelectedTurf(e.target.value)}
+                className="text-[10px] bg-secondary/50 border border-border rounded px-2 py-0.5 text-foreground"
+              >
+                <option value="all">All Turfs</option>
+                {insights.turf_list.map(t => (
+                  <option key={t.turf_number} value={String(t.turf_number)}>{t.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+          {dayTotals.every(v => v === 0) ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">No bookings yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {DAYS.map((day, dow) => {
+                const count = dayTotals[dow];
+                const pct = Math.round((count / maxDay) * 100);
+                return (
+                  <div key={day} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-7 shrink-0">{day}</span>
+                    <div className="flex-1 bg-secondary/30 rounded-full h-5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-brand-500/70 flex items-center justify-end pr-2 transition-all duration-500"
+                        style={{ width: `${Math.max(pct, count > 0 ? 8 : 0)}%` }}
+                      >
+                        {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
-        {activeHours.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">No confirmed bookings yet in the last 90 days.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[10px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left pr-2 py-1 text-muted-foreground font-medium w-10">Time</th>
-                  {DAYS.map(d => (
-                    <th key={d} className="text-center px-1 py-1 text-muted-foreground font-medium">{d}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {activeHours.map(h => (
-                  <tr key={h}>
-                    <td className="pr-2 py-0.5 font-mono text-muted-foreground whitespace-nowrap">{String(h).padStart(2, "0")}:00</td>
-                    {DAYS.map((_, dow) => {
-                      const cnt = countMap[`${h}_${dow}`] || 0;
-                      return (
-                        <td key={dow} className="px-0.5 py-0.5">
-                          <div className={`rounded text-center py-1 px-1 min-w-[28px] font-bold ${heatColor(cnt)}`}>
-                            {cnt > 0 ? cnt : ""}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-[9px] text-muted-foreground mt-2">Numbers = bookings in last 90 days · darker = more bookings</p>
-          </div>
-        )}
+
+        {/* Busiest Hours */}
+        <div className="glass-card rounded-xl p-4 space-y-3">
+          <h3 className="font-bold text-sm">⏰ Busiest Hours</h3>
+          {activeHourEntries.length === 0 ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">No bookings yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {activeHourEntries.map(({ hour, count }) => {
+                const pct = Math.round((count / maxHour) * 100);
+                const ampm = hour < 12 ? "AM" : "PM";
+                const h12 = hour % 12 === 0 ? 12 : hour % 12;
+                const label = `${h12} ${ampm}`;
+                return (
+                  <div key={hour} className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground w-10 shrink-0">{label}</span>
+                    <div className="flex-1 bg-secondary/30 rounded-full h-5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-emerald-500/70 flex items-center justify-end pr-2 transition-all duration-500"
+                        style={{ width: `${Math.max(pct, 8)}%` }}
+                      >
+                        <span className="text-[10px] font-bold text-white">{count}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Insights */}

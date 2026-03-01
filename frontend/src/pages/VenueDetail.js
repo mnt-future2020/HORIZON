@@ -305,7 +305,7 @@ export default function VenueDetail() {
         );
         return !inCart;
       })
-      .map(s => ({ time: s.start_time, endTime: s.end_time, price: s.price }));
+      .map(s => ({ time: s.start_time, endTime: s.end_time, price: s.price, hasOffer: s.has_offer, originalPrice: s.original_price }));
   }, [slots, selectedCourt, cart, dateStr]);
 
   const slotDuration = venue?.slot_duration_minutes || 60;
@@ -343,6 +343,20 @@ export default function VenueDetail() {
     let total = 0;
     for (let i = startIdx; i < startIdx + durationSlots && i < courtSlots.length; i++) {
       total += courtSlots[i].price;
+    }
+    return total;
+  }, [selectedStartTime, selectedCourt, durationSlots, slots]);
+
+  const selectionOriginalPrice = useMemo(() => {
+    if (!selectedStartTime || !selectedCourt) return 0;
+    const courtSlots = slots
+      .filter(s => s.turf_number === selectedCourt.turf_number)
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const startIdx = courtSlots.findIndex(s => s.start_time === selectedStartTime);
+    if (startIdx < 0) return 0;
+    let total = 0;
+    for (let i = startIdx; i < startIdx + durationSlots && i < courtSlots.length; i++) {
+      total += courtSlots[i].original_price || courtSlots[i].price;
     }
     return total;
   }, [selectedStartTime, selectedCourt, durationSlots, slots]);
@@ -766,12 +780,17 @@ export default function VenueDetail() {
                             <div className="grid grid-cols-2 gap-2">
                               {availableStartTimes.map(t => (
                                 <button key={t.time} onClick={() => { handleStartTimeChange(t.time); setShowTimePicker(false); }}
-                                  className={`py-2.5 px-3 rounded-lg text-sm font-semibold text-center transition-all ${
+                                  className={`relative py-2.5 px-3 rounded-lg text-sm font-semibold text-center transition-all ${
                                     selectedStartTime === t.time
                                       ? "bg-primary text-primary-foreground shadow-md"
                                       : "bg-secondary/50 text-foreground hover:bg-secondary"
                                   }`}>
                                   {fmt12h(t.time)}
+                                  {t.hasOffer && (
+                                    <span className="absolute -top-1.5 -right-1.5 bg-brand-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full leading-none">
+                                      OFFER
+                                    </span>
+                                  )}
                                 </button>
                               ))}
                             </div>
@@ -850,7 +869,17 @@ export default function VenueDetail() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <p className="text-xs text-muted-foreground">Total Price</p>
-                        <p className="font-display text-2xl font-black text-primary">₹{selectionPrice}</p>
+                        <div className="flex items-baseline gap-2">
+                          <p className="font-display text-2xl font-black text-primary">₹{selectionPrice}</p>
+                          {selectionOriginalPrice > selectionPrice && (
+                            <span className="text-sm text-muted-foreground line-through">₹{selectionOriginalPrice}</span>
+                          )}
+                        </div>
+                        {selectionOriginalPrice > selectionPrice && (
+                          <span className="text-[10px] font-bold text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full">
+                            🏷 OFFER — Save ₹{selectionOriginalPrice - selectionPrice}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-muted-foreground">
                         {fmt12h(selectedStartTime)} — {fmt12h(selectionEndTime)}

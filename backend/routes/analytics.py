@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends
 from database import db
 from auth import get_current_user
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from tz import now_ist, IST
 
 router = APIRouter()
 
@@ -21,7 +22,7 @@ async def venue_insights(venue_id: str, days: int = 90, user=Depends(get_current
 
     query: dict = {"venue_id": venue_id}
     if days > 0:
-        since_str = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y-%m-%d")
+        since_str = (now_ist() - timedelta(days=days)).strftime("%Y-%m-%d")
         query["date"] = {"$gte": since_str}
 
     period_label = f"{days} days" if days > 0 else "all time"
@@ -117,9 +118,9 @@ async def venue_insights(venue_id: str, days: int = 90, user=Depends(get_current
         sum(occupancy_by_turf.values()) / max(len(occupancy_by_turf), 1), 1
     ) if occupancy_by_turf else 0.0
 
-    # ── Cancellation rate ───────────────────────────────────────────────────
-    total = len(bookings)
-    cancellation_rate = round(len(cancelled) / max(total, 1) * 100, 1)
+    # ── Cancellation rate — denominator = confirmed + cancelled only ─────────
+    decided = len(confirmed) + len(cancelled)
+    cancellation_rate = round(len(cancelled) / max(decided, 1) * 100, 1)
 
     # ── Repeat customer rate ────────────────────────────────────────────────
     user_counts: dict = {}
@@ -135,10 +136,10 @@ async def venue_insights(venue_id: str, days: int = 90, user=Depends(get_current
     lead_times = []
     for b in confirmed:
         try:
-            slot_date = datetime.strptime(b["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            slot_date = datetime.strptime(b["date"], "%Y-%m-%d").replace(tzinfo=IST)
             created   = b.get("created_at")
             if isinstance(created, str):
-                created = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                created = datetime.fromisoformat(created.replace("Z", "+05:30"))
             if created and slot_date > created:
                 lead_times.append((slot_date - created).days)
         except Exception:

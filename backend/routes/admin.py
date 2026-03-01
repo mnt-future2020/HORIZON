@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File, Query
 from typing import Optional
 import math
-from datetime import datetime, timezone
+from datetime import datetime
 from database import db
 from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw
 from tz import now_ist
+from routes.venues import min_turf_price
 import s3_service
 import uuid
 import re
@@ -241,7 +242,7 @@ async def admin_create_venue(request: Request, user=Depends(get_current_user)):
         "lng": data.get("lng", 77.5946),
         "amenities": data.get("amenities", []),
         "images": data.get("images", []),
-        "base_price": data.get("base_price", 2000),
+        "base_price": (data.get("base_price") or 0) if (data.get("base_price") or 0) > 0 else min_turf_price(data),
         "slot_duration_minutes": data.get("slot_duration_minutes", 60),
         "opening_hour": data.get("opening_hour", 6),
         "closing_hour": data.get("closing_hour", 23),

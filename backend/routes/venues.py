@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, WebSocket, WebSocketDisconnect
 from typing import Optional, Dict, List
-from datetime import datetime, timezone
+from datetime import datetime
 from database import db, get_redis, lock_key, SOFT_LOCK_TTL, HARD_LOCK_TTL
 from auth import get_current_user, get_optional_user, get_platform_settings
 from tz import now_ist
@@ -15,6 +15,85 @@ import whatsapp_service
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
+
+
+# ---------------------------------------------------------------------------
+# Pricing Rule Helper
+# ---------------------------------------------------------------------------
+def min_turf_price(data: dict) -> int:
+    """Compute minimum turf price from turf_config. Fallback to existing base_price or 2000."""
+    for tc in (data.get("turf_config") or []):
+        for t in (tc.get("turfs") or []):
+            if isinstance(t.get("price"), (int, float)) and t["price"] > 0:
+                return min(
+                    (t2["price"] for tc2 in (data.get("turf_config") or [])
+                     for t2 in (tc2.get("turfs") or [])
+                     if isinstance(t2.get("price"), (int, float)) and t2["price"] > 0),
+                    default=data.get("base_price", 2000)
+                )
+    return data.get("base_price", 2000)
+
+
+def _time_to_min(t: str) -> int:
+    """Convert 'HH:MM' to total minutes. Handles zero-padded and single-digit hours."""
+    try:
+        h, m = t.split(":")
+        return int(h) * 60 + int(m)
+    except Exception:
+        return 0
+
+
+def apply_rule(price: int, rule: dict, date_str: str, slot_start: str, dow: int) -> int:
+    """Apply one pricing rule. Returns new price (unchanged if rule doesn't match)."""
+    stype = rule.get("schedule_type", "recurring")
+    slot_min = _time_to_min(slot_start)
+
+    if stype == "one_time":
+        date_from = rule.get("date_from") or ""
+        date_to = rule.get("date_to") or ""
+        time_from = rule.get("time_from") or "00:00"
+        time_to = rule.get("time_to") or "23:59"
+        if not date_from or not (date_from <= date_str <= date_to):
+            return price
+        if not (_time_to_min(time_from) <= slot_min < _time_to_min(time_to)):
+            return price
+    else:  # recurring (also handles legacy rules)
+        cond = rule.get("conditions", {})
+        days = cond.get("days", [])
+        if days and dow not in days:
+            return price
+        tr = cond.get("time_range", {})
+        if tr:
+            start_min = _time_to_min(tr.get("start", "00:00"))
+            end_min   = _time_to_min(tr.get("end", "23:59"))
+            if slot_min < start_min or slot_min >= end_min:
+                return price
+
+    # New rule format
+    if "rule_type" in rule:
+        rtype = rule["rule_type"]
+        vtype = rule.get("value_type", "percent")
+        val = float(rule.get("value", 0))
+        if rtype == "discount":
+            # Clamp percent to [0, 100] to prevent free/negative slots
+            if vtype == "percent":
+                val = min(max(val, 0), 100)
+                return max(round(price * (1 - val / 100)), 0)
+            return max(round(price - val), 0)
+        elif rtype == "surge":
+            if vtype == "percent":
+                val = max(val, 0)
+                return round(price * (1 + val / 100))
+            return round(price + val)
+        return price
+
+    # Legacy format (action.type = "multiplier" | "discount")
+    act = rule.get("action", {})
+    if act.get("type") == "multiplier":
+        return int(price * act.get("value", 1))
+    elif act.get("type") == "discount":
+        return int(price * (1 - min(max(act.get("value", 0), 0), 1.0)))
+    return price
 
 
 # ---------------------------------------------------------------------------
@@ -129,6 +208,30 @@ async def list_venues(
         sort_field = [("total_bookings", -1)]
 
     venues = await db.venues.find(query, {"_id": 0}).sort(sort_field).to_list(200)
+
+    # Mark venues that have an active offer (discount rule) right now
+    if venues:
+        venue_ids = [v["id"] for v in venues]
+        today = now_ist().strftime("%Y-%m-%d")
+        offer_rules = await db.pricing_rules.find(
+            {"venue_id": {"$in": venue_ids}, "is_active": True, "rule_type": "discount"},
+            {"venue_id": 1, "schedule_type": 1, "date_from": 1, "date_to": 1}
+        ).to_list(500)
+
+        offer_venue_ids = set()
+        for r in offer_rules:
+            stype = r.get("schedule_type", "recurring")
+            if stype == "one_time":
+                df = r.get("date_from") or ""
+                dt = r.get("date_to") or ""
+                if df and dt and df <= today <= dt:
+                    offer_venue_ids.add(r["venue_id"])
+            else:
+                offer_venue_ids.add(r["venue_id"])
+
+        for v in venues:
+            v["has_active_offer"] = v["id"] in offer_venue_ids
+
     return venues
 
 
@@ -278,6 +381,9 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
     if data.get("turf_config"):
         total = sum(len(tc.get("turfs", [])) for tc in data["turf_config"])
         data["turfs"] = max(total, 1)
+    # Use sent base_price if valid, else compute from min turf price
+    if not data.get("base_price") or data["base_price"] <= 0:
+        data["base_price"] = min_turf_price(data)
     venue = {
         "id": str(uuid.uuid4()),
         "owner_id": user["id"],
@@ -306,6 +412,9 @@ async def update_venue(venue_id: str, input: VenueUpdate, user=Depends(get_curre
     # Auto-calculate turfs from turf_config
     if "turf_config" in updates and updates["turf_config"]:
         updates["turfs"] = max(sum(len(tc.get("turfs", [])) for tc in updates["turf_config"]), 1)
+        # Use sent base_price if valid, else compute from min turf price
+        if not updates.get("base_price") or updates["base_price"] <= 0:
+            updates["base_price"] = min_turf_price(updates)
     # If name is being updated, regenerate slug
     if "name" in updates:
         base_slug = generate_slug(updates["name"])
@@ -477,27 +586,18 @@ async def get_slots(venue_id: str, date: str, request: Request):
         else:
             status = "available"
 
-        price = turf_price or base_price
+        original_price = turf_price or base_price
+        price = original_price
         for rule in rules:
-            cond = rule.get("conditions", {})
-            act = rule.get("action", {})
-            match = True
-            if "days" in cond and dow not in cond["days"]:
-                match = False
-            if "time_range" in cond:
-                tr = cond["time_range"]
-                if start < tr.get("start", "00:00") or start >= tr.get("end", "23:59"):
-                    match = False
-            if match:
-                if act.get("type") == "multiplier":
-                    price = int(price * act.get("value", 1))
-                elif act.get("type") == "discount":
-                    price = int(price * (1 - act.get("value", 0)))
+            price = apply_rule(price, rule, date, start, dow)
 
         slots.append({
             "start_time": start, "end_time": end, "turf_number": turf_num,
             "turf_name": turf_name, "sport": sport,
-            "price": price, "status": status,
+            "price": price,
+            "original_price": original_price if price < original_price else None,
+            "has_offer": price < original_price,
+            "status": status,
             "locked_by": locked_by if locked_by and locked_by != current_uid else None,
         })
     return {"venue_id": venue_id, "date": date, "slots": slots}

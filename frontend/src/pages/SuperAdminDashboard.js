@@ -705,7 +705,7 @@ function VenuesTab() {
   const [creating, setCreating] = useState(false);
   const SPORTS_OPTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis"];
   const AMENITIES_OPTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
-  const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "", area: "", city: "", sports: [], amenities: [], base_price: 2000, turfs: 1, opening_hour: 6, closing_hour: 23, slot_duration_minutes: 60, contact_phone: "", images: [] });
+  const [venueForm, setVenueForm] = useState({ name: "", description: "", address: "", area: "", city: "", sports: [], amenities: [], turfs: 1, opening_hour: 6, closing_hour: 23, slot_duration_minutes: 60, contact_phone: "", images: [] });
   const toggleFormArray = (field, val) => setVenueForm(p => ({ ...p, [field]: p[field].includes(val) ? p[field].filter(v => v !== val) : [...p[field], val] }));
   const [uploading, setUploading] = useState(false);
   // Assign owner
@@ -739,7 +739,7 @@ function VenuesTab() {
       await adminAPI.createVenue(venueForm);
       toast.success("Venue created (Enquiry mode)");
       setShowCreateDialog(false);
-      setVenueForm({ name: "", description: "", address: "", city: "", sports: ["football"], base_price: 2000, turfs: 1, contact_phone: "", images: [] });
+      setVenueForm({ name: "", description: "", address: "", city: "", sports: ["football"], turfs: 1, contact_phone: "", images: [] });
       load();
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to create venue"); }
     finally { setCreating(false); }
@@ -869,15 +869,9 @@ function VenuesTab() {
                 ))}
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="admin-section-label ml-1">Base Price (INR/hr)</Label>
-                <Input type="number" value={venueForm.base_price} onChange={e => setVenueForm(p => ({ ...p, base_price: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
-              </div>
-              <div>
-                <Label className="admin-section-label ml-1">Number of Turfs</Label>
-                <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
-              </div>
+            <div>
+              <Label className="admin-section-label ml-1">Number of Turfs</Label>
+              <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div>

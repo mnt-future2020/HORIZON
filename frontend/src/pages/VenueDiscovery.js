@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI } from "@/lib/api";
@@ -15,6 +15,108 @@ import { toast } from "sonner";
 // Athlete action imagery
 const DISCOVERY_BANNER = "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1920&q=80";
 const EMPTY_STATE_IMG = "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=600&q=80";
+
+
+function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
+  const displayPrice = venue.base_price || venue.price_per_hour || 2000;
+  const isMultiSport = (venue.sports?.length || 0) > 1;
+
+  return (
+    <motion.div layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      onClick={onClick}
+      className="group cursor-pointer flex flex-col h-full bg-white border border-slate-200 hover:border-brand-400 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
+      data-testid={`venue-card-${venue.id}`}>
+
+      {/* Image */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 p-2">
+        <div className="relative w-full h-full overflow-hidden rounded-lg">
+          {venue.images?.[0] ? (
+            <img src={mediaUrl(venue.images[0])} alt={venue.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+          ) : (
+            <div className="w-full h-full bg-slate-100 flex items-center justify-center rounded-lg">
+              <Building2 className="h-10 w-10 text-slate-300" />
+            </div>
+          )}
+        </div>
+
+        {/* Distance / Drive-time badge */}
+        {(distanceBadge != null) && (
+          <div className="absolute top-4 left-4 flex gap-2">
+            <div className="bg-white text-slate-800 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
+              <Navigation className="h-3 w-3 mr-1.5 text-brand-600" />
+              {distanceBadge.toFixed(1)} km
+            </div>
+            {driveTimeBadge != null && (
+              <div className="bg-brand-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
+                <Clock className="h-3 w-3 mr-1.5" />
+                {driveTimeBadge} min
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Top-right: sport badge (single sport) + offer badge */}
+        <div className="absolute top-4 right-4 flex flex-col items-end gap-1.5">
+          {!isMultiSport && venue.sports?.[0] && (
+            <div className="bg-brand-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md rounded-full">
+              {venue.sports[0].replace("_", " ")}
+            </div>
+          )}
+          {venue.has_active_offer && (
+            <div className="bg-rose-500 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md rounded-full">
+              🏷 OFFER
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="p-5 flex flex-col flex-grow">
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 truncate group-hover:text-brand-700 transition-colors duration-300"
+            data-testid={`venue-name-${venue.id}`}>
+            {venue.name}
+          </h3>
+          {venue.badge === "bookable" && (
+            <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-brand-500/20 text-brand-400 border border-brand-500/30">Bookable</Badge>
+          )}
+          {venue.badge === "enquiry" && (
+            <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-amber-500/20 text-amber-500 border border-amber-500/30">Enquiry</Badge>
+          )}
+        </div>
+
+        {/* Location */}
+        <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+          <MapPin className="h-3.5 w-3.5 text-brand-500" />
+          <span className="truncate">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
+        </div>
+
+        {/* Stats row */}
+        <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+            <span className="font-black text-sm text-slate-800">{venue.rating?.toFixed(1) || "NEW"}</span>
+            {venue.total_reviews > 0 && (
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest ml-1">({venue.total_reviews})</span>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="font-black text-lg text-brand-700 flex items-baseline gap-1">
+              <span className="text-[10px] font-normal text-slate-400">from</span>
+              ₹{displayPrice}
+              <span className="text-[10px] text-slate-400 uppercase tracking-widest">/HR</span>
+            </div>
+            {venue.has_active_offer && (
+              <p className="text-[10px] font-bold text-rose-500 leading-none mt-0.5">Offers available</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function VenueDiscovery() {
   const navigate = useNavigate();
@@ -383,88 +485,14 @@ export default function VenueDiscovery() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <AnimatePresence mode="popLayout">
               {venues.map((venue, idx) => (
-                <motion.div key={venue.id} layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                <VenueCard
+                  key={venue.id}
+                  venue={venue}
+                  idx={idx}
                   onClick={() => venue.slug ? navigate(`/venue/${venue.slug}`) : navigate(`/venues/${venue.id}`)}
-                  className="group cursor-pointer flex flex-col h-full bg-white border border-slate-200 hover:border-brand-400 rounded-xl shadow-sm hover:shadow-xl transition-all duration-300"
-                  data-testid={`venue-card-${venue.id}`}>
-                  {/* Image */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-50 p-2">
-                    <div className="relative w-full h-full overflow-hidden rounded-lg">
-                      {venue.images?.[0] ? (
-                        <img src={mediaUrl(venue.images[0])} alt={venue.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                      ) : (
-                        <div className="w-full h-full bg-slate-100 flex items-center justify-center rounded-lg">
-                          <Building2 className="h-10 w-10 text-slate-300" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Distance / Drive-time badge */}
-                    {(distanceMap[venue.id] != null || venue.distance_km != null) && (
-                      <div className="absolute top-4 left-4 flex gap-2" data-testid={`distance-badge-${venue.id}`}>
-                        <div className="bg-white text-slate-800 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
-                          <Navigation className="h-3 w-3 mr-1.5 text-brand-600" />
-                          {(distanceMap[venue.id] ?? venue.distance_km).toFixed(1)} km
-                        </div>
-                        {driveTimeMap[venue.id]?.duration_minutes != null && (
-                          <div className="bg-brand-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest flex items-center shadow-md rounded-full">
-                            <Clock className="h-3 w-3 mr-1.5" />
-                            {driveTimeMap[venue.id].duration_minutes} min
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Sport badge */}
-                    {venue.sports?.[0] && (
-                      <div className="absolute top-4 right-4">
-                        <div className="bg-brand-700 text-white px-3 py-1.5 text-[10px] font-black uppercase tracking-widest shadow-md rounded-full">
-                          {venue.sports[0].replace("_", " ")}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="p-5 flex flex-col flex-grow">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-display text-xl font-black tracking-tighter uppercase text-slate-800 truncate group-hover:text-brand-700 transition-colors duration-300"
-                        data-testid={`venue-name-${venue.id}`}>
-                        {venue.name}
-                      </h3>
-                      {venue.badge === "bookable" && (
-                        <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-brand-500/20 text-brand-400 border border-brand-500/30">Bookable</Badge>
-                      )}
-                      {venue.badge === "enquiry" && (
-                        <Badge className="text-[9px] px-1.5 py-0 shrink-0 bg-amber-500/20 text-amber-500 border border-amber-500/30">Enquiry</Badge>
-                      )}
-                    </div>
-
-                    {/* Location */}
-                    <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-slate-400 mb-5">
-                      <MapPin className="h-3.5 w-3.5 text-brand-500" />
-                      <span className="truncate">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
-                    </div>
-
-                    {/* Stats row */}
-                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                        <span className="font-black text-sm text-slate-800">{venue.rating?.toFixed(1) || "NEW"}</span>
-                        {venue.total_reviews > 0 && (
-                          <span className="text-[10px] uppercase font-bold text-slate-400 tracking-widest ml-1">({venue.total_reviews})</span>
-                        )}
-                      </div>
-
-                      <div className="font-black text-lg text-brand-700">
-                        ₹{venue.base_price || venue.price_per_hour}
-                        <span className="text-[10px] text-slate-400 uppercase tracking-widest ml-1">/HR</span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                  distanceBadge={distanceMap[venue.id] ?? venue.distance_km ?? null}
+                  driveTimeBadge={driveTimeMap[venue.id]?.duration_minutes ?? null}
+                />
               ))}
             </AnimatePresence>
           </div>

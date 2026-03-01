@@ -73,10 +73,22 @@ class BookingCreate(BaseModel):
 
 class PricingRuleCreate(BaseModel):
     name: str
-    priority: int = 0
-    conditions: dict = {}
-    action: dict = {}
     is_active: bool = True
+    # New fields
+    rule_type: str = "discount"       # "discount" | "surge"
+    value_type: str = "percent"       # "percent" | "amount"
+    value: float = 0
+    schedule_type: str = "recurring"  # "recurring" | "one_time"
+    # Recurring schedule
+    conditions: dict = {}             # {days:[0..6], time_range:{start,end}}
+    # One-time schedule
+    date_from: Optional[str] = None   # YYYY-MM-DD
+    date_to: Optional[str] = None     # YYYY-MM-DD
+    time_from: Optional[str] = None   # HH:MM
+    time_to: Optional[str] = None     # HH:MM
+    # Legacy (kept for backward compat)
+    priority: int = 0
+    action: dict = {}
 
 
 class MatchRequestCreate(BaseModel):

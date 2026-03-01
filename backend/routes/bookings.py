@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
 from database import db, get_redis, lock_key
 from auth import get_current_user, get_razorpay_client, get_platform_settings
 from tz import now_ist
 from models import BookingCreate
+from routes.venues import apply_rule
 import uuid
 import hmac
 import hashlib
@@ -98,27 +99,13 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
         slot_start = f"{sh:02d}:{sm:02d}"
         slot_price = turf_price
         for rule in rules:
-            cond = rule.get("conditions", {})
-            act = rule.get("action", {})
-            match = True
-            if "days" in cond and dow not in cond["days"]:
-                match = False
-            if "time_range" in cond:
-                tr = cond["time_range"]
-                if slot_start < tr.get("start", "00:00") or slot_start >= tr.get("end", "23:59"):
-                    match = False
-            if match:
-                if act.get("type") == "multiplier":
-                    slot_price = int(slot_price * act.get("value", 1))
-                elif act.get("type") == "discount":
-                    discount_value = min(max(act.get("value", 0), 0), 1.0)
-                    slot_price = int(slot_price * (1 - discount_value))
+            slot_price = apply_rule(slot_price, rule, input.date, slot_start, dow)
         total_price += max(slot_price, 0)
     price = max(total_price, 0)
 
     platform = await get_platform_settings()
     commission_pct = platform.get("booking_commission_pct", 0)
-    commission_amount = int(price * commission_pct / 100)
+    commission_amount = round(price * commission_pct / 100)
 
     expires_at = (now_ist() + timedelta(hours=PENDING_BOOKING_EXPIRY_HOURS)).isoformat()
 
@@ -228,14 +215,17 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
     gw = settings.get("payment_gateway", {})
     key_secret = gw.get("key_secret", "")
 
-    # CRITICAL FIX: Always verify signature for razorpay bookings, never skip
-    if booking.get("payment_gateway") == "razorpay":
-        if not key_secret:
-            raise HTTPException(500, "Payment gateway not configured properly — contact support")
-        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
-        expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
-        if expected != razorpay_signature:
-            raise HTTPException(400, "Payment verification failed — signature mismatch")
+    # Block test-mode bookings from this endpoint — they must use /test-confirm
+    if booking.get("payment_gateway") in ("test", "mock"):
+        raise HTTPException(400, "Test-mode bookings cannot be verified here — use /test-confirm")
+
+    # Verify Razorpay signature — mandatory for all real payments
+    if not key_secret:
+        raise HTTPException(500, "Payment gateway not configured properly — contact support")
+    msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+    expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
+    if expected != razorpay_signature:
+        raise HTTPException(400, "Payment verification failed — signature mismatch")
 
     if booking.get("split_config"):
         sp = {

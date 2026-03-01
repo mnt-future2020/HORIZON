@@ -58,6 +58,8 @@ __pycache__/
 *.pyc
 venv/
 .venv/
+*.pkl
+backend/services/models/
 
 # Local uploads (S3 fallback)
 backend/uploads/
