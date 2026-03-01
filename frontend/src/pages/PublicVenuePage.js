@@ -6,7 +6,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { QRCodeSVG } from "qrcode.react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -195,7 +194,7 @@ export default function PublicVenuePage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-12 h-12 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-muted-foreground">Loading venue details...</p>
         </div>
       </div>
@@ -234,8 +233,8 @@ export default function PublicVenuePage() {
             </Button>
             <Separator orientation="vertical" className="h-5" />
             <Link to="/" className="flex items-center gap-2">
-              <div className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xs">H</span>
+              <div className="w-7 h-7 bg-brand-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-xs">H</span>
               </div>
               <span className="font-semibold text-sm hidden sm:inline">Horizon Sports</span>
             </Link>
@@ -249,7 +248,7 @@ export default function PublicVenuePage() {
               <QrCode className="w-4 h-4" />
               <span className="hidden sm:inline">QR Code</span>
             </Button>
-            <Button size="sm" onClick={handleBookNow} className="gap-2">
+            <Button size="sm" onClick={handleBookNow} className="gap-2 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20">
               <Calendar className="w-4 h-4" />
               {user ? "Book Now" : "Login to Book"}
             </Button>
@@ -332,43 +331,43 @@ export default function PublicVenuePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* About */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <Card className={`rounded-[24px] border-border/40 shadow-sm ${justUpdated ? "ring-2 ring-primary ring-offset-2 transition-all duration-500" : ""}`}>
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-semibold mb-3">About This Venue</h2>
+              <div className={`bg-card rounded-[28px] border border-border/40 shadow-sm ${justUpdated ? "ring-2 ring-brand-600 ring-offset-2 transition-all duration-500" : ""}`}>
+                <div className="p-6">
+                  <h2 className="admin-heading mb-3">About This Venue</h2>
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-line text-justify">{venue.description}</p>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
 
             {/* Amenities */}
             {venue.amenities?.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-                <Card className="rounded-[24px] border-border/40 shadow-sm">
-                  <CardContent className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Amenities</h2>
+                <div className="bg-card border border-border/40 shadow-sm rounded-[28px]">
+                  <div className="p-6">
+                    <h2 className="admin-heading mb-4">Amenities</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       {venue.amenities.map((amenity) => (
-                        <div key={amenity} className="flex items-center gap-2 p-3 rounded-lg bg-muted/50">
-                          <span className="text-primary">
+                        <div key={amenity} className="flex items-center gap-2 p-3 rounded-xl bg-secondary/20">
+                          <span className="text-brand-600">
                             {AMENITY_ICONS[amenity] || <CheckCircle2 className="w-4 h-4" />}
                           </span>
-                          <span className="text-sm font-medium">{amenity}</span>
+                          <span className="admin-name text-sm">{amenity}</span>
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             )}
 
             {/* Location */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-              <Card className="rounded-[24px] border-border/40 shadow-sm">
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-semibold mb-4">Location</h2>
+              <div className="bg-card border border-border/40 shadow-sm rounded-[28px]">
+                <div className="p-6">
+                  <h2 className="admin-heading mb-4">Location</h2>
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-1">
-                      <MapPin className="w-5 h-5 text-primary" />
+                    <div className="w-10 h-10 rounded-lg bg-brand-600/10 flex items-center justify-center shrink-0 mt-1">
+                      <MapPin className="w-5 h-5 text-brand-600" />
                     </div>
                     <div>
                       <p className="font-medium">{venue.address}</p>
@@ -379,27 +378,27 @@ export default function PublicVenuePage() {
                           href={`https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-primary text-sm mt-2 hover:underline"
+                          className="inline-flex items-center gap-1 text-brand-600 text-sm mt-2 hover:underline"
                         >
                           View on Google Maps <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
 
             {/* Reviews */}
             {reviews.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
-                <Card className="rounded-[24px] border-border/40 shadow-sm">
-                  <CardContent className="p-6">
+                <div className="bg-card border border-border/40 shadow-sm rounded-[28px]">
+                  <div className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold">Reviews</h2>
+                      <h2 className="admin-heading">Reviews</h2>
                       <div className="flex items-center gap-1">
                         <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                        <span className="font-bold">{avgRating.toFixed(1)}</span>
+                        <span className="admin-name">{avgRating.toFixed(1)}</span>
                         <span className="text-muted-foreground text-sm">({totalReviews})</span>
                       </div>
                     </div>
@@ -426,12 +425,12 @@ export default function PublicVenuePage() {
                         <div key={i} className="pb-4 border-b last:border-0">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                                <span className="text-xs font-bold text-primary">
+                              <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center">
+                                <span className="text-xs font-bold text-brand-600">
                                   {review.user_details?.name?.[0] || "U"}
                                 </span>
                               </div>
-                              <span className="font-medium text-sm">{review.user_details?.name || "User"}</span>
+                              <span className="admin-name text-sm">{review.user_details?.name || "User"}</span>
                             </div>
                             <div className="flex">
                               {[1, 2, 3, 4, 5].map((s) => (
@@ -449,12 +448,12 @@ export default function PublicVenuePage() {
                       ))}
                     </div>
                     {user && (
-                      <Button variant="outline" className="w-full mt-4" onClick={handleBookNow}>
+                      <Button variant="outline" className="w-full mt-4 admin-btn" onClick={handleBookNow}>
                         Book & Leave a Review
                       </Button>
                     )}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               </motion.div>
             )}
           </div>
@@ -462,11 +461,11 @@ export default function PublicVenuePage() {
           {/* Right: Booking Card */}
           <div className="space-y-4">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
-              <Card className="sticky top-20 rounded-[24px] border-border/40 shadow-sm">
-                <CardContent className="p-6 space-y-4">
+              <div className="bg-card border border-border/40 shadow-sm sticky top-20 rounded-[28px]">
+                <div className="p-6 space-y-4">
                   {/* Price */}
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-primary">
+                    <p className="admin-value text-brand-600 text-3xl">
                       ₹{venue.base_price?.toLocaleString()}
                     </p>
                     <p className="text-sm text-muted-foreground">per hour / per turf</p>
@@ -478,7 +477,7 @@ export default function PublicVenuePage() {
                     <div className="flex items-center gap-3">
                       <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-sm font-medium">Operating Hours</p>
+                        <p className="admin-name text-sm">Operating Hours</p>
                         <p className="text-xs text-muted-foreground">
                           {formatTime(venue.opening_hour)} – {formatTime(venue.closing_hour)}
                         </p>
@@ -487,21 +486,21 @@ export default function PublicVenuePage() {
                     <div className="flex items-center gap-3">
                       <Users className="w-4 h-4 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-sm font-medium">Turfs Available</p>
+                        <p className="admin-name text-sm">Turfs Available</p>
                         <p className="text-xs text-muted-foreground">{venue.turfs} turf{venue.turfs > 1 ? "s" : ""}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Tag className="w-4 h-4 text-muted-foreground shrink-0" />
                       <div>
-                        <p className="text-sm font-medium">Slot Duration</p>
+                        <p className="admin-name text-sm">Slot Duration</p>
                         <p className="text-xs text-muted-foreground">{venue.slot_duration_minutes || 60} minutes</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 shrink-0" />
                       <div>
-                        <p className="text-sm font-medium">Rating</p>
+                        <p className="admin-name text-sm">Rating</p>
                         <p className="text-xs text-muted-foreground">
                           {avgRating.toFixed(1)} / 5 ({totalReviews} reviews)
                         </p>
@@ -511,14 +510,14 @@ export default function PublicVenuePage() {
 
                   <Separator />
 
-                  <Button className="w-full" size="lg" onClick={handleBookNow}>
+                  <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20" size="lg" onClick={handleBookNow}>
                     <Calendar className="w-4 h-4 mr-2" />
                     {user ? "Book Now" : "Login to Book"}
                   </Button>
 
                   {!user && (
                     <p className="text-xs text-center text-muted-foreground">
-                      <Link to="/auth" className="text-primary hover:underline">Sign up</Link> or <Link to="/auth" className="text-primary hover:underline">log in</Link> to book this venue
+                      <Link to="/auth" className="text-brand-600 hover:underline">Sign up</Link> or <Link to="/auth" className="text-brand-600 hover:underline">log in</Link> to book this venue
                     </p>
                   )}
 
@@ -533,14 +532,14 @@ export default function PublicVenuePage() {
                       QR Code
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
 
             {/* Sports supported */}
-            <Card className="rounded-[24px] border-border/40 shadow-sm">
-              <CardContent className="p-4">
-                <p className="text-sm font-medium mb-3">Sports Available</p>
+            <div className="bg-card border border-border/40 shadow-sm rounded-[28px]">
+              <div className="p-4">
+                <p className="admin-section-label mb-3">Sports Available</p>
                 <div className="flex flex-wrap gap-2">
                   {venue.sports?.map((s) => (
                     <Badge key={s} className={`${SPORT_COLORS[s] || "bg-gray-100 text-gray-700"}`}>
@@ -548,8 +547,8 @@ export default function PublicVenuePage() {
                     </Badge>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
 
             {/* Live connection indicator */}
             <div className="flex items-center gap-2 text-xs px-1">
@@ -594,12 +593,12 @@ export default function PublicVenuePage() {
 
       {/* QR Code Dialog */}
       <Dialog open={showQR} onOpenChange={setShowQR}>
-        <DialogContent className="sm:max-w-[95vw] sm:max-w-sm">
+        <DialogContent className="sm:max-w-[95vw] sm:max-w-sm rounded-[28px]">
           <DialogHeader>
             <DialogTitle>Scan QR Code</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center gap-4 py-4">
-            <div className="p-4 bg-white rounded-xl shadow-inner">
+            <div className="p-4 bg-card rounded-xl shadow-inner">
               <QRCodeSVG
                 value={pageUrl}
                 size={200}
@@ -614,7 +613,7 @@ export default function PublicVenuePage() {
               />
             </div>
             <div className="text-center">
-              <p className="font-semibold">{venue.name}</p>
+              <p className="admin-name">{venue.name}</p>
               <p className="text-sm text-muted-foreground">{venue.city}</p>
             </div>
             <div className="flex gap-2 w-full">

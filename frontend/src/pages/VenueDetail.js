@@ -42,9 +42,9 @@ function EnquiryForm({ venue }) {
   if (sent) {
     return (
       <div className="max-w-xl mx-auto px-4 md:px-6 py-12 text-center">
-        <div className="rounded-2xl border-2 border-brand-500/30 bg-brand-500/5 p-8">
+        <div className="rounded-2xl border border-brand-500/30 bg-brand-500/5 p-8">
           <Check className="h-12 w-12 text-brand-400 mx-auto mb-4" />
-          <h3 className="font-display text-xl font-black mb-2">Enquiry Sent!</h3>
+          <h3 className="font-display text-xl admin-heading mb-2">Enquiry Sent!</h3>
           <p className="text-sm text-muted-foreground mb-4">Your enquiry has been sent to the venue owner. They will contact you soon.</p>
           <Button variant="outline" onClick={() => { setSent(false); setForm({ name: "", phone: "", sport: venue.sports?.[0] || "", date: "", time: "", message: "" }); }}>
             Send Another Enquiry
@@ -56,52 +56,52 @@ function EnquiryForm({ venue }) {
 
   return (
     <div className="max-w-xl mx-auto px-4 md:px-6 py-8">
-      <div className="rounded-2xl border-2 border-amber-500/30 bg-card/50 backdrop-blur-md p-6">
+      <div className="rounded-2xl border border-amber-500/30 bg-card/50 backdrop-blur-md p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
             <Phone className="h-5 w-5 text-amber-400" />
           </div>
           <div>
-            <h3 className="font-display text-lg font-black">Enquire via WhatsApp</h3>
+            <h3 className="font-display text-lg admin-heading">Enquire via WhatsApp</h3>
             <p className="text-xs text-muted-foreground">This venue accepts enquiries only. Fill the form to contact the owner.</p>
           </div>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Your Name *</Label>
-              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Rahul Kumar" className="mt-1" />
+              <Label className="text-xs text-muted-foreground admin-label">Your Name *</Label>
+              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Rahul Kumar" className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Phone Number *</Label>
+              <Label className="text-xs text-muted-foreground admin-label">Phone Number *</Label>
               <div className="flex mt-1">
-                <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs font-bold text-muted-foreground select-none">+91</span>
-                <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))} placeholder="98765 43210" className="rounded-l-none" maxLength={10} />
+                <span className="inline-flex items-center px-2.5 bg-secondary border border-r-0 border-border rounded-l-md text-xs admin-label text-muted-foreground select-none">+91</span>
+                <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))} placeholder="98765 43210" className="rounded-l-none h-11 rounded-xl bg-secondary/20 border-border/40" maxLength={10} />
               </div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Sport</Label>
+              <Label className="text-xs text-muted-foreground admin-label">Sport</Label>
               <select value={form.sport} onChange={e => setForm(p => ({ ...p, sport: e.target.value }))}
-                className="mt-1 w-full h-10 rounded-md border border-border bg-background px-3 text-sm">
+                className="mt-1 w-full h-11 rounded-xl border border-border/40 bg-secondary/20 px-3 text-sm">
                 {(venue.sports || ["football"]).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Preferred Date</Label>
-              <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="mt-1" />
+              <Label className="text-xs text-muted-foreground admin-label">Preferred Date</Label>
+              <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))} className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
             </div>
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Preferred Time</Label>
-            <Input value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))} placeholder="6:00 PM - 7:00 PM" className="mt-1" />
+            <Label className="text-xs text-muted-foreground admin-label">Preferred Time</Label>
+            <Input value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))} placeholder="6:00 PM - 7:00 PM" className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
           </div>
           <div>
-            <Label className="text-xs text-muted-foreground">Message (optional)</Label>
-            <Input value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Looking for a regular slot..." className="mt-1" />
+            <Label className="text-xs text-muted-foreground admin-label">Message (optional)</Label>
+            <Input value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} placeholder="Looking for a regular slot..." className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
           </div>
-          <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold h-11 gap-2" onClick={handleSubmit} disabled={submitting}>
+          <Button className="w-full bg-brand-600 hover:bg-brand-700 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-11 gap-2" onClick={handleSubmit} disabled={submitting}>
             {submitting ? <><Loader2 className="h-4 w-4 animate-spin" />Sending...</> : <><Send className="h-4 w-4" />Send Enquiry via WhatsApp</>}
           </Button>
         </div>
@@ -114,17 +114,17 @@ function EnquiryForm({ venue }) {
 function CartPanel({ cart, cartTotal, onRemove, onCheckout, checkoutLoading }) {
   if (cart.length === 0) {
     return (
-      <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-8 text-center">
+      <div className="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-md p-8 text-center">
         <ShoppingCart className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-        <p className="text-sm font-bold text-muted-foreground">Cart Is Empty</p>
+        <p className="text-sm admin-label text-muted-foreground">Cart Is Empty</p>
         <p className="text-xs text-muted-foreground/60 mt-1">Select a sport, court, and time to book</p>
       </div>
     );
   }
   return (
-    <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 sticky top-24">
-      <h3 className="font-display text-lg font-black mb-4 uppercase tracking-wide flex items-center gap-2">
-        <ShoppingCart className="h-5 w-5 text-primary" />
+    <div className="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-md p-6 sticky top-24">
+      <h3 className="font-display text-lg admin-heading mb-4 uppercase tracking-wide flex items-center gap-2">
+        <ShoppingCart className="h-5 w-5 text-brand-600" />
         Cart ({cart.length})
       </h3>
       <div className="space-y-3 max-h-[45vh] overflow-y-auto">
@@ -133,16 +133,16 @@ function CartPanel({ cart, cartTotal, onRemove, onCheckout, checkoutLoading }) {
             className="rounded-xl border border-border/50 bg-background/50 p-4">
             <div className="flex justify-between items-start">
               <div className="min-w-0 flex-1">
-                <p className="font-bold text-sm truncate">{item.court.turf_name}</p>
+                <p className="admin-name text-sm truncate">{item.court.turf_name}</p>
                 <p className="text-xs text-muted-foreground capitalize">{item.sport} &middot; {item.numPlayers} lobbian{item.numPlayers > 1 ? "s" : ""}</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {item.date} &middot; {item.startTime} - {item.endTime}
                 </p>
               </div>
               <div className="flex items-center gap-2 ml-3 shrink-0">
-                <span className="font-display font-black text-primary">₹{item.price}</span>
+                <span className="font-display admin-value text-brand-600">₹{item.price}</span>
                 <button onClick={() => onRemove(item.id)}
-                  className="p-1 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                  className="p-1 rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -152,11 +152,11 @@ function CartPanel({ cart, cartTotal, onRemove, onCheckout, checkoutLoading }) {
       </div>
       <div className="border-t border-border/50 mt-4 pt-4">
         <div className="flex justify-between items-center mb-4">
-          <span className="text-sm font-bold uppercase text-muted-foreground">Total</span>
-          <span className="font-display text-2xl font-black text-primary">₹{cartTotal}</span>
+          <span className="text-sm admin-label uppercase text-muted-foreground">Total</span>
+          <span className="font-display text-2xl admin-value text-brand-600">₹{cartTotal}</span>
         </div>
         <Button onClick={onCheckout} disabled={checkoutLoading}
-          className="w-full h-12 bg-gradient-athletic text-white font-black uppercase tracking-wide shadow-glow-primary hover:shadow-glow-hover hover:scale-[1.02] active:scale-100 transition-all duration-300">
+          className="w-full h-12 bg-brand-600 text-white admin-btn uppercase tracking-wide rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all">
           {checkoutLoading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Booking...</> : "Book Now"}
         </Button>
       </div>
@@ -656,7 +656,7 @@ export default function VenueDetail() {
 
   // ─── Render ─────────────────────────────────────────────────────
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
   );
   if (!venue) return <div className="p-6 text-center text-muted-foreground">Venue not found</div>;
 
@@ -679,7 +679,7 @@ export default function VenueDetail() {
             )}
             <div className="h-5 w-px bg-border/50" />
             <div>
-              <h1 className="font-display text-lg md:text-xl font-black tracking-tight">{venue.name}</h1>
+              <h1 className="font-display text-lg md:text-xl admin-heading tracking-tight">{venue.name}</h1>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{venue.city || venue.address}</span>
                 <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{venue.opening_hour}:00 - {venue.closing_hour}:00</span>
@@ -705,7 +705,7 @@ export default function VenueDetail() {
             <div className="lg:col-span-7">
               {/* Booking restriction warning */}
               {!canBook && venue?.badge === "bookable" && (
-                <div className="mb-4 rounded-xl border-2 border-amber-500/30 bg-amber-500/5 p-4 flex items-center gap-3">
+                <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex items-center gap-3">
                   <Loader2 className="h-5 w-5 text-amber-400 shrink-0" />
                   <p className="text-sm font-semibold text-amber-300">
                     {isAdmin ? "Admins can view slots but cannot book venues." : "You cannot book your own venue."}
@@ -716,7 +716,7 @@ export default function VenueDetail() {
               <div className="rounded-2xl border border-border bg-card">
                 {/* Venue header inside card */}
                 <div className="px-6 pt-5 pb-3 border-b border-border/50 rounded-t-2xl">
-                  <h2 className="font-display text-lg font-black">{venue.name}</h2>
+                  <h2 className="font-display text-lg admin-heading">{venue.name}</h2>
                   <p className="text-xs text-muted-foreground">{venue.area || venue.city || venue.address}</p>
                 </div>
 
@@ -725,10 +725,10 @@ export default function VenueDetail() {
 
                   {/* Sports Row */}
                   <div className="flex items-center px-6 py-4">
-                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground">Sports</span>
+                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">Sports</span>
                     <div className="flex-1">
                       <Select value={selectedSport} onValueChange={handleSportChange}>
-                        <SelectTrigger className="h-10 border-border">
+                        <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40">
                           <SelectValue placeholder="Select sport" />
                         </SelectTrigger>
                         <SelectContent>
@@ -743,9 +743,9 @@ export default function VenueDetail() {
                   {/* Date Row */}
                   <div className="relative px-6 py-4" ref={calendarRef}>
                     <div className="flex items-center">
-                      <span className="w-28 shrink-0 text-sm font-semibold text-foreground">Date</span>
+                      <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">Date</span>
                       <button onClick={() => setShowCalendar(!showCalendar)}
-                        className="flex-1 flex items-center justify-between h-10 px-3 rounded-md border border-border bg-background text-sm hover:border-primary/50 transition-colors">
+                        className="flex-1 flex items-center justify-between h-10 px-3 rounded-xl border border-border/40 bg-secondary/20 text-sm hover:border-brand-600/50 transition-colors">
                         <span>{format(selectedDate, "yyyy-MM-dd")}</span>
                         <CalendarDays className="h-4 w-4 text-muted-foreground" />
                       </button>
@@ -767,9 +767,9 @@ export default function VenueDetail() {
                   {selectedCourt && (
                     <div className="relative px-6 py-4" ref={timePickerRef}>
                       <div className="flex items-center">
-                        <span className="w-28 shrink-0 text-sm font-semibold text-foreground">Start Time</span>
+                        <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">Start Time</span>
                         <button onClick={() => setShowTimePicker(!showTimePicker)}
-                          className="flex-1 flex items-center justify-between h-10 px-3 rounded-md border border-border bg-background text-sm hover:border-primary/50 transition-colors">
+                          className="flex-1 flex items-center justify-between h-10 px-3 rounded-xl border border-border/40 bg-secondary/20 text-sm hover:border-brand-600/50 transition-colors">
                           <span>{selectedStartTime ? fmt12h(selectedStartTime) : "Select time"}</span>
                           <Timer className="h-4 w-4 text-muted-foreground" />
                         </button>
@@ -782,12 +782,12 @@ export default function VenueDetail() {
                                 <button key={t.time} onClick={() => { handleStartTimeChange(t.time); setShowTimePicker(false); }}
                                   className={`relative py-2.5 px-3 rounded-lg text-sm font-semibold text-center transition-all ${
                                     selectedStartTime === t.time
-                                      ? "bg-primary text-primary-foreground shadow-md"
-                                      : "bg-secondary/50 text-foreground hover:bg-secondary"
+                                      ? "bg-brand-600 text-white shadow-md"
+                                      : "bg-secondary/50 text-foreground hover:bg-white/5"
                                   }`}>
                                   {fmt12h(t.time)}
                                   {t.hasOffer && (
-                                    <span className="absolute -top-1.5 -right-1.5 bg-brand-500 text-white text-[8px] font-black px-1 py-0.5 rounded-full leading-none">
+                                    <span className="absolute -top-1.5 -right-1.5 bg-brand-500 text-white text-[8px] font-bold px-1 py-0.5 rounded-full leading-none">
                                       OFFER
                                     </span>
                                   )}
@@ -804,17 +804,17 @@ export default function VenueDetail() {
 
                   {/* Duration Row */}
                   <div className="flex items-center px-6 py-4">
-                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground">Duration</span>
+                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">Duration</span>
                     <div className="flex-1 flex items-center justify-between">
                       <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-border"
                         onClick={() => setDurationSlots(d => Math.max(1, d - 1))}
                         disabled={durationSlots <= 1 || !selectedStartTime}>
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <span className="font-display text-lg font-black">
+                      <span className="font-display text-lg admin-value">
                         {durationSlots * slotDuration} Mins
                       </span>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-primary text-primary bg-primary/5"
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-brand-600 text-brand-600 bg-brand-600/10"
                         onClick={() => setDurationSlots(d => Math.min(maxDurationSlots, d + 1))}
                         disabled={durationSlots >= maxDurationSlots || !selectedStartTime}>
                         <Plus className="h-4 w-4" />
@@ -824,17 +824,17 @@ export default function VenueDetail() {
 
                   {/* Lobbians Row */}
                   <div className="flex items-center px-6 py-4">
-                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground">Lobbians</span>
+                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">Lobbians</span>
                     <div className="flex-1 flex items-center justify-between">
                       <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-border"
                         onClick={() => setNumPlayers(n => Math.max(1, n - 1))}
                         disabled={numPlayers <= 1}>
                         <Minus className="h-4 w-4" />
                       </Button>
-                      <span className="font-display text-lg font-black">
+                      <span className="font-display text-lg admin-value">
                         {numPlayers}
                       </span>
-                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-primary text-primary bg-primary/5"
+                      <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-brand-600 text-brand-600 bg-brand-600/10"
                         onClick={() => setNumPlayers(n => n + 1)}>
                         <Plus className="h-4 w-4" />
                       </Button>
@@ -844,10 +844,10 @@ export default function VenueDetail() {
                   {/* Court Row */}
                   {selectedSport && courtsForSport.length > 0 && (
                     <div className="flex items-center px-6 py-4">
-                      <span className="w-28 shrink-0 text-sm font-semibold text-foreground">Court</span>
+                      <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">Court</span>
                       <div className="flex-1">
                         <Select value={selectedCourt ? String(selectedCourt.turf_number) : ""} onValueChange={v => handleCourtChange(Number(v))}>
-                          <SelectTrigger className="h-10 border-border">
+                          <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40">
                             <SelectValue placeholder="--Select Court--" />
                           </SelectTrigger>
                           <SelectContent>
@@ -870,13 +870,13 @@ export default function VenueDetail() {
                       <div>
                         <p className="text-xs text-muted-foreground">Total Price</p>
                         <div className="flex items-baseline gap-2">
-                          <p className="font-display text-2xl font-black text-primary">₹{selectionPrice}</p>
+                          <p className="font-display text-2xl admin-value text-brand-600">₹{selectionPrice}</p>
                           {selectionOriginalPrice > selectionPrice && (
                             <span className="text-sm text-muted-foreground line-through">₹{selectionOriginalPrice}</span>
                           )}
                         </div>
                         {selectionOriginalPrice > selectionPrice && (
-                          <span className="text-[10px] font-bold text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full">
+                          <span className="text-[10px] admin-label text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full">
                             🏷 OFFER — Save ₹{selectionOriginalPrice - selectionPrice}
                           </span>
                         )}
@@ -886,7 +886,7 @@ export default function VenueDetail() {
                       </p>
                     </div>
                   ) : null}
-                  <Button className="w-full h-11 gap-2 bg-primary text-primary-foreground font-bold uppercase tracking-wide"
+                  <Button className="w-full h-11 gap-2 bg-brand-600 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all uppercase tracking-wide"
                     onClick={addToCart} disabled={!selectedStartTime || !selectedCourt}>
                     <ShoppingCart className="h-4 w-4" /> Add To Cart
                   </Button>
@@ -896,7 +896,7 @@ export default function VenueDetail() {
 
             {/* ─── Cart (Desktop) ─── */}
             <div className="hidden lg:block lg:col-span-5">
-              <h2 className="font-display text-xl font-black mb-6 uppercase tracking-wide">&nbsp;</h2>
+              <h2 className="font-display text-xl admin-heading mb-6 uppercase tracking-wide">&nbsp;</h2>
               <CartPanel cart={cart} cartTotal={cartTotal} onRemove={removeFromCart}
                 onCheckout={handleCheckout} checkoutLoading={checkoutLoading} />
             </div>
@@ -908,7 +908,7 @@ export default function VenueDetail() {
       {cart.length > 0 && (
         <div className="lg:hidden fixed bottom-20 right-4 z-40">
           <Button onClick={() => setCartOpen(true)}
-            className="rounded-full h-14 px-6 bg-primary shadow-glow-primary gap-2 font-bold text-primary-foreground">
+            className="rounded-full h-14 px-6 bg-brand-600 shadow-lg shadow-brand-600/20 gap-2 admin-btn text-white active:scale-[0.98] transition-all">
             <ShoppingCart className="h-5 w-5" />
             Cart ({cart.length}) &middot; ₹{cartTotal}
           </Button>
@@ -919,7 +919,7 @@ export default function VenueDetail() {
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[80vh]">
           <SheetHeader>
-            <SheetTitle className="font-display text-lg font-black uppercase tracking-wide">Your Cart</SheetTitle>
+            <SheetTitle className="font-display text-lg admin-heading uppercase tracking-wide">Your Cart</SheetTitle>
           </SheetHeader>
           <div className="mt-4">
             <CartPanel cart={cart} cartTotal={cartTotal} onRemove={removeFromCart}
@@ -931,8 +931,8 @@ export default function VenueDetail() {
       {/* Loading overlay */}
       {checkoutLoading && (
         <div className="fixed inset-0 z-50 bg-background/50 flex items-center justify-center">
-          <div className="glass-card rounded-lg p-6 flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <div className="bg-card rounded-[28px] border border-border/40 p-6 flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
             <span className="text-sm font-medium">Booking your slots...</span>
           </div>
         </div>
@@ -940,9 +940,9 @@ export default function VenueDetail() {
 
       {/* ─── Booking Dialog (Payment Flow) ─── */}
       <Dialog open={bookingDialog} onOpenChange={handleDialogClose}>
-        <DialogContent className="bg-card border-2 border-border/50 max-w-[95vw] sm:max-w-md p-8">
+        <DialogContent className="bg-card border border-border/40 max-w-[95vw] sm:max-w-md p-8 rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="font-display text-2xl font-black uppercase tracking-wide text-foreground">
+            <DialogTitle className="font-display text-2xl admin-heading uppercase tracking-wide text-foreground">
               {payStep === "done" || (confirmResults.length > 0 && !payStep) ? "Booking Confirmed!" :
                 payStep === "processing" ? "Processing Payment..." :
                   payStep === "review" ? "Complete Payment" :
@@ -953,8 +953,8 @@ export default function VenueDetail() {
           {/* Payment Processing */}
           {payStep === "processing" && (
             <div className="flex flex-col items-center py-8 gap-4">
-              <div className="w-16 h-16 rounded-full border-4 border-primary/20 flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="w-16 h-16 rounded-full border-4 border-brand-600/20 flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
               </div>
               <p className="text-sm text-muted-foreground text-center">Confirming your booking{confirmResults.length > 1 ? "s" : ""}...</p>
               <p className="text-xs text-muted-foreground/60">Please do not close this window</p>
@@ -964,49 +964,49 @@ export default function VenueDetail() {
           {/* Payment Review */}
           {payStep === "review" && confirmResults.length > 0 && (
             <div className="space-y-6">
-              <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 space-y-3">
+              <div className="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-md p-6 space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Venue</span>
-                  <span className="font-display font-black text-base">{confirmResults[0].venue_name}</span>
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">Venue</span>
+                  <span className="font-display admin-value text-base">{confirmResults[0].venue_name}</span>
                 </div>
                 {confirmResults.map(b => (
                   <div key={b.id} className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">{b.turf_name || `Turf #${b.turf_number}`} &middot; {fmt12h(b.start_time)} - {fmt12h(b.end_time)}</span>
-                    <span className="font-display font-black text-primary">₹{b.total_amount}</span>
+                    <span className="font-display admin-value text-brand-600">₹{b.total_amount}</span>
                   </div>
                 ))}
                 <div className="flex justify-between items-center pt-3 border-t border-border/50">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Total</span>
-                  <span className="font-display font-black text-2xl text-primary">₹{confirmTotal}</span>
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">Total</span>
+                  <span className="font-display admin-value text-2xl text-brand-600">₹{confirmTotal}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Status</span>
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">Status</span>
                   <Badge variant="athletic">Awaiting Payment</Badge>
                 </div>
               </div>
 
               {confirmResults[0].payment_gateway === "test" && (
-                <div className="p-4 rounded-xl bg-sky-500/10 border-2 border-sky-500/20 text-sm text-sky-400 font-semibold">
+                <div className="p-4 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sm text-sky-400 font-semibold">
                   Payment gateway is being configured. Please confirm to proceed.
                 </div>
               )}
 
               {confirmResults[0].split_config && (
-                <div className="rounded-2xl border-2 border-primary/30 bg-primary/5 backdrop-blur-md p-6">
+                <div className="rounded-2xl border border-brand-600/30 bg-brand-600/10 backdrop-blur-md p-6">
                   <div className="flex items-center gap-2 mb-3">
                     <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-primary" />
+                      <Users className="h-5 w-5 text-brand-600" />
                     </div>
-                    <span className="font-display text-base font-black">Split Payment</span>
+                    <span className="font-display text-base admin-heading">Split Payment</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-semibold">
-                    Your share: <span className="text-primary font-black">₹{Math.floor(confirmTotal / confirmResults[0].split_config.total_shares)}</span> ({confirmResults[0].split_config.total_shares} Lobbians)
+                    Your share: <span className="text-brand-600 admin-value">₹{Math.floor(confirmTotal / confirmResults[0].split_config.total_shares)}</span> ({confirmResults[0].split_config.total_shares} Lobbians)
                   </p>
                 </div>
               )}
 
               <Button
-                className="w-full h-14 bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 active:scale-100 font-black uppercase tracking-wide text-base transition-all duration-300"
+                className="w-full h-14 bg-brand-600 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] uppercase tracking-wide text-base transition-all"
                 onClick={handleTestPayment}
               >
                 Confirm Payment ₹{confirmResults[0].split_config ? Math.floor(confirmTotal / confirmResults[0].split_config.total_shares) : confirmTotal}
@@ -1022,32 +1022,32 @@ export default function VenueDetail() {
               ))}
               {confirmResults.length > 1 && (
                 <div className="flex justify-between items-center px-2">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground font-bold">Total</span>
-                  <span className="font-display font-black text-2xl text-primary">₹{confirmTotal}</span>
+                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">Total</span>
+                  <span className="font-display admin-value text-2xl text-brand-600">₹{confirmTotal}</span>
                 </div>
               )}
               {confirmResults[0].split_config && (
-                <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6">
+                <div className="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-md p-6">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-primary" />
+                    <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-brand-600" />
                     </div>
-                    <span className="font-display text-base font-black">Split Payment Link</span>
+                    <span className="font-display text-base admin-heading">Split Payment Link</span>
                   </div>
                   <p className="text-sm text-muted-foreground font-semibold mb-4">
-                    Share this link with {confirmResults[0].split_config.total_shares - 1} friends. Each pays <span className="text-primary font-black">₹{Math.floor(confirmTotal / confirmResults[0].split_config.total_shares)}</span>.
+                    Share this link with {confirmResults[0].split_config.total_shares - 1} friends. Each pays <span className="text-brand-600 admin-value">₹{Math.floor(confirmTotal / confirmResults[0].split_config.total_shares)}</span>.
                   </p>
                   <div className="flex gap-2">
                     <Input readOnly value={`${window.location.origin}/split/${confirmResults[0].split_config.split_token}`}
-                      className="bg-background/50 border-2 border-border/50 text-sm font-mono h-12 rounded-xl" />
+                      className="bg-secondary/20 border border-border/40 text-sm font-mono h-11 rounded-xl" />
                     <Button size="icon" variant="outline" onClick={copyLink}
-                      className="h-12 w-12 rounded-xl border-2 hover:border-primary/50 hover:bg-primary/10">
-                      {copied ? <Check className="h-5 w-5 text-primary" /> : <Copy className="h-5 w-5" />}
+                      className="h-11 w-11 rounded-xl border hover:border-brand-600/50 hover:bg-white/5 transition-colors">
+                      {copied ? <Check className="h-5 w-5 text-brand-600" /> : <Copy className="h-5 w-5" />}
                     </Button>
                   </div>
                 </div>
               )}
-              <Button className="w-full bg-primary text-primary-foreground font-bold"
+              <Button className="w-full bg-brand-600 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                 onClick={() => { setBookingDialog(false); setConfirmResults([]); setPayStep(null); loadSlots(); }}>
                 Done
               </Button>
@@ -1057,40 +1057,40 @@ export default function VenueDetail() {
           {/* Initial Booking Form — payment mode selector (shown before checkout creates booking) */}
           {confirmResults.length === 0 && !payStep && (
             <div className="space-y-4">
-              <div className="glass-card rounded-lg p-4 space-y-2">
+              <div className="bg-card rounded-[28px] border border-border/40 p-4 space-y-2">
                 {cart.map(item => (
                   <div key={item.id} className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{item.court.turf_name} &middot; {fmt12h(item.startTime)}-{fmt12h(item.endTime)}</span>
-                    <span className="font-bold text-primary">₹{item.price}</span>
+                    <span className="admin-value text-brand-600">₹{item.price}</span>
                   </div>
                 ))}
                 <div className="flex justify-between text-sm pt-2 border-t border-border/50">
-                  <span className="text-muted-foreground font-bold">Total</span>
-                  <span className="font-bold text-primary text-lg">₹{cartTotal}</span>
+                  <span className="text-muted-foreground admin-label">Total</span>
+                  <span className="admin-value text-brand-600 text-lg">₹{cartTotal}</span>
                 </div>
               </div>
 
               <div>
-                <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Payment Mode</Label>
+                <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground admin-section-label">Payment Mode</Label>
                 <div className="grid grid-cols-2 gap-3 mt-2">
                   <button onClick={() => setPayMode("full")}
-                    className={`p-3 rounded-lg border text-center transition-all ${payMode === "full" ? "border-primary bg-primary/10 text-primary" : "border-border glass-card"}`}>
+                    className={`p-3 rounded-xl border text-center transition-all hover:bg-white/5 ${payMode === "full" ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/40 bg-card"}`}>
                     <Zap className="h-4 w-4 mx-auto mb-1" />
-                    <div className="text-xs font-bold">Full Payment</div>
+                    <div className="text-xs admin-label">Full Payment</div>
                   </button>
                   <button onClick={() => setPayMode("split")}
-                    className={`p-3 rounded-lg border text-center transition-all ${payMode === "split" ? "border-primary bg-primary/10 text-primary" : "border-border glass-card"}`}>
+                    className={`p-3 rounded-xl border text-center transition-all hover:bg-white/5 ${payMode === "split" ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/40 bg-card"}`}>
                     <Users className="h-4 w-4 mx-auto mb-1" />
-                    <div className="text-xs font-bold">Split Payment</div>
+                    <div className="text-xs admin-label">Split Payment</div>
                   </button>
                 </div>
               </div>
 
               {payMode === "split" && (
                 <div>
-                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Number of Lobbians</Label>
+                  <Label className="text-xs font-mono uppercase tracking-widest text-muted-foreground admin-section-label">Number of Lobbians</Label>
                   <Select value={String(splitCount)} onValueChange={v => setSplitCount(Number(v))}>
-                    <SelectTrigger className="mt-2 bg-background border-border">
+                    <SelectTrigger className="mt-2 h-11 rounded-xl bg-secondary/20 border-border/40">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -1102,7 +1102,7 @@ export default function VenueDetail() {
                 </div>
               )}
 
-              <Button className="w-full bg-primary text-primary-foreground font-bold uppercase tracking-wide h-11"
+              <Button className="w-full bg-brand-600 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all uppercase tracking-wide h-11"
                 onClick={handleCheckout} disabled={checkoutLoading}>
                 {checkoutLoading ? "Processing..." : payMode === "split"
                   ? `Pay ₹${Math.floor(cartTotal / splitCount)} (Your Share)`
