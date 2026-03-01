@@ -21,7 +21,7 @@ const PlayIcon = Play;
 const STATUS_COLORS = {
   registration: "bg-brand-500/15 text-brand-400 border-brand-500/30",
   in_progress: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  completed: "bg-violet-500/15 text-violet-400 border-violet-500/30",
+  completed: "bg-brand-500/15 text-brand-400 border-brand-500/30",
   cancelled: "bg-destructive/15 text-destructive border-destructive/30",
 };
 const STATUS_LABELS = {
@@ -92,7 +92,7 @@ export default function TournamentDetailPage() {
   if (loading || !tournament) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -256,7 +256,7 @@ export default function TournamentDetailPage() {
 
       {/* Header Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-xl p-5 mb-5">
+        className="rounded-[28px] bg-card border border-border/40 shadow-sm p-6 mb-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2 mb-2 flex-wrap">
@@ -266,7 +266,7 @@ export default function TournamentDetailPage() {
               <Badge variant="secondary" className="text-xs capitalize">{tournament.sport?.replace("_", " ")}</Badge>
               <Badge variant="secondary" className="text-xs capitalize">{tournament.format?.replace("_", " ")}</Badge>
             </div>
-            <h1 className="font-display text-2xl font-black tracking-tight">{tournament.name}</h1>
+            <h1 className="admin-page-title text-2xl">{tournament.name}</h1>
             {tournament.description && (
               <p className="text-sm text-muted-foreground mt-1">{tournament.description}</p>
             )}
@@ -288,7 +288,7 @@ export default function TournamentDetailPage() {
                 </span>
               )}
               {tournament.entry_fee > 0 && (
-                <span className="font-bold text-primary">Entry: ₹{tournament.entry_fee}</span>
+                <span className="font-bold text-brand-600">Entry: ₹{tournament.entry_fee}</span>
               )}
               {tournament.prize_pool && (
                 <span className="flex items-center gap-1 font-bold text-amber-400">
@@ -299,7 +299,7 @@ export default function TournamentDetailPage() {
           </div>
           <div className="flex gap-2 shrink-0 flex-wrap">
             {tournament.status === "registration" && !isRegistered && !isOrganizer && (
-              <Button onClick={handleRegister} className="bg-primary text-primary-foreground font-bold text-xs h-9"
+              <Button onClick={handleRegister} className="bg-brand-600 text-white font-bold text-xs h-9"
                 data-testid="detail-register-btn">
                 <UserPlus className="h-4 w-4 mr-1" /> {tournament.entry_fee > 0 ? `Pay ₹${tournament.entry_fee} & Register` : "Register"}
               </Button>
@@ -327,20 +327,20 @@ export default function TournamentDetailPage() {
       </motion.div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-5 bg-secondary/30 p-1 rounded-lg w-fit">
+      <div className="flex items-center gap-6 overflow-x-auto hide-scrollbar border-b border-border/40 pb-2 mb-5">
         {TABS.map(({ id, icon: Icon, label }) => (
           <button key={id} onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeTab === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+            className={`flex items-center gap-1.5 pb-2 text-xs admin-btn transition-all whitespace-nowrap border-b-2 -mb-px ${activeTab === id ? "border-brand-600 text-brand-600" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             <Icon className="h-3.5 w-3.5" />{label}
           </button>
         ))}
         {tournament.status === "in_progress" && (
           <button
             onClick={() => setActiveTab("live")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+            className={`flex items-center gap-1.5 pb-2 text-xs admin-btn transition-all whitespace-nowrap border-b-2 -mb-px ${
               activeTab === "live"
-                ? "bg-red-500/20 text-red-400 border border-red-500/30"
-                : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+                ? "border-red-500 text-red-400"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <span className="relative flex h-2 w-2">
@@ -394,7 +394,7 @@ export default function TournamentDetailPage() {
               </p>
             </div>
           ) : (
-            <div className="glass-card rounded-xl overflow-hidden">
+            <div className="rounded-[28px] bg-card border border-border/40 shadow-sm overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-xs text-muted-foreground">
@@ -413,7 +413,7 @@ export default function TournamentDetailPage() {
                 <tbody>
                   {standings.map((s, idx) => (
                     <tr key={s.user_id}
-                      className={`border-b border-border/50 ${idx === 0 ? "bg-primary/5" : ""}`}>
+                      className={`border-b border-border/40 ${idx === 0 ? "bg-brand-600/5" : ""}`}>
                       <td className="p-3 font-bold">
                         {idx === 0 && tournament.status === "completed" ? (
                           <Crown className="h-4 w-4 text-amber-400 inline" />
@@ -427,7 +427,7 @@ export default function TournamentDetailPage() {
                       <td className="p-3 text-center">{s.goals_for}</td>
                       <td className="p-3 text-center">{s.goals_against}</td>
                       <td className="p-3 text-center font-medium">{s.goals_for - s.goals_against}</td>
-                      <td className="p-3 text-center font-display font-black text-primary text-lg">{s.points}</td>
+                      <td className="p-3 text-center font-display font-black text-brand-600 text-lg">{s.points}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -467,8 +467,8 @@ export default function TournamentDetailPage() {
               <motion.div key={p.user_id}
                 initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: idx * 0.03 }}
-                className="glass-card rounded-lg p-3 flex items-center gap-3">
-                <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
+                className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-brand-600/20 flex items-center justify-center text-xs font-bold text-brand-600">
                   {idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -496,8 +496,8 @@ export default function TournamentDetailPage() {
       {/* ─── Info Tab ─── */}
       {activeTab === "info" && (
         <div className="space-y-4">
-          <div className="glass-card rounded-xl p-5 space-y-3">
-            <h3 className="font-bold text-sm">Tournament Details</h3>
+          <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-6 space-y-3">
+            <h3 className="admin-heading text-sm">Tournament Details</h3>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-xs text-muted-foreground block">Organizer</span>
@@ -518,7 +518,7 @@ export default function TournamentDetailPage() {
               {tournament.entry_fee > 0 && (
                 <div>
                   <span className="text-xs text-muted-foreground block">Entry Fee</span>
-                  <span className="font-bold text-primary">₹{tournament.entry_fee}</span>
+                  <span className="font-bold text-brand-600">₹{tournament.entry_fee}</span>
                 </div>
               )}
               {tournament.prize_pool && (
@@ -565,9 +565,9 @@ export default function TournamentDetailPage() {
 
       {/* ─── Result Submission Dialog ─── */}
       <Dialog open={!!resultDialog} onOpenChange={() => setResultDialog(null)}>
-        <DialogContent className="bg-card border-border max-w-sm">
+        <DialogContent className="bg-card border-border/40 max-w-sm rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="font-display flex items-center gap-2">
+            <DialogTitle className="admin-heading flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-brand-400" /> Submit Result
             </DialogTitle>
           </DialogHeader>
@@ -583,7 +583,7 @@ export default function TournamentDetailPage() {
                   </Label>
                   <Input type="number" value={resultForm.score_a}
                     onChange={e => setResultForm(p => ({ ...p, score_a: e.target.value }))}
-                    className="mt-1 bg-background border-border text-center text-lg font-bold" />
+                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-center text-lg font-bold" />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">
@@ -591,7 +591,7 @@ export default function TournamentDetailPage() {
                   </Label>
                   <Input type="number" value={resultForm.score_b}
                     onChange={e => setResultForm(p => ({ ...p, score_b: e.target.value }))}
-                    className="mt-1 bg-background border-border text-center text-lg font-bold" />
+                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-center text-lg font-bold" />
                 </div>
               </div>
               <div>
@@ -599,13 +599,13 @@ export default function TournamentDetailPage() {
                 <div className="space-y-2">
                   {resultDialog.player_a && (
                     <button onClick={() => setResultForm(p => ({ ...p, winner: resultDialog.player_a }))}
-                      className={`w-full p-2.5 rounded-lg border text-sm font-bold text-left transition-all ${resultForm.winner === resultDialog.player_a ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:border-primary/50"}`}>
+                      className={`w-full p-2.5 rounded-lg border text-sm font-bold text-left transition-all ${resultForm.winner === resultDialog.player_a ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border text-foreground hover:border-brand-600/50"}`}>
                       {nameMap[resultDialog.player_a] || "Lobbian A"}
                     </button>
                   )}
                   {resultDialog.player_b && (
                     <button onClick={() => setResultForm(p => ({ ...p, winner: resultDialog.player_b }))}
-                      className={`w-full p-2.5 rounded-lg border text-sm font-bold text-left transition-all ${resultForm.winner === resultDialog.player_b ? "border-primary bg-primary/10 text-primary" : "border-border text-foreground hover:border-primary/50"}`}>
+                      className={`w-full p-2.5 rounded-lg border text-sm font-bold text-left transition-all ${resultForm.winner === resultDialog.player_b ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border text-foreground hover:border-brand-600/50"}`}>
                       {nameMap[resultDialog.player_b] || "Lobbian B"}
                     </button>
                   )}
@@ -617,7 +617,7 @@ export default function TournamentDetailPage() {
                   )}
                 </div>
               </div>
-              <Button className="w-full bg-primary text-primary-foreground font-bold h-10"
+              <Button className="w-full bg-brand-600 text-white font-bold h-10"
                 onClick={handleSubmitResult} disabled={submitting} data-testid="submit-result-btn">
                 {submitting ? "Submitting..." : "Submit Result"}
               </Button>
@@ -730,10 +730,10 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
               <button
                 key={lm.id}
                 onClick={() => setActiveLiveId(lm.id)}
-                className={`p-4 rounded-xl border text-left transition-all ${
+                className={`p-4 rounded-[28px] border text-left shadow-sm transition-all ${
                   activeLiveId === lm.id
                     ? "border-red-500/50 bg-red-500/10"
-                    : "border-border bg-card hover:border-red-500/30"
+                    : "border-border/40 bg-card hover:border-red-500/30"
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
@@ -748,7 +748,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-medium">{lm.home?.name}</span>
-                  <span className="text-2xl font-bold text-primary">{lm.home?.score} — {lm.away?.score}</span>
+                  <span className="text-2xl font-bold text-brand-600">{lm.home?.score} — {lm.away?.score}</span>
                   <span className="font-medium">{lm.away?.name}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
@@ -763,7 +763,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
 
       {/* Scorecard */}
       {displayData && (
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-[28px] border border-border/40 bg-card shadow-sm overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-border bg-red-500/5 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -796,7 +796,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                   )}
                   <span className="text-5xl font-bold text-foreground tabular-nums">{displayData.home?.score ?? 0}</span>
                   {isOrganizer && displayData.status !== "completed" && (
-                    <button onClick={() => handleScore("home", 1)} className="w-8 h-8 rounded-full bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center transition-colors">
+                    <button onClick={() => handleScore("home", 1)} className="w-8 h-8 rounded-full bg-brand-600/20 text-brand-600 hover:bg-brand-600/30 flex items-center justify-center transition-colors">
                       <Plus className="w-4 h-4" />
                     </button>
                   )}
@@ -815,7 +815,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                   )}
                   <span className="text-5xl font-bold text-foreground tabular-nums">{displayData.away?.score ?? 0}</span>
                   {isOrganizer && displayData.status !== "completed" && (
-                    <button onClick={() => handleScore("away", 1)} className="w-8 h-8 rounded-full bg-primary/20 text-primary hover:bg-primary/30 flex items-center justify-center transition-colors">
+                    <button onClick={() => handleScore("away", 1)} className="w-8 h-8 rounded-full bg-brand-600/20 text-brand-600 hover:bg-brand-600/30 flex items-center justify-center transition-colors">
                       <Plus className="w-4 h-4" />
                     </button>
                   )}
@@ -872,7 +872,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                 {[...displayEvents].reverse().map(ev => (
                   <div key={ev.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/50 text-sm">
                     <span className="text-muted-foreground text-xs w-8 shrink-0">{ev.minute > 0 ? `${ev.minute}'` : ""}</span>
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.team === "home" ? "bg-primary" : "bg-brand-500"}`} />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${ev.team === "home" ? "bg-brand-600" : "bg-brand-500"}`} />
                     <span className="font-medium">{ev.player_name || ev.team}</span>
                     <span className="text-muted-foreground">{ev.description || ev.type}</span>
                   </div>
@@ -897,7 +897,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                   {EVENT_TYPES.map(et => (
                     <button key={et.value} onClick={() => setEventForm(f => ({ ...f, type: et.value }))}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                        eventForm.type === et.value ? "bg-primary/20 text-primary border border-primary/30" : "bg-secondary"
+                        eventForm.type === et.value ? "bg-brand-600/20 text-brand-600 border border-brand-600/30" : "bg-secondary"
                       }`}>
                       {et.icon} {et.label}
                     </button>
@@ -908,7 +908,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                 <Label>Team</Label>
                 <div className="flex gap-2 mt-1">
                   <button onClick={() => setEventForm(f => ({ ...f, team: "home" }))}
-                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${eventForm.team === "home" ? "bg-primary/20 text-primary border border-primary/30" : "bg-secondary"}`}>
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${eventForm.team === "home" ? "bg-brand-600/20 text-brand-600 border border-brand-600/30" : "bg-secondary"}`}>
                     {displayData?.home?.name || "Home"}
                   </button>
                   <button onClick={() => setEventForm(f => ({ ...f, team: "away" }))}
@@ -931,7 +931,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
                 <Label>Description</Label>
                 <Input value={eventForm.description} onChange={e => setEventForm(f => ({ ...f, description: e.target.value }))} placeholder="Optional description" />
               </div>
-              <Button onClick={handleAddEvent} className="w-full">Add Event</Button>
+              <Button onClick={handleAddEvent} className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl">Add Event</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -943,7 +943,7 @@ function LiveTabContent({ tournament, liveMatches, activeLiveId, setActiveLiveId
           <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Start Live Scoring</h3>
           <div className="space-y-2">
             {pendingMatches.map(m => (
-              <div key={m.id} className="flex items-center justify-between p-3 rounded-xl border border-border bg-card">
+              <div key={m.id} className="flex items-center justify-between p-3 rounded-[28px] border border-border/40 bg-card shadow-sm">
                 <div>
                   <p className="text-sm font-medium">{nameMap[m.player_a] || "TBD"} vs {nameMap[m.player_b] || "TBD"}</p>
                   <p className="text-xs text-muted-foreground">Round {m.round} — Match #{m.match_number}</p>
@@ -980,7 +980,7 @@ function MatchCard({ match, nameMap, isOrganizer, onSubmitResult, horizontal }) 
   const canSubmit = isOrganizer && match.status === "pending" && match.player_a && match.player_b;
 
   return (
-    <div className={`glass-card rounded-lg p-3 ${horizontal ? "" : ""} ${isDone ? "border-primary/20" : ""}`}
+    <div className={`rounded-[28px] bg-card border border-border/40 shadow-sm p-3 ${horizontal ? "" : ""} ${isDone ? "border-brand-600/20" : ""}`}
       data-testid={`match-${match.id}`}>
       <div className="flex items-center justify-between gap-2 mb-1.5">
         <span className="text-[10px] font-mono text-muted-foreground flex items-center gap-1">
@@ -990,7 +990,7 @@ function MatchCard({ match, nameMap, isOrganizer, onSubmitResult, horizontal }) 
         {isBye && <Badge className="text-[9px] bg-secondary text-muted-foreground">BYE</Badge>}
       </div>
       {/* Player A */}
-      <div className={`flex items-center justify-between py-1.5 px-2 rounded-md mb-1 text-sm ${match.winner === match.player_a ? "bg-primary/10 font-bold" : ""}`}>
+      <div className={`flex items-center justify-between py-1.5 px-2 rounded-md mb-1 text-sm ${match.winner === match.player_a ? "bg-brand-600/10 font-bold" : ""}`}>
         <span className={`truncate ${!match.player_a ? "text-muted-foreground italic" : ""}`}>
           {playerA}
         </span>
@@ -1001,7 +1001,7 @@ function MatchCard({ match, nameMap, isOrganizer, onSubmitResult, horizontal }) 
       {/* vs divider */}
       <div className="text-[10px] text-center text-muted-foreground font-mono">vs</div>
       {/* Player B */}
-      <div className={`flex items-center justify-between py-1.5 px-2 rounded-md mt-1 text-sm ${match.winner === match.player_b ? "bg-primary/10 font-bold" : ""}`}>
+      <div className={`flex items-center justify-between py-1.5 px-2 rounded-md mt-1 text-sm ${match.winner === match.player_b ? "bg-brand-600/10 font-bold" : ""}`}>
         <span className={`truncate ${!match.player_b ? "text-muted-foreground italic" : ""}`}>
           {playerB}
         </span>
@@ -1012,7 +1012,7 @@ function MatchCard({ match, nameMap, isOrganizer, onSubmitResult, horizontal }) 
       {/* Submit button for organizer */}
       {canSubmit && (
         <button onClick={() => onSubmitResult(match)}
-          className="w-full mt-2 py-1.5 rounded-md bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition-colors"
+          className="w-full mt-2 py-1.5 rounded-md bg-brand-600/10 text-brand-600 text-[10px] font-bold hover:bg-brand-600/20 transition-colors"
           data-testid={`result-btn-${match.id}`}>
           Enter Result
         </button>

@@ -148,7 +148,7 @@ export default function PrivacySettingsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="flex items-center justify-between p-4 rounded-xl border-2 border-border/50 bg-card"
+                  className="flex items-center justify-between p-4 rounded-[24px] bg-card border border-border/40 shadow-sm"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export default function PrivacySettingsPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="flex items-center justify-between p-4 rounded-xl border-2 border-border/50 bg-card"
+                  className="flex items-center justify-between p-4 rounded-[24px] bg-card border border-border/40 shadow-sm"
                 >
                   <div>
                     <h3 className="font-display font-bold">{ch.label}</h3>
@@ -218,7 +218,7 @@ export default function PrivacySettingsPage() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="p-6 rounded-xl border-2 border-border/50 bg-card"
+                className="p-6 rounded-[24px] bg-card border border-border/40 shadow-sm"
               >
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-lg bg-primary/10">
@@ -249,7 +249,7 @@ export default function PrivacySettingsPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                className="p-6 rounded-xl border-2 border-destructive/30 bg-card"
+                className="p-6 rounded-[24px] bg-card border border-destructive/30 shadow-sm"
               >
                 <div className="flex items-start gap-4">
                   <div className="p-3 rounded-lg bg-destructive/10">
@@ -293,7 +293,7 @@ export default function PrivacySettingsPage() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.03 }}
-                    className="flex items-center gap-3 p-3 rounded-lg border border-border/30 bg-card/50"
+                    className="flex items-center gap-3 p-3 rounded-lg border border-border/40 bg-card"
                   >
                     <CheckCircle className="h-4 w-4 text-primary flex-shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -312,7 +312,7 @@ export default function PrivacySettingsPage() {
 
       {/* Erasure Confirmation Dialog */}
       <Dialog open={erasureDialog} onOpenChange={setErasureDialog}>
-        <DialogContent className="bg-card border-2 border-destructive/30 max-w-md">
+        <DialogContent className="bg-card border border-destructive/30 max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl font-black text-destructive flex items-center gap-2">
               <AlertTriangle className="h-5 w-5" />

@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AthleticStatCard } from "@/components/ui/stat-card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +40,27 @@ const PKG_FEATURES_PRESET = [
 const ORG_TYPES = ["academy", "school", "college"];
 const RECORD_TYPES = ["assessment", "achievement", "match_result", "training"];
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
+
+
+function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="bg-card rounded-[28px] p-6 border border-border/40 shadow-sm overflow-hidden relative group flex flex-col justify-between transition-all duration-300"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="admin-label">{label}</div>
+        <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
+          <Icon className={`h-5 w-5 ${colorClass}`} />
+        </div>
+      </div>
+      <div className="admin-value">{value}</div>
+    </motion.div>
+  );
+}
 
 export default function CoachDashboard({ defaultView }) {
   const { user } = useAuth();
@@ -1163,7 +1183,7 @@ export default function CoachDashboard({ defaultView }) {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -1201,7 +1221,7 @@ export default function CoachDashboard({ defaultView }) {
       {/* Welcome Hero, Verification, Stats — only on Dashboard home */}
       {activeView !== "coach_mgmt" && (<>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        className="mb-8 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden">
+        className="mb-8 rounded-[28px] border border-border/40 bg-card overflow-hidden">
         <div className="grid md:grid-cols-3 gap-0 relative">
           <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
             <div className="flex items-center gap-2">
@@ -1212,8 +1232,8 @@ export default function CoachDashboard({ defaultView }) {
                 </span>
               )}
             </div>
-            <h1 className="font-display text-display-md md:text-display-lg font-black tracking-athletic mt-2">
-              Welcome, <span className="bg-gradient-athletic bg-clip-text text-transparent">{user?.name}</span>
+            <h1 className="admin-page-title  mt-2">
+              Welcome, <span className="bg-brand-600 bg-clip-text text-transparent">{user?.name}</span>
             </h1>
             <p className="text-muted-foreground font-semibold mt-3 text-base">
               Manage sessions, train champions, and grow your coaching business.
@@ -1225,7 +1245,7 @@ export default function CoachDashboard({ defaultView }) {
           </div>
           {/* Profile button - top right */}
           <button onClick={() => navigate("/profile")}
-            className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background hover:border-primary/30 transition-all text-xs font-bold text-muted-foreground hover:text-foreground"
+            className="absolute top-4 right-4 flex items-center gap-2 px-3 py-2 rounded-xl bg-background/80 backdrop-blur-sm border border-border/50 hover:bg-background hover:border-brand-600/30 transition-all text-xs font-bold text-muted-foreground hover:text-foreground"
             data-testid="coach-profile-btn">
             <Settings className="h-4 w-4" /> Profile
           </button>
@@ -1235,7 +1255,7 @@ export default function CoachDashboard({ defaultView }) {
       {/* Verification Banner */}
       {verificationStatus !== "verified" && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-          className={`mb-6 rounded-xl border-2 p-4 flex items-center justify-between gap-3 cursor-pointer ${
+          className={`mb-6 rounded-[28px] border p-4 flex items-center justify-between gap-3 cursor-pointer ${
             verificationStatus === "rejected" ? "border-red-500/30 bg-red-500/5" :
             verificationStatus === "pending_review" ? "border-blue-500/30 bg-blue-500/5" :
             "border-amber-500/30 bg-amber-500/5"
@@ -1270,22 +1290,22 @@ export default function CoachDashboard({ defaultView }) {
       {/* Session Stats */}
       {sessionStats && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 mb-6">
-          <AthleticStatCard icon={Calendar} label="Upcoming" value={sessionStats.upcoming} iconColor="sky" delay={0.1} />
-          <AthleticStatCard icon={CheckCircle} label="Completed" value={sessionStats.completed} iconColor="primary" delay={0.2} />
-          <AthleticStatCard icon={IndianRupee} label="Revenue" value={`₹${(sessionStats.total_revenue || 0).toLocaleString()}`} iconColor="amber" delay={0.3} />
-          <AthleticStatCard icon={Star} label="Rating" value={sessionStats.avg_rating || "—"} iconColor="violet" delay={0.4} />
-          <AthleticStatCard icon={Users} label="Subscribers" value={sessionStats.active_subscribers || 0} iconColor="sky" delay={0.5} />
-          <AthleticStatCard icon={IndianRupee} label="Package Revenue" value={`₹${(sessionStats.package_revenue || 0).toLocaleString()}`} iconColor="amber" delay={0.6} />
+          <StatCard icon={Calendar} label="Upcoming" value={sessionStats.upcoming} index={0.1} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+          <StatCard icon={CheckCircle} label="Completed" value={sessionStats.completed} index={0.2} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+          <StatCard icon={IndianRupee} label="Revenue" value={`₹${(sessionStats.total_revenue || 0).toLocaleString()}`} index={0.3} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+          <StatCard icon={Star} label="Rating" value={sessionStats.avg_rating || "—"} index={0.4} colorClass="text-purple-500" bgClass="bg-purple-500/10" />
+          <StatCard icon={Users} label="Subscribers" value={sessionStats.active_subscribers || 0} index={0.5} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+          <StatCard icon={IndianRupee} label="Package Revenue" value={`₹${(sessionStats.package_revenue || 0).toLocaleString()}`} index={0.6} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
         </div>
       )}
       </>)}
 
       {/* View Tabs */}
       {!isIndividualCoach && (
-        <div className="flex gap-1 mb-6 bg-secondary/30 p-1 rounded-lg w-fit flex-wrap">
+        <div className="flex flex-wrap gap-3 mb-6">
           {VIEWS.map(({ id, icon: Icon, label }) => (
             <button key={id} onClick={() => setActiveView(id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${activeView === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+              className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${activeView === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}
               data-testid={`coach-tab-${id}`}>
               <Icon className="h-3.5 w-3.5" />{label}
             </button>
@@ -1296,10 +1316,10 @@ export default function CoachDashboard({ defaultView }) {
       {/* ─── Coaching View (with sub-tabs) ─── */}
       {activeView === "coaching" && (
         <>
-          <div className="flex gap-1 mb-6 bg-secondary/20 p-1 rounded-lg w-fit flex-wrap">
+          <div className="flex flex-wrap gap-3 mb-6">
             {COACHING_SUB_TABS.map(({ id, icon: Icon, label }) => (
               <button key={id} onClick={() => setCoachingSubTab(id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${coachingSubTab === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${coachingSubTab === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                 <Icon className="h-3.5 w-3.5" />{label}
               </button>
             ))}
@@ -1310,9 +1330,9 @@ export default function CoachDashboard({ defaultView }) {
         <div className="space-y-4">
           {upcomingSessions.length > 0 && (
             <>
-              <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Upcoming Sessions</h3>
+              <h3 className="admin-section-label">Upcoming Sessions</h3>
               {upcomingSessions.map(s => (
-                <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3"
+                <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between gap-3"
                   data-testid={`session-${s.id}`}>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -1325,14 +1345,14 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} - {fmt12h(s.end_time)}</span>
-                      <span className="font-bold text-primary">₹{s.price}</span>
+                      <span className="font-bold text-brand-600">₹{s.price}</span>
                       {s.location && <span className="text-muted-foreground">{s.location}</span>}
                     </div>
                     {s.notes && <p className="text-xs text-muted-foreground mt-1 italic">"{s.notes}"</p>}
                   </div>
                   <div className="flex gap-2 shrink-0">
                     {s.status === "confirmed" && (
-                      <Button size="sm" className="bg-brand-600 text-white font-bold text-[10px] h-7"
+                      <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn text-[10px] h-7"
                         onClick={() => handleCompleteSession(s.id)}>
                         <CheckCircle className="h-3 w-3 mr-1" />Done
                       </Button>
@@ -1349,9 +1369,9 @@ export default function CoachDashboard({ defaultView }) {
 
           {completedSessions.length > 0 && (
             <>
-              <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest mt-6">Completed Sessions</h3>
+              <h3 className="admin-section-label mt-6">Completed Sessions</h3>
               {completedSessions.slice(0, 10).map(s => (
-                <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3 opacity-80">
+                <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between gap-3 opacity-80">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="font-bold text-sm">{s.player_name}</span>
@@ -1392,11 +1412,11 @@ export default function CoachDashboard({ defaultView }) {
       {/* Availability moved to Settings */}
       {coachingSubTab === "availability" && (
         <div className="space-y-4">
-          <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+          <div className="text-center py-12 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg text-muted-foreground">
             <Clock className="h-10 w-10 mx-auto mb-3 opacity-50" />
             <p className="text-sm font-semibold">Availability has moved to Settings</p>
             <p className="text-xs mt-1 opacity-70">Manage your weekly time slots in Coach Settings</p>
-            <Button size="sm" className="mt-4 bg-primary text-primary-foreground font-bold text-xs"
+            <Button size="sm" className="mt-4 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs"
               onClick={() => navigate("/coach/settings")}>
               <Settings className="h-3.5 w-3.5 mr-1.5" /> Open Settings
             </Button>
@@ -1409,17 +1429,17 @@ export default function CoachDashboard({ defaultView }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Monthly Packages</h3>
+              <h3 className="admin-section-label">Monthly Packages</h3>
               <p className="text-xs text-muted-foreground mt-1">Create and manage subscription packages for Lobbians</p>
             </div>
-            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
               onClick={() => setShowCreatePkg(!showCreatePkg)} data-testid="create-pkg-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Create Package
             </Button>
           </div>
           <Dialog open={showCreatePkg} onOpenChange={setShowCreatePkg}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle className="font-display">Create Package</DialogTitle></DialogHeader>
+            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
+              <DialogHeader><DialogTitle className="font-medium">Create Package</DialogTitle></DialogHeader>
               <div className="space-y-4">
                 {/* Name */}
                 <div>
@@ -1437,7 +1457,7 @@ export default function CoachDashboard({ defaultView }) {
                         onClick={() => setPkgForm(p => ({ ...p, type: t.value }))}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                           pkgForm.type === t.value
-                            ? "bg-primary/15 border-primary/40 text-primary"
+                            ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                             : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                         }`}>{t.label}</button>
                     ))}
@@ -1472,7 +1492,7 @@ export default function CoachDashboard({ defaultView }) {
                       <label key={sport}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all border ${
                           pkgForm.sports.includes(sport)
-                            ? "bg-primary/15 border-primary/40 text-primary"
+                            ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                             : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                         }`}>
                         <Checkbox checked={pkgForm.sports.includes(sport)} onCheckedChange={() => togglePkgSport(sport)} className="h-3 w-3" />
@@ -1490,7 +1510,7 @@ export default function CoachDashboard({ defaultView }) {
                         onClick={() => setPkgForm(p => ({ ...p, features: p.features.includes(f) ? p.features.filter(x => x !== f) : [...p.features, f] }))}
                         className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
                           pkgForm.features.includes(f)
-                            ? "bg-primary/15 border-primary/40 text-primary"
+                            ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                             : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                         }`}>{pkgForm.features.includes(f) ? "✓ " : ""}{f}</button>
                     ))}
@@ -1509,7 +1529,7 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setPkgForm(p => ({ ...p, is_public: true }))}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                          pkgForm.is_public ? "bg-primary/15 border-primary/40 text-primary" : "bg-secondary/30 border-border text-muted-foreground"
+                          pkgForm.is_public ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "bg-secondary/30 border-border text-muted-foreground"
                         }`}>Public</button>
                       <button type="button" onClick={() => setPkgForm(p => ({ ...p, is_public: false }))}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${
@@ -1523,11 +1543,11 @@ export default function CoachDashboard({ defaultView }) {
                   <Label className="text-xs text-muted-foreground">Description</Label>
                   <textarea value={pkgForm.description} onChange={e => setPkgForm(p => ({ ...p, description: e.target.value }))}
                     placeholder="Brief description of the package..."
-                    className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm min-h-[60px] resize-none focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm min-h-[60px] resize-none focus:outline-none focus:ring-1 focus:ring-brand-600/50"
                     data-testid="pkg-description-input" />
                 </div>
                 <div className="flex gap-2">
-                  <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleCreatePackage}
+                  <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreatePackage}
                     disabled={pkgCreating} data-testid="submit-pkg-btn">
                     {pkgCreating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
                     Create Package
@@ -1542,19 +1562,19 @@ export default function CoachDashboard({ defaultView }) {
               {packages.map((pkg, idx) => (
                 <motion.div key={pkg.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="glass-card rounded-xl p-5 flex flex-col gap-3" data-testid={`pkg-card-${pkg.id}`}>
+                  className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 flex flex-col gap-3" data-testid={`pkg-card-${pkg.id}`}>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Package className="h-4 w-4 text-primary" />
+                      <div className="w-9 h-9 rounded-lg bg-brand-600/10 flex items-center justify-center shrink-0">
+                        <Package className="h-4 w-4 text-brand-600" />
                       </div>
                       <div>
-                        <h4 className="font-bold text-sm">{pkg.name}</h4>
+                        <h4 className="font-medium text-sm">{pkg.name}</h4>
                         <p className="text-xs text-muted-foreground capitalize">{pkg.type || "monthly"} · {pkg.sessions_per_month} sessions</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pkg.is_public !== false ? "bg-primary/10 border-primary/20 text-primary" : "bg-amber-500/10 border-amber-500/20 text-amber-600"}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pkg.is_public !== false ? "bg-brand-600/10 border-brand-600/20 text-brand-600" : "bg-amber-500/10 border-amber-500/20 text-amber-600"}`}>
                         {pkg.is_public !== false ? "Public" : "Private"}
                       </span>
                       <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive shrink-0"
@@ -1564,7 +1584,7 @@ export default function CoachDashboard({ defaultView }) {
                     </div>
                   </div>
                   <div className="flex items-baseline gap-2">
-                    <span className="font-black text-lg text-primary">₹{(pkg.price || 0).toLocaleString()}</span>
+                    <span className="font-bold text-lg text-brand-600">₹{(pkg.price || 0).toLocaleString()}</span>
                     <span className="text-xs text-muted-foreground">{PKG_TYPES.find(t => t.value === (pkg.type || "monthly"))?.priceLabel || "/month"}</span>
                   </div>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
@@ -1573,7 +1593,7 @@ export default function CoachDashboard({ defaultView }) {
                   </div>
                   {pkg.features?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {pkg.features.map(f => <span key={f} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 border border-primary/15 text-primary font-medium">✓ {f}</span>)}
+                      {pkg.features.map(f => <span key={f} className="text-[10px] px-2 py-0.5 rounded-full bg-brand-600/10 border border-brand-600/15 text-brand-600 font-medium">✓ {f}</span>)}
                     </div>
                   )}
                   {pkg.sports?.length > 0 && (
@@ -1586,7 +1606,7 @@ export default function CoachDashboard({ defaultView }) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 glass-card rounded-xl text-muted-foreground">
+            <div className="text-center py-16 bg-card border border-border/40 shadow-sm rounded-[28px] text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-bold mb-1">No Packages Yet</p>
               <p className="text-sm">Create a monthly package to offer subscription-based coaching.</p>
@@ -1605,9 +1625,9 @@ export default function CoachDashboard({ defaultView }) {
             </div>
           ) : (
             <>
-              <div className="glass-card rounded-xl p-5 space-y-4">
-                <h3 className="font-display font-bold text-sm flex items-center gap-2">
-                  <Award className="h-4 w-4 text-primary" /> Submit Performance Record
+              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-4">
+                <h3 className="font-medium text-sm flex items-center gap-2">
+                  <Award className="h-4 w-4 text-brand-600" /> Submit Performance Record
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
@@ -1650,7 +1670,7 @@ export default function CoachDashboard({ defaultView }) {
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <Label className="text-xs text-muted-foreground">Stats (Key-Value Pairs)</Label>
-                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-primary" onClick={addStatRow}><Plus className="h-3 w-3 mr-0.5" /> Add Stat</Button>
+                    <Button size="sm" variant="ghost" className="h-6 text-[10px] text-brand-600" onClick={addStatRow}><Plus className="h-3 w-3 mr-0.5" /> Add Stat</Button>
                   </div>
                   <div className="space-y-2">
                     {recordForm.stats.map((stat, idx) => (
@@ -1667,16 +1687,16 @@ export default function CoachDashboard({ defaultView }) {
                 <div>
                   <Label className="text-xs text-muted-foreground">Notes</Label>
                   <textarea value={recordForm.notes} onChange={e => setRecordForm(p => ({ ...p, notes: e.target.value }))}
-                    rows={2} placeholder="Additional notes or observations..." className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
+                    rows={2} placeholder="Additional notes or observations..." className="mt-1 w-full rounded-xl bg-secondary/20 border-border/40 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50" />
                 </div>
-                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSubmitRecord} disabled={submittingRecord} data-testid="submit-record-btn">
+                <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSubmitRecord} disabled={submittingRecord} data-testid="submit-record-btn">
                   {submittingRecord ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Award className="h-4 w-4 mr-1" />}
                   Submit Record
                 </Button>
               </div>
-              <div className="glass-card rounded-xl p-5 space-y-4">
-                <h3 className="font-display font-bold text-sm flex items-center gap-2">
-                  <Dumbbell className="h-4 w-4 text-primary" /> Log Training Session
+              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-4">
+                <h3 className="font-medium text-sm flex items-center gap-2">
+                  <Dumbbell className="h-4 w-4 text-brand-600" /> Log Training Session
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div><Label className="text-xs text-muted-foreground">Title</Label>
@@ -1699,7 +1719,7 @@ export default function CoachDashboard({ defaultView }) {
                   <div><Label className="text-xs text-muted-foreground mb-2 block">Select Lobbians</Label>
                     <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
                       {orgPlayers.map(p => { const pId = p.user_id || p.id; const isSelected = trainingForm.player_ids.includes(pId); return (
-                        <label key={pId} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all border ${isSelected ? "bg-primary/15 border-primary/40 text-primary" : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"}`}>
+                        <label key={pId} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all border ${isSelected ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"}`}>
                           <Checkbox checked={isSelected} onCheckedChange={() => togglePlayerForTraining(pId)} className="h-3 w-3" />
                           <span>{p.name || p.email}</span>
                         </label>); })}
@@ -1707,45 +1727,45 @@ export default function CoachDashboard({ defaultView }) {
                 )}
                 <div><Label className="text-xs text-muted-foreground">Notes</Label>
                   <textarea value={trainingForm.notes} onChange={e => setTrainingForm(p => ({ ...p, notes: e.target.value }))}
-                    rows={2} placeholder="Session observations, Lobbian feedback..." className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" /></div>
-                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleLogTraining} disabled={submittingTraining} data-testid="submit-training-btn">
+                    rows={2} placeholder="Session observations, Lobbian feedback..." className="mt-1 w-full rounded-xl bg-secondary/20 border-border/40 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50" /></div>
+                <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleLogTraining} disabled={submittingTraining} data-testid="submit-training-btn">
                   {submittingTraining ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Dumbbell className="h-4 w-4 mr-1" />}
                   Log Training
                 </Button>
               </div>
               <div className="space-y-3">
-                <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Recent Performance Records</h3>
+                <h3 className="admin-section-label">Recent Performance Records</h3>
                 {recentRecords.length > 0 ? recentRecords.map((r, idx) => (
-                  <motion.div key={r.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="glass-card rounded-xl p-4">
+                  <motion.div key={r.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm">{r.title}</span>
                         <Badge variant="secondary" className="text-[10px] capitalize">{r.record_type?.replace("_", " ")}</Badge>
-                        {r.sport && <Badge className="bg-primary/15 text-primary text-[10px] capitalize">{r.sport}</Badge>}
+                        {r.sport && <Badge className="bg-brand-600/15 text-brand-600 text-[10px] capitalize">{r.sport}</Badge>}
                       </div>
                       <span className="text-xs text-muted-foreground">{r.date}</span>
                     </div>
                     {r.player_name && <p className="text-xs text-muted-foreground mb-1">Lobbian: <span className="font-medium text-foreground">{r.player_name}</span></p>}
                     {r.stats && Object.keys(r.stats).length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-2">
-                        {Object.entries(r.stats).map(([k, v]) => <span key={k} className="text-[10px] bg-secondary/30 rounded-full px-2 py-0.5 font-mono">{k}: <span className="font-bold text-primary">{v}</span></span>)}
+                        {Object.entries(r.stats).map(([k, v]) => <span key={k} className="text-[10px] bg-secondary/30 rounded-full px-2 py-0.5 font-mono">{k}: <span className="font-bold text-brand-600">{v}</span></span>)}
                       </div>
                     )}
                     {r.notes && <p className="text-xs text-muted-foreground mt-1.5 italic">{r.notes}</p>}
                   </motion.div>
                 )) : (
-                  <div className="text-center py-8 glass-card rounded-xl text-muted-foreground">
+                  <div className="text-center py-8 bg-card border border-border/40 shadow-sm rounded-[28px] text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 text-muted-foreground" /><p className="text-sm">No performance records yet. Submit one above.</p>
                   </div>
                 )}
               </div>
               <div className="space-y-3">
-                <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Training Log History</h3>
+                <h3 className="admin-section-label">Training Log History</h3>
                 {trainingLogs.length > 0 ? trainingLogs.map((log, idx) => (
-                  <motion.div key={log.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="glass-card rounded-xl p-4">
+                  <motion.div key={log.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.03 }} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Dumbbell className="h-3.5 w-3.5 text-primary" />
+                        <Dumbbell className="h-3.5 w-3.5 text-brand-600" />
                         <span className="font-bold text-sm">{log.title}</span>
                         {log.sport && <Badge variant="secondary" className="text-[10px] capitalize">{log.sport}</Badge>}
                       </div>
@@ -1755,11 +1775,11 @@ export default function CoachDashboard({ defaultView }) {
                       {log.duration_minutes && <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{log.duration_minutes} min</span>}
                       {log.player_ids?.length > 0 && <span className="flex items-center gap-1"><Users className="h-3 w-3" />{log.player_ids.length} Lobbians</span>}
                     </div>
-                    {log.drills?.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">{log.drills.map((d, di) => <span key={di} className="text-[10px] bg-primary/10 text-primary rounded-full px-2 py-0.5 font-bold">{d}</span>)}</div>}
+                    {log.drills?.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">{log.drills.map((d, di) => <span key={di} className="text-[10px] bg-brand-600/10 text-brand-600 rounded-full px-2 py-0.5 font-bold">{d}</span>)}</div>}
                     {log.notes && <p className="text-xs text-muted-foreground mt-1.5 italic">{log.notes}</p>}
                   </motion.div>
                 )) : (
-                  <div className="text-center py-8 glass-card rounded-xl text-muted-foreground">
+                  <div className="text-center py-8 bg-card border border-border/40 shadow-sm rounded-[28px] text-muted-foreground">
                     <Dumbbell className="h-8 w-8 mx-auto mb-2 text-muted-foreground" /><p className="text-sm">No training logs yet. Log a session above.</p>
                   </div>
                 )}
@@ -1778,24 +1798,24 @@ export default function CoachDashboard({ defaultView }) {
           {academy ? (
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
               {/* Academy Header Card */}
-              <div className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 mb-6">
+              <div className="rounded-[28px] border border-border/40 bg-card p-6 mb-6">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="font-display text-xl font-black">{academy.name}</h2>
+                    <h2 className="admin-heading text-xl">{academy.name}</h2>
                     <p className="text-sm text-muted-foreground mt-1">{academy.description}</p>
                   </div>
-                  <Badge variant="athletic" className="uppercase">{academy.sport}</Badge>
+                  <Badge  className="uppercase">{academy.sport}</Badge>
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div><span className="text-muted-foreground">Students:</span> <span className="font-bold">{academy.current_students}/{academy.max_students}</span></div>
-                  <div><span className="text-muted-foreground">Fee:</span> <span className="font-bold text-primary">₹{academy.monthly_fee}/mo</span></div>
+                  <div><span className="text-muted-foreground">Fee:</span> <span className="font-bold text-brand-600">₹{academy.monthly_fee}/mo</span></div>
                   <div><span className="text-muted-foreground">Schedule:</span> <span className="font-bold">{academy.schedule}</span></div>
                   <div><span className="text-muted-foreground">Revenue:</span> <span className="font-bold text-amber-400">₹{((academy.current_students || 0) * academy.monthly_fee).toLocaleString()}/mo</span></div>
                 </div>
               </div>
 
               {/* Academy Sub-Tabs */}
-              <div className="flex items-center gap-1 overflow-x-auto pb-2 mb-6 border-b border-border/40">
+              <div className="flex flex-wrap gap-3 mb-6">
                 {[
                   { id: "overview", icon: TrendingUp, label: "Overview" },
                   { id: "students", icon: Users, label: "Students" },
@@ -1805,8 +1825,8 @@ export default function CoachDashboard({ defaultView }) {
                   { id: "progress", icon: Activity, label: "Progress" },
                 ].map(t => (
                   <button key={t.id} onClick={() => setAcademyTab(t.id)}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
-                      academyTab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-secondary"
+                    className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn whitespace-nowrap transition-all active:scale-95 ${
+                      academyTab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
                     }`}>
                     <t.icon className="h-3.5 w-3.5" /> {t.label}
                   </button>
@@ -1817,22 +1837,22 @@ export default function CoachDashboard({ defaultView }) {
               {academyTab === "overview" && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <AthleticStatCard icon={Users} label="Students" value={dashboardStats?.total_students || academy.current_students || 0} />
-                    <AthleticStatCard icon={IndianRupee} label="Monthly Revenue" value={`₹${(dashboardStats?.monthly_revenue || 0).toLocaleString()}`} />
-                    <AthleticStatCard icon={UserCheck} label="Attendance Rate" value={`${dashboardStats?.attendance_rate || 0}%`} />
-                    <AthleticStatCard icon={ClipboardList} label="Batches" value={dashboardStats?.batch_count || 0} />
-                    <AthleticStatCard icon={IndianRupee} label="Total Revenue" value={`₹${(dashboardStats?.total_revenue || 0).toLocaleString()}`} />
-                    <AthleticStatCard icon={XCircle} label="Overdue Fees" value={dashboardStats?.overdue_fees || 0} />
+                    <StatCard icon={Users} label="Students" value={dashboardStats?.total_students || academy.current_students || 0} index={0} colorClass="text-brand-600" bgClass="bg-brand-600/10" />
+                    <StatCard icon={IndianRupee} label="Monthly Revenue" value={`₹${(dashboardStats?.monthly_revenue || 0).toLocaleString()}`} index={0} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+                    <StatCard icon={UserCheck} label="Attendance Rate" value={`${dashboardStats?.attendance_rate || 0}%`} index={0} colorClass="text-green-600" bgClass="bg-green-500/10" />
+                    <StatCard icon={ClipboardList} label="Batches" value={dashboardStats?.batch_count || 0} index={0} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+                    <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${(dashboardStats?.total_revenue || 0).toLocaleString()}`} index={0} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+                    <StatCard icon={XCircle} label="Overdue Fees" value={dashboardStats?.overdue_fees || 0} index={0} colorClass="text-brand-600" bgClass="bg-brand-600/10" />
                   </div>
                   {dashboardStats?.batch_fill_rates?.length > 0 && (
-                    <div className="glass-card rounded-lg p-4">
-                      <h4 className="font-bold text-sm mb-3">Batch Fill Rates</h4>
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
+                      <h4 className="font-medium text-sm mb-3 text-foreground">Batch Fill Rates</h4>
                       <div className="space-y-2">
                         {dashboardStats.batch_fill_rates.map((b, i) => (
                           <div key={i} className="flex items-center gap-3">
                             <span className="text-xs w-28 truncate">{b.name}</span>
                             <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${b.percentage}%` }} />
+                              <div className="h-full bg-brand-600 rounded-full transition-all" style={{ width: `${b.percentage}%` }} />
                             </div>
                             <span className="text-xs font-mono text-muted-foreground">{b.current}/{b.max}</span>
                           </div>
@@ -1841,8 +1861,8 @@ export default function CoachDashboard({ defaultView }) {
                     </div>
                   )}
                   {dashboardStats?.recent_enrollments?.length > 0 && (
-                    <div className="glass-card rounded-lg p-4">
-                      <h4 className="font-bold text-sm mb-3">Recent Enrollments</h4>
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
+                      <h4 className="font-medium text-sm mb-3 text-foreground">Recent Enrollments</h4>
                       <div className="space-y-2">
                         {dashboardStats.recent_enrollments.map(e => (
                           <div key={e.id} className="flex items-center justify-between text-sm">
@@ -1863,15 +1883,15 @@ export default function CoachDashboard({ defaultView }) {
               {academyTab === "students" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display font-bold">Enrolled Students ({enrollments.filter(e => e.status === "active").length})</h3>
+                    <h3 className="font-medium">Enrolled Students ({enrollments.filter(e => e.status === "active").length})</h3>
                     <Dialog open={addStudentOpen} onOpenChange={setAddStudentOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8">
+                        <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8">
                           <UserPlus className="h-3.5 w-3.5 mr-1" /> Add Student
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-border max-w-sm">
-                        <DialogHeader><DialogTitle className="font-display">Add Student Manually</DialogTitle></DialogHeader>
+                      <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                        <DialogHeader><DialogTitle className="font-medium">Add Student Manually</DialogTitle></DialogHeader>
                         <div className="space-y-3">
                           <div><Label className="text-xs text-muted-foreground">Name</Label>
                             <Input value={studentForm.name} onChange={e => setStudentForm(p => ({ ...p, name: e.target.value }))}
@@ -1885,13 +1905,13 @@ export default function CoachDashboard({ defaultView }) {
                               <Input value={studentForm.phone} onChange={e => setStudentForm(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
                                 className="bg-background border-border rounded-l-none" placeholder="98765 43210" maxLength={10} />
                             </div></div>
-                          <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleAddStudent}>Add Student</Button>
+                          <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleAddStudent}>Add Student</Button>
                         </div>
                       </DialogContent>
                     </Dialog>
                   </div>
                   {enrollments.length > 0 ? (
-                    <div className="glass-card rounded-lg overflow-hidden">
+                    <div className="bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border hover:bg-transparent">
@@ -1937,7 +1957,7 @@ export default function CoachDashboard({ defaultView }) {
                       </Table>
                     </div>
                   ) : (
-                    <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+                    <div className="text-center py-12 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg text-muted-foreground">
                       <Users className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No enrollments yet. Students can enroll from the Academy Discovery page.</p>
                     </div>
                   )}
@@ -1948,7 +1968,7 @@ export default function CoachDashboard({ defaultView }) {
               {academyTab === "batches" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display font-bold">Batches ({batches.length})</h3>
+                    <h3 className="font-medium">Batches ({batches.length})</h3>
                     <div className="flex gap-2">
                       <Dialog open={assignBatchOpen} onOpenChange={setAssignBatchOpen}>
                         <DialogTrigger asChild>
@@ -1956,8 +1976,8 @@ export default function CoachDashboard({ defaultView }) {
                             <UserPlus className="h-3.5 w-3.5 mr-1" /> Assign Student
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-card border-border max-w-sm">
-                          <DialogHeader><DialogTitle className="font-display">Assign Student to Batch</DialogTitle></DialogHeader>
+                        <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                          <DialogHeader><DialogTitle className="font-medium">Assign Student to Batch</DialogTitle></DialogHeader>
                           <div className="space-y-3">
                             <div><Label className="text-xs text-muted-foreground">Batch</Label>
                               <Select value={assignBatchId} onValueChange={setAssignBatchId}>
@@ -1969,18 +1989,18 @@ export default function CoachDashboard({ defaultView }) {
                                 <SelectTrigger className="mt-1 bg-background border-border"><SelectValue placeholder="Select student" /></SelectTrigger>
                                 <SelectContent>{enrollments.filter(e => e.status === "active").map(e => <SelectItem key={e.student_id} value={e.student_id}>{e.student_name}</SelectItem>)}</SelectContent>
                               </Select></div>
-                            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleAssignBatch}>Assign</Button>
+                            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleAssignBatch}>Assign</Button>
                           </div>
                         </DialogContent>
                       </Dialog>
                       <Dialog open={batchOpen} onOpenChange={setBatchOpen}>
                         <DialogTrigger asChild>
-                          <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8">
+                          <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8">
                             <Plus className="h-3.5 w-3.5 mr-1" /> Create Batch
                           </Button>
                         </DialogTrigger>
-                        <DialogContent className="bg-card border-border max-w-sm">
-                          <DialogHeader><DialogTitle className="font-display">Create Batch</DialogTitle></DialogHeader>
+                        <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                          <DialogHeader><DialogTitle className="font-medium">Create Batch</DialogTitle></DialogHeader>
                           <div className="space-y-3">
                             <div><Label className="text-xs text-muted-foreground">Batch Name</Label>
                               <Input value={batchForm.name} onChange={e => setBatchForm(p => ({ ...p, name: e.target.value }))}
@@ -2003,11 +2023,11 @@ export default function CoachDashboard({ defaultView }) {
                                     ...p, days: p.days.includes(i) ? p.days.filter(x => x !== i) : [...p.days, i]
                                   }))}
                                     className={`w-9 h-9 rounded-lg text-xs font-bold ${
-                                      batchForm.days.includes(i) ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"
+                                      batchForm.days.includes(i) ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-secondary text-muted-foreground"
                                     }`}>{d.slice(0, 2)}</button>
                                 ))}
                               </div></div>
-                            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateBatch}>Create Batch</Button>
+                            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateBatch}>Create Batch</Button>
                           </div>
                         </DialogContent>
                       </Dialog>
@@ -2016,10 +2036,10 @@ export default function CoachDashboard({ defaultView }) {
                   {batches.length > 0 ? (
                     <div className="grid gap-4 md:grid-cols-2">
                       {batches.map(b => (
-                        <div key={b.id} className="glass-card rounded-lg p-4">
+                        <div key={b.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                           <div className="flex items-start justify-between mb-3">
                             <div>
-                              <h4 className="font-bold text-sm">{b.name}</h4>
+                              <h4 className="font-medium text-sm">{b.name}</h4>
                               <p className="text-xs text-muted-foreground">{b.start_time} - {b.end_time}</p>
                             </div>
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteBatch(b.id)}>
@@ -2029,12 +2049,12 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex items-center gap-2 mb-2">
                             <span className="text-xs text-muted-foreground">Days:</span>
                             {(b.days || []).map(d => (
-                              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-primary/20 text-primary rounded font-bold">{DAY_LABELS[d]}</span>
+                              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-brand-600/20 text-brand-600 rounded font-bold">{DAY_LABELS[d]}</span>
                             ))}
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                              <div className="h-full bg-primary rounded-full" style={{ width: `${(b.current_students / Math.max(b.max_students, 1)) * 100}%` }} />
+                              <div className="h-full bg-brand-600 rounded-full" style={{ width: `${(b.current_students / Math.max(b.max_students, 1)) * 100}%` }} />
                             </div>
                             <span className="text-xs font-mono">{b.current_students}/{b.max_students}</span>
                           </div>
@@ -2042,7 +2062,7 @@ export default function CoachDashboard({ defaultView }) {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+                    <div className="text-center py-12 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg text-muted-foreground">
                       <ClipboardList className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No batches yet. Create one to organize your students.</p>
                     </div>
                   )}
@@ -2052,8 +2072,8 @@ export default function CoachDashboard({ defaultView }) {
               {/* ── Attendance Sub-Tab ── */}
               {academyTab === "attendance" && (
                 <div className="space-y-4">
-                  <div className="glass-card rounded-lg p-4">
-                    <h3 className="font-bold text-sm mb-3">Mark Attendance</h3>
+                  <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
+                    <h3 className="font-medium text-sm mb-3">Mark Attendance</h3>
                     <div className="flex flex-wrap gap-3 mb-4">
                       <div><Label className="text-xs text-muted-foreground">Date</Label>
                         <Input type="date" value={attendanceDate} onChange={e => setAttendanceDate(e.target.value)}
@@ -2082,23 +2102,23 @@ export default function CoachDashboard({ defaultView }) {
                             }} />
                           <span className="text-sm font-medium">{e.student_name}</span>
                           {presentStudents.has(e.student_id) ?
-                            <CheckCircle className="h-4 w-4 text-primary ml-auto" /> :
+                            <CheckCircle className="h-4 w-4 text-brand-600 ml-auto" /> :
                             <XCircle className="h-4 w-4 text-muted-foreground/30 ml-auto" />}
                         </label>
                       ))}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-muted-foreground">{presentStudents.size} of {enrollments.filter(e => e.status === "active").length} present</span>
-                      <Button size="sm" className="bg-primary text-primary-foreground font-bold" onClick={handleMarkAttendance}>
+                      <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleMarkAttendance}>
                         <CheckCircle className="h-3.5 w-3.5 mr-1" /> Save Attendance
                       </Button>
                     </div>
                   </div>
                   {/* Attendance Stats */}
                   {attendanceStats?.students?.length > 0 && (
-                    <div className="glass-card rounded-lg p-4">
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-bold text-sm">Attendance Stats (Last 90 Days)</h4>
+                        <h4 className="font-medium text-sm">Attendance Stats (Last 90 Days)</h4>
                         <Badge variant="outline" className="text-[10px]">Avg: {attendanceStats.academy_average}%</Badge>
                       </div>
                       <div className="space-y-2">
@@ -2106,7 +2126,7 @@ export default function CoachDashboard({ defaultView }) {
                           <div key={s.student_id} className="flex items-center gap-3">
                             <span className="text-xs w-28 truncate">{s.student_name}</span>
                             <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                              <div className={`h-full rounded-full ${s.percentage >= 75 ? "bg-primary" : s.percentage >= 50 ? "bg-amber-500" : "bg-destructive"}`}
+                              <div className={`h-full rounded-full ${s.percentage >= 75 ? "bg-brand-600" : s.percentage >= 50 ? "bg-amber-500" : "bg-destructive"}`}
                                 style={{ width: `${s.percentage}%` }} />
                             </div>
                             <span className="text-xs font-mono w-10 text-right">{s.percentage}%</span>
@@ -2123,15 +2143,15 @@ export default function CoachDashboard({ defaultView }) {
               {academyTab === "fees" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display font-bold">Fee Status</h3>
+                    <h3 className="font-medium">Fee Status</h3>
                     <Dialog open={collectFeeOpen} onOpenChange={setCollectFeeOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8">
+                        <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8">
                           <IndianRupee className="h-3.5 w-3.5 mr-1" /> Collect Fee
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-border max-w-sm">
-                        <DialogHeader><DialogTitle className="font-display">Collect Fee</DialogTitle></DialogHeader>
+                      <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                        <DialogHeader><DialogTitle className="font-medium">Collect Fee</DialogTitle></DialogHeader>
                         <div className="space-y-3">
                           <div><Label className="text-xs text-muted-foreground">Student</Label>
                             <Select value={feeForm.student_id} onValueChange={v => setFeeForm(p => ({ ...p, student_id: v }))}>
@@ -2156,28 +2176,28 @@ export default function CoachDashboard({ defaultView }) {
                           <div><Label className="text-xs text-muted-foreground">Notes</Label>
                             <Input value={feeForm.notes} onChange={e => setFeeForm(p => ({ ...p, notes: e.target.value }))}
                               className="mt-1 bg-background border-border" placeholder="Optional notes" /></div>
-                          <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCollectFee}>Collect Fee</Button>
+                          <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCollectFee}>Collect Fee</Button>
                         </div>
                       </DialogContent>
                     </Dialog>
                   </div>
                   {/* Summary */}
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="glass-card rounded-lg p-3 text-center">
-                      <p className="text-lg font-black text-primary">{feeStatus.filter(f => f.status === "paid").length}</p>
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
+                      <p className="text-lg font-bold text-brand-600">{feeStatus.filter(f => f.status === "paid").length}</p>
                       <p className="text-[10px] text-muted-foreground uppercase">Paid</p>
                     </div>
-                    <div className="glass-card rounded-lg p-3 text-center">
-                      <p className="text-lg font-black text-amber-500">{feeStatus.filter(f => f.status === "pending").length}</p>
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
+                      <p className="text-lg font-bold text-amber-500">{feeStatus.filter(f => f.status === "pending").length}</p>
                       <p className="text-[10px] text-muted-foreground uppercase">Pending</p>
                     </div>
-                    <div className="glass-card rounded-lg p-3 text-center">
-                      <p className="text-lg font-black text-destructive">{feeStatus.filter(f => f.status === "overdue").length}</p>
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
+                      <p className="text-lg font-bold text-destructive">{feeStatus.filter(f => f.status === "overdue").length}</p>
                       <p className="text-[10px] text-muted-foreground uppercase">Overdue</p>
                     </div>
                   </div>
                   {feeStatus.length > 0 ? (
-                    <div className="glass-card rounded-lg overflow-hidden">
+                    <div className="bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg overflow-hidden">
                       <Table>
                         <TableHeader>
                           <TableRow className="border-border hover:bg-transparent">
@@ -2207,7 +2227,7 @@ export default function CoachDashboard({ defaultView }) {
                       </Table>
                     </div>
                   ) : (
-                    <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+                    <div className="text-center py-12 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg text-muted-foreground">
                       <IndianRupee className="h-8 w-8 mx-auto mb-3" /><p className="text-sm">No fee data yet</p>
                     </div>
                   )}
@@ -2218,15 +2238,15 @@ export default function CoachDashboard({ defaultView }) {
               {academyTab === "progress" && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-display font-bold">Student Progress</h3>
+                    <h3 className="font-medium">Student Progress</h3>
                     <Dialog open={progressOpen} onOpenChange={setProgressOpen}>
                       <DialogTrigger asChild>
-                        <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8">
+                        <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8">
                           <Plus className="h-3.5 w-3.5 mr-1" /> Add Assessment
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="bg-card border-border max-w-md">
-                        <DialogHeader><DialogTitle className="font-display">Add Progress Assessment</DialogTitle></DialogHeader>
+                      <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                        <DialogHeader><DialogTitle className="font-medium">Add Progress Assessment</DialogTitle></DialogHeader>
                         <div className="space-y-3">
                           <div><Label className="text-xs text-muted-foreground">Student</Label>
                             <Select value={progressStudent} onValueChange={setProgressStudent}>
@@ -2258,13 +2278,13 @@ export default function CoachDashboard({ defaultView }) {
                           <div><Label className="text-xs text-muted-foreground">Notes</Label>
                             <Input value={progressForm.notes} onChange={e => setProgressForm(p => ({ ...p, notes: e.target.value }))}
                               className="mt-1 bg-background border-border" placeholder="Coach notes..." /></div>
-                          <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleAddProgress}>Save Assessment</Button>
+                          <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleAddProgress}>Save Assessment</Button>
                         </div>
                       </DialogContent>
                     </Dialog>
                   </div>
                   {/* Student selector for viewing progress */}
-                  <div className="glass-card rounded-lg p-4">
+                  <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                     <Label className="text-xs text-muted-foreground">View Progress For</Label>
                     <Select onValueChange={(v) => { setProgressStudent(v); handleLoadProgress(v); }}>
                       <SelectTrigger className="mt-1 bg-background border-border"><SelectValue placeholder="Select a student" /></SelectTrigger>
@@ -2274,7 +2294,7 @@ export default function CoachDashboard({ defaultView }) {
                   {progressHistory.length > 0 && (
                     <div className="space-y-3">
                       {progressHistory.map(p => (
-                        <div key={p.id} className="glass-card rounded-lg p-4">
+                        <div key={p.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                           <div className="flex items-center justify-between mb-2">
                             <Badge variant="outline" className="text-[10px]">{p.assessment_type}</Badge>
                             <span className="text-xs text-muted-foreground">{p.date}</span>
@@ -2284,7 +2304,7 @@ export default function CoachDashboard({ defaultView }) {
                               <div key={skill} className="flex items-center gap-2">
                                 <span className="text-xs w-24 capitalize text-muted-foreground">{skill.replace("_", " ")}</span>
                                 <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                                  <div className="h-full bg-primary rounded-full" style={{ width: `${val * 10}%` }} />
+                                  <div className="h-full bg-brand-600 rounded-full" style={{ width: `${val * 10}%` }} />
                                 </div>
                                 <span className="text-xs font-mono">{val}/10</span>
                               </div>
@@ -2303,7 +2323,7 @@ export default function CoachDashboard({ defaultView }) {
               <GraduationCap className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-bold mb-2">No Academy Yet</p>
               <p className="text-sm text-muted-foreground mb-4">Create an academy to manage group training.</p>
-              <Button onClick={() => setCreateOpen(true)} className="bg-primary text-primary-foreground font-bold"
+              <Button onClick={() => setCreateOpen(true)} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                 data-testid="create-academy-btn">
                 <Plus className="h-4 w-4 mr-1" /> Create Academy
               </Button>
@@ -2320,7 +2340,7 @@ export default function CoachDashboard({ defaultView }) {
               <h3 className="font-bold text-sm">Weekly Availability</h3>
               <p className="text-xs text-muted-foreground">Set your available time slots for 1-on-1 coaching</p>
             </div>
-            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
               onClick={() => { setAvailForm({ day_of_week: "1", start_time: "09:00", end_time: "10:00" }); setAvailOpen(true); }}
               data-testid="add-availability-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Slot
@@ -2333,9 +2353,9 @@ export default function CoachDashboard({ defaultView }) {
                 const daySlots = availability.filter(a => a.day_of_week === dayIdx);
                 if (daySlots.length === 0) return null;
                 return (
-                  <div key={dayIdx} className="glass-card rounded-lg p-3">
+                  <div key={dayIdx} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3">
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono font-bold w-8 text-primary">{day}</span>
+                      <span className="text-xs font-mono font-bold w-8 text-brand-600">{day}</span>
                       <div className="flex flex-wrap gap-2 flex-1">
                         {daySlots.map(slot => (
                           <div key={slot.id} className="flex items-center gap-1.5 bg-secondary/50 rounded-full px-3 py-1">
@@ -2354,15 +2374,15 @@ export default function CoachDashboard({ defaultView }) {
               })}
             </div>
           ) : (
-            <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+            <div className="text-center py-12 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg text-muted-foreground">
               <Clock className="h-10 w-10 mx-auto mb-3 text-muted-foreground" />
               <p className="text-sm">No availability set. Add your coaching hours.</p>
             </div>
           )}
 
           <Dialog open={availOpen} onOpenChange={setAvailOpen}>
-            <DialogContent className="bg-card border-border max-w-sm">
-              <DialogHeader><DialogTitle className="font-display">Add Availability</DialogTitle></DialogHeader>
+            <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+              <DialogHeader><DialogTitle className="font-medium">Add Availability</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Day</Label>
@@ -2389,7 +2409,7 @@ export default function CoachDashboard({ defaultView }) {
                       className="mt-1 bg-background border-border" />
                   </div>
                 </div>
-                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleAddAvailability}>
+                <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleAddAvailability}>
                   Add Slot
                 </Button>
               </div>
@@ -2401,14 +2421,14 @@ export default function CoachDashboard({ defaultView }) {
       {/* ─── Profile View ─── */}
       {activeView === "profile" && (
         <div className="space-y-4 max-w-lg">
-          <div className="glass-card rounded-xl p-5 space-y-4">
+          <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-4">
             <h3 className="font-bold text-sm">Coaching Profile</h3>
             <div>
               <Label className="text-xs text-muted-foreground">Bio</Label>
               <textarea value={profileForm.coaching_bio}
                 onChange={e => setProfileForm(p => ({ ...p, coaching_bio: e.target.value }))}
                 rows={3} placeholder="Tell Lobbians about your coaching experience..."
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
+                className="mt-1 w-full rounded-xl bg-secondary/20 border-border/40 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -2436,7 +2456,7 @@ export default function CoachDashboard({ defaultView }) {
                 onChange={e => setProfileForm(p => ({ ...p, coaching_venue: e.target.value }))}
                 placeholder="e.g. Koramangala Indoor Court" className="mt-1 bg-background border-border" />
             </div>
-            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveProfile}>
+            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveProfile}>
               Save Profile
             </Button>
           </div>
@@ -2448,10 +2468,10 @@ export default function CoachDashboard({ defaultView }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">My Organizations</h3>
+              <h3 className="admin-section-label">My Organizations</h3>
               <p className="text-xs text-muted-foreground mt-1">Manage your academies, schools, and colleges</p>
             </div>
-            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
               onClick={() => setShowCreateOrg(!showCreateOrg)} data-testid="create-org-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Create Organization
             </Button>
@@ -2460,9 +2480,9 @@ export default function CoachDashboard({ defaultView }) {
           {/* Create Organization Inline Form */}
           {showCreateOrg && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}
-              className="glass-card rounded-xl p-5 space-y-4">
-              <h4 className="font-display font-bold text-sm flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" /> New Organization
+              className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-4">
+              <h4 className="font-medium text-sm flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-brand-600" /> New Organization
               </h4>
               <div>
                 <Label className="text-xs text-muted-foreground">Organization Name</Label>
@@ -2490,7 +2510,7 @@ export default function CoachDashboard({ defaultView }) {
                     <label key={sport}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all border ${
                         orgForm.sports.includes(sport)
-                          ? "bg-primary/15 border-primary/40 text-primary"
+                          ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                           : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                       }`}>
                       <Checkbox
@@ -2520,10 +2540,10 @@ export default function CoachDashboard({ defaultView }) {
                 <textarea value={orgForm.description}
                   onChange={e => setOrgForm(p => ({ ...p, description: e.target.value }))}
                   rows={2} placeholder="Brief description of the organization..."
-                  className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
+                  className="mt-1 w-full rounded-xl bg-secondary/20 border-border/40 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50" />
               </div>
               <div className="flex gap-2">
-                <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleCreateOrg}
+                <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateOrg}
                   disabled={orgCreating} data-testid="submit-org-btn">
                   {orgCreating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
                   Create
@@ -2539,7 +2559,7 @@ export default function CoachDashboard({ defaultView }) {
               <Loader2 className="h-6 w-6 mx-auto animate-spin text-muted-foreground" />
             </div>
           ) : orgs.length === 0 ? (
-            <div className="text-center py-16 glass-card rounded-xl text-muted-foreground">
+            <div className="text-center py-16 bg-card border border-border/40 shadow-sm rounded-[28px] text-muted-foreground">
               <Building2 className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
               <p className="font-bold mb-1">No Organizations Yet</p>
               <p className="text-sm">Create an organization to manage Lobbians and staff.</p>
@@ -2552,13 +2572,13 @@ export default function CoachDashboard({ defaultView }) {
                 const orgDetail = dashboard?.detail;
                 return (
                   <motion.div key={org.id} layout
-                    className="glass-card rounded-xl overflow-hidden" data-testid={`org-card-${org.id}`}>
+                    className="bg-card border border-border/40 shadow-sm rounded-[28px] overflow-hidden" data-testid={`org-card-${org.id}`}>
                     {/* Org Card Header */}
                     <button onClick={() => handleToggleOrgExpand(org.id)}
                       className="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-secondary/10 transition-colors">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                          <Building2 className="h-5 w-5 text-primary" />
+                        <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center shrink-0">
+                          <Building2 className="h-5 w-5 text-brand-600" />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -2587,19 +2607,19 @@ export default function CoachDashboard({ defaultView }) {
                         {dashboard && (
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                             <div className="bg-secondary/20 rounded-lg p-3 text-center">
-                              <div className="text-lg font-black text-primary">{dashboard.total_records ?? 0}</div>
+                              <div className="text-lg font-bold text-brand-600">{dashboard.total_records ?? 0}</div>
                               <div className="text-[10px] text-muted-foreground font-bold uppercase">Records</div>
                             </div>
                             <div className="bg-secondary/20 rounded-lg p-3 text-center">
-                              <div className="text-lg font-black text-primary">{dashboard.total_training_sessions ?? 0}</div>
+                              <div className="text-lg font-bold text-brand-600">{dashboard.total_training_sessions ?? 0}</div>
                               <div className="text-[10px] text-muted-foreground font-bold uppercase">Training Sessions</div>
                             </div>
                             <div className="bg-secondary/20 rounded-lg p-3 text-center">
-                              <div className="text-lg font-black text-primary">{orgDetail?.players?.length ?? 0}</div>
+                              <div className="text-lg font-bold text-brand-600">{orgDetail?.players?.length ?? 0}</div>
                               <div className="text-[10px] text-muted-foreground font-bold uppercase">Lobbians</div>
                             </div>
                             <div className="bg-secondary/20 rounded-lg p-3 text-center">
-                              <div className="text-lg font-black text-primary">{orgDetail?.staff?.length ?? 0}</div>
+                              <div className="text-lg font-bold text-brand-600">{orgDetail?.staff?.length ?? 0}</div>
                               <div className="text-[10px] text-muted-foreground font-bold uppercase">Staff</div>
                             </div>
                           </div>
@@ -2616,7 +2636,7 @@ export default function CoachDashboard({ defaultView }) {
                                 className="h-7 text-xs bg-background border-border w-48"
                                 onKeyDown={e => e.key === "Enter" && handleAddOrgPlayer(org.id)}
                                 data-testid="org-add-player-email" />
-                              <Button size="sm" className="h-7 text-[10px] bg-primary text-primary-foreground font-bold"
+                              <Button size="sm" className="h-7 text-[10px] bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                                 onClick={() => handleAddOrgPlayer(org.id)} disabled={orgActionLoading}
                                 data-testid="org-add-player-btn">
                                 <UserPlus className="h-3 w-3 mr-1" /> Add Lobbian
@@ -2656,7 +2676,7 @@ export default function CoachDashboard({ defaultView }) {
                                 className="h-7 text-xs bg-background border-border w-48"
                                 onKeyDown={e => e.key === "Enter" && handleAddOrgStaff(org.id)}
                                 data-testid="org-add-staff-email" />
-                              <Button size="sm" className="h-7 text-[10px] bg-primary text-primary-foreground font-bold"
+                              <Button size="sm" className="h-7 text-[10px] bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                                 onClick={() => handleAddOrgStaff(org.id)} disabled={orgActionLoading}
                                 data-testid="org-add-staff-btn">
                                 <UserPlus className="h-3 w-3 mr-1" /> Add Staff
@@ -2702,7 +2722,7 @@ export default function CoachDashboard({ defaultView }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           {/* Onboarding Progress */}
           {onboardingData && onboardingData.status !== "complete" && (
-            <div className="glass-card rounded-xl p-5 border-2 border-amber-500/20">
+            <div className="rounded-[28px] bg-card border border-amber-500/20 shadow-sm p-5">
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="h-4 w-4 text-amber-500" />
                 <h3 className="font-bold text-sm">Complete Your Setup</h3>
@@ -2720,11 +2740,11 @@ export default function CoachDashboard({ defaultView }) {
                   <button key={step.key} onClick={step.action}
                     className={`flex items-center gap-2 p-3 rounded-lg text-xs font-bold transition-all ${
                       onboardingData.steps?.[step.key]
-                        ? "bg-primary/10 text-primary line-through opacity-60"
+                        ? "bg-brand-600/10 text-brand-600 line-through opacity-60"
                         : "bg-secondary/30 text-foreground hover:bg-secondary/50"
                     }`}>
                     {onboardingData.steps?.[step.key]
-                      ? <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+                      ? <CheckCircle className="h-3.5 w-3.5 text-brand-600 shrink-0" />
                       : <div className="h-3.5 w-3.5 rounded-full border-2 border-muted-foreground shrink-0" />}
                     {step.label}
                   </button>
@@ -2735,22 +2755,22 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <AthleticStatCard icon={Users} label="Total Clients" value={sessionStats?.total_clients || clients.length} iconColor="sky" delay={0.1} />
-            <AthleticStatCard icon={IndianRupee} label="Revenue" value={`₹${(revenueData?.total_revenue || sessionStats?.total_revenue || 0).toLocaleString()}`} iconColor="amber" delay={0.2} />
-            <AthleticStatCard icon={Star} label="Rating" value={sessionStats?.avg_rating || "—"} iconColor="violet" delay={0.3} />
-            <AthleticStatCard icon={Calendar} label="Upcoming" value={sessionStats?.upcoming || 0} iconColor="sky" delay={0.4} />
+            <StatCard icon={Users} label="Total Clients" value={sessionStats?.total_clients || clients.length} index={0.1} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+            <StatCard icon={IndianRupee} label="Revenue" value={`₹${(revenueData?.total_revenue || sessionStats?.total_revenue || 0).toLocaleString()}`} index={0.2} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+            <StatCard icon={Star} label="Rating" value={sessionStats?.avg_rating || "—"} index={0.3} colorClass="text-purple-500" bgClass="bg-purple-500/10" />
+            <StatCard icon={Calendar} label="Upcoming" value={sessionStats?.upcoming || 0} index={0.4} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
           </div>
 
           {/* Today's Schedule */}
           <div>
-            <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest mb-3">Today's Schedule</h3>
+            <h3 className="admin-section-label mb-3">Today's Schedule</h3>
             {(() => {
               const today = new Date().toISOString().slice(0, 10);
               const todayOnline = sessions.filter(s => s.date === today && s.status === "confirmed");
               const todayOffline = offlineSessions.filter(s => s.date === today);
               const allToday = [...todayOnline.map(s => ({ ...s, _source: "online" })), ...todayOffline.map(s => ({ ...s, _source: "offline" }))];
               if (allToday.length === 0) return (
-                <div className="text-center py-8 text-muted-foreground glass-card rounded-xl">
+                <div className="text-center py-8 text-muted-foreground bg-card border border-border/40 shadow-sm rounded-[28px]">
                   <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No sessions scheduled for today</p>
                 </div>
@@ -2758,7 +2778,7 @@ export default function CoachDashboard({ defaultView }) {
               return (
                 <div className="space-y-2">
                   {allToday.map(s => (
-                    <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3">
+                    <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-bold text-sm">{s.player_name || s.client_name}</span>
@@ -2769,11 +2789,11 @@ export default function CoachDashboard({ defaultView }) {
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-3">
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} - {s.end_time}</span>
-                          <span className="font-bold text-primary">₹{s.price || s.amount}</span>
+                          <span className="font-bold text-brand-600">₹{s.price || s.amount}</span>
                         </div>
                       </div>
                       {s._source === "online" && s.status === "confirmed" && (
-                        <Button size="sm" className="bg-brand-600 text-white font-bold text-[10px] h-7"
+                        <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn text-[10px] h-7"
                           onClick={() => handleCompleteSession(s.id)}>
                           <CheckCircle className="h-3 w-3 mr-1" />Done
                         </Button>
@@ -2792,10 +2812,10 @@ export default function CoachDashboard({ defaultView }) {
             if (pendingPayments.length === 0 && unconfirmed.length === 0) return null;
             return (
               <div>
-                <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest mb-3">Pending Actions</h3>
+                <h3 className="admin-section-label mb-3">Pending Actions</h3>
                 <div className="space-y-2">
                   {pendingPayments.length > 0 && (
-                    <div className="glass-card rounded-xl p-4 flex items-center gap-3 border-l-4 border-amber-500">
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3 border-l-4 border-amber-500">
                       <IndianRupee className="h-5 w-5 text-amber-500 shrink-0" />
                       <div>
                         <p className="font-bold text-sm">{pendingPayments.length} Unpaid Sessions</p>
@@ -2805,7 +2825,7 @@ export default function CoachDashboard({ defaultView }) {
                     </div>
                   )}
                   {unconfirmed.length > 0 && (
-                    <div className="glass-card rounded-xl p-4 flex items-center gap-3 border-l-4 border-sky-500">
+                    <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3 border-l-4 border-sky-500">
                       <Calendar className="h-5 w-5 text-sky-500 shrink-0" />
                       <div>
                         <p className="font-bold text-sm">{unconfirmed.length} Pending Bookings</p>
@@ -2824,10 +2844,10 @@ export default function CoachDashboard({ defaultView }) {
       {/* ─── COACH MANAGEMENT ─── */}
       {activeView === "coach_mgmt" && isIndividualCoach && (
         <>
-          <div className="flex gap-1 mb-6 bg-secondary/20 p-1 rounded-lg w-fit flex-wrap">
+          <div className="flex flex-wrap gap-3 mb-6">
             {MGMT_SUB_TABS.map(({ id, icon: Icon, label }) => (
               <button key={id} onClick={() => setMgmtTab(id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${mgmtTab === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${mgmtTab === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                 <Icon className="h-3.5 w-3.5" />{label}
               </button>
             ))}
@@ -2837,16 +2857,16 @@ export default function CoachDashboard({ defaultView }) {
       {mgmtTab === "schedule" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex gap-1 bg-secondary/20 p-1 rounded-lg">
+            <div className="flex gap-3">
               {[{ id: "upcoming", label: "Sessions" }, { id: "offline", label: "Offline Log" }].map(t => (
                 <button key={t.id} onClick={() => setIndScheduleTab(t.id)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${indScheduleTab === t.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                  className={`px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${indScheduleTab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                   {t.label}
                 </button>
               ))}
             </div>
             {indScheduleTab === "offline" && (
-              <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+              <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
                 onClick={() => setLogSessionOpen(true)}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Log Session
               </Button>
@@ -2876,12 +2896,12 @@ export default function CoachDashboard({ defaultView }) {
                   <div className="relative flex-1 min-w-[180px] max-w-xs">
                     <input value={sessionSearch} onChange={e => setSessionSearch(e.target.value)}
                       placeholder="Search player or sport…"
-                      className="w-full h-8 bg-secondary/20 border border-border/50 rounded-lg pl-3 pr-3 text-xs focus:outline-none focus:border-primary/40" />
+                      className="w-full h-8 bg-secondary/20 border border-border/50 rounded-lg pl-3 pr-3 text-xs focus:outline-none focus:border-brand-600/40" />
                   </div>
-                  <div className="flex gap-1 bg-secondary/20 p-1 rounded-lg flex-wrap">
+                  <div className="flex flex-wrap gap-2">
                     {[["all","All"], ["today","Today"], ["upcoming","Upcoming"], ["completed","Done"], ["cancelled","Cancelled"]].map(([id, label]) => (
                       <button key={id} onClick={() => setSessionStatusFilter(id)}
-                        className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${sessionStatusFilter === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                        className={`px-4 py-1.5 rounded-full admin-btn transition-all active:scale-95 ${sessionStatusFilter === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                         {label}
                         {id !== "all" && sessions.filter(s =>
                           id === "today" ? s.date === today :
@@ -2907,12 +2927,12 @@ export default function CoachDashboard({ defaultView }) {
                 {(sessionStatusFilter === "all" || sessionStatusFilter === "today") && todaySessions.length > 0 && (
                   <>
                     <div className="flex items-center gap-2">
-                      <div className="h-px flex-1 bg-primary/20" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-primary px-2">Today</span>
-                      <div className="h-px flex-1 bg-primary/20" />
+                      <div className="h-px flex-1 bg-brand-600/20" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-brand-600 px-2">Today</span>
+                      <div className="h-px flex-1 bg-brand-600/20" />
                     </div>
                     {todaySessions.map(s => (
-                      <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3 border-primary/20">
+                      <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between gap-3 border-brand-600/20">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{s.player_name}</span>
@@ -2926,14 +2946,14 @@ export default function CoachDashboard({ defaultView }) {
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
-                            <span className="font-bold text-primary">₹{s.price}</span>
+                            <span className="font-bold text-brand-600">₹{s.price}</span>
                             {s.location && <span>{s.location}</span>}
                           </div>
                           {s.notes && <p className="text-xs text-muted-foreground mt-1 italic">"{s.notes}"</p>}
                         </div>
                         <div className="flex gap-2 shrink-0">
                           {s.status === "confirmed" && (
-                            <Button size="sm" className="bg-brand-600 text-white font-bold text-[10px] h-7"
+                            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn text-[10px] h-7"
                               onClick={() => handleCompleteSession(s.id)}>
                               <CheckCircle className="h-3 w-3 mr-1" />Done
                             </Button>
@@ -2951,9 +2971,9 @@ export default function CoachDashboard({ defaultView }) {
                 {/* Upcoming sessions */}
                 {(sessionStatusFilter === "all" || sessionStatusFilter === "upcoming") && upcomingFiltered.length > 0 && (
                   <>
-                    <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Upcoming</h3>
+                    <h3 className="admin-section-label">Upcoming</h3>
                     {upcomingFiltered.map(s => (
-                      <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3">
+                      <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between gap-3">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{s.player_name}</span>
@@ -2966,14 +2986,14 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
                             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
-                            <span className="font-bold text-primary">₹{s.price}</span>
+                            <span className="font-bold text-brand-600">₹{s.price}</span>
                             {s.location && <span>{s.location}</span>}
                           </div>
                           {s.notes && <p className="text-xs text-muted-foreground mt-1 italic">"{s.notes}"</p>}
                         </div>
                         <div className="flex gap-2 shrink-0">
                           {s.status === "confirmed" && (
-                            <Button size="sm" className="bg-brand-600 text-white font-bold text-[10px] h-7"
+                            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn text-[10px] h-7"
                               onClick={() => handleCompleteSession(s.id)}>
                               <CheckCircle className="h-3 w-3 mr-1" />Done
                             </Button>
@@ -2989,9 +3009,9 @@ export default function CoachDashboard({ defaultView }) {
                 {/* Completed sessions */}
                 {(sessionStatusFilter === "all" || sessionStatusFilter === "completed") && completedFiltered.length > 0 && (
                   <>
-                    <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest mt-2">Completed</h3>
+                    <h3 className="admin-section-label mt-2">Completed</h3>
                     {completedFiltered.slice(0, 15).map(s => (
-                      <div key={s.id} className="glass-card rounded-xl p-4 flex items-center gap-3 opacity-80">
+                      <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3 opacity-80">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{s.player_name}</span>
@@ -3011,9 +3031,9 @@ export default function CoachDashboard({ defaultView }) {
                 {/* Cancelled sessions */}
                 {sessionStatusFilter === "cancelled" && cancelledFiltered.length > 0 && (
                   <>
-                    <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest mt-2">Cancelled</h3>
+                    <h3 className="admin-section-label mt-2">Cancelled</h3>
                     {cancelledFiltered.map(s => (
-                      <div key={s.id} className="glass-card rounded-xl p-4 flex items-center gap-3 opacity-60">
+                      <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3 opacity-60">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{s.player_name}</span>
@@ -3061,7 +3081,7 @@ export default function CoachDashboard({ defaultView }) {
                       { label: "Collected", value: `₹${(totalRevenue - pendingRevenue).toLocaleString()}` },
                       { label: "Pending", value: `₹${pendingRevenue.toLocaleString()}`, warn: pendingRevenue > 0 },
                     ].map(stat => (
-                      <div key={stat.label} className="glass-card rounded-lg p-3 text-center">
+                      <div key={stat.label} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
                         <p className={`text-sm font-bold ${stat.warn ? "text-amber-400" : "text-foreground"}`}>{stat.value}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{stat.label}</p>
                       </div>
@@ -3072,7 +3092,7 @@ export default function CoachDashboard({ defaultView }) {
                 <div className="flex flex-wrap gap-2 items-center">
                   <input value={offlineLogClientFilter} onChange={e => setOfflineLogClientFilter(e.target.value)}
                     placeholder="Search client…"
-                    className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-3 text-xs focus:outline-none focus:border-primary/40 flex-1 min-w-[140px] max-w-xs" />
+                    className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-3 text-xs focus:outline-none focus:border-brand-600/40 flex-1 min-w-[140px] max-w-xs" />
                   <select value={offlineLogPaymentFilter} onChange={e => setOfflineLogPaymentFilter(e.target.value)}
                     className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer text-foreground">
                     <option value="all">All payments</option>
@@ -3092,12 +3112,12 @@ export default function CoachDashboard({ defaultView }) {
                 </div>
                 {/* Session list */}
                 {filtered.length > 0 ? filtered.map(s => (
-                  <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3">
+                  <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between gap-3">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="font-bold text-sm">{s.client_name || "Walk-in"}</span>
                         <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
-                        <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-primary/15 text-primary" : s.payment_status === "waived" ? "bg-secondary text-muted-foreground" : "bg-amber-500/15 text-amber-500"}`}>
+                        <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : s.payment_status === "waived" ? "bg-secondary text-muted-foreground" : "bg-amber-500/15 text-amber-500"}`}>
                           {s.payment_status}
                         </Badge>
                         {s.payment_mode && <Badge variant="outline" className="text-[9px] capitalize">{s.payment_mode}</Badge>}
@@ -3105,7 +3125,7 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="text-xs text-muted-foreground flex items-center gap-3">
                         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
                         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
-                        <span className="font-bold text-primary">₹{s.amount}</span>
+                        <span className="font-bold text-brand-600">₹{s.amount}</span>
                       </div>
                       {s.notes && <p className="text-xs text-muted-foreground mt-1 italic">"{s.notes}"</p>}
                     </div>
@@ -3122,11 +3142,11 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Availability sub-view */}
           {indScheduleTab === "availability" && (
-            <div className="text-center py-12 glass-card rounded-lg text-muted-foreground">
+            <div className="text-center py-12 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg text-muted-foreground">
               <Clock className="h-10 w-10 mx-auto mb-3 opacity-50" />
               <p className="text-sm font-semibold">Availability has moved to Settings</p>
               <p className="text-xs mt-1 opacity-70">Manage your weekly time slots in Coach Settings</p>
-              <Button size="sm" className="mt-4 bg-primary text-primary-foreground font-bold text-xs"
+              <Button size="sm" className="mt-4 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs"
                 onClick={() => navigate("/coach/settings")}>
                 <Settings className="h-3.5 w-3.5 mr-1.5" /> Open Settings
               </Button>
@@ -3135,8 +3155,8 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Log Offline Session Dialog */}
           <Dialog open={logSessionOpen} onOpenChange={setLogSessionOpen}>
-            <DialogContent className="bg-card border-border max-w-md">
-              <DialogHeader><DialogTitle className="font-display">Log Offline Session</DialogTitle></DialogHeader>
+            <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+              <DialogHeader><DialogTitle className="font-medium">Log Offline Session</DialogTitle></DialogHeader>
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs text-muted-foreground">Client</Label>
@@ -3183,7 +3203,7 @@ export default function CoachDashboard({ defaultView }) {
                 </div>
                 <div><Label className="text-xs text-muted-foreground">Notes</Label>
                   <Input value={offlineSessionForm.notes} onChange={e => setOfflineSessionForm(p => ({ ...p, notes: e.target.value }))} placeholder="Session notes..." className="mt-1 bg-background border-border" /></div>
-                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleLogOfflineSession}>Log Session</Button>
+                <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleLogOfflineSession}>Log Session</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -3195,7 +3215,7 @@ export default function CoachDashboard({ defaultView }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
           {/* Row 1: Source filter tabs + Add button */}
           <div className="flex items-center justify-between flex-wrap gap-3">
-            <div className="flex gap-1 bg-secondary/20 p-1 rounded-lg">
+            <div className="flex flex-wrap gap-2">
               {[
                 { id: "all",       label: "All",       count: clients.length },
                 { id: "offline",   label: "Offline",   count: clients.filter(c => c.client_source === "offline").length },
@@ -3203,10 +3223,10 @@ export default function CoachDashboard({ defaultView }) {
                 { id: "reminders", label: "Reminders", count: null },
               ].map(f => (
                 <button key={f.id} onClick={() => { setClientFilter(f.id); if (f.id === "reminders") loadReminders(); }}
-                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${clientFilter === f.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                  className={`flex items-center gap-1 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${clientFilter === f.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                   {f.label}
                   {f.count !== null && f.count > 0 && (
-                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${clientFilter === f.id ? "bg-primary/15 text-primary" : "bg-secondary/60 text-muted-foreground"}`}>
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-bold ${clientFilter === f.id ? "bg-brand-600/15 text-brand-600" : "bg-secondary/60 text-muted-foreground"}`}>
                       {f.count}
                     </span>
                   )}
@@ -3214,7 +3234,7 @@ export default function CoachDashboard({ defaultView }) {
               ))}
             </div>
             {clientFilter !== "online" && clientFilter !== "reminders" && (
-              <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+              <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
                 onClick={() => setAddClientOpen(true)}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Client
               </Button>
@@ -3228,7 +3248,7 @@ export default function CoachDashboard({ defaultView }) {
                 <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground/60" />
                 <input value={clientSearch} onChange={e => setClientSearch(e.target.value)}
                   placeholder="Search name or phone…"
-                  className="w-full h-8 bg-secondary/20 border border-border/50 rounded-lg pl-7 pr-3 text-xs focus:outline-none focus:border-primary/40" />
+                  className="w-full h-8 bg-secondary/20 border border-border/50 rounded-lg pl-7 pr-3 text-xs focus:outline-none focus:border-brand-600/40" />
               </div>
               <select value={clientSportFilter} onChange={e => setClientSportFilter(e.target.value)}
                 className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer text-foreground">
@@ -3268,7 +3288,7 @@ export default function CoachDashboard({ defaultView }) {
               ) : (
                 <div className="space-y-2">
                   {reminders.map(r => (
-                    <div key={r.id} className="glass-card rounded-xl p-3 flex items-center gap-3">
+                    <div key={r.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 font-bold text-sm shrink-0">
                         {(r.client_name || "?")[0].toUpperCase()}
                       </div>
@@ -3320,19 +3340,19 @@ export default function CoachDashboard({ defaultView }) {
             return (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filtered.map(c => (
-                  <div key={c.id} className="glass-card rounded-xl p-4 flex flex-col gap-2 cursor-pointer hover:border-primary/40 transition-colors duration-200"
+                  <div key={c.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex flex-col gap-2 cursor-pointer hover:border-brand-600/40 transition-colors duration-200"
                     onClick={() => c.client_source === "online" ? (sessionStorage.setItem("coachDashReturnTab", "clients"), navigate(`/player-card/${c.id}`)) : openClientProfile(c.id)}>
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-2">
                         {c.avatar ? (
                           <img src={c.avatar} alt={c.name} className="w-9 h-9 rounded-full object-cover shrink-0 border border-white/10" />
                         ) : (
-                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${c.client_source === "online" ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-400"}`}>
+                          <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${c.client_source === "online" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-400"}`}>
                             {(c.name || "?")[0].toUpperCase()}
                           </div>
                         )}
                         <div>
-                          <h4 className="font-bold text-sm">{c.name}</h4>
+                          <h4 className="font-medium text-sm">{c.name}</h4>
                           {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
                         </div>
                       </div>
@@ -3372,7 +3392,7 @@ export default function CoachDashboard({ defaultView }) {
                     </div>
                     {c.client_source === "offline" && c.monthly_fee > 0 && (
                       <div className="text-[10px] text-muted-foreground mt-0.5">
-                        Fee: <span className="text-primary font-bold">₹{c.monthly_fee?.toLocaleString()}/mo</span>
+                        Fee: <span className="text-brand-600 font-bold">₹{c.monthly_fee?.toLocaleString()}/mo</span>
                         <span className="ml-2 opacity-60">· Day {c.reminder_day}</span>
                       </div>
                     )}
@@ -3385,8 +3405,8 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Add Client Dialog */}
           <Dialog open={addClientOpen} onOpenChange={setAddClientOpen}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader><DialogTitle className="font-display">Add Offline Client</DialogTitle></DialogHeader>
+            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
+              <DialogHeader><DialogTitle className="font-medium">Add Offline Client</DialogTitle></DialogHeader>
               <div className="space-y-4 pb-1">
 
                 {/* ── Basic Info ── */}
@@ -3436,7 +3456,7 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="flex gap-2 flex-wrap">
                       {[["beginner","Beginner"],["intermediate","Intermediate"],["advanced","Advanced"],["professional","Professional"]].map(([val, label]) => (
                         <button key={val} type="button" onClick={() => setClientForm(p => ({ ...p, skill_level: p.skill_level === val ? "" : val }))}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${clientForm.skill_level === val ? "bg-primary/15 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${clientForm.skill_level === val ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
                           {label}
                         </button>
                       ))}
@@ -3463,7 +3483,7 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="flex gap-2">
                       {[["cash","Cash 💵"],["upi","UPI 📲"],["bank_transfer","Bank 🏦"]].map(([val, label]) => (
                         <button key={val} type="button" onClick={() => setClientForm(p => ({ ...p, payment_mode: val }))}
-                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${clientForm.payment_mode === val ? "bg-primary/15 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                          className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${clientForm.payment_mode === val ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
                           {label}
                         </button>
                       ))}
@@ -3490,14 +3510,14 @@ export default function CoachDashboard({ defaultView }) {
                   <Input value={clientForm.notes} onChange={e => setClientForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Batting focus, plays for local club, Tuesday evenings only..." className="mt-1 bg-background border-border" />
                 </div>
 
-                <Button className="w-full bg-primary text-primary-foreground font-bold mt-1" onClick={handleAddClient}>Add Client</Button>
+                <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all mt-1" onClick={handleAddClient}>Add Client</Button>
               </div>
             </DialogContent>
           </Dialog>
 
           {/* Client Profile Dialog */}
           <Dialog open={!!viewClientId} onOpenChange={(o) => { if (!o) { setViewClientId(null); setViewClientData(null); } }}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[88vh] overflow-y-auto p-0">
+            <DialogContent className="bg-card border-border max-w-lg max-h-[88vh] overflow-y-auto p-0 rounded-[28px]">
               {clientProfileLoading ? (
                 <div className="flex items-center justify-center py-16">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -3509,7 +3529,7 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="px-6 py-6 space-y-5">
                       {/* Header */}
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-black text-lg border border-primary/20 shrink-0">
+                        <div className="w-12 h-12 rounded-full bg-brand-600/10 flex items-center justify-center text-brand-600 font-bold text-lg border border-brand-600/20 shrink-0">
                           {(viewClientData.name || "?")[0].toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -3524,12 +3544,12 @@ export default function CoachDashboard({ defaultView }) {
 
                       {/* Summary stats */}
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="glass-card rounded-lg p-3 text-center">
-                          <p className="font-black text-2xl text-foreground">{viewClientData.total_sessions || 0}</p>
+                        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
+                          <p className="font-bold text-2xl text-foreground">{viewClientData.total_sessions || 0}</p>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Sessions</p>
                         </div>
-                        <div className="glass-card rounded-lg p-3 text-center">
-                          <p className="font-black text-2xl text-primary">₹{(viewClientData.total_paid || 0).toLocaleString()}</p>
+                        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
+                          <p className="font-bold text-2xl text-brand-600">₹{(viewClientData.total_paid || 0).toLocaleString()}</p>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Total Paid</p>
                         </div>
                       </div>
@@ -3539,12 +3559,12 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="space-y-2">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Sessions</p>
                           {viewClientData.sessions.map(s => (
-                            <div key={s.id} className="glass-card rounded-lg p-3 flex items-center justify-between gap-2">
+                            <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center justify-between gap-2">
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-bold">{s.date}</span>
                                   <Badge variant="secondary" className="text-[9px] capitalize">{s.sport}</Badge>
-                                  <Badge className={`text-[9px] ${s.status === "completed" ? "bg-primary/15 text-primary" : s.status === "confirmed" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-500"}`}>
+                                  <Badge className={`text-[9px] ${s.status === "completed" ? "bg-brand-600/15 text-brand-600" : s.status === "confirmed" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-500"}`}>
                                     {s.status}
                                   </Badge>
                                 </div>
@@ -3553,7 +3573,7 @@ export default function CoachDashboard({ defaultView }) {
                                 </p>
                                 {s.notes && <p className="text-[10px] text-muted-foreground italic mt-0.5">"{s.notes}"</p>}
                               </div>
-                              <span className="text-xs font-bold text-primary shrink-0">₹{s.price || 0}</span>
+                              <span className="text-xs font-bold text-brand-600 shrink-0">₹{s.price || 0}</span>
                             </div>
                           ))}
                         </div>
@@ -3564,16 +3584,16 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="space-y-2">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Package Subscriptions</p>
                           {viewClientData.subscriptions.map(sub => (
-                            <div key={sub.id} className="glass-card rounded-lg p-3">
+                            <div key={sub.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3">
                               <div className="flex items-center justify-between gap-2 mb-1">
                                 <span className="text-xs font-bold">{sub.package_name}</span>
-                                <Badge className={`text-[9px] ${sub.status === "active" ? "bg-primary/15 text-primary" : "bg-slate-500/15 text-slate-400"}`}>{sub.status}</Badge>
+                                <Badge className={`text-[9px] ${sub.status === "active" ? "bg-brand-600/15 text-brand-600" : "bg-slate-500/15 text-slate-400"}`}>{sub.status}</Badge>
                               </div>
                               <p className="text-[10px] text-muted-foreground">
                                 {sub.sessions_used || 0} / {sub.sessions_per_month} sessions used · expires {sub.current_period_end?.slice(0, 10)}
                               </p>
                               <div className="mt-2 h-1.5 rounded-full bg-secondary overflow-hidden">
-                                <div className="h-full bg-primary rounded-full transition-all"
+                                <div className="h-full bg-brand-600 rounded-full transition-all"
                                   style={{ width: `${Math.min(100, ((sub.sessions_used || 0) / sub.sessions_per_month) * 100)}%` }} />
                               </div>
                             </div>
@@ -3590,14 +3610,14 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="px-6 py-6 space-y-5">
                       {/* Header */}
                       <div className="flex items-center gap-3">
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center font-black text-xl border shrink-0 ${viewClientData.linked_user_id ? "bg-primary/10 text-primary border-primary/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}`}>
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl border shrink-0 ${viewClientData.linked_user_id ? "bg-brand-600/10 text-brand-600 border-brand-600/20" : "bg-amber-500/10 text-amber-400 border-amber-500/20"}`}>
                           {(viewClientData.name || "?")[0].toUpperCase()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-bold text-base">{viewClientData.name}</h3>
                             {viewClientData.linked_user_id && (
-                              <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px]">
+                              <Badge className="bg-brand-600/10 text-brand-600 border-brand-600/20 text-[10px]">
                                 <BadgeCheck className="h-3 w-3 mr-1" /> Lobbi User
                               </Badge>
                             )}
@@ -3616,7 +3636,7 @@ export default function CoachDashboard({ defaultView }) {
 
                       {/* View Lobbi Social Profile */}
                       {viewClientData.linked_user_id && (
-                        <Button className="w-full bg-primary text-primary-foreground font-bold"
+                        <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                           onClick={() => { setViewClientId(null); setViewClientData(null); sessionStorage.setItem("coachDashReturnTab", "clients"); navigate(`/player-card/${viewClientData.linked_user_id}`); }}>
                           <Eye className="h-4 w-4 mr-2" /> View Lobbi Social Profile
                         </Button>
@@ -3624,17 +3644,17 @@ export default function CoachDashboard({ defaultView }) {
 
                       {/* Stats */}
                       <div className={`grid gap-3 ${viewClientData.monthly_fee > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
-                        <div className="glass-card rounded-lg p-4 text-center">
-                          <p className="font-black text-2xl text-foreground">{viewClientData.total_sessions || 0}</p>
+                        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 text-center">
+                          <p className="font-bold text-2xl text-foreground">{viewClientData.total_sessions || 0}</p>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Sessions</p>
                         </div>
-                        <div className="glass-card rounded-lg p-4 text-center">
-                          <p className="font-black text-2xl text-primary">₹{(viewClientData.total_paid || 0).toLocaleString()}</p>
+                        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 text-center">
+                          <p className="font-bold text-2xl text-brand-600">₹{(viewClientData.total_paid || 0).toLocaleString()}</p>
                           <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Total Paid</p>
                         </div>
                         {viewClientData.monthly_fee > 0 && (
-                          <div className="glass-card rounded-lg p-4 text-center">
-                            <p className="font-black text-2xl text-amber-400">₹{viewClientData.monthly_fee.toLocaleString()}</p>
+                          <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 text-center">
+                            <p className="font-bold text-2xl text-amber-400">₹{viewClientData.monthly_fee.toLocaleString()}</p>
                             <p className="text-[10px] text-muted-foreground uppercase tracking-wide mt-0.5">Monthly Fee</p>
                           </div>
                         )}
@@ -3642,7 +3662,7 @@ export default function CoachDashboard({ defaultView }) {
 
                       {/* Extra info */}
                       {(viewClientData.age || viewClientData.coaching_goal || viewClientData.guardian_name || viewClientData.payment_mode) && (
-                        <div className="glass-card rounded-lg p-3 space-y-1.5">
+                        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 space-y-1.5">
                           {viewClientData.age && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Age</span><span className="font-medium">{viewClientData.age}</span></div>}
                           {viewClientData.coaching_goal && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Goal</span><span className="font-medium capitalize">{viewClientData.coaching_goal.replace("_", " ")}</span></div>}
                           {viewClientData.guardian_name && <div className="flex justify-between text-xs"><span className="text-muted-foreground">Guardian</span><span className="font-medium">{viewClientData.guardian_name}</span></div>}
@@ -3656,18 +3676,18 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="space-y-2">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Session History ({viewClientData.sessions.length})</p>
                           {viewClientData.sessions.slice(0, 8).map(s => (
-                            <div key={s.id} className="glass-card rounded-lg p-3 flex items-center justify-between gap-2">
+                            <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center justify-between gap-2">
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-bold">{s.date}</span>
                                   {s.sport && <Badge variant="secondary" className="text-[9px] capitalize">{s.sport}</Badge>}
-                                  <Badge className={`text-[9px] ${s.payment_status === "paid" ? "bg-primary/15 text-primary" : "bg-amber-500/15 text-amber-500"}`}>
+                                  <Badge className={`text-[9px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : "bg-amber-500/15 text-amber-500"}`}>
                                     {s.payment_status}
                                   </Badge>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground mt-0.5">{s.start_time} – {s.end_time}</p>
                               </div>
-                              <span className="text-xs font-bold text-primary shrink-0">₹{s.amount || 0}</span>
+                              <span className="text-xs font-bold text-brand-600 shrink-0">₹{s.amount || 0}</span>
                             </div>
                           ))}
                         </div>
@@ -3678,14 +3698,14 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="space-y-2">
                           <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Payments ({viewClientData.payments.length})</p>
                           {viewClientData.payments.slice(0, 5).map(p => (
-                            <div key={p.id} className="glass-card rounded-lg p-3 flex items-center justify-between gap-2">
+                            <div key={p.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center justify-between gap-2">
                               <div>
                                 <span className="text-xs font-bold">{p.payment_date || p.created_at?.slice(0, 10)}</span>
                                 {p.notes && <p className="text-[10px] text-muted-foreground">{p.notes}</p>}
                               </div>
                               <div className="flex items-center gap-2">
                                 <Badge variant="secondary" className="text-[9px] capitalize">{p.mode || p.payment_mode}</Badge>
-                                <span className="text-xs font-bold text-primary">₹{p.amount}</span>
+                                <span className="text-xs font-bold text-brand-600">₹{p.amount}</span>
                               </div>
                             </div>
                           ))}
@@ -3693,7 +3713,7 @@ export default function CoachDashboard({ defaultView }) {
                       )}
 
                       {viewClientData.notes && (
-                        <div className="glass-card rounded-lg p-3">
+                        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3">
                           <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wide mb-1">Notes</p>
                           <p className="text-sm">{viewClientData.notes}</p>
                         </div>
@@ -3732,10 +3752,10 @@ export default function CoachDashboard({ defaultView }) {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm text-muted-foreground uppercase tracking-widest">Monthly Packages</h3>
+              <h3 className="admin-section-label">Monthly Packages</h3>
               <p className="text-xs text-muted-foreground mt-1">{packages.length} package{packages.length !== 1 ? "s" : ""} · offer subscription-based coaching</p>
             </div>
-            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
               onClick={() => { setEditPkgId(null); setPkgForm({ name: "", sessions_per_month: "4", price: "2000", duration_minutes: "60", sports: [], description: "", type: "monthly", max_subscribers: "", features: [], is_public: true }); setShowCreatePkg(true); }}>
               <Plus className="h-3.5 w-3.5 mr-1" /> Create Package
             </Button>
@@ -3743,9 +3763,9 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* Create / Edit Package Dialog */}
           <Dialog open={showCreatePkg} onOpenChange={(o) => { setShowCreatePkg(o); if (!o) setEditPkgId(null); }}>
-            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogContent className="bg-card border-border max-w-lg max-h-[90vh] overflow-y-auto rounded-[28px]">
               <DialogHeader>
-                <DialogTitle className="font-display">{editPkgId ? "Edit Package" : "Create Package"}</DialogTitle>
+                <DialogTitle className="font-medium">{editPkgId ? "Edit Package" : "Create Package"}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 {/* Name */}
@@ -3763,7 +3783,7 @@ export default function CoachDashboard({ defaultView }) {
                         onClick={() => setPkgForm(p => ({ ...p, type: t.value }))}
                         className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${
                           pkgForm.type === t.value
-                            ? "bg-primary/15 border-primary/40 text-primary"
+                            ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                             : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                         }`}>{t.label}</button>
                     ))}
@@ -3798,7 +3818,7 @@ export default function CoachDashboard({ defaultView }) {
                       <label key={sport}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold cursor-pointer transition-all border ${
                           pkgForm.sports.includes(sport)
-                            ? "bg-primary/15 border-primary/40 text-primary"
+                            ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                             : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                         }`}>
                         <Checkbox checked={pkgForm.sports.includes(sport)} onCheckedChange={() => togglePkgSport(sport)} className="h-3 w-3" />
@@ -3816,7 +3836,7 @@ export default function CoachDashboard({ defaultView }) {
                         onClick={() => setPkgForm(p => ({ ...p, features: p.features.includes(f) ? p.features.filter(x => x !== f) : [...p.features, f] }))}
                         className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
                           pkgForm.features.includes(f)
-                            ? "bg-primary/15 border-primary/40 text-primary"
+                            ? "bg-brand-600/15 border-brand-600/40 text-brand-600"
                             : "bg-secondary/30 border-border text-muted-foreground hover:text-foreground"
                         }`}>{pkgForm.features.includes(f) ? "✓ " : ""}{f}</button>
                     ))}
@@ -3835,7 +3855,7 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="flex gap-2">
                       <button type="button" onClick={() => setPkgForm(p => ({ ...p, is_public: true }))}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                          pkgForm.is_public ? "bg-primary/15 border-primary/40 text-primary" : "bg-secondary/30 border-border text-muted-foreground"
+                          pkgForm.is_public ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "bg-secondary/30 border-border text-muted-foreground"
                         }`}>Public</button>
                       <button type="button" onClick={() => setPkgForm(p => ({ ...p, is_public: false }))}
                         className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${
@@ -3849,10 +3869,10 @@ export default function CoachDashboard({ defaultView }) {
                   <Label className="text-xs text-muted-foreground">Description</Label>
                   <textarea value={pkgForm.description} onChange={e => setPkgForm(p => ({ ...p, description: e.target.value }))}
                     placeholder="Brief description of the package..."
-                    className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm min-h-[60px] resize-none focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                    className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm min-h-[60px] resize-none focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
                 </div>
                 <div className="flex gap-2">
-                  <Button className="flex-1 bg-primary text-primary-foreground font-bold"
+                  <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                     onClick={editPkgId ? handleUpdatePackage : handleCreatePackage}
                     disabled={pkgCreating}>
                     {pkgCreating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : editPkgId ? <CheckCircle className="h-4 w-4 mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
@@ -3870,19 +3890,19 @@ export default function CoachDashboard({ defaultView }) {
               {packages.map((pkg, idx) => (
                 <motion.div key={pkg.id || idx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
-                  className="glass-card rounded-xl p-5 flex flex-col gap-3">
+                  className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 flex flex-col gap-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Package className="h-4 w-4 text-primary" />
+                      <div className="w-9 h-9 rounded-lg bg-brand-600/10 flex items-center justify-center shrink-0">
+                        <Package className="h-4 w-4 text-brand-600" />
                       </div>
                       <div className="min-w-0">
-                        <h4 className="font-bold text-sm truncate">{pkg.name}</h4>
+                        <h4 className="font-medium text-sm truncate">{pkg.name}</h4>
                         <p className="text-xs text-muted-foreground capitalize">{pkg.type || "monthly"} · {pkg.sessions_per_month} sessions</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pkg.is_public !== false ? "bg-primary/10 border-primary/20 text-primary" : "bg-amber-500/10 border-amber-500/20 text-amber-600"}`}>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${pkg.is_public !== false ? "bg-brand-600/10 border-brand-600/20 text-brand-600" : "bg-amber-500/10 border-amber-500/20 text-amber-600"}`}>
                         {pkg.is_public !== false ? "Public" : "Private"}
                       </span>
                       <button onClick={() => openEditPkg(pkg)}
@@ -3908,7 +3928,7 @@ export default function CoachDashboard({ defaultView }) {
                   )}
 
                   <div className="flex items-baseline gap-2">
-                    <span className="font-black text-xl text-primary">₹{(pkg.price || 0).toLocaleString()}</span>
+                    <span className="font-bold text-xl text-brand-600">₹{(pkg.price || 0).toLocaleString()}</span>
                     <span className="text-xs text-muted-foreground">{PKG_TYPES.find(t => t.value === (pkg.type || "monthly"))?.priceLabel || "/month"}</span>
                   </div>
 
@@ -3923,7 +3943,7 @@ export default function CoachDashboard({ defaultView }) {
 
                   {pkg.features?.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
-                      {pkg.features.map(f => <span key={f} className="text-[10px] px-2 py-0.5 rounded-full bg-primary/8 border border-primary/15 text-primary font-medium">✓ {f}</span>)}
+                      {pkg.features.map(f => <span key={f} className="text-[10px] px-2 py-0.5 rounded-full bg-brand-600/10 border border-brand-600/15 text-brand-600 font-medium">✓ {f}</span>)}
                     </div>
                   )}
                   {pkg.sports?.length > 0 && (
@@ -3936,11 +3956,11 @@ export default function CoachDashboard({ defaultView }) {
               ))}
             </div>
           ) : (
-            <div className="text-center py-16 glass-card rounded-xl text-muted-foreground">
+            <div className="text-center py-16 bg-card border border-border/40 shadow-sm rounded-[28px] text-muted-foreground">
               <Package className="h-10 w-10 mx-auto mb-3 opacity-40" />
               <p className="font-bold mb-1">No Packages Yet</p>
               <p className="text-sm">Create your first package to offer subscription-based coaching.</p>
-              <Button size="sm" className="mt-4 bg-primary text-primary-foreground font-bold text-xs"
+              <Button size="sm" className="mt-4 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs"
                 onClick={() => { setEditPkgId(null); setPkgForm({ name: "", sessions_per_month: "4", price: "2000", duration_minutes: "60", sports: [], description: "", type: "monthly", max_subscribers: "", features: [], is_public: true }); setShowCreatePkg(true); }}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Create First Package
               </Button>
@@ -3955,15 +3975,15 @@ export default function CoachDashboard({ defaultView }) {
 
           {/* ── P&L Summary Cards ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <AthleticStatCard icon={IndianRupee} label="Total Income" value={`₹${(financeSummaryData?.total_income || 0).toLocaleString()}`} iconColor="primary" delay={0.1} />
-            <AthleticStatCard icon={TrendingUp} label="Net Profit" value={`₹${(financeSummaryData?.net_profit || 0).toLocaleString()}`} iconColor={financeSummaryData?.net_profit >= 0 ? "primary" : "destructive"} delay={0.2} />
-            <AthleticStatCard icon={Receipt} label="Total Expenses" value={`₹${(financeSummaryData?.total_expenses || 0).toLocaleString()}`} iconColor="amber" delay={0.3} />
-            <AthleticStatCard icon={Wallet} label="This Month" value={`₹${(financeSummaryData?.current_month?.net || 0).toLocaleString()}`} iconColor="sky" delay={0.4} />
+            <StatCard icon={IndianRupee} label="Total Income" value={`₹${(financeSummaryData?.total_income || 0).toLocaleString()}`} index={0.1} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+            <StatCard icon={TrendingUp} label="Net Profit" value={`₹${(financeSummaryData?.net_profit || 0).toLocaleString()}`} index={0.2} colorClass="text-brand-600" bgClass="bg-brand-600/10" />
+            <StatCard icon={Receipt} label="Total Expenses" value={`₹${(financeSummaryData?.total_expenses || 0).toLocaleString()}`} index={0.3} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+            <StatCard icon={Wallet} label="This Month" value={`₹${(financeSummaryData?.current_month?.net || 0).toLocaleString()}`} index={0.4} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
           </div>
 
           {/* Commission banner */}
           {financeSummaryData?.commission_total > 0 && (
-            <div className="glass-card rounded-xl p-3 flex items-center gap-3 border-l-4 border-amber-500/50">
+            <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center gap-3 border-l-4 border-amber-500/50">
               <Info className="h-4 w-4 text-amber-500 shrink-0" />
               <p className="text-xs">
                 <span className="font-bold">Platform Commission:</span> {financeSummaryData.commission_pct}% on online = ₹{financeSummaryData.commission_total.toLocaleString()} deducted
@@ -3993,7 +4013,7 @@ export default function CoachDashboard({ defaultView }) {
             <div className="space-y-6">
               {/* Income vs Expense breakdown */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="glass-card rounded-xl p-5 space-y-3">
+                <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Income Breakdown</p>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
@@ -4004,13 +4024,13 @@ export default function CoachDashboard({ defaultView }) {
                       <span className="text-muted-foreground">Offline Payments</span>
                       <span className="font-bold text-violet-400">₹{(financeSummaryData?.offline_income || 0).toLocaleString()}</span>
                     </div>
-                    <div className="border-t border-border pt-2 flex justify-between text-sm font-black">
+                    <div className="border-t border-border pt-2 flex justify-between text-sm font-bold">
                       <span>Net Income</span>
-                      <span className="text-primary">₹{(financeSummaryData?.net_income || 0).toLocaleString()}</span>
+                      <span className="text-brand-600">₹{(financeSummaryData?.net_income || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
-                <div className="glass-card rounded-xl p-5 space-y-3">
+                <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Expense Breakdown</p>
                   {Object.keys(financeSummaryData?.expenses_by_category || {}).length > 0 ? (
                     <div className="space-y-2">
@@ -4020,7 +4040,7 @@ export default function CoachDashboard({ defaultView }) {
                           <span className="font-bold text-amber-400">₹{amt.toLocaleString()}</span>
                         </div>
                       ))}
-                      <div className="border-t border-border pt-2 flex justify-between text-sm font-black">
+                      <div className="border-t border-border pt-2 flex justify-between text-sm font-bold">
                         <span>Total</span>
                         <span className="text-destructive">₹{(financeSummaryData?.total_expenses || 0).toLocaleString()}</span>
                       </div>
@@ -4033,7 +4053,7 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Monthly Trend Chart */}
               {(financeSummaryData?.monthly_trend || []).length > 0 && (
-                <div className="glass-card rounded-xl p-5">
+                <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">6-Month Trend</p>
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={financeSummaryData.monthly_trend} barSize={18} barGap={4}>
@@ -4055,12 +4075,12 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Payment Mode Breakdown */}
               {financeSummaryData?.income_by_mode && (
-                <div className="glass-card rounded-xl p-5">
+                <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3">Income by Payment Mode</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {Object.entries(financeSummaryData.income_by_mode).filter(([, v]) => v > 0).map(([mode, amt]) => (
                       <div key={mode} className="bg-muted/40 rounded-lg p-3 text-center">
-                        <p className="font-black text-sm text-foreground">₹{amt.toLocaleString()}</p>
+                        <p className="font-bold text-sm text-foreground">₹{amt.toLocaleString()}</p>
                         <p className="text-[10px] text-muted-foreground capitalize mt-0.5">{mode.replace("_", " ")}</p>
                       </div>
                     ))}
@@ -4074,7 +4094,7 @@ export default function CoachDashboard({ defaultView }) {
           {financeSubTab === "transactions" && (
             <div className="space-y-4">
               {/* Filters */}
-              <div className="glass-card rounded-xl p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div>
                   <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">From</Label>
                   <Input type="date" value={transactionFilters.date_from}
@@ -4099,7 +4119,7 @@ export default function CoachDashboard({ defaultView }) {
                   </Select>
                 </div>
                 <div className="flex items-end">
-                  <Button size="sm" className="w-full h-8 text-xs font-bold bg-primary text-primary-foreground"
+                  <Button size="sm" className="w-full h-8 text-xs font-bold bg-brand-600 text-white shadow-md shadow-brand-600/20"
                     onClick={() => loadTransactions(transactionFilters)}>
                     <Filter className="h-3 w-3 mr-1" /> Apply
                   </Button>
@@ -4110,10 +4130,10 @@ export default function CoachDashboard({ defaultView }) {
               {transactions.length > 0 ? (
                 <div className="space-y-2">
                   {transactions.map(txn => (
-                    <div key={txn.id} className="glass-card rounded-xl p-4 flex items-center gap-3">
-                      <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${txn.type === "income" ? "bg-primary/10" : "bg-destructive/10"}`}>
+                    <div key={txn.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3">
+                      <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${txn.type === "income" ? "bg-brand-600/10" : "bg-destructive/10"}`}>
                         {txn.type === "income"
-                          ? <ArrowUpRight className="h-4 w-4 text-primary" />
+                          ? <ArrowUpRight className="h-4 w-4 text-brand-600" />
                           : <ArrowDownRight className="h-4 w-4 text-destructive" />}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -4121,14 +4141,14 @@ export default function CoachDashboard({ defaultView }) {
                           <span className="font-bold text-sm truncate">
                             {txn.type === "income" ? (txn.client_name || txn.description) : txn.description || txn.category}
                           </span>
-                          <Badge className={`text-[9px] ${txn.type === "income" ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"}`}>
+                          <Badge className={`text-[9px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>
                             {txn.type}
                           </Badge>
                           <Badge variant="outline" className="text-[9px] capitalize">{txn.payment_mode?.replace("_", " ")}</Badge>
                         </div>
                         <p className="text-xs text-muted-foreground capitalize">{txn.date} · {txn.category?.replace("_", " ")}</p>
                       </div>
-                      <span className={`font-black text-sm shrink-0 ${txn.type === "income" ? "text-primary" : "text-destructive"}`}>
+                      <span className={`font-bold text-sm shrink-0 ${txn.type === "income" ? "text-brand-600" : "text-destructive"}`}>
                         {txn.type === "income" ? "+" : "-"}₹{(txn.amount || 0).toLocaleString()}
                       </span>
                     </div>
@@ -4148,7 +4168,7 @@ export default function CoachDashboard({ defaultView }) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs text-muted-foreground">{expenses.length} expense{expenses.length !== 1 ? "s" : ""} recorded</p>
-                <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+                <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
                   onClick={() => { setEditExpenseId(null); setExpenseForm({ category: "venue_rent", amount: "", date: new Date().toISOString().slice(0, 10), description: "", payment_mode: "cash", reference: "" }); setAddExpenseOpen(true); }}>
                   <Plus className="h-3.5 w-3.5 mr-1" /> Add Expense
                 </Button>
@@ -4157,7 +4177,7 @@ export default function CoachDashboard({ defaultView }) {
               {expenses.length > 0 ? (
                 <div className="space-y-2">
                   {expenses.map(exp => (
-                    <div key={exp.id} className="glass-card rounded-xl p-4 flex items-center gap-3">
+                    <div key={exp.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3">
                       <div className="bg-amber-500/10 h-8 w-8 rounded-full flex items-center justify-center shrink-0">
                         <ArrowDownRight className="h-4 w-4 text-amber-400" />
                       </div>
@@ -4169,7 +4189,7 @@ export default function CoachDashboard({ defaultView }) {
                         </div>
                         <p className="text-xs text-muted-foreground">{exp.date}{exp.description ? ` · ${exp.description}` : ""}</p>
                       </div>
-                      <span className="font-black text-sm text-amber-400 shrink-0">₹{(exp.amount || 0).toLocaleString()}</span>
+                      <span className="font-bold text-sm text-amber-400 shrink-0">₹{(exp.amount || 0).toLocaleString()}</span>
                       <div className="flex gap-1 shrink-0">
                         <button onClick={() => openEditExpense(exp)} className="h-7 w-7 rounded-md bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors">
                           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
@@ -4190,9 +4210,9 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Add/Edit Expense Dialog */}
               <Dialog open={addExpenseOpen} onOpenChange={(o) => { setAddExpenseOpen(o); if (!o) setEditExpenseId(null); }}>
-                <DialogContent className="bg-card border-border max-w-md">
+                <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
                   <DialogHeader>
-                    <DialogTitle className="font-display">{editExpenseId ? "Edit Expense" : "Add Expense"}</DialogTitle>
+                    <DialogTitle className="font-medium">{editExpenseId ? "Edit Expense" : "Add Expense"}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-3">
                     <div className="grid grid-cols-2 gap-3">
@@ -4249,7 +4269,7 @@ export default function CoachDashboard({ defaultView }) {
                         onChange={e => setExpenseForm(f => ({ ...f, reference: e.target.value }))}
                         className="mt-1 bg-background border-border" placeholder="Optional" />
                     </div>
-                    <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveExpense}>
+                    <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveExpense}>
                       {editExpenseId ? "Update Expense" : "Add Expense"}
                     </Button>
                   </div>
@@ -4264,7 +4284,7 @@ export default function CoachDashboard({ defaultView }) {
               <div className="flex items-center gap-2">
                 {["all", "overdue", "pending", "paid"].map(f => (
                   <button key={f} onClick={() => setOutstandingFilter(f)}
-                    className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${outstandingFilter === f ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                    className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${outstandingFilter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 border-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
                     {f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
                 ))}
@@ -4281,16 +4301,16 @@ export default function CoachDashboard({ defaultView }) {
                 return (
                   <div className="space-y-2">
                     {filtered.map(c => (
-                      <div key={c.client_id} className="glass-card rounded-xl p-4 flex items-center gap-3">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${c.status === "overdue" ? "bg-destructive/10" : c.status === "pending" ? "bg-amber-500/10" : "bg-primary/10"}`}>
+                      <div key={c.client_id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${c.status === "overdue" ? "bg-destructive/10" : c.status === "pending" ? "bg-amber-500/10" : "bg-brand-600/10"}`}>
                           {c.status === "overdue" ? <AlertTriangle className="h-4 w-4 text-destructive" />
                             : c.status === "pending" ? <Clock className="h-4 w-4 text-amber-400" />
-                            : <CheckCircle className="h-4 w-4 text-primary" />}
+                            : <CheckCircle className="h-4 w-4 text-brand-600" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="font-bold text-sm">{c.client_name}</span>
-                            <Badge className={`text-[9px] ${c.status === "overdue" ? "bg-destructive/10 text-destructive" : c.status === "pending" ? "bg-amber-500/10 text-amber-400" : "bg-primary/10 text-primary"}`}>
+                            <Badge className={`text-[9px] ${c.status === "overdue" ? "bg-destructive/10 text-destructive" : c.status === "pending" ? "bg-amber-500/10 text-amber-400" : "bg-brand-600/10 text-brand-600"}`}>
                               {c.status}
                             </Badge>
                           </div>
@@ -4300,7 +4320,7 @@ export default function CoachDashboard({ defaultView }) {
                           </p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className={`font-black text-sm ${c.outstanding > 0 ? "text-destructive" : "text-primary"}`}>
+                          <p className={`font-bold text-sm ${c.outstanding > 0 ? "text-destructive" : "text-brand-600"}`}>
                             {c.outstanding > 0 ? `₹${c.outstanding.toLocaleString()} due` : "Settled"}
                           </p>
                         </div>
@@ -4312,9 +4332,9 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Summary row */}
               {clientOutstanding.length > 0 && (
-                <div className="glass-card rounded-xl p-4 flex justify-between items-center">
+                <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex justify-between items-center">
                   <span className="text-sm text-muted-foreground font-medium">Total Outstanding</span>
-                  <span className="font-black text-lg text-destructive">
+                  <span className="font-bold text-lg text-destructive">
                     ₹{clientOutstanding.reduce((s, c) => s + (c.outstanding || 0), 0).toLocaleString()}
                   </span>
                 </div>
@@ -4333,7 +4353,7 @@ export default function CoachDashboard({ defaultView }) {
                       setInvoiceStatusFilter(s);
                       loadInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined });
                     }}
-                      className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${invoiceStatusFilter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+                      className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${invoiceStatusFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 border-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
                       {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
@@ -4345,9 +4365,9 @@ export default function CoachDashboard({ defaultView }) {
                   <button onClick={() => setShowGSTSettings(true)}
                     className="px-3 py-1.5 rounded-lg text-xs font-bold border border-border bg-muted/40 hover:bg-muted text-muted-foreground transition-all flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-sm">receipt_long</span>
-                    GST Settings {gstSettings.gst_enabled && <span className="text-[10px] text-primary">ON</span>}
+                    GST Settings {gstSettings.gst_enabled && <span className="text-[10px] text-brand-600">ON</span>}
                   </button>
-                  <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+                  <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
                     onClick={() => setShowCreateInvoice(true)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Create Invoice
                   </Button>
@@ -4356,8 +4376,8 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* GST Settings Dialog */}
               <Dialog open={showGSTSettings} onOpenChange={setShowGSTSettings}>
-                <DialogContent className="bg-card border-border max-w-sm">
-                  <DialogHeader><DialogTitle className="font-display">GST & Invoice Settings</DialogTitle></DialogHeader>
+                <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                  <DialogHeader><DialogTitle className="font-medium">GST & Invoice Settings</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -4365,7 +4385,7 @@ export default function CoachDashboard({ defaultView }) {
                         <p className="text-xs text-muted-foreground">Apply GST to all invoices by default</p>
                       </div>
                       <button onClick={() => setGstSettings(g => ({ ...g, gst_enabled: !g.gst_enabled }))}
-                        className={`w-11 h-6 rounded-full transition-colors relative ${gstSettings.gst_enabled ? "bg-primary" : "bg-muted"}`}>
+                        className={`w-11 h-6 rounded-full transition-colors relative ${gstSettings.gst_enabled ? "bg-brand-600" : "bg-muted"}`}>
                         <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${gstSettings.gst_enabled ? "translate-x-5" : "translate-x-0"}`} />
                       </button>
                     </div>
@@ -4381,7 +4401,7 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex gap-2">
                             {[5, 12, 18].map(r => (
                               <button key={r} type="button" onClick={() => setGstSettings(g => ({ ...g, gst_rate: r }))}
-                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${gstSettings.gst_rate === r ? "bg-primary/15 border-primary/40 text-primary" : "bg-secondary/30 border-border text-muted-foreground"}`}>
+                                className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${gstSettings.gst_rate === r ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "bg-secondary/30 border-border text-muted-foreground"}`}>
                                 {r}%
                               </button>
                             ))}
@@ -4396,7 +4416,7 @@ export default function CoachDashboard({ defaultView }) {
                       <p className="text-[10px] text-muted-foreground mt-1">e.g. INV → INV-2025-0001</p>
                     </div>
                     <div className="flex gap-2">
-                      <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleSaveGstSettings} disabled={gstSaving}>
+                      <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveGstSettings} disabled={gstSaving}>
                         {gstSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
                         Save Settings
                       </Button>
@@ -4408,8 +4428,8 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Create Invoice Dialog */}
               <Dialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
-                <DialogContent className="bg-card border-border max-w-2xl max-h-[92vh] overflow-y-auto">
-                  <DialogHeader><DialogTitle className="font-display">Create Invoice</DialogTitle></DialogHeader>
+                <DialogContent className="bg-card border-border max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
+                  <DialogHeader><DialogTitle className="font-medium">Create Invoice</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     {/* Client info */}
                     <div className="grid grid-cols-2 gap-3">
@@ -4451,7 +4471,7 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="flex items-center justify-between mb-2">
                         <Label className="text-xs text-muted-foreground">Items</Label>
                         <button type="button" onClick={() => setInvoiceItems(prev => [...prev, { description: "", qty: "1", rate: "" }])}
-                          className="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+                          className="text-xs font-bold text-brand-600 flex items-center gap-1 hover:underline">
                           <Plus className="h-3 w-3" /> Add Row
                         </button>
                       </div>
@@ -4466,11 +4486,11 @@ export default function CoachDashboard({ defaultView }) {
                           <div key={i} className="grid grid-cols-12 items-center px-2 py-1.5 border-t border-border gap-1">
                             <input value={item.description} onChange={e => setInvoiceItems(prev => prev.map((x, j) => j === i ? { ...x, description: e.target.value } : x))}
                               placeholder="e.g. Badminton coaching - 4 sessions"
-                              className="col-span-6 bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/50 min-w-0" />
+                              className="col-span-6 bg-background border border-border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-600/50 min-w-0" />
                             <input type="number" value={item.qty} onChange={e => setInvoiceItems(prev => prev.map((x, j) => j === i ? { ...x, qty: e.target.value } : x))}
-                              className="col-span-2 bg-background border border-border rounded px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                              className="col-span-2 bg-background border border-border rounded px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
                             <input type="number" value={item.rate} onChange={e => setInvoiceItems(prev => prev.map((x, j) => j === i ? { ...x, rate: e.target.value } : x))}
-                              placeholder="0" className="col-span-2 bg-background border border-border rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                              placeholder="0" className="col-span-2 bg-background border border-border rounded px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
                             <div className="col-span-1 text-right text-xs font-bold text-foreground">
                               {((parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
                             </div>
@@ -4490,7 +4510,7 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <button type="button" onClick={() => setInvoiceForm(f => ({ ...f, gst_enabled: !f.gst_enabled }))}
-                            className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${invoiceForm.gst_enabled ? "bg-primary" : "bg-muted"}`}>
+                            className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${invoiceForm.gst_enabled ? "bg-brand-600" : "bg-muted"}`}>
                             <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${invoiceForm.gst_enabled ? "translate-x-4" : "translate-x-0"}`} />
                           </button>
                           <Label className="text-xs font-bold">Apply GST {gstSettings.gst_enabled ? `(${gstSettings.gst_rate}%)` : ""}</Label>
@@ -4503,7 +4523,7 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex gap-1.5 flex-wrap">
                             {["cash", "upi", "bank_transfer"].map(m => (
                               <button key={m} type="button" onClick={() => setInvoiceForm(f => ({ ...f, payment_mode: m }))}
-                                className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${invoiceForm.payment_mode === m ? "bg-primary/15 border-primary/40 text-primary" : "bg-secondary/30 border-border text-muted-foreground"}`}>
+                                className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${invoiceForm.payment_mode === m ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "bg-secondary/30 border-border text-muted-foreground"}`}>
                                 {m.replace("_", " ")}
                               </button>
                             ))}
@@ -4521,9 +4541,9 @@ export default function CoachDashboard({ defaultView }) {
                             <span>₹{invoiceGstAmt.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-black text-sm border-t border-border pt-1.5">
+                        <div className="flex justify-between font-bold text-sm border-t border-border pt-1.5">
                           <span>Total</span>
-                          <span className="text-primary">₹{invoiceTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
+                          <span className="text-brand-600">₹{invoiceTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span>
                         </div>
                       </div>
                     </div>
@@ -4533,11 +4553,11 @@ export default function CoachDashboard({ defaultView }) {
                       <Label className="text-xs text-muted-foreground">Notes (optional)</Label>
                       <textarea value={invoiceForm.notes} onChange={e => setInvoiceForm(f => ({ ...f, notes: e.target.value }))}
                         placeholder="Payment instructions, thank you note..."
-                        className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm min-h-[50px] resize-none focus:outline-none focus:ring-1 focus:ring-primary/50" />
+                        className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm min-h-[50px] resize-none focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
                     </div>
 
                     <div className="flex gap-2">
-                      <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleCreateInvoice} disabled={invoiceCreating}>
+                      <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateInvoice} disabled={invoiceCreating}>
                         {invoiceCreating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
                         Create & Send Invoice
                       </Button>
@@ -4549,11 +4569,11 @@ export default function CoachDashboard({ defaultView }) {
 
               {/* Invoice list */}
               {invoices.length === 0 ? (
-                <div className="text-center py-16 glass-card rounded-xl text-muted-foreground">
+                <div className="text-center py-16 bg-card border border-border/40 shadow-sm rounded-[28px] text-muted-foreground">
                   <Receipt className="h-10 w-10 mx-auto mb-3 opacity-40" />
                   <p className="font-bold mb-1">No Invoices Yet</p>
                   <p className="text-sm">Create your first invoice to get started.</p>
-                  <Button size="sm" className="mt-4 bg-primary text-primary-foreground font-bold text-xs"
+                  <Button size="sm" className="mt-4 bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs"
                     onClick={() => setShowCreateInvoice(true)}>
                     <Plus className="h-3.5 w-3.5 mr-1" /> Create Invoice
                   </Button>
@@ -4564,11 +4584,11 @@ export default function CoachDashboard({ defaultView }) {
                   <div className="grid grid-cols-3 gap-3 mb-2">
                     {[
                       { label: "Total", value: `₹${invoices.reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-foreground" },
-                      { label: "Collected", value: `₹${invoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-primary" },
+                      { label: "Collected", value: `₹${invoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-brand-600" },
                       { label: "Pending", value: `₹${invoices.filter(i => i.status !== "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-amber-400" },
                     ].map(({ label, value, color }) => (
-                      <div key={label} className="glass-card rounded-lg p-3 text-center">
-                        <p className={`font-black text-sm ${color}`}>{value}</p>
+                      <div key={label} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3 text-center">
+                        <p className={`font-bold text-sm ${color}`}>{value}</p>
                         <p className="text-[10px] text-muted-foreground">{label}</p>
                       </div>
                     ))}
@@ -4576,13 +4596,13 @@ export default function CoachDashboard({ defaultView }) {
 
                   {invoices.map(inv => (
                     <motion.div key={inv.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      className="glass-card rounded-xl p-4">
+                      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{inv.invoice_no}</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                              inv.status === "paid" ? "bg-primary/10 border-primary/20 text-primary"
+                              inv.status === "paid" ? "bg-brand-600/10 border-brand-600/20 text-brand-600"
                               : inv.status === "sent" ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
                               : "bg-muted border-border text-muted-foreground"
                             }`}>{inv.status.toUpperCase()}</span>
@@ -4598,7 +4618,7 @@ export default function CoachDashboard({ defaultView }) {
                           )}
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="font-black text-base text-primary">₹{(inv.total || 0).toLocaleString()}</p>
+                          <p className="font-bold text-base text-brand-600">₹{(inv.total || 0).toLocaleString()}</p>
                           {inv.gst_enabled && <p className="text-[10px] text-muted-foreground">incl. GST {inv.gst_rate}%</p>}
                         </div>
                       </div>
@@ -4618,7 +4638,7 @@ export default function CoachDashboard({ defaultView }) {
                         </button>
                         {inv.status !== "paid" && (
                           <button onClick={() => handleMarkInvoicePaid(inv.id)}
-                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary transition-colors">
+                            className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-600/10 hover:bg-brand-600/20 text-xs font-bold text-brand-600 transition-colors">
                             <CheckCircle className="h-3 w-3" /> Mark Paid
                           </button>
                         )}
@@ -4640,14 +4660,14 @@ export default function CoachDashboard({ defaultView }) {
           {financeSubTab === "payouts" && (
             <div className="space-y-6">
               {/* Bank Account Section */}
-              <div className="glass-card rounded-xl p-5 space-y-4">
+              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-bold text-foreground">Bank Account</p>
                     <p className="text-xs text-muted-foreground mt-0.5">Link your bank account for payouts</p>
                   </div>
                   {linkedAccount && (
-                    <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500"}`}>
+                    <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-500"}`}>
                       {linkedAccount.status || "pending"}
                     </Badge>
                   )}
@@ -4723,10 +4743,10 @@ export default function CoachDashboard({ defaultView }) {
               {/* Payout Summary Cards */}
               {payoutSummary && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                  <AthleticStatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} iconColor="primary" delay={0.1} />
-                  <AthleticStatCard icon={CheckCircle2} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} iconColor="emerald" delay={0.2} />
-                  <AthleticStatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} iconColor="amber" delay={0.3} />
-                  <AthleticStatCard icon={Banknote} label="Last Payout" value={payoutSummary.last_payout_amount ? `₹${payoutSummary.last_payout_amount.toLocaleString()}` : "—"} iconColor="sky" delay={0.4} />
+                  <StatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} index={0.1} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
+                  <StatCard icon={CheckCircle2} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} index={0.2} colorClass="text-brand-600" bgClass="bg-brand-600/10" />
+                  <StatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} index={0.3} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+                  <StatCard icon={Banknote} label="Last Payout" value={payoutSummary.last_payout_amount ? `₹${payoutSummary.last_payout_amount.toLocaleString()}` : "—"} index={0.4} colorClass="text-sky-500" bgClass="bg-sky-500/10" />
                 </div>
               )}
 
@@ -4745,7 +4765,7 @@ export default function CoachDashboard({ defaultView }) {
                         key={p.id}
                         initial={{ opacity: 0, y: 5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="glass-card rounded-xl p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                        className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
                         onClick={() => setPayoutDetailDialog(p)}
                       >
                         <div>
@@ -4757,7 +4777,7 @@ export default function CoachDashboard({ defaultView }) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge className={`text-xs font-bold rounded-full px-3 ${
-                            p.status === "completed" ? "bg-primary/10 text-primary" :
+                            p.status === "completed" ? "bg-brand-600/10 text-brand-600" :
                             p.status === "processing" ? "bg-blue-500/10 text-blue-500" :
                             p.status === "failed" ? "bg-destructive/10 text-destructive" :
                             "bg-muted text-muted-foreground"
@@ -4775,7 +4795,7 @@ export default function CoachDashboard({ defaultView }) {
               {/* Payout Detail Dialog */}
               {payoutDetailDialog && (
                 <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
-                  <DialogContent className="max-w-md">
+                  <DialogContent className="max-w-md rounded-[28px]">
                     <DialogHeader>
                       <DialogTitle>Payout Details</DialogTitle>
                     </DialogHeader>
@@ -4787,7 +4807,7 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="bg-muted/30 rounded-xl p-4 space-y-2 text-sm">
                         <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-medium">₹{(payoutDetailDialog.gross_amount || 0).toLocaleString()}</span></div>
                         <div className="flex justify-between"><span className="text-muted-foreground">Commission ({payoutDetailDialog.commission_pct || 10}%)</span><span className="font-medium text-destructive">-₹{(payoutDetailDialog.commission_amount || 0).toLocaleString()}</span></div>
-                        <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-bold">Net Payout</span><span className="font-black text-primary">₹{(payoutDetailDialog.net_amount || 0).toLocaleString()}</span></div>
+                        <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-bold">Net Payout</span><span className="font-bold text-brand-600">₹{(payoutDetailDialog.net_amount || 0).toLocaleString()}</span></div>
                       </div>
                       {payoutDetailDialog.razorpay_transfer_id && (
                         <p className="text-xs text-muted-foreground">Transfer: <span className="font-mono">{payoutDetailDialog.razorpay_transfer_id}</span></p>
@@ -4821,8 +4841,8 @@ export default function CoachDashboard({ defaultView }) {
       {mgmtTab === "reviews" && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
           <div className="flex items-center gap-4 mb-2">
-            <div className="glass-card rounded-xl p-5 text-center min-w-[120px]">
-              <p className="font-black text-3xl text-primary">{sessionStats?.avg_rating || "—"}</p>
+            <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 text-center min-w-[120px]">
+              <p className="font-bold text-3xl text-brand-600">{sessionStats?.avg_rating || "—"}</p>
               <div className="flex justify-center gap-0.5 mt-1">
                 {[1, 2, 3, 4, 5].map(i => (
                   <Star key={i} className={`h-3.5 w-3.5 ${i <= Math.round(sessionStats?.avg_rating || 0) ? "fill-amber-400 text-amber-400" : "text-muted-foreground"}`} />
@@ -4830,8 +4850,8 @@ export default function CoachDashboard({ defaultView }) {
               </div>
               <p className="text-xs text-muted-foreground mt-1">Average Rating</p>
             </div>
-            <div className="glass-card rounded-xl p-5 text-center min-w-[120px]">
-              <p className="font-black text-3xl text-foreground">{completedSessions.filter(s => s.review).length}</p>
+            <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 text-center min-w-[120px]">
+              <p className="font-bold text-3xl text-foreground">{completedSessions.filter(s => s.review).length}</p>
               <p className="text-xs text-muted-foreground mt-1">Total Reviews</p>
             </div>
           </div>
@@ -4847,7 +4867,7 @@ export default function CoachDashboard({ defaultView }) {
             return (
               <div className="space-y-3">
                 {reviewed.map(s => (
-                  <div key={s.id} className="glass-card rounded-xl p-4">
+                  <div key={s.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm">{s.player_name}</span>
@@ -4887,8 +4907,8 @@ export default function CoachDashboard({ defaultView }) {
         return (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div>
-              <h3 className="text-lg font-bold font-display">WhatsApp Automations</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">Messages sent automatically to your clients. Configure WhatsApp credentials in <span className="text-primary cursor-pointer underline underline-offset-2">Settings</span> first.</p>
+              <h3 className="text-lg font-bold ">WhatsApp Automations</h3>
+              <p className="text-sm text-muted-foreground mt-0.5">Messages sent automatically to your clients. Configure WhatsApp credentials in <span className="text-brand-600 cursor-pointer underline underline-offset-2">Settings</span> first.</p>
             </div>
             {waLoading ? (
               <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
@@ -4899,7 +4919,7 @@ export default function CoachDashboard({ defaultView }) {
                     const cfg = waSettings[a.key] || {};
                     const enabled = cfg.enabled ?? false;
                     return (
-                      <div key={a.key} className={`glass-card rounded-xl p-4 transition-all border ${enabled ? "border-primary/20" : "border-border/40 opacity-60"}`}>
+                      <div key={a.key} className={`rounded-[28px] bg-card border border-border/40 shadow-sm p-4 transition-all border ${enabled ? "border-brand-600/20" : "border-border/40 opacity-60"}`}>
                         <div className="flex items-start gap-3">
                           <span className="text-xl mt-0.5 shrink-0">{a.icon}</span>
                           <div className="flex-1 min-w-0">
@@ -4911,7 +4931,7 @@ export default function CoachDashboard({ defaultView }) {
                               {/* Toggle */}
                               <button
                                 onClick={() => handleWaToggle(a.key, !enabled)}
-                                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${enabled ? "bg-primary" : "bg-muted"}`}
+                                className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${enabled ? "bg-brand-600" : "bg-muted"}`}
                               >
                                 <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
                               </button>
@@ -4952,7 +4972,7 @@ export default function CoachDashboard({ defaultView }) {
                   ) : (
                     <div className="space-y-1.5">
                       {waLogs.slice(0, 20).map(log => (
-                        <div key={log.id} className="flex items-center gap-2 px-3 py-2 glass-card rounded-lg">
+                        <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg">
                           <span className="text-base shrink-0">{ICON_MAP[log.automation_type] || "📨"}</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate">{log.client_name}</p>
@@ -4980,8 +5000,8 @@ export default function CoachDashboard({ defaultView }) {
 
       {/* Create Academy Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border max-w-md">
-          <DialogHeader><DialogTitle className="font-display">Create Academy</DialogTitle></DialogHeader>
+        <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+          <DialogHeader><DialogTitle className="font-medium">Create Academy</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div><Label className="text-xs text-muted-foreground">Academy Name</Label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
@@ -5006,7 +5026,7 @@ export default function CoachDashboard({ defaultView }) {
             <div><Label className="text-xs text-muted-foreground">Schedule</Label>
               <Input value={form.schedule} onChange={e => setForm(p => ({ ...p, schedule: e.target.value }))}
                 placeholder="Mon/Wed/Fri 5-7 PM" className="mt-1 bg-background border-border" /></div>
-            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreate} data-testid="submit-academy-btn">
+            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreate} data-testid="submit-academy-btn">
               Create Academy
             </Button>
           </div>
@@ -5102,20 +5122,20 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
   return (
     <div className="space-y-6">
       {/* Scanner Mode Toggle */}
-      <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg w-fit">
+      <div className="flex flex-wrap gap-3">
         <button onClick={() => { setScanMode("camera"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${scanMode === "camera" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
           <Camera className="h-3.5 w-3.5" />Camera Scan
         </button>
         <button onClick={() => { setScanMode("manual"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "manual" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${scanMode === "manual" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
           <ScanLine className="h-3.5 w-3.5" />Manual Entry
         </button>
         <button onClick={() => { setScanMode("attendance"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${scanMode === "attendance" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
           <ClipboardList className="h-3.5 w-3.5" />Attendance
           {todaySessions.length > 0 && (
-            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white shadow-md shadow-brand-600/20 text-[9px] font-bold flex items-center justify-center">
               {checkedIn.length}/{todaySessions.length}
             </span>
           )}
@@ -5124,13 +5144,13 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
 
       {/* ─── Camera Scanner ─── */}
       {scanMode === "camera" && (
-        <div className="glass-card rounded-xl p-6">
+        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Camera className="h-6 w-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
+              <Camera className="h-6 w-6 text-brand-600" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base">Scan Lobbian's QR Code</h3>
+              <h3 className="font-medium text-base">Scan Lobbian's QR Code</h3>
               <p className="text-xs text-muted-foreground">
                 Point your camera at the Lobbian's phone to verify check-in.
               </p>
@@ -5147,7 +5167,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                 )}
               </div>
               <Button
-                className="bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover"
+                className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20 hover:shadow-md-hover"
                 onClick={startCamera}
               >
                 <Camera className="h-4 w-4 mr-2" />
@@ -5175,13 +5195,13 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
 
       {/* ─── Manual Entry ─── */}
       {scanMode === "manual" && (
-        <div className="glass-card rounded-xl p-6">
+        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ScanLine className="h-6 w-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
+              <ScanLine className="h-6 w-6 text-brand-600" />
             </div>
             <div>
-              <h3 className="font-display font-bold text-base">Manual Code Entry</h3>
+              <h3 className="font-medium text-base">Manual Code Entry</h3>
               <p className="text-xs text-muted-foreground">
                 Type the check-in code shown below the Lobbian's QR.
               </p>
@@ -5201,7 +5221,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
               />
             </div>
             <Button
-              className="w-full bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover"
+              className="w-full bg-brand-600 text-white font-bold shadow-lg shadow-brand-600/20 hover:shadow-md-hover"
               onClick={() => handleVerify()}
               disabled={verifying || !qrInput.trim()}
               data-testid="verify-qr-btn"
@@ -5220,20 +5240,20 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
       {/* ─── Attendance Tracker ─── */}
       {scanMode === "attendance" && (
         <div className="space-y-4">
-          <div className="glass-card rounded-xl p-5">
+          <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <ClipboardList className="h-5 w-5 text-primary" />
+                <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+                  <ClipboardList className="h-5 w-5 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="font-display font-bold text-sm">Today's Attendance</h3>
+                  <h3 className="font-medium text-sm">Today's Attendance</h3>
                   <p className="text-[10px] text-muted-foreground">{today}</p>
                 </div>
               </div>
               {todaySessions.length > 0 && (
                 <div className="text-right">
-                  <div className="font-display font-black text-xl text-primary">
+                  <div className="font-medium text-xl text-brand-600">
                     {checkedIn.length}/{todaySessions.length}
                   </div>
                   <div className="text-[10px] text-muted-foreground font-bold">Checked In</div>
@@ -5245,7 +5265,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
             {todaySessions.length > 0 && (
               <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-4">
                 <div
-                  className="h-full bg-gradient-athletic rounded-full transition-all duration-500"
+                  className="h-full bg-brand-600 rounded-full transition-all duration-500"
                   style={{ width: `${(checkedIn.length / todaySessions.length) * 100}%` }}
                 />
               </div>
@@ -5327,13 +5347,13 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
           {result.error ? (
             <>
               <XCircle className="h-12 w-12 mx-auto mb-3 text-destructive" />
-              <p className="font-display font-bold text-lg text-destructive">Verification Failed</p>
+              <p className="font-medium text-lg text-destructive">Verification Failed</p>
               <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
             </>
           ) : result.already_checked_in ? (
             <>
               <CheckCircle className="h-12 w-12 mx-auto mb-3 text-amber-400" />
-              <p className="font-display font-bold text-lg text-amber-400">Already Checked In</p>
+              <p className="font-medium text-lg text-amber-400">Already Checked In</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {result.player_name} has already checked in for this session.
               </p>
@@ -5341,7 +5361,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
           ) : (
             <>
               <CheckCircle className="h-12 w-12 mx-auto mb-3 text-brand-400" />
-              <p className="font-display font-bold text-lg text-brand-400">Check-in Successful!</p>
+              <p className="font-medium text-lg text-brand-400">Check-in Successful!</p>
               <p className="text-sm text-muted-foreground mt-2">
                 <span className="font-bold text-foreground">{result.player_name}</span> checked in
               </p>

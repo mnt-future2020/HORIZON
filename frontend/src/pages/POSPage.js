@@ -44,7 +44,7 @@ const CATEGORIES = [
 const PAYMENT_METHODS = [
   { id: "cash", label: "Cash", icon: Banknote, color: "text-brand-400" },
   { id: "card", label: "Card", icon: CreditCard, color: "text-sky-400" },
-  { id: "upi", label: "UPI", icon: Smartphone, color: "text-violet-400" },
+  { id: "upi", label: "UPI", icon: Smartphone, color: "text-brand-400" },
 ];
 
 const CAT_EMOJI = { beverages: "🥤", snacks: "🍿", equipment: "⚽", apparel: "👕", other: "🛒" };
@@ -55,9 +55,9 @@ function ProductCard({ product, cartQty, onAdd, onRemove }) {
   const outOfStock = product.stock === 0;
   return (
     <motion.div layout initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-      className={`glass-card rounded-xl p-3 flex flex-col gap-2 transition-all select-none
-        ${outOfStock ? "opacity-50" : "hover:border-primary/40 cursor-pointer"}
-        ${cartQty > 0 ? "border-primary/50 bg-primary/5" : ""}`}
+      className={`rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex flex-col gap-2 transition-all select-none
+        ${outOfStock ? "opacity-50" : "hover:border-brand-600/40 cursor-pointer"}
+        ${cartQty > 0 ? "border-brand-600/50 bg-brand-600/5" : ""}`}
       onClick={() => !outOfStock && onAdd(product)}
       data-testid={`product-card-${product.id}`}>
       <div className="text-3xl text-center">{product.emoji || CAT_EMOJI[product.category] || "🛒"}</div>
@@ -66,7 +66,7 @@ function ProductCard({ product, cartQty, onAdd, onRemove }) {
         <p className="text-[10px] text-muted-foreground mt-0.5 capitalize">{product.category}</p>
       </div>
       <div className="flex items-center justify-between gap-1">
-        <span className="text-sm font-display font-black text-primary">₹{product.price}</span>
+        <span className="text-sm font-bold text-brand-600">₹{product.price}</span>
         {outOfStock ? (
           <span className="text-[10px] text-destructive font-bold">Out</span>
         ) : (
@@ -79,7 +79,7 @@ function ProductCard({ product, cartQty, onAdd, onRemove }) {
             )}
             {cartQty > 0 && <span className="text-xs font-bold w-5 text-center">{cartQty}</span>}
             <button onClick={() => onAdd(product)}
-              className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center hover:bg-primary/40 transition-colors">
+              className="h-6 w-6 rounded-full bg-brand-600/20 flex items-center justify-center hover:bg-brand-600/40 transition-colors">
               <Plus className="h-3 w-3" />
             </button>
           </div>
@@ -100,9 +100,9 @@ export default function POSPage() {
   if (user?.role !== "venue_owner" && user?.role !== "super_admin") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center">
-        <div className="glass-card rounded-lg p-8 space-y-4">
+        <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-8 space-y-4">
           <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
-          <h1 className="font-display text-xl font-black">Access Denied</h1>
+          <h1 className="admin-heading text-xl">Access Denied</h1>
           <p className="text-sm text-muted-foreground">POS is only available to venue owners.</p>
         </div>
       </div>
@@ -491,7 +491,7 @@ function POSTerminal({ user }) {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Point of Sale</span>
-          <h1 className="font-display text-xl font-black tracking-tight">⚽ Venue POS</h1>
+          <h1 className="admin-heading text-xl">⚽ Venue POS</h1>
         </div>
         <div className="flex items-center gap-2">
           <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${isOnline ? "bg-brand-500/15 text-brand-400" : "bg-destructive/15 text-destructive"}`}>
@@ -514,7 +514,7 @@ function POSTerminal({ user }) {
         <div className="flex gap-2 mb-4 overflow-x-auto">
           {venues.map(v => (
             <button key={v.id} onClick={() => setSelectedVenue(v)}
-              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedVenue?.id === v.id ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${selectedVenue?.id === v.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
               {v.name}
             </button>
           ))}
@@ -540,7 +540,7 @@ function POSTerminal({ user }) {
             <div className="flex gap-2 overflow-x-auto pb-1">
               {CATEGORIES.map(cat => (
                 <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${activeCategory === cat.id ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${activeCategory === cat.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}
                   data-testid={`cat-${cat.id}`}>
                   {cat.emoji} {cat.label}
                 </button>
@@ -567,12 +567,12 @@ function POSTerminal({ user }) {
 
           {/* Cart */}
           <div className="lg:col-span-1">
-            <div className="glass-card rounded-xl p-4 sticky top-20" data-testid="pos-cart">
+            <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 sticky top-20" data-testid="pos-cart">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <ShoppingCart className="h-4 w-4 text-primary" />
+                  <ShoppingCart className="h-4 w-4 text-brand-600" />
                   <h2 className="font-bold text-sm">Cart</h2>
-                  {cart.length > 0 && <Badge className="text-[10px] bg-primary/20 text-primary">{cart.reduce((s, c) => s + c.qty, 0)}</Badge>}
+                  {cart.length > 0 && <Badge className="text-[10px] bg-brand-600/20 text-brand-600">{cart.reduce((s, c) => s + c.qty, 0)}</Badge>}
                 </div>
                 {cart.length > 0 && (
                   <button onClick={clearCart} className="text-xs text-muted-foreground hover:text-destructive transition-colors">Clear</button>
@@ -599,9 +599,9 @@ function POSTerminal({ user }) {
                           <div className="flex items-center gap-1 shrink-0">
                             <button onClick={() => removeFromCart(product)} className="h-5 w-5 rounded-full bg-secondary flex items-center justify-center"><Minus className="h-2.5 w-2.5" /></button>
                             <span className="text-xs font-bold w-4 text-center">{qty}</span>
-                            <button onClick={() => addToCart(product)} className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center"><Plus className="h-2.5 w-2.5" /></button>
+                            <button onClick={() => addToCart(product)} className="h-5 w-5 rounded-full bg-brand-600/10 flex items-center justify-center"><Plus className="h-2.5 w-2.5" /></button>
                           </div>
-                          <span className="text-xs font-bold text-primary w-14 text-right">₹{product.price * qty}</span>
+                          <span className="text-xs font-bold text-brand-600 w-14 text-right">₹{product.price * qty}</span>
                           <button onClick={() => setCart(prev => prev.filter(c => c.product.id !== product.id))} className="text-muted-foreground hover:text-destructive"><X className="h-3.5 w-3.5" /></button>
                         </motion.div>
                       ))}
@@ -614,9 +614,9 @@ function POSTerminal({ user }) {
                       <p className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Discount</p>
                       <div className="flex items-center gap-1 ml-auto">
                         <button onClick={() => setDiscountType("percent")}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${discountType === "percent" ? "bg-primary/20 text-primary" : "bg-secondary/50 text-muted-foreground"}`}>%</button>
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${discountType === "percent" ? "bg-brand-600/10 text-brand-600" : "bg-secondary/50 text-muted-foreground"}`}>%</button>
                         <button onClick={() => setDiscountType("flat")}
-                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${discountType === "flat" ? "bg-primary/20 text-primary" : "bg-secondary/50 text-muted-foreground"}`}>₹</button>
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${discountType === "flat" ? "bg-brand-600/10 text-brand-600" : "bg-secondary/50 text-muted-foreground"}`}>₹</button>
                       </div>
                     </div>
                     <Input type="number" placeholder={discountType === "percent" ? "e.g. 10" : "e.g. 50"}
@@ -635,7 +635,7 @@ function POSTerminal({ user }) {
                     )}
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-bold">Total</span>
-                      <span className="text-xl font-display font-black text-primary">₹{finalTotal}</span>
+                      <span className="text-xl font-bold text-brand-600">₹{finalTotal}</span>
                     </div>
                   </div>
 
@@ -644,9 +644,9 @@ function POSTerminal({ user }) {
                     <div className="grid grid-cols-3 gap-1.5">
                       {PAYMENT_METHODS.map(m => (
                         <button key={m.id} onClick={() => setPaymentMethod(m.id)}
-                          className={`flex flex-col items-center gap-1 py-2 rounded-lg border text-xs font-bold transition-all ${paymentMethod === m.id ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/50"}`}
+                          className={`flex flex-col items-center gap-1 py-2 rounded-lg border text-xs font-bold transition-all ${paymentMethod === m.id ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border text-muted-foreground hover:border-brand-600/50"}`}
                           data-testid={`pay-${m.id}`}>
-                          <m.icon className={`h-4 w-4 ${paymentMethod === m.id ? "text-primary" : m.color}`} />
+                          <m.icon className={`h-4 w-4 ${paymentMethod === m.id ? "text-brand-600" : m.color}`} />
                           {m.label}
                         </button>
                       ))}
@@ -665,7 +665,7 @@ function POSTerminal({ user }) {
                     </div>
                   </div>
 
-                  <Button className="w-full bg-primary text-primary-foreground font-black h-12 text-base" onClick={handleCharge} disabled={charging} data-testid="charge-btn">
+                  <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn h-12 text-base shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCharge} disabled={charging} data-testid="charge-btn">
                     {charging ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <><IndianRupee className="h-5 w-5 mr-1" />Charge ₹{finalTotal}</>}
                   </Button>
                   {!isOnline && <p className="text-[10px] text-amber-400 text-center mt-2">📴 Offline — sale will sync when connected</p>}
@@ -680,13 +680,13 @@ function POSTerminal({ user }) {
       {activeView === "products" && (
         <div className="space-y-4">
           {!selectedVenue && (
-            <div className="rounded-xl border-2 border-amber-500/30 bg-amber-500/10 p-4 text-center">
+            <div className="rounded-[28px] border border-amber-500/30 bg-amber-500/10 p-4 text-center shadow-sm">
               <p className="text-sm font-bold text-amber-400">No venue selected</p>
               <p className="text-xs text-muted-foreground mt-1">You need at least one venue to manage POS products. Add a venue from your dashboard first.</p>
             </div>
           )}
           {lowStockProducts.length > 0 && (
-            <div className="rounded-xl border-2 border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-3">
+            <div className="rounded-[28px] border border-amber-500/30 bg-amber-500/10 p-3 flex items-start gap-3 shadow-sm">
               <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-bold text-amber-400">Low Stock Alert</p>
@@ -698,7 +698,7 @@ function POSTerminal({ user }) {
           )}
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-base">Products Catalog</h2>
-            <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8" onClick={openCreateProduct} disabled={!selectedVenue} data-testid="add-product-btn">
+            <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn text-xs h-8" onClick={openCreateProduct} disabled={!selectedVenue} data-testid="add-product-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Product
             </Button>
           </div>
@@ -710,7 +710,7 @@ function POSTerminal({ user }) {
           ) : (
             <div className="space-y-2">
               {products.map(p => (
-                <div key={p.id} className={`glass-card rounded-lg p-3 flex items-center gap-3 ${p.is_active === false ? "opacity-50" : ""} ${p.stock >= 0 && p.stock <= LOW_STOCK_THRESHOLD && p.is_active !== false ? "border-amber-500/50 bg-amber-500/5" : ""}`} data-testid={`manage-product-${p.id}`}>
+                <div key={p.id} className={`rounded-[28px] bg-card border border-border/40 shadow-sm p-3 flex items-center gap-3 ${p.is_active === false ? "opacity-50" : ""} ${p.stock >= 0 && p.stock <= LOW_STOCK_THRESHOLD && p.is_active !== false ? "border-amber-500/50 bg-amber-500/5" : ""}`} data-testid={`manage-product-${p.id}`}>
                   <span className="text-2xl">{p.emoji || CAT_EMOJI[p.category] || "🛒"}</span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
@@ -724,7 +724,7 @@ function POSTerminal({ user }) {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <button onClick={() => handleToggleProduct(p)}
-                      className={`w-9 h-5 rounded-full transition-all relative ${p.is_active !== false ? "bg-primary" : "bg-secondary"}`}>
+                      className={`w-9 h-5 rounded-full transition-all relative ${p.is_active !== false ? "bg-brand-600" : "bg-secondary"}`}>
                       <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${p.is_active !== false ? "left-4" : "left-0.5"}`} />
                     </button>
                     <button onClick={() => openEditProduct(p)} className="h-7 w-7 rounded-lg bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground"><Pencil className="h-3.5 w-3.5" /></button>
@@ -749,24 +749,24 @@ function POSTerminal({ user }) {
             </div>
             <div className="grid grid-cols-3 gap-3">
               {[
-                { label: "Revenue", value: `₹${summary.total_revenue}`, color: "text-primary" },
+                { label: "Revenue", value: `₹${summary.total_revenue}`, color: "text-brand-600" },
                 { label: "Sales", value: summary.total_sales, color: "text-foreground" },
                 { label: "Items Sold", value: summary.total_items_sold, color: "text-sky-400" },
               ].map(s => (
-                <div key={s.label} className="glass-card rounded-lg p-4 text-center">
+                <div key={s.label} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 text-center">
                   <div className={`text-2xl font-display font-black ${s.color}`}>{s.value}</div>
                   <div className="text-[10px] text-muted-foreground font-mono uppercase mt-1">{s.label}</div>
                 </div>
               ))}
             </div>
             {Object.entries(summary.by_payment_method).length > 0 && (
-              <div className="glass-card rounded-lg p-4">
+              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                 <p className="text-xs font-bold mb-3">By Payment Method</p>
                 <div className="space-y-2">
                   {Object.entries(summary.by_payment_method).map(([method, amount]) => (
                     <div key={method} className="flex items-center justify-between text-sm">
                       <span className="capitalize text-muted-foreground">{method}</span>
-                      <span className="font-bold text-primary">₹{amount}</span>
+                      <span className="font-bold text-brand-600">₹{amount}</span>
                     </div>
                   ))}
                 </div>
@@ -774,7 +774,7 @@ function POSTerminal({ user }) {
             )}
           </div>
         ) : (
-          <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
         )
       )}
 
@@ -788,11 +788,11 @@ function POSTerminal({ user }) {
             </div>
           ) : (
             recentSales.map(sale => (
-              <div key={sale.id} className="glass-card rounded-lg p-3" data-testid={`sale-row-${sale.id}`}>
+              <div key={sale.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3" data-testid={`sale-row-${sale.id}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-bold text-primary">₹{sale.total}</span>
+                      <span className="text-sm font-bold text-brand-600">₹{sale.total}</span>
                       <Badge variant="secondary" className="text-[10px] capitalize">{sale.payment_method}</Badge>
                       {sale.offline_at && <Badge className="text-[9px] bg-amber-500/15 text-amber-400">📴 Offline</Badge>}
                     </div>
@@ -887,7 +887,7 @@ function POSTerminal({ user }) {
                   placeholder="-1" className="mt-1 bg-background border-border" data-testid="product-stock-input" />
               </div>
             </div>
-            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveProduct} disabled={savingProduct} data-testid="save-product-btn">
+            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn" onClick={handleSaveProduct} disabled={savingProduct} data-testid="save-product-btn">
               {savingProduct ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : editingProduct ? "Update Product" : "Add Product"}
             </Button>
           </div>
@@ -905,9 +905,9 @@ function POSTerminal({ user }) {
           {lastSale && (
             <div className="space-y-4">
               {/* Printable receipt */}
-              <div id="pos-receipt" ref={receiptRef} className="glass-card rounded-lg p-4 space-y-2">
+              <div id="pos-receipt" ref={receiptRef} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 space-y-2">
                 <div className="receipt-header text-center">
-                  <p className="font-display font-black text-sm">{selectedVenue?.name || "Venue"}</p>
+                  <p className="font-medium text-sm">{selectedVenue?.name || "Venue"}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {new Date(lastSale.created_at || lastSale.offline_at).toLocaleString("en-IN")}
                   </p>
@@ -932,7 +932,7 @@ function POSTerminal({ user }) {
                 )}
                 <div className="flex justify-between pt-1">
                   <span className="font-bold">Total</span>
-                  <span className="font-display font-black text-xl text-primary">₹{lastSale.total}</span>
+                  <span className="text-xl font-bold text-brand-600">₹{lastSale.total}</span>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
                   <span>Payment</span>
@@ -956,7 +956,7 @@ function POSTerminal({ user }) {
                   <Share2 className="h-4 w-4 mr-1" /> WhatsApp
                 </Button>
               </div>
-              <Button className="w-full bg-primary text-primary-foreground font-bold print:hidden" onClick={() => setShowReceipt(false)} data-testid="new-sale-btn">
+              <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn print:hidden" onClick={() => setShowReceipt(false)} data-testid="new-sale-btn">
                 New Sale
               </Button>
             </div>

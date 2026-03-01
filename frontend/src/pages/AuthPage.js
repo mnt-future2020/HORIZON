@@ -14,7 +14,7 @@ const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d
 
 const DEV_ACCOUNTS = [
   { label: "Admin", email: "admin@lobbi.com", icon: ShieldCheck, color: "bg-red-500 hover:bg-red-600" },
-  { label: "Player", email: "kansha@mntfuture.com", icon: Users, color: "bg-blue-500 hover:bg-blue-600" },
+  { label: "Player", email: "kansha@mntfuture.com", icon: Users, color: "bg-brand-500 hover:bg-brand-600" },
   { label: "Venue Owner", email: "kansha2312@mntfuture.com", icon: Building2, color: "bg-amber-500 hover:bg-amber-600" },
   { label: "Academy Coach", email: "coach@lobbi.com", icon: Dumbbell, color: "bg-green-500 hover:bg-green-600" },
   { label: "Individual Coach", email: "priya@lobbi.com", icon: Dumbbell, color: "bg-emerald-500 hover:bg-emerald-600" },
@@ -87,7 +87,7 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="h-screen bg-white flex flex-col md:flex-row selection:bg-brand-600 selection:text-white overflow-hidden">
+    <div className="h-screen bg-card flex flex-col md:flex-row selection:bg-brand-600 selection:text-white overflow-hidden">
       {/* Left Column / Split Screen Visual */}
       <div className="hidden md:flex flex-col md:w-1/2 h-full relative p-12 overflow-hidden items-start justify-between bg-slate-900">
         <div className="absolute inset-0 z-0">
@@ -118,7 +118,7 @@ export default function AuthPage() {
         <div className="w-full max-w-md mx-auto min-h-full flex flex-col relative py-2 md:py-8">
           <div className="w-full flex justify-start pb-8">
             <button onClick={() => navigate("/")} data-testid="auth-back-btn"
-              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-brand-600 transition-colors md:-ml-4">
+              className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground hover:text-brand-600 transition-colors md:-ml-4">
               <ArrowLeft className="h-4 w-4" /> Back to Home
             </button>
           </div>
@@ -127,48 +127,48 @@ export default function AuthPage() {
             className="w-full my-auto pb-8">
 
             <div className="md:hidden text-center mb-8">
-              <h1 className="font-display text-3xl font-black tracking-tighter uppercase text-brand-700">Lobbi</h1>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Sports Facility OS</p>
+              <h1 className="font-display text-3xl font-black tracking-tighter uppercase text-brand-600">Lobbi</h1>
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">Sports Facility OS</p>
             </div>
 
             <Tabs defaultValue="login" data-testid="auth-tabs" className="w-full">
-              <TabsList className="w-full bg-slate-100 rounded-xl h-12 mb-6 p-1">
-                <TabsTrigger value="login" className="w-1/2 rounded-lg font-black uppercase tracking-widest text-xs data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-lg transition-all h-full" data-testid="login-tab">Log In</TabsTrigger>
-                <TabsTrigger value="register" className="w-1/2 rounded-lg font-black uppercase tracking-widest text-xs data-[state=active]:bg-white data-[state=active]:text-slate-800 data-[state=active]:shadow-lg transition-all h-full" data-testid="register-tab">Create Account</TabsTrigger>
+              <TabsList className="w-full bg-secondary rounded-[24px] h-12 mb-6 p-1">
+                <TabsTrigger value="login" className="w-1/2 rounded-2xl font-black uppercase tracking-widest text-xs data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-lg transition-all h-full" data-testid="login-tab">Log In</TabsTrigger>
+                <TabsTrigger value="register" className="w-1/2 rounded-2xl font-black uppercase tracking-widest text-xs data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-lg transition-all h-full" data-testid="register-tab">Create Account</TabsTrigger>
               </TabsList>
 
               <TabsContent value="login" className="mt-0">
                 <form onSubmit={handleLogin} className="space-y-5">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Email Address</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Email Address</Label>
                     <Input type="email" required value={loginData.email}
                       onChange={e => setLoginData(p => ({ ...p, email: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                       placeholder="you@example.com" data-testid="login-email-input" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Password</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Password</Label>
                     <Input type="password" required value={loginData.password}
                       onChange={e => setLoginData(p => ({ ...p, password: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                       placeholder="Enter password" data-testid="login-password-input" />
                   </div>
                   <Button type="submit" disabled={loading} data-testid="login-submit-btn"
-                    className="w-full h-12 bg-brand-600 rounded-xl text-white font-black uppercase tracking-widest text-xs hover:bg-brand-700 transition-colors mt-6">
+                    className="w-full h-12 bg-brand-600 rounded-full text-white font-black uppercase tracking-widest text-xs hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-colors mt-6">
                     {loading ? "Authenticating..." : "Sign In"}
                   </Button>
                 </form>
 
                 {/* Quick Dev Login */}
-                <div className="mt-8 pt-6 border-t-2 border-dashed border-zinc-200">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 mb-3 text-center">Quick Login (Dev)</p>
+                <div className="mt-8 pt-6 border-t border-dashed border-border/40">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground mb-3 text-center">Quick Login (Dev)</p>
                   <div className="grid grid-cols-2 gap-2">
                     {DEV_ACCOUNTS.map((acc) => {
                       const Icon = acc.icon;
                       return (
                         <button key={acc.email} onClick={() => handleDevLogin(acc)}
                           disabled={devLoading !== null}
-                          className={`${acc.color} text-white rounded-none px-3 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors disabled:opacity-50`}>
+                          className={`${acc.color} text-white rounded-full px-3 py-2.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-colors disabled:opacity-50`}>
                           {devLoading === acc.email ? (
                             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                           ) : (
@@ -185,24 +185,24 @@ export default function AuthPage() {
               <TabsContent value="register" className="mt-0">
                 <form onSubmit={handleRegister} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Full Name</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Full Name</Label>
                     <Input required value={regData.name}
                       onChange={e => setRegData(p => ({ ...p, name: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                       placeholder="Your name" data-testid="register-name-input" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Email</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Email</Label>
                     <Input type="email" required value={regData.email}
                       onChange={e => setRegData(p => ({ ...p, email: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                       placeholder="you@example.com" data-testid="register-email-input" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Password</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Password</Label>
                     <Input type="password" required value={regData.password}
                       onChange={e => setRegData(p => ({ ...p, password: e.target.value }))}
-                      className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                      className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                       placeholder="Min 8 chars, uppercase, lowercase, number" data-testid="register-password-input"
                       minLength={8} />
                     {regData.password && regData.password.length > 0 && !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/.test(regData.password) && (
@@ -210,12 +210,12 @@ export default function AuthPage() {
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Profile Type</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Profile Type</Label>
                     <Select value={regData.role} onValueChange={v => setRegData(p => ({ ...p, role: v, coach_type: v === "coach" ? p.coach_type : "" }))}>
-                      <SelectTrigger className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900" data-testid="register-role-select">
+                      <SelectTrigger className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground" data-testid="register-role-select">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl border-2 border-slate-200 shadow-lg">
+                      <SelectContent className="rounded-[24px] border border-border/40 shadow-lg">
                         <SelectItem value="player" className="text-sm font-bold">Lobbian (Player)</SelectItem>
                         <SelectItem value="venue_owner" className="text-sm font-bold">Venue Owner</SelectItem>
                         <SelectItem value="coach" className="text-sm font-bold">Coach</SelectItem>
@@ -223,30 +223,30 @@ export default function AuthPage() {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Phone (optional)</Label>
+                    <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Phone (optional)</Label>
                     <div className="flex">
-                      <span className="inline-flex items-center px-3 h-12 bg-slate-100 border-2 border-r-0 border-slate-200 rounded-l-xl text-sm font-bold text-slate-500 select-none">+91</span>
+                      <span className="inline-flex items-center px-3 h-12 bg-secondary border border-r-0 border-border/40 rounded-l-[24px] text-sm font-bold text-muted-foreground select-none">+91</span>
                       <Input value={regData.phone}
                         onChange={e => setRegData(p => ({ ...p, phone: cleanPhone(e.target.value) }))}
-                        className="h-12 bg-white border-2 border-slate-200 rounded-l-none rounded-r-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900 flex-1"
+                        className="h-12 bg-card border border-border/40 rounded-l-none rounded-r-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground flex-1"
                         placeholder="98765 43210" data-testid="register-phone-input" maxLength={10} />
                     </div>
                   </div>
 
                   {regData.role === "venue_owner" && (
-                    <div className="pt-4 space-y-4 border-t border-slate-100">
+                    <div className="pt-4 space-y-4 border-t border-border/20">
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Business Name</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Business Name</Label>
                         <Input value={regData.business_name}
                           onChange={e => setRegData(p => ({ ...p, business_name: e.target.value }))}
-                          className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                          className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                           placeholder="Your sports facility name" data-testid="register-business-name" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">GST Number (optional)</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">GST Number (optional)</Label>
                         <Input value={regData.gst_number}
                           onChange={e => setRegData(p => ({ ...p, gst_number: e.target.value }))}
-                          className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900"
+                          className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground"
                           placeholder="29AABCR1234F1Z5" data-testid="register-gst-number" />
                       </div>
                       <div className="p-3 bg-brand-50 border-l-4 border-brand-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-brand-700" data-testid="pending-notice">
@@ -256,14 +256,14 @@ export default function AuthPage() {
                   )}
 
                   {regData.role === "coach" && (
-                    <div className="pt-4 space-y-4 border-t border-slate-100">
+                    <div className="pt-4 space-y-4 border-t border-border/20">
                       <div className="space-y-1.5">
-                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Coach Type</Label>
+                        <Label className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Coach Type</Label>
                         <Select value={regData.coach_type} onValueChange={v => setRegData(p => ({ ...p, coach_type: v }))}>
-                          <SelectTrigger className="h-12 bg-white border-2 border-slate-200 rounded-xl focus-visible:ring-0 focus-visible:border-brand-500 shadow-none text-sm font-bold text-slate-900" data-testid="register-coach-type">
+                          <SelectTrigger className="h-12 bg-card border border-border/40 rounded-[24px] focus-visible:ring-0 focus-visible:border-brand-500 shadow-sm text-sm font-bold text-foreground" data-testid="register-coach-type">
                             <SelectValue placeholder="Select coach type" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl border-2 border-slate-200 shadow-lg">
+                          <SelectContent className="rounded-[24px] border border-border/40 shadow-lg">
                             <SelectItem value="individual" className="text-sm font-bold">
                               Individual Coach
                             </SelectItem>
@@ -273,10 +273,10 @@ export default function AuthPage() {
                           </SelectContent>
                         </Select>
                         {regData.coach_type === "individual" && (
-                          <p className="text-[10px] text-slate-400 font-medium">1-on-1 or small group coaching sessions</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">1-on-1 or small group coaching sessions</p>
                         )}
                         {regData.coach_type === "academy" && (
-                          <p className="text-[10px] text-slate-400 font-medium">Run a sports academy with batches, students & fees</p>
+                          <p className="text-[10px] text-muted-foreground font-medium">Run a sports academy with batches, students & fees</p>
                         )}
                       </div>
                       <div className="p-3 bg-brand-50 border-l-4 border-brand-600 rounded-r-lg text-[10px] font-bold uppercase tracking-widest text-brand-700" data-testid="coach-pending-notice">
@@ -286,7 +286,7 @@ export default function AuthPage() {
                   )}
 
                   <Button type="submit" disabled={loading} data-testid="register-submit-btn"
-                    className="w-full h-12 bg-brand-600 rounded-xl text-white font-black uppercase tracking-widest text-xs hover:bg-brand-700 transition-colors mt-6">
+                    className="w-full h-12 bg-brand-600 rounded-full text-white font-black uppercase tracking-widest text-xs hover:bg-brand-700 shadow-md shadow-brand-600/20 transition-colors mt-6">
                     {loading ? "Creating..." : "Create Account"}
                   </Button>
                 </form>

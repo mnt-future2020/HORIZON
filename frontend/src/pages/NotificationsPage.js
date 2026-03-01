@@ -69,7 +69,7 @@ export default function NotificationsPage() {
   const getIcon = (type) => {
     switch (type) {
       case "slot_available": return <MapPin className="h-4 w-4 text-green-400" />;
-      case "booking": case "booking_confirmed": return <Clock className="h-4 w-4 text-blue-400" />;
+      case "booking": case "booking_confirmed": return <Clock className="h-4 w-4 text-brand-400" />;
       default: return <Zap className="h-4 w-4 text-amber-400" />;
     }
   };
@@ -183,9 +183,9 @@ export default function NotificationsPage() {
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.03 }}
-                      className={`flex items-start gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer hover:-translate-y-0.5 ${
+                      className={`flex items-start gap-4 p-4 rounded-[24px] border transition-all cursor-pointer hover:-translate-y-0.5 ${
                         notif.is_read
-                          ? "bg-card/50 border-border/30"
+                          ? "bg-card/50 border-border/40"
                           : "bg-card border-primary/20 shadow-sm"
                       }`}
                       onClick={() => !notif.is_read && handleMarkRead(notif.id)}

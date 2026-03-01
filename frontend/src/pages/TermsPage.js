@@ -20,7 +20,7 @@ export default function TermsPage() {
           <h1 className="font-display font-black text-4xl text-foreground mb-2">Terms of Service</h1>
           <p className="text-xs text-muted-foreground">Last updated: December 1, 2025 · Magizh NexGen Technologies</p>
         </div>
-        <div className="glass-card rounded-2xl p-6 sm:p-10">
+        <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 sm:p-10">
           <Sec title="1. Acceptance of Terms">
             <p>By accessing HORIZON operated by Magizh NexGen Technologies, you agree to be bound by these Terms. If you disagree, please do not use our Service.</p>
           </Sec>

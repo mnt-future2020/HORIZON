@@ -27,7 +27,7 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="glass-card rounded-2xl p-8 mb-10">
+        <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-8 mb-10">
           <h2 className="font-display font-bold text-xl mb-4">About Magizh NexGen Technologies (MnT)</h2>
           <p className="text-muted-foreground leading-relaxed mb-4">
             Magizh NexGen Technologies is a Chennai-based technology company focused on building scalable digital infrastructure for the sports and fitness industry in India. We believe every amateur athlete deserves access to quality sports facilities without friction.
@@ -38,7 +38,7 @@ export default function AboutPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-          <div className="glass-card rounded-2xl p-6">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <Target className="w-5 h-5 text-primary" />
             </div>
@@ -47,7 +47,7 @@ export default function AboutPage() {
               To make booking a sports facility as easy as ordering food online — instant, transparent, and affordable for every Indian.
             </p>
           </div>
-          <div className="glass-card rounded-2xl p-6">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
               <Heart className="w-5 h-5 text-primary" />
             </div>
@@ -64,7 +64,7 @@ export default function AboutPage() {
             { icon: Users, value: "50K+", label: "Registered Lobbians" },
             { icon: Trophy, value: "4.8★", label: "Average Rating" },
           ].map(({ icon: Icon, value, label }) => (
-            <div key={label} className="glass-card rounded-xl p-5 text-center">
+            <div key={label} className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 text-center">
               <Icon className="w-6 h-6 text-primary mx-auto mb-2" />
               <div className="font-display font-black text-2xl text-primary">{value}</div>
               <div className="text-xs text-muted-foreground mt-1">{label}</div>
@@ -72,7 +72,7 @@ export default function AboutPage() {
           ))}
         </div>
 
-        <div className="glass-card rounded-2xl p-8">
+        <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-8">
           <h2 className="font-display font-bold text-xl mb-6">What HORIZON Offers</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[

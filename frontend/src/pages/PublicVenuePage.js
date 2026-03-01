@@ -27,7 +27,7 @@ const SPORT_LABELS = {
 
 const SPORT_COLORS = {
   football: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
-  cricket: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  cricket: "bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-300",
   badminton: "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
   basketball: "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300",
   tennis: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300",
@@ -332,7 +332,7 @@ export default function PublicVenuePage() {
           <div className="lg:col-span-2 space-y-6">
             {/* About */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-              <Card className={justUpdated ? "ring-2 ring-primary ring-offset-2 transition-all duration-500" : ""}>
+              <Card className={`rounded-[24px] border-border/40 shadow-sm ${justUpdated ? "ring-2 ring-primary ring-offset-2 transition-all duration-500" : ""}`}>
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-3">About This Venue</h2>
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-line text-justify">{venue.description}</p>
@@ -343,7 +343,7 @@ export default function PublicVenuePage() {
             {/* Amenities */}
             {venue.amenities?.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.1 }}>
-                <Card>
+                <Card className="rounded-[24px] border-border/40 shadow-sm">
                   <CardContent className="p-6">
                     <h2 className="text-xl font-semibold mb-4">Amenities</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -363,7 +363,7 @@ export default function PublicVenuePage() {
 
             {/* Location */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.2 }}>
-              <Card>
+              <Card className="rounded-[24px] border-border/40 shadow-sm">
                 <CardContent className="p-6">
                   <h2 className="text-xl font-semibold mb-4">Location</h2>
                   <div className="flex items-start gap-3">
@@ -393,7 +393,7 @@ export default function PublicVenuePage() {
             {/* Reviews */}
             {reviews.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.3 }}>
-                <Card>
+                <Card className="rounded-[24px] border-border/40 shadow-sm">
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-xl font-semibold">Reviews</h2>
@@ -462,7 +462,7 @@ export default function PublicVenuePage() {
           {/* Right: Booking Card */}
           <div className="space-y-4">
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.4 }}>
-              <Card className="sticky top-20">
+              <Card className="sticky top-20 rounded-[24px] border-border/40 shadow-sm">
                 <CardContent className="p-6 space-y-4">
                   {/* Price */}
                   <div className="text-center">
@@ -538,7 +538,7 @@ export default function PublicVenuePage() {
             </motion.div>
 
             {/* Sports supported */}
-            <Card>
+            <Card className="rounded-[24px] border-border/40 shadow-sm">
               <CardContent className="p-4">
                 <p className="text-sm font-medium mb-3">Sports Available</p>
                 <div className="flex flex-wrap gap-2">

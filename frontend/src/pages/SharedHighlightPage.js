@@ -13,7 +13,7 @@ const SIGNIFICANCE_ICONS = {
 
 const SIGNIFICANCE_COLORS = {
   goal: "text-amber-400 bg-amber-500/15", save: "text-sky-400 bg-sky-500/15",
-  rally: "text-violet-400 bg-violet-500/15", foul: "text-red-400 bg-red-500/15",
+  rally: "text-brand-400 bg-brand-500/15", foul: "text-red-400 bg-red-500/15",
   celebration: "text-brand-400 bg-brand-500/15", turning_point: "text-orange-400 bg-orange-500/15",
   skill_move: "text-cyan-400 bg-cyan-500/15", other: "text-muted-foreground bg-secondary/50",
 };
@@ -63,7 +63,7 @@ export default function SharedHighlightPage() {
         </div>
 
         {a.summary && (
-          <div className="glass-card rounded-xl p-5 mb-6" data-testid="shared-summary">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 mb-6" data-testid="shared-summary">
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Match Summary</span>
             <p className="text-sm mt-2 leading-relaxed">{a.summary}</p>
             {a.players_observed && <p className="text-xs text-muted-foreground mt-2">Lobbians: {a.players_observed}</p>}
@@ -81,7 +81,7 @@ export default function SharedHighlightPage() {
                 const color = SIGNIFICANCE_COLORS[m.significance] || SIGNIFICANCE_COLORS.other;
                 return (
                   <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.05 }} className="glass-card rounded-lg p-3 flex items-start gap-3">
+                    transition={{ delay: i * 0.05 }} className="rounded-2xl bg-card border border-border/40 shadow-sm p-3 flex items-start gap-3">
                     <div className="shrink-0 h-9 w-16 rounded-md bg-background flex items-center justify-center">
                       <span className="text-xs font-mono font-bold text-primary">{m.timestamp}</span>
                     </div>
