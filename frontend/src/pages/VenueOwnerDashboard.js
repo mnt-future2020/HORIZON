@@ -151,7 +151,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const isManageView = location.pathname === "/owner/manage";
   const searchParams = new URLSearchParams(location.search);
   const urlTab = searchParams.get("tab");
-  const VALID_TABS = ["bookings", "slots", "reviews", "pricing", "finance", "checkin", "plan", "payouts"];
+  const VALID_TABS = ["bookings", "slots", "reviews", "pricing", "finance", "checkin", "plan"];
   const activeTab = VALID_TABS.includes(urlTab) ? urlTab : "bookings";
   const setActiveTab = (tab) => {
     const sp = new URLSearchParams(location.search);
@@ -1037,7 +1037,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
           </TabsTrigger>
           <TabsTrigger value="plan" className="font-bold text-xs" data-testid="tab-plan">Plan</TabsTrigger>
           <TabsTrigger value="finance" className="font-bold text-xs" data-testid="tab-finance">Finance</TabsTrigger>
-          <TabsTrigger value="payouts" className="font-bold text-xs" data-testid="tab-payouts">Payouts</TabsTrigger>
         </TabsList>
 
         {/* Bookings - Enhanced with filters, detail view, and timeline */}
@@ -2534,185 +2533,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
         {/* ML Pricing Tab */}
 
-
-        {/* Payouts Tab */}
-        <TabsContent value="payouts" data-testid="payouts-tab-content">
-          <div className="space-y-6">
-            {/* Bank Account Section */}
-            <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-foreground">Bank Account</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Link your bank account to receive venue payouts</p>
-                </div>
-                {linkedAccount && (
-                  <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-500"}`}>
-                    {linkedAccount.status || "pending"}
-                  </Badge>
-                )}
-              </div>
-              {linkedAccount ? (
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Account</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.account_number || "****"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">IFSC</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.ifsc_code || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Name</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.beneficiary_name || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Bank</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.bank_name || "—"}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Account Number</Label>
-                      <Input value={bankForm.account_number} onChange={e => setBankForm(p => ({ ...p, account_number: e.target.value }))} placeholder="Enter account number" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">IFSC Code</Label>
-                      <Input value={bankForm.ifsc_code} onChange={e => setBankForm(p => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))} placeholder="e.g. SBIN0001234" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Beneficiary Name</Label>
-                      <Input value={bankForm.beneficiary_name} onChange={e => setBankForm(p => ({ ...p, beneficiary_name: e.target.value }))} placeholder="Name as on bank account" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Bank Name</Label>
-                      <Input value={bankForm.bank_name} onChange={e => setBankForm(p => ({ ...p, bank_name: e.target.value }))} placeholder="e.g. State Bank of India" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Phone</Label>
-                      <Input value={bankForm.phone} onChange={e => setBankForm(p => ({ ...p, phone: e.target.value }))} placeholder="10-digit phone" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Email</Label>
-                      <Input value={bankForm.email} onChange={e => setBankForm(p => ({ ...p, email: e.target.value }))} placeholder="your@email.com" className="mt-1" />
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    disabled={bankSaving || !bankForm.account_number || !bankForm.ifsc_code || !bankForm.beneficiary_name}
-                    onClick={async () => {
-                      setBankSaving(true);
-                      try {
-                        await payoutAPI.createLinkedAccount(bankForm);
-                        toast.success("Bank account linked successfully");
-                        loadPayoutData();
-                      } catch (err) { toast.error(err?.response?.data?.detail || "Failed to link account"); }
-                      finally { setBankSaving(false); }
-                    }}
-                    className="gap-2"
-                  >
-                    {bankSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Banknote className="h-4 w-4" />}
-                    Link Bank Account
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            {/* Payout Summary Cards */}
-            {payoutSummary && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <AthleticStatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} iconColor="primary" delay={0.1} />
-                <AthleticStatCard icon={CheckCircle} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} iconColor="emerald" delay={0.2} />
-                <AthleticStatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} iconColor="amber" delay={0.3} />
-                <AthleticStatCard icon={Banknote} label="Last Payout" value={payoutSummary.last_payout_amount ? `₹${payoutSummary.last_payout_amount.toLocaleString()}` : "—"} iconColor="sky" delay={0.4} />
-              </div>
-            )}
-
-            {/* Payout History */}
-            <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Payout History</p>
-              {myPayouts.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Banknote className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No payouts yet. Payouts are processed by the platform admin.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {myPayouts.map(p => (
-                    <motion.div
-                      key={p.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-card rounded-xl border border-border p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors"
-                      onClick={() => setPayoutDetailDialog(p)}
-                    >
-                      <div>
-                        <p className="text-sm font-bold text-foreground">₹{(p.net_amount || 0).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {p.period_start} → {p.period_end}
-                          {p.transfer_utr && <span className="ml-2 font-mono">UTR: {p.transfer_utr}</span>}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs font-bold rounded-full px-3 ${
-                          p.status === "completed" ? "bg-green-500/10 text-green-600" :
-                          p.status === "processing" ? "bg-blue-500/10 text-blue-600" :
-                          p.status === "failed" ? "bg-red-500/10 text-red-600" :
-                          "bg-secondary text-muted-foreground"
-                        }`}>
-                          {p.status}
-                        </Badge>
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Payout Detail Dialog */}
-            {payoutDetailDialog && (
-              <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
-                <DialogContent className="bg-card border-border max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Payout Details</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div><p className="text-xs text-muted-foreground">Period</p><p className="font-semibold">{payoutDetailDialog.period_start} → {payoutDetailDialog.period_end}</p></div>
-                      <div><p className="text-xs text-muted-foreground">Status</p><p className="font-semibold capitalize">{payoutDetailDialog.status}</p></div>
-                    </div>
-                    <div className="bg-secondary/30 rounded-xl p-4 space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-medium">₹{(payoutDetailDialog.gross_amount || 0).toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Commission ({payoutDetailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(payoutDetailDialog.commission_amount || 0).toLocaleString()}</span></div>
-                      <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-bold">Net Payout</span><span className="font-black text-green-600">₹{(payoutDetailDialog.net_amount || 0).toLocaleString()}</span></div>
-                    </div>
-                    {payoutDetailDialog.razorpay_transfer_id && (
-                      <p className="text-xs text-muted-foreground">Transfer: <span className="font-mono">{payoutDetailDialog.razorpay_transfer_id}</span></p>
-                    )}
-                    {payoutDetailDialog.transfer_utr && (
-                      <p className="text-xs text-muted-foreground">UTR: <span className="font-mono">{payoutDetailDialog.transfer_utr}</span></p>
-                    )}
-                    {payoutDetailDialog.line_items?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Items ({payoutDetailDialog.line_items.length})</p>
-                        <div className="max-h-48 overflow-y-auto space-y-1">
-                          {payoutDetailDialog.line_items.map((item, i) => (
-                            <div key={i} className="flex justify-between py-1.5 px-3 bg-secondary/20 rounded-lg text-xs">
-                              <span>{item.description || item.type} <span className="text-muted-foreground">{item.date}</span></span>
-                              <span className="font-semibold">₹{(item.net || 0).toLocaleString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
-          </div>
-        </TabsContent>
       </Tabs>
       )}
 
