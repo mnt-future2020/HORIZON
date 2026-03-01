@@ -15,8 +15,8 @@ import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Banknote, Eye, Lightbulb, Receipt, Wallet, Download, Phone } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, ArrowUpRight, ArrowDownRight, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Banknote, Eye, Lightbulb, Receipt, Wallet, Download, Phone } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 // Professional / venue owner imagery
 const OWNER_HERO = "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
@@ -465,6 +465,17 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const invoiceSubtotal = invoiceItems.reduce((s, i) => s + (parseFloat(i.qty) || 0) * (parseFloat(i.rate) || 0), 0);
   const invoiceGstAmt = invoiceForm.gst_enabled ? Math.round(invoiceSubtotal * gstSettings.gst_rate / 100 * 100) / 100 : 0;
   const invoiceTotal = Math.round((invoiceSubtotal + invoiceGstAmt) * 100) / 100;
+
+  // Load finance data when Finance tab is activated
+  useEffect(() => {
+    if (activeTab === "finance") {
+      loadFinanceSummary();
+      loadVenueExpenses();
+      loadVenueInvoices({ month: invoiceMonth });
+      loadVenueTransactions();
+      loadGstSettings();
+    }
+  }, [activeTab, loadFinanceSummary, loadVenueExpenses, loadVenueInvoices, loadVenueTransactions, loadGstSettings, invoiceMonth]);
 
   // Edit form helpers — reuse same factory
   const editH = makeVenueHelpers(setEditVenueForm, setEditSportInput, setEditAmenityInput);
