@@ -28,7 +28,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
       onClick={() => nav(`/player-card/${coach.id}`)}
-      className="rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md p-6 hover:border-primary/50 hover:scale-[1.02] hover:shadow-glow-sm transition-all duration-300 cursor-pointer group"
+      className="rounded-[28px] border border-border/40 bg-card shadow-sm p-6 hover:border-brand-600/40 hover:shadow-md transition-all duration-300 cursor-pointer group"
     >
       <div className="flex items-start gap-4">
         <div className="w-16 h-16 rounded-xl overflow-hidden bg-secondary shrink-0">
@@ -40,7 +40,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-display text-lg font-black text-foreground truncate group-hover:text-primary transition-colors">
+            <h3 className="font-medium text-lg text-foreground truncate group-hover:text-brand-600 transition-colors">
               {coach.name}
             </h3>
             {coach.avg_rating > 0 && (
@@ -65,7 +65,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
           </div>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1">
-          <div className="font-display text-lg font-black text-primary">
+          <div className="font-bold text-lg text-brand-600">
             ₹{coach.session_price || 500}
           </div>
           <div className="text-[10px] text-muted-foreground">
@@ -73,7 +73,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
           </div>
           <button
             onClick={e => { e.stopPropagation(); onBook(coach); }}
-            className="mt-1 text-[11px] font-bold px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+            className="mt-1 text-[11px] admin-btn px-3 py-1 rounded-full bg-brand-600/10 border border-brand-600/25 text-brand-600 hover:bg-brand-600 hover:text-white transition-colors"
           >
             Book
           </button>
@@ -367,7 +367,7 @@ export default function CoachListingPage() {
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
     </div>
   );
 
@@ -378,14 +378,13 @@ export default function CoachListingPage() {
         <div className="flex items-center justify-between mb-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Coaching</span>
-            <h1 className="font-display text-display-md font-black tracking-athletic mt-1">
-              Find a <span className="bg-gradient-athletic bg-clip-text text-transparent">Coach</span>
+            <h1 className="admin-page-title text-3xl mt-1">
+              Find a <span className="text-brand-600">Coach</span>
             </h1>
           </div>
           <Button
-            variant={showSessions ? "default" : "athletic-outline"}
+            className={showSessions ? "bg-brand-600 text-white admin-btn rounded-xl shadow-md shadow-brand-600/20 font-medium text-xs" : "border border-brand-600/40 text-brand-600 bg-transparent admin-btn rounded-xl font-medium text-xs hover:bg-brand-600/10"}
             onClick={() => setShowSessions(!showSessions)}
-            className="font-bold text-xs"
           >
             <Calendar className="h-3.5 w-3.5 mr-1.5" />
             My Sessions {upcomingSessions.length > 0 && `(${upcomingSessions.length})`}
@@ -407,7 +406,7 @@ export default function CoachListingPage() {
               <div className="space-y-2">
                 {mySubscriptions.map(sub => (
                   <motion.div key={sub.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="glass-card rounded-lg p-3 flex items-center justify-between">
+                    className="rounded-[28px] border border-border/40 bg-card shadow-sm p-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-bold">{sub.package_name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -426,12 +425,12 @@ export default function CoachListingPage() {
             </div>
           )}
           {upcomingSessions.length === 0 && pastSessions.length === 0 && mySubscriptions.length === 0 && (
-            <div className="text-center py-8 glass-card rounded-xl text-muted-foreground text-sm">
+            <div className="text-center py-8 rounded-[28px] border border-border/40 bg-card shadow-sm text-muted-foreground text-sm">
               No sessions yet. Book a coach below!
             </div>
           )}
           {upcomingSessions.map(s => (
-            <div key={s.id} className="glass-card rounded-xl p-4 flex items-center justify-between gap-3 border-l-4 border-l-sky-500">
+            <div key={s.id} className="rounded-[28px] border border-border/40 bg-card shadow-sm p-4 flex items-center justify-between gap-3 border-l-4 border-l-sky-500">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-bold text-sm">{s.coach_name}</span>
@@ -441,7 +440,7 @@ export default function CoachListingPage() {
                 <div className="text-xs text-muted-foreground flex items-center gap-3">
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} - {fmt12h(s.end_time)}</span>
-                  <span className="font-bold text-primary">₹{s.price}</span>
+                  <span className="font-bold text-brand-600">₹{s.price}</span>
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
@@ -470,11 +469,11 @@ export default function CoachListingPage() {
             placeholder="Search by name or city..."
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
-            className="pl-10 bg-background/50 border-2 border-border/50 h-10 rounded-xl font-semibold text-sm"
+            className="pl-10 bg-secondary/20 border-border/40 h-10 rounded-xl font-medium text-sm"
           />
         </div>
         <Select value={sportFilter} onValueChange={setSportFilter}>
-          <SelectTrigger className="w-40 bg-background/50 border-2 border-border/50 h-10 rounded-xl text-sm">
+          <SelectTrigger className="w-40 bg-secondary/20 border-border/40 h-10 rounded-xl text-sm">
             <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -503,7 +502,7 @@ export default function CoachListingPage() {
 
       {/* ─── Booking Dialog ─── */}
       <Dialog open={!!selectedCoach} onOpenChange={open => { if (!open) { setSelectedCoach(null); setSelectedSlot(null); setBookingTab("session"); } }}>
-        <DialogContent className="bg-card border-border max-w-lg max-h-[92vh] flex flex-col p-0 overflow-hidden gap-0">
+        <DialogContent className="bg-card border-border/40 max-w-lg max-h-[92vh] flex flex-col p-0 overflow-hidden gap-0 rounded-[28px]">
           {selectedCoach && (() => {
             const next14 = Array.from({ length: 14 }, (_, i) => {
               const d = new Date(); d.setDate(d.getDate() + i);
@@ -524,7 +523,7 @@ export default function CoachListingPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="font-display text-base font-black truncate">{selectedCoach.name}</h2>
+                      <h2 className="font-medium text-base truncate">{selectedCoach.name}</h2>
                       {selectedCoach.avg_rating > 0 && (
                         <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
                           <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{selectedCoach.avg_rating.toFixed(1)}
@@ -539,7 +538,7 @@ export default function CoachListingPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="font-black text-xl text-primary">₹{selectedCoach.session_price || 500}</p>
+                    <p className="font-bold text-xl text-brand-600">₹{selectedCoach.session_price || 500}</p>
                     <p className="text-[10px] text-muted-foreground">{selectedCoach.session_duration_minutes || 60} min</p>
                   </div>
                 </div>
@@ -552,7 +551,7 @@ export default function CoachListingPage() {
                   ].map(({ id, label, icon: Icon }) => (
                     <button key={id} onClick={() => setBookingTab(id)}
                       className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold border-b-2 transition-colors ${
-                        bookingTab === id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                        bookingTab === id ? "border-brand-600 text-brand-600" : "border-transparent text-muted-foreground hover:text-foreground"
                       }`}>
                       <Icon className="h-3.5 w-3.5" />{label}
                     </button>
@@ -574,13 +573,13 @@ export default function CoachListingPage() {
                             <button key={d.value} onClick={() => handleDateChange(d.value)}
                               className={`flex flex-col items-center shrink-0 w-[52px] py-2.5 rounded-xl border-2 transition-all ${
                                 selectedDate === d.value
-                                  ? "border-primary bg-primary/10 text-primary"
-                                  : "border-border/50 bg-background/50 hover:border-primary/40 text-foreground"
+                                  ? "border-brand-600 bg-brand-600/10 text-brand-600"
+                                  : "border-border/40 bg-background/50 hover:border-brand-600/40 text-foreground"
                               }`}>
-                              <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-primary" : "text-muted-foreground"}`}>{d.day}</span>
+                              <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-brand-600" : "text-muted-foreground"}`}>{d.day}</span>
                               <span className="text-lg font-black leading-tight">{d.date}</span>
-                              <span className={`text-[9px] ${selectedDate === d.value ? "text-primary/70" : "text-muted-foreground"}`}>{d.month}</span>
-                              {d.isToday && <span className="text-[8px] font-bold text-primary mt-0.5">Today</span>}
+                              <span className={`text-[9px] ${selectedDate === d.value ? "text-brand-600/70" : "text-muted-foreground"}`}>{d.month}</span>
+                              {d.isToday && <span className="text-[8px] admin-btn text-brand-600 mt-0.5">Today</span>}
                             </button>
                           ))}
                         </div>
@@ -591,7 +590,7 @@ export default function CoachListingPage() {
                         <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Available Slots</p>
                         {slotsLoading ? (
                           <div className="flex items-center justify-center py-10">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
                           </div>
                         ) : coachSlots.length === 0 ? (
                           <div className="flex flex-col items-center justify-center py-10 rounded-xl bg-secondary/20 border border-dashed border-border">
@@ -607,13 +606,13 @@ export default function CoachListingPage() {
                                 disabled={!slot.available}
                                 className={`flex flex-col items-center px-2 py-3 rounded-xl border-2 text-xs font-bold transition-all ${
                                   selectedSlot?.start_time === slot.start_time
-                                    ? "border-primary bg-primary/10 text-primary shadow-sm"
+                                    ? "border-brand-600 bg-brand-600/10 text-brand-600 shadow-sm"
                                     : slot.available
-                                      ? "border-border/50 bg-background hover:border-primary/50 hover:bg-primary/5"
+                                      ? "border-border/40 bg-background hover:border-brand-600/50 hover:bg-brand-600/5"
                                       : "border-border/20 bg-secondary/20 text-muted-foreground/40 cursor-not-allowed"
                                 }`}>
                                 <span className={slot.available ? "" : "line-through"}>{slot.start_time}</span>
-                                <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-primary/70" : "text-muted-foreground"}`}>
+                                <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-brand-600/70" : "text-muted-foreground"}`}>
                                   {slot.end_time}
                                 </span>
                                 {!slot.available && <span className="text-[9px] text-red-400/70 mt-0.5">Booked</span>}
@@ -628,9 +627,9 @@ export default function CoachListingPage() {
                         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
                           {/* Sport */}
                           {slotSports.length === 1 ? (
-                            <div className="flex items-center gap-2 px-3 py-2.5 bg-primary/8 border border-primary/20 rounded-xl">
-                              <CheckCircle className="h-4 w-4 text-primary shrink-0" />
-                              <span className="text-sm font-bold capitalize text-primary">{slotSports[0].replace("_", " ")}</span>
+                            <div className="flex items-center gap-2 px-3 py-2.5 bg-brand-600/10 border border-brand-600/20 rounded-xl">
+                              <CheckCircle className="h-4 w-4 text-brand-600 shrink-0" />
+                              <span className="text-sm font-bold capitalize text-brand-600">{slotSports[0].replace("_", " ")}</span>
                               <span className="text-xs text-muted-foreground ml-1">Sport</span>
                             </div>
                           ) : (
@@ -640,7 +639,7 @@ export default function CoachListingPage() {
                                 {slotSports.map(s => (
                                   <button key={s} onClick={() => setBookingSport(s)}
                                     className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 transition-all capitalize ${
-                                      bookingSport === s ? "border-primary bg-primary/10 text-primary" : "border-border/50 hover:border-primary/40"
+                                      bookingSport === s ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/40 hover:border-brand-600/40"
                                     }`}>
                                     {s.replace("_", " ")}
                                   </button>
@@ -651,7 +650,7 @@ export default function CoachListingPage() {
                           {/* Notes */}
                           <Input value={bookingNotes} onChange={e => setBookingNotes(e.target.value)}
                             placeholder="What do you want to work on? (optional)"
-                            className="bg-background border-border text-sm" />
+                            className="bg-secondary/20 border-border/40 rounded-xl text-sm" />
                         </motion.div>
                       )}
                     </div>
@@ -661,14 +660,14 @@ export default function CoachListingPage() {
                   {bookingTab === "packages" && (
                     <div className="p-4 space-y-3">
                       {coachPackages.map(pkg => (
-                        <div key={pkg.id} className={`rounded-xl border-2 p-4 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 bg-card"}`}>
+                        <div key={pkg.id} className={`rounded-[28px] border p-4 transition-all ${pkg.subscribed ? "border-brand-600/30 bg-brand-600/5" : "border-border/40 bg-card"}`}>
                           <div className="flex items-start justify-between gap-3 mb-2">
                             <div className="min-w-0">
                               <p className="font-bold text-sm truncate">{pkg.name}</p>
                               <p className="text-xs text-muted-foreground">{pkg.sessions_per_month} sessions · {pkg.duration_minutes || 60} min each</p>
                             </div>
                             <div className="text-right shrink-0">
-                              <p className="font-black text-lg text-primary">₹{(pkg.price || 0).toLocaleString()}</p>
+                              <p className="font-bold text-lg text-brand-600">₹{(pkg.price || 0).toLocaleString()}</p>
                               <p className="text-[10px] text-muted-foreground">/month</p>
                             </div>
                           </div>
@@ -679,12 +678,12 @@ export default function CoachListingPage() {
                             </div>
                           )}
                           {pkg.subscribed ? (
-                            <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-primary/10">
-                              <CheckCircle className="h-4 w-4 text-primary" />
-                              <span className="text-xs font-bold text-primary">Subscribed · {pkg.sessions_remaining} sessions left</span>
+                            <div className="flex items-center gap-2 py-2 px-3 rounded-xl bg-brand-600/10">
+                              <CheckCircle className="h-4 w-4 text-brand-600" />
+                              <span className="text-xs font-bold text-brand-600">Subscribed · {pkg.sessions_remaining} sessions left</span>
                             </div>
                           ) : (
-                            <Button className="w-full h-9 text-xs font-bold bg-primary text-primary-foreground"
+                            <Button className="w-full h-9 text-xs admin-btn bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
                               onClick={() => handleSubscribe(pkg)} disabled={subscribing}>
                               {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Package className="h-3.5 w-3.5 mr-1.5" />}
                               Subscribe · ₹{(pkg.price || 0).toLocaleString()}/mo
@@ -706,10 +705,10 @@ export default function CoachListingPage() {
                           {" · "}{fmt12h(selectedSlot.start_time)} – {fmt12h(selectedSlot.end_time)}
                           {" · "}<span className="capitalize">{bookingSport.replace("_", " ")}</span>
                         </span>
-                        <span className="font-black text-primary">₹{selectedCoach.session_price || 500}</span>
+                        <span className="font-bold text-brand-600">₹{selectedCoach.session_price || 500}</span>
                       </div>
                     )}
-                    <Button className="w-full h-12 font-bold text-base bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover"
+                    <Button className="w-full h-12 admin-btn text-base bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                       disabled={!selectedSlot || booking} onClick={handleBook}>
                       {booking
                         ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Confirming...</>
@@ -718,7 +717,7 @@ export default function CoachListingPage() {
                           : "Select a slot to continue"}
                     </Button>
                     <Link to={`/player-card/${selectedCoach.id}`}
-                      className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-primary mt-2 transition-colors">
+                      className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-brand-600 mt-2 transition-colors">
                       View full profile <ChevronRight className="h-3 w-3" />
                     </Link>
                   </div>
@@ -731,9 +730,9 @@ export default function CoachListingPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={!!qrData} onOpenChange={open => { if (!open) setQrData(null); }}>
-        <DialogContent className="bg-card border-border max-w-xs text-center">
+        <DialogContent className="bg-card border-border/40 max-w-xs text-center rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="font-display">Check-in QR Code</DialogTitle>
+            <DialogTitle className="admin-heading">Check-in QR Code</DialogTitle>
           </DialogHeader>
           {qrData && (
             <div className="space-y-4">
@@ -762,12 +761,12 @@ export default function CoachListingPage() {
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-2xl border border-border/50 overflow-hidden"
+              className="w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-[28px] border border-border/40 overflow-hidden"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
               <div className="px-5 py-4 border-b border-border/40 flex items-center justify-between">
-                <h2 className="font-display font-black text-lg">
+                <h2 className="font-medium text-lg">
                   {payStep === "done" ? "Booking Confirmed!" :
                    payStep === "processing" ? "Processing Payment..." :
                    "Complete Payment"}
@@ -784,8 +783,8 @@ export default function CoachListingPage() {
                 {/* Processing */}
                 {payStep === "processing" && (
                   <div className="flex flex-col items-center py-8 gap-4">
-                    <div className="w-16 h-16 rounded-full border-4 border-primary/20 flex items-center justify-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <div className="w-16 h-16 rounded-full border-4 border-brand-600/20 flex items-center justify-center">
+                      <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
                     </div>
                     <p className="text-sm text-muted-foreground text-center">Confirming your booking...</p>
                     <p className="text-xs text-muted-foreground/60">Please do not close this window</p>
@@ -795,10 +794,10 @@ export default function CoachListingPage() {
                 {/* Review — Session */}
                 {payStep === "review" && pendingSession && (
                   <div className="space-y-5">
-                    <div className="rounded-2xl border-2 border-border/50 bg-card/50 p-5 space-y-3">
+                    <div className="rounded-[28px] border border-border/40 bg-card p-5 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Coach</span>
-                        <span className="font-display font-black text-sm">{pendingSession.coach_name || selectedCoach?.name}</span>
+                        <span className="font-medium text-sm">{pendingSession.coach_name || selectedCoach?.name}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Date</span>
@@ -818,7 +817,7 @@ export default function CoachListingPage() {
                       )}
                       <div className="flex justify-between items-center pt-3 border-t border-border/50">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Total</span>
-                        <span className="font-display font-black text-2xl text-primary">₹{pendingSession.price}</span>
+                        <span className="font-bold text-2xl text-brand-600">₹{pendingSession.price}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Status</span>
@@ -832,7 +831,7 @@ export default function CoachListingPage() {
 
                     <button
                       onClick={handleTestSessionPayment}
-                      className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-black uppercase tracking-wide text-sm flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg transition-all"
+                      className="w-full h-14 rounded-xl bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                     >
                       Confirm Payment · ₹{pendingSession.price}
                     </button>
@@ -842,10 +841,10 @@ export default function CoachListingPage() {
                 {/* Review — Subscription */}
                 {payStep === "review" && pendingSubPkg && !pendingSession && (
                   <div className="space-y-5">
-                    <div className="rounded-2xl border-2 border-border/50 bg-card/50 p-5 space-y-3">
+                    <div className="rounded-[28px] border border-border/40 bg-card p-5 space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Coach</span>
-                        <span className="font-display font-black text-sm">{selectedCoach?.name || "Coach"}</span>
+                        <span className="font-medium text-sm">{selectedCoach?.name || "Coach"}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Package</span>
@@ -861,7 +860,7 @@ export default function CoachListingPage() {
                       </div>
                       <div className="flex justify-between items-center pt-3 border-t border-border/50">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Total</span>
-                        <span className="font-display font-black text-2xl text-primary">₹{(pendingSubPkg.sub_price || pendingSubPkg.price || 0).toLocaleString()}</span>
+                        <span className="font-bold text-2xl text-brand-600">₹{(pendingSubPkg.sub_price || pendingSubPkg.price || 0).toLocaleString()}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Status</span>
@@ -875,7 +874,7 @@ export default function CoachListingPage() {
 
                     <button
                       onClick={handleTestSubPayment}
-                      className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-black uppercase tracking-wide text-sm flex items-center justify-center gap-2 hover:bg-primary/90 shadow-lg transition-all"
+                      className="w-full h-14 rounded-xl bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                     >
                       Confirm Payment · ₹{(pendingSubPkg.sub_price || pendingSubPkg.price || 0).toLocaleString()}/mo
                     </button>
@@ -889,7 +888,7 @@ export default function CoachListingPage() {
                       <div className="w-16 h-16 rounded-full bg-green-500/10 border-2 border-green-500/20 flex items-center justify-center">
                         <CheckCircle className="h-8 w-8 text-green-500" />
                       </div>
-                      <p className="font-display font-black text-lg">
+                      <p className="font-medium text-lg">
                         {pendingSession ? "Session Confirmed!" : "Subscription Active!"}
                       </p>
                       <p className="text-sm text-muted-foreground text-center">
@@ -900,7 +899,7 @@ export default function CoachListingPage() {
                     </div>
                     <button
                       onClick={closePaymentReview}
-                      className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold text-sm hover:bg-primary/90 transition-all"
+                      className="w-full h-12 rounded-xl bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all"
                     >
                       Done
                     </button>
@@ -929,7 +928,7 @@ function SessionReviewCard({ session, onReview }) {
   };
 
   return (
-    <div className="glass-card rounded-xl p-4 opacity-80">
+    <div className="rounded-[28px] border border-border/40 bg-card shadow-sm p-4 opacity-80">
       <div className="flex items-center justify-between gap-3 mb-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -962,7 +961,7 @@ function SessionReviewCard({ session, onReview }) {
             placeholder="Quick review..."
             value={review}
             onChange={e => setReview(e.target.value)}
-            className="h-7 text-xs flex-1 min-w-[120px] bg-background border-border"
+            className="h-7 text-xs flex-1 min-w-[120px] bg-secondary/20 border-border/40 rounded-xl"
           />
           <Button size="sm" className="h-7 text-[10px] font-bold" onClick={handleSubmit} disabled={submitting}>
             {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}

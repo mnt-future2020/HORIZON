@@ -19,13 +19,13 @@ const SPORTS = [
 function getTier(rating) {
   if (rating >= 2500) return { label: "Diamond", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20" };
   if (rating >= 2000) return { label: "Gold", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20" };
-  if (rating >= 1500) return { label: "Silver", color: "text-slate-300", bg: "bg-slate-400/10 border-slate-400/20" };
+  if (rating >= 1500) return { label: "Silver", color: "text-muted-foreground", bg: "bg-secondary border-border/40" };
   return { label: "Bronze", color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20" };
 }
 
 function getRankIcon(rank) {
   if (rank === 1) return <Trophy className="h-5 w-5 text-amber-400" />;
-  if (rank === 2) return <Medal className="h-5 w-5 text-slate-300" />;
+  if (rank === 2) return <Medal className="h-5 w-5 text-muted-foreground" />;
   if (rank === 3) return <Medal className="h-5 w-5 text-orange-400" />;
   return <span className="text-sm font-mono text-muted-foreground w-5 text-center">{rank}</span>;
 }
@@ -76,7 +76,7 @@ export default function LeaderboardPage() {
 
       {myRank > 0 && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="glass-card rounded-lg p-4 mb-6 border-primary/30" data-testid="my-rank-card">
+          className="rounded-[24px] bg-card border border-primary/30 shadow-sm p-6 mb-6" data-testid="my-rank-card">
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary font-display font-black text-lg">
               #{myRank}
@@ -129,14 +129,14 @@ export default function LeaderboardPage() {
                 transition={{ delay: i * 0.03 }}
                 data-testid={`leaderboard-row-${p.id}`}
                 onClick={() => navigate(`/rating-profile/${p.id}`)}
-                className={`flex items-center gap-4 px-4 py-3 rounded-lg transition-colors cursor-pointer ${
-                  isMe ? "glass-card border-primary/30" : "hover:bg-secondary/30"
-                } ${i < 3 ? "glass-card" : ""}`}>
+                className={`flex items-center gap-4 px-4 py-3 rounded-[24px] cursor-pointer hover:shadow-sm transition-all duration-300 ${
+                  isMe ? "bg-card border border-primary/30 shadow-sm" : "hover:bg-secondary/30"
+                } ${i < 3 ? "rounded-[24px] bg-card border border-border/40 shadow-sm p-6" : ""}`}>
                 <div className="w-8 flex items-center justify-center">{getRankIcon(p.rank)}</div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                      i === 0 ? "bg-amber-500/20 text-amber-400" : i === 1 ? "bg-slate-400/20 text-slate-300" : i === 2 ? "bg-orange-500/20 text-orange-400" : "bg-secondary text-muted-foreground"
+                      i === 0 ? "bg-amber-500/20 text-amber-400" : i === 1 ? "bg-secondary text-muted-foreground" : i === 2 ? "bg-orange-500/20 text-orange-400" : "bg-secondary text-muted-foreground"
                     }`}>
                       {p.name?.[0]?.toUpperCase()}
                     </div>

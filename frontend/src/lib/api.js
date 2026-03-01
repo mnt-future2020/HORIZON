@@ -668,4 +668,28 @@ export const payoutAPI = {
   adminLinkedAccount: (userId) => api.get(`/payouts/linked-account/${userId}`),
 };
 
+// ─── Venue Finance & Invoices ────────────────────────────────────────────────
+
+export const venueFinanceAPI = {
+  // Expenses
+  createExpense: (data) => api.post("/venue-finance/expenses", data),
+  listExpenses: (params) => api.get("/venue-finance/expenses", { params }),
+  updateExpense: (id, data) => api.put(`/venue-finance/expenses/${id}`, data),
+  deleteExpense: (id) => api.delete(`/venue-finance/expenses/${id}`),
+  // Finance summary
+  financeSummary: (params) => api.get("/venue-finance/analytics/finance-summary", { params }),
+  // Transactions
+  listTransactions: (params) => api.get("/venue-finance/transactions", { params }),
+  // Invoices
+  createInvoice: (data) => api.post("/venue-finance/invoices", data),
+  listInvoices: (params) => api.get("/venue-finance/invoices", { params }),
+  updateInvoice: (id, data) => api.put(`/venue-finance/invoices/${id}`, data),
+  deleteInvoice: (id) => api.delete(`/venue-finance/invoices/${id}`),
+  markInvoicePaid: (id) => api.post(`/venue-finance/invoices/${id}/mark-paid`),
+  getInvoicePdf: (id) => api.get(`/venue-finance/invoices/${id}/pdf`, { responseType: "blob" }),
+  sendInvoiceWhatsapp: (id) => api.post(`/venue-finance/invoices/${id}/send-whatsapp`),
+  getGstSettings: () => api.get("/venue-finance/settings/gst"),
+  saveGstSettings: (data) => api.put("/venue-finance/settings/gst", data),
+};
+
 export default api;

@@ -174,18 +174,18 @@ export default function CoachSettingsPage() {
           <ArrowLeft className="h-4 w-4 mr-1" /> Back
         </Button>
         <div>
-          <h1 className="font-display text-xl font-black">Coach Settings</h1>
+          <h1 className="admin-page-title text-xl">Coach Settings</h1>
           <p className="text-xs text-muted-foreground">Availability · WhatsApp · Sports</p>
         </div>
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 bg-secondary/20 p-1 rounded-xl mb-6">
+      <div className="flex gap-1 bg-secondary/20 p-1 rounded-[28px] mb-6">
         {TABS.map(t => {
           const Icon = t.icon;
           return (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${tab === t.id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${tab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "text-muted-foreground hover:text-foreground"}`}>
               <Icon className="h-3.5 w-3.5" />
               {t.label}
             </button>
@@ -204,7 +204,7 @@ export default function CoachSettingsPage() {
                 <h2 className="font-bold text-sm">Weekly Availability</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">Set your available time slots</p>
               </div>
-              <Button size="sm" className="bg-primary text-primary-foreground font-bold text-xs h-8"
+              <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-8 shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
                 onClick={() => { setForm({ days_of_week: [], start_time: "09:00", end_time: "10:00", sports: [] }); setAddOpen(true); }}>
                 <Plus className="h-3.5 w-3.5 mr-1" /> Add Slot
               </Button>
@@ -225,11 +225,11 @@ export default function CoachSettingsPage() {
                   const daySlots = slots.filter(s => s.day_of_week === dayIdx);
                   if (!daySlots.length) return null;
                   return (
-                    <div key={dayIdx} className="glass-card rounded-lg p-3">
+                    <div key={dayIdx} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3">
                       <span className="font-bold text-xs uppercase tracking-wider text-muted-foreground">{day}</span>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {daySlots.map(slot => (
-                          <div key={slot.id} className="flex items-center gap-2 bg-secondary/30 rounded-lg px-3 py-1.5 text-xs font-bold">
+                          <div key={slot.id} className="flex items-center gap-2 bg-secondary/30 rounded-xl px-3 py-1.5 text-xs admin-btn">
                             <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
                             <span>{slot.start_time} - {slot.end_time}</span>
                             {(slot.sports || []).map(s => (
@@ -248,8 +248,8 @@ export default function CoachSettingsPage() {
 
             {/* Add Availability Dialog */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-              <DialogContent className="bg-card border-border max-w-sm">
-                <DialogHeader><DialogTitle className="font-display">Add Availability Slot</DialogTitle></DialogHeader>
+              <DialogContent className="bg-card border-border/40 max-w-sm rounded-[28px]">
+                <DialogHeader><DialogTitle className="admin-heading">Add Availability Slot</DialogTitle></DialogHeader>
                 <div className="space-y-4">
                   {/* Days */}
                   <div>
@@ -265,7 +265,7 @@ export default function CoachSettingsPage() {
                               className={`px-2 py-0.5 rounded-md text-[9px] font-bold border transition-all ${
                                 availableDays.length === 0
                                   ? "border-border text-muted-foreground/30 cursor-not-allowed opacity-40"
-                                  : "border-border text-muted-foreground hover:border-primary/40 hover:text-primary"
+                                  : "border-border/40 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"
                               }`}>
                               {label}
                             </button>
@@ -289,8 +289,8 @@ export default function CoachSettingsPage() {
                               taken
                                 ? "border-border/30 text-muted-foreground/30 bg-muted/20 cursor-not-allowed line-through"
                                 : selected
-                                  ? "bg-primary/15 border-primary/50 text-primary"
-                                  : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                                  ? "bg-brand-600/15 border-brand-600/50 text-brand-600"
+                                  : "border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
                             }`}>
                             {day}
                             {taken && (
@@ -317,8 +317,8 @@ export default function CoachSettingsPage() {
                           onClick={() => setForm(p => ({ ...p, start_time: preset.start, end_time: preset.end }))}
                           className={`py-1.5 rounded-lg text-[10px] font-bold border transition-all ${
                             activePreset?.label === preset.label
-                              ? "bg-primary/15 border-primary/50 text-primary"
-                              : "border-border text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                              ? "bg-brand-600/15 border-brand-600/50 text-brand-600"
+                              : "border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
                           }`}>
                           {preset.label}
                         </button>
@@ -327,11 +327,11 @@ export default function CoachSettingsPage() {
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label className="text-[10px] text-muted-foreground">Custom start</Label>
-                        <Input type="time" value={form.start_time} onChange={e => setForm(p => ({ ...p, start_time: e.target.value }))} className="mt-1 h-8 text-xs bg-background border-border" />
+                        <Input type="time" value={form.start_time} onChange={e => setForm(p => ({ ...p, start_time: e.target.value }))} className="mt-1 h-8 text-xs bg-secondary/20 border-border/40 rounded-xl" />
                       </div>
                       <div>
                         <Label className="text-[10px] text-muted-foreground">Custom end</Label>
-                        <Input type="time" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} className="mt-1 h-8 text-xs bg-background border-border" />
+                        <Input type="time" value={form.end_time} onChange={e => setForm(p => ({ ...p, end_time: e.target.value }))} className="mt-1 h-8 text-xs bg-secondary/20 border-border/40 rounded-xl" />
                       </div>
                     </div>
                   </div>
@@ -343,7 +343,7 @@ export default function CoachSettingsPage() {
                       {(coachSports.length ? coachSports : ALL_SPORTS.slice(0, 8)).map(sport => (
                         <button key={sport} type="button" onClick={() => toggleFormSport(sport)}
                           className={`px-2.5 py-1 rounded-full text-[10px] font-bold border transition-all capitalize ${
-                            form.sports.includes(sport) ? "bg-primary/15 border-primary/40 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                            form.sports.includes(sport) ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "border-border/40 text-muted-foreground hover:text-foreground"
                           }`}>
                           {sport.replace("_", " ")}
                         </button>
@@ -355,11 +355,11 @@ export default function CoachSettingsPage() {
                   </div>
 
                   {form.days_of_week.length > 1 && (
-                    <p className="text-[10px] text-muted-foreground bg-primary/5 border border-primary/20 rounded-lg px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground bg-brand-600/5 border border-brand-600/20 rounded-xl px-3 py-2">
                       {form.days_of_week.length} slots will be created — one for each selected day.
                     </p>
                   )}
-                  <Button className="w-full bg-primary text-primary-foreground font-bold"
+                  <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                     disabled={saving || form.days_of_week.length === 0 || form.sports.length === 0}
                     onClick={handleAddSlot}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -393,7 +393,7 @@ export default function CoachSettingsPage() {
                   const cfg = waSettings[a.key] || {};
                   const enabled = cfg.enabled ?? false;
                   return (
-                    <div key={a.key} className={`glass-card rounded-xl p-4 border transition-all ${enabled ? "border-primary/20" : "border-border/40 opacity-70"}`}>
+                    <div key={a.key} className={`rounded-[24px] bg-card shadow-sm p-4 border transition-all ${enabled ? "border-brand-600/20" : "border-border/40 opacity-70"}`}>
                       <div className="flex items-start gap-3">
                         <span className="text-xl mt-0.5 shrink-0">{a.icon}</span>
                         <div className="flex-1 min-w-0">
@@ -403,8 +403,8 @@ export default function CoachSettingsPage() {
                               <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{a.desc}</p>
                             </div>
                             <button onClick={() => handleWaToggle(a.key, !enabled)}
-                              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${enabled ? "bg-primary" : "bg-muted"}`}>
-                              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
+                              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${enabled ? "bg-brand-600" : "bg-muted"}`}>
+                              <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-card rounded-full shadow transition-transform ${enabled ? "translate-x-5" : "translate-x-0"}`} />
                             </button>
                           </div>
                           {a.config && enabled && (
@@ -412,7 +412,7 @@ export default function CoachSettingsPage() {
                               <span className="text-xs text-muted-foreground">{a.config.label}:</span>
                               <Select value={String(cfg[a.config.field] ?? a.config.options[0].v)}
                                 onValueChange={v => handleWaConfig(a.key, a.config.field, Number(v))}>
-                                <SelectTrigger className="h-7 text-xs w-36 bg-background border-border">
+                                <SelectTrigger className="h-7 text-xs w-36 bg-secondary/20 border-border/40 rounded-lg">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -439,7 +439,7 @@ export default function CoachSettingsPage() {
                   </div>
                   <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                     {waLogs.slice(0, 20).map(log => (
-                      <div key={log.id} className="flex items-center gap-2 px-3 py-2 glass-card rounded-lg">
+                      <div key={log.id} className="flex items-center gap-2 px-3 py-2 rounded-[28px] bg-card border border-border/40 shadow-sm">
                         <span className="text-base shrink-0">{ICON_MAP[log.automation_type] || "📨"}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{log.client_name}</p>
@@ -494,7 +494,7 @@ export default function CoachSettingsPage() {
                 const isCustom = !ALL_SPORTS.includes(sport);
                 return (
                   <button key={sport} onClick={() => toggleSport(sport)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border-2 transition-all capitalize ${active ? "bg-primary border-primary text-primary-foreground" : "border-border text-muted-foreground hover:border-primary/50 hover:text-foreground"}`}>
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold border transition-all capitalize ${active ? "bg-brand-600 border-brand-600 text-white shadow-md shadow-brand-600/20" : "border-border/40 text-muted-foreground hover:border-brand-600/50 hover:text-foreground"}`}>
                     {active && <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />}
                     {sport.replace(/_/g, " ")}
                     {isCustom && <span className="ml-1 text-[9px] opacity-60">custom</span>}
@@ -510,7 +510,7 @@ export default function CoachSettingsPage() {
                 value={customSportInput}
                 onChange={e => setCustomSportInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleAddCustomSport()}
-                className="h-9 text-sm bg-background border-border flex-1"
+                className="h-9 text-sm bg-secondary/20 border-border/40 rounded-xl flex-1"
               />
               <Button size="sm" variant="outline" onClick={handleAddCustomSport}
                 disabled={!customSportInput.trim()}
@@ -520,11 +520,11 @@ export default function CoachSettingsPage() {
             </div>
 
             {coachSports.length > 0 && (
-              <div className="glass-card rounded-xl p-3">
+              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4">
                 <p className="text-xs text-muted-foreground mb-2">Selected ({coachSports.length}) — these are the only sports shown in all your forms</p>
                 <div className="flex flex-wrap gap-1.5">
                   {coachSports.map(s => (
-                    <Badge key={s} className="bg-primary/10 text-primary border-primary/20 capitalize text-xs">
+                    <Badge key={s} className="bg-brand-600/10 text-brand-600 border-brand-600/20 capitalize text-xs admin-btn">
                       {s.replace(/_/g, " ")}
                       <button className="ml-1.5 opacity-60 hover:opacity-100" onClick={() => toggleSport(s)}>
                         <X className="h-2.5 w-2.5" />
@@ -535,7 +535,7 @@ export default function CoachSettingsPage() {
               </div>
             )}
 
-            <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveSports} disabled={sportsSaving}>
+            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveSports} disabled={sportsSaving}>
               {sportsSaving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Sports
             </Button>

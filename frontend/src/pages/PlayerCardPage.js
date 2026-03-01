@@ -30,13 +30,13 @@ const BADGE_ICONS = {
 
 const BADGE_COLORS = {
   Century: "text-amber-400 bg-amber-400/10 border-amber-400/30",
-  Veteran: "text-violet-400 bg-violet-400/10 border-violet-400/30",
-  Regular: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  Veteran: "text-brand-400 bg-brand-400/10 border-brand-400/30",
+  Regular: "text-brand-400 bg-brand-400/10 border-brand-400/30",
   Elite: "text-amber-400 bg-amber-400/10 border-amber-400/30",
   Pro: "text-green-400 bg-green-400/10 border-green-400/30",
   Reliable: "text-sky-400 bg-sky-400/10 border-sky-400/30",
   Champion: "text-red-400 bg-red-400/10 border-red-400/30",
-  Verified: "text-blue-400 bg-blue-400/10 border-blue-400/30",
+  Verified: "text-brand-400 bg-brand-400/10 border-brand-400/30",
 };
 
 export default function PlayerCardPage() {
@@ -305,7 +305,7 @@ export default function PlayerCardPage() {
   const getRatingTier = (rating) => {
     if (rating >= 2000) return { name: "Elite", color: "text-amber-400" };
     if (rating >= 1700) return { name: "Pro", color: "text-green-400" };
-    if (rating >= 1400) return { name: "Intermediate", color: "text-blue-400" };
+    if (rating >= 1400) return { name: "Intermediate", color: "text-brand-400" };
     return { name: "Beginner", color: "text-muted-foreground" };
   };
 
@@ -315,7 +315,7 @@ export default function PlayerCardPage() {
     if (t === "loss" || t === "defeat") return "bg-red-500/10 text-red-400 border-red-500/20";
     if (t === "draw") return "bg-muted/50 text-muted-foreground border-border/30";
     if (t === "tournament") return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-    if (t === "training") return "bg-violet-500/10 text-violet-400 border-violet-500/20";
+    if (t === "training") return "bg-brand-500/10 text-brand-400 border-brand-500/20";
     return "bg-primary/10 text-primary border-primary/20";
   };
 
@@ -366,7 +366,7 @@ export default function PlayerCardPage() {
           initial={{ opacity: 0, y: 30, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-          className="rounded-3xl border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden shadow-lg"
+          className="rounded-[24px] border border-primary/20 bg-gradient-to-br from-card via-card to-primary/5 overflow-hidden shadow-lg"
         >
           {/* Header */}
           <div className="p-8 pb-6 text-center relative">
@@ -393,7 +393,7 @@ export default function PlayerCardPage() {
             <h1 className="font-display text-2xl font-black tracking-athletic flex items-center justify-center gap-1.5">
               {card.name}
               {card.is_verified && (
-                <BadgeCheck className="h-5 w-5 text-blue-400 shrink-0" />
+                <BadgeCheck className="h-5 w-5 text-brand-400 shrink-0" />
               )}
             </h1>
 
@@ -454,13 +454,13 @@ export default function PlayerCardPage() {
                     <Badge key={s} variant="secondary" className="text-xs capitalize font-bold">{s.replace(/_/g, " ")}</Badge>
                   ))}
                   {coachData.years_of_experience > 0 && (
-                    <Badge className="text-xs font-bold bg-violet-500/10 text-violet-400 border-violet-500/20">
+                    <Badge className="text-xs font-bold bg-brand-500/10 text-brand-400 border-brand-500/20">
                       {coachData.years_of_experience}+ yrs exp
                     </Badge>
                   )}
                 </div>
               ) : coachData?.years_of_experience > 0 ? (
-                <Badge className="mt-3 text-xs font-bold bg-violet-500/10 text-violet-400 border-violet-500/20">
+                <Badge className="mt-3 text-xs font-bold bg-brand-500/10 text-brand-400 border-brand-500/20">
                   {coachData.years_of_experience}+ yrs exp
                 </Badge>
               ) : null
@@ -530,14 +530,14 @@ export default function PlayerCardPage() {
           {/* Overall Skill Score — players only */}
           {card.role !== "coach" && card.overall_score !== undefined && (
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-              className="rounded-2xl border-2 border-border/50 bg-card/80 backdrop-blur-md p-6 mb-6">
+              className="rounded-[24px] border border-border/40 bg-card/80 backdrop-blur-md p-6 mb-6 shadow-sm">
               <div className="flex items-center gap-6">
                 <div className="relative w-24 h-24 shrink-0">
                   <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/20" />
                     <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
                       strokeDasharray={`${card.overall_score * 2.64} 264`} strokeLinecap="round"
-                      className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-violet-400" : card.overall_score >= 51 ? "text-brand-400" : card.overall_score >= 31 ? "text-blue-400" : "text-muted-foreground"} />
+                      className={card.overall_score >= 86 ? "text-amber-400" : card.overall_score >= 71 ? "text-brand-400" : card.overall_score >= 51 ? "text-brand-400" : card.overall_score >= 31 ? "text-brand-400" : "text-muted-foreground"} />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="font-display text-2xl font-black">{card.overall_score}</span>
@@ -547,7 +547,7 @@ export default function PlayerCardPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <h3 className="font-display text-lg font-black">Overall Rating</h3>
-                    <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-violet-400/20 text-violet-400" : card.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" : card.overall_score >= 31 ? "bg-blue-400/20 text-blue-400" : "bg-muted text-muted-foreground"}`}>
+                    <Badge className={`text-[10px] ${card.overall_score >= 86 ? "bg-amber-400/20 text-amber-400" : card.overall_score >= 71 ? "bg-brand-400/20 text-brand-400" : card.overall_score >= 51 ? "bg-brand-400/20 text-brand-400" : card.overall_score >= 31 ? "bg-brand-400/20 text-brand-400" : "bg-muted text-muted-foreground"}`}>
                       {card.overall_tier}
                     </Badge>
                     {isOwnProfile && (
@@ -570,7 +570,7 @@ export default function PlayerCardPage() {
                         { label: "Skill", value: card.score_breakdown.skill, color: "bg-primary", tip: card.score_breakdown.skill < 30 ? "Play rated matches" : null },
                         { label: "Win Rate", value: card.score_breakdown.win_rate, color: "bg-brand-500", tip: card.score_breakdown.win_rate === 0 ? "Win matches to boost" : null },
                         { label: "Tournament", value: card.score_breakdown.tournament, color: "bg-amber-500", tip: card.score_breakdown.tournament === 0 ? "Join a tournament" : null },
-                        { label: "Training", value: card.score_breakdown.training, color: "bg-violet-500", tip: card.score_breakdown.training === 0 ? "Book coaching sessions" : null },
+                        { label: "Training", value: card.score_breakdown.training, color: "bg-brand-500", tip: card.score_breakdown.training === 0 ? "Book coaching sessions" : null },
                         { label: "Reliability", value: card.score_breakdown.reliability, color: "bg-sky-500", tip: card.score_breakdown.reliability < 80 ? "Don't miss bookings" : null },
                         { label: "Experience", value: card.score_breakdown.experience, color: "bg-rose-500", tip: card.score_breakdown.experience < 10 ? "Play more games" : null },
                       ].map(b => (
@@ -601,7 +601,7 @@ export default function PlayerCardPage() {
                 className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
                 onClick={() => setShowLevelUpGuide(false)}>
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                  className="w-full max-w-md max-h-[85vh] overflow-y-auto bg-card border-2 border-border rounded-2xl shadow-2xl"
+                  className="w-full max-w-md max-h-[85vh] overflow-y-auto bg-card border border-border/40 rounded-[24px] shadow-2xl"
                   onClick={e => e.stopPropagation()}>
                   <div className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between z-10">
                     <h2 className="font-display text-lg font-black">How to Level Up</h2>
@@ -620,13 +620,13 @@ export default function PlayerCardPage() {
                           { icon: Swords, color: "text-primary", label: "Skill", weight: "40%", items: ["Play rated matches", "Beat higher-rated players for bigger jumps", "Rating starts at 1500 (Bronze)"] },
                           { icon: Trophy, color: "text-brand-400", label: "Win Rate", weight: "20%", items: ["Win your matches", "Higher win % = higher score"] },
                           { icon: Crown, color: "text-amber-400", label: "Tournament", weight: "15%", items: ["Join tournaments on Lobbi", "Win tournaments for bonus points"] },
-                          { icon: GraduationCap, color: "text-violet-400", label: "Training", weight: "10%", items: ["Book coaching sessions", "Training hours are tracked"] },
+                          { icon: GraduationCap, color: "text-brand-400", label: "Training", weight: "10%", items: ["Book coaching sessions", "Training hours are tracked"] },
                           { icon: Shield, color: "text-sky-400", label: "Reliability", weight: "10%", items: ["Show up to your bookings", "No-shows will drop your score", "Starts at 100 — keep it there!"] },
                           { icon: Footprints, color: "text-rose-400", label: "Experience", weight: "5%", items: ["Play more games overall", "Every game counts"] },
                         ].map(s => {
                           const Icon = s.icon;
                           return (
-                            <div key={s.label} className="rounded-lg bg-background/50 border border-border/50 p-3">
+                            <div key={s.label} className="rounded-lg bg-background/50 border border-border/40 p-3">
                               <div className="flex items-center gap-2 mb-1.5">
                                 <Icon className={`h-4 w-4 ${s.color}`} />
                                 <span className="font-bold text-xs">{s.label}</span>
@@ -654,9 +654,9 @@ export default function PlayerCardPage() {
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           { tier: "Elite", range: "86-100", color: "text-amber-400 bg-amber-400/10 border-amber-400/30" },
-                          { tier: "Pro", range: "71-85", color: "text-violet-400 bg-violet-400/10 border-violet-400/30" },
+                          { tier: "Pro", range: "71-85", color: "text-brand-400 bg-brand-400/10 border-brand-400/30" },
                           { tier: "Advanced", range: "51-70", color: "text-brand-400 bg-brand-400/10 border-brand-400/30" },
-                          { tier: "Intermediate", range: "31-50", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+                          { tier: "Intermediate", range: "31-50", color: "text-brand-400 bg-brand-400/10 border-brand-400/30" },
                           { tier: "Beginner", range: "0-30", color: "text-muted-foreground bg-muted/50 border-border" },
                         ].map(t => (
                           <div key={t.tier} className={`rounded-lg border p-2.5 text-center ${t.color}`}>
@@ -702,7 +702,7 @@ export default function PlayerCardPage() {
                           { level: "Rookie", min: "20+" },
                           { level: "Bench", min: "<20" },
                         ].map(l => (
-                          <div key={l.level} className="rounded-md bg-background/50 border border-border/50 p-1.5">
+                          <div key={l.level} className="rounded-md bg-background/50 border border-border/40 p-1.5">
                             <div className="font-bold text-[9px]">{l.level}</div>
                             <div className="text-[8px] text-muted-foreground">{l.min}</div>
                           </div>
@@ -770,7 +770,7 @@ export default function PlayerCardPage() {
               transition={{ delay: 0.4 }}
               className="px-6 pb-4"
             >
-              <div className="p-4 rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
+              <div className="p-4 rounded-[24px] border border-primary/20 bg-gradient-to-r from-primary/5 to-transparent shadow-sm">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Compatibility</span>
                   <Badge variant="glow" className="text-sm font-black">
@@ -867,7 +867,7 @@ export default function PlayerCardPage() {
                       initial={{ opacity: 0, scale: 0.8 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.3 + idx * 0.1 }}
-                      className={`flex items-center gap-3 p-3 rounded-xl border-2 ${colorClass}`}
+                      className={`flex items-center gap-3 p-3 rounded-xl border ${colorClass}`}
                     >
                       <Icon className="h-5 w-5 flex-shrink-0" />
                       <div>
@@ -909,7 +909,7 @@ export default function PlayerCardPage() {
 
             {/* Bio + price — only render if there's content */}
             {(coachData.coaching_bio || coachData.city || coachData.coaching_sports?.length > 0) && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div className="flex-1 min-w-0">
                     {coachData.coaching_bio && (
@@ -941,23 +941,23 @@ export default function PlayerCardPage() {
             {(coachData.coaching_rating > 0 || coachData.total_sessions > 0 || coachData.years_of_experience > 0) && (
               <div className="flex gap-3 mb-4">
                 {coachData.coaching_rating > 0 && (
-                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                  <div className="rounded-[24px] border border-border/40 bg-card p-3 text-center flex-1 shadow-sm">
                     <Star className="h-4 w-4 mx-auto mb-1 text-amber-400" />
                     <p className="font-black text-base text-amber-400">{Number(coachData.coaching_rating).toFixed(1)}</p>
                     <p className="text-[10px] text-muted-foreground">Rating</p>
                   </div>
                 )}
                 {coachData.total_sessions > 0 && (
-                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
+                  <div className="rounded-[24px] border border-border/40 bg-card p-3 text-center flex-1 shadow-sm">
                     <Users className="h-4 w-4 mx-auto mb-1 text-primary" />
                     <p className="font-black text-base text-primary">{coachData.total_sessions}</p>
                     <p className="text-[10px] text-muted-foreground">Sessions</p>
                   </div>
                 )}
                 {coachData.years_of_experience > 0 && (
-                  <div className="rounded-2xl border border-border/50 bg-card p-3 text-center flex-1">
-                    <Briefcase className="h-4 w-4 mx-auto mb-1 text-violet-400" />
-                    <p className="font-black text-base text-violet-400">{coachData.years_of_experience}+</p>
+                  <div className="rounded-[24px] border border-border/40 bg-card p-3 text-center flex-1 shadow-sm">
+                    <Briefcase className="h-4 w-4 mx-auto mb-1 text-brand-400" />
+                    <p className="font-black text-base text-brand-400">{coachData.years_of_experience}+</p>
                     <p className="text-[10px] text-muted-foreground">Yrs Exp</p>
                   </div>
                 )}
@@ -966,7 +966,7 @@ export default function PlayerCardPage() {
 
             {/* Specializations */}
             {coachData.specializations?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Specializations</h4>
                 <div className="flex flex-wrap gap-2">
                   {coachData.specializations.map((s, i) => (
@@ -978,7 +978,7 @@ export default function PlayerCardPage() {
 
             {/* Achievements */}
             {coachData.achievements?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Achievements</h4>
                 <div className="space-y-2">
                   {coachData.achievements.map((a, i) => (
@@ -993,7 +993,7 @@ export default function PlayerCardPage() {
 
             {/* Awards */}
             {coachData.awards?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Awards</h4>
                 <div className="space-y-2">
                   {coachData.awards.map((a, i) => (
@@ -1008,7 +1008,7 @@ export default function PlayerCardPage() {
 
             {/* Certifications */}
             {coachData.certifications_list?.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Certifications</h4>
                 <div className="space-y-2">
                   {coachData.certifications_list.map((c, i) => (
@@ -1023,7 +1023,7 @@ export default function PlayerCardPage() {
 
             {/* Playing History */}
             {coachData.playing_history && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Playing History</h4>
                 <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{coachData.playing_history}</p>
               </div>
@@ -1031,11 +1031,11 @@ export default function PlayerCardPage() {
 
             {/* Packages */}
             {coachPackages.length > 0 && (
-              <div className="rounded-2xl border border-border/50 bg-card p-4 mb-4">
+              <div className="rounded-[24px] border border-border/40 bg-card p-4 mb-4 shadow-sm">
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">Coaching Packages</h4>
                 <div className="space-y-3">
                   {coachPackages.map(pkg => (
-                    <div key={pkg.id} className={`rounded-xl border-2 p-3 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 bg-secondary/20"}`}>
+                    <div key={pkg.id} className={`rounded-[24px] border p-3 transition-all ${pkg.subscribed ? "border-primary/30 bg-primary/5" : "border-border/40 bg-secondary/20"}`}>
                       <div className="flex items-start justify-between gap-3 mb-2">
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-sm truncate">{pkg.name}</p>
@@ -1082,7 +1082,7 @@ export default function PlayerCardPage() {
                 ? selectedSlot.sports
                 : (coachData.coaching_sports || []);
               return (
-                <div className="rounded-2xl border-2 border-primary/20 bg-card p-4">
+                <div className="rounded-[24px] border border-primary/20 bg-card p-4 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-primary" />
@@ -1096,10 +1096,10 @@ export default function PlayerCardPage() {
                   <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 mb-4">
                     {next14.map(d => (
                       <button key={d.value} onClick={() => handleDateChange(d.value)}
-                        className={`flex flex-col items-center shrink-0 w-[50px] py-2 rounded-xl border-2 transition-all ${
+                        className={`flex flex-col items-center shrink-0 w-[50px] py-2 rounded-xl border transition-all ${
                           selectedDate === d.value
                             ? "border-primary bg-primary/10 text-primary"
-                            : "border-border/50 bg-background/50 hover:border-primary/40"
+                            : "border-border/40 bg-background/50 hover:border-primary/40"
                         }`}>
                         <span className={`text-[10px] font-bold uppercase ${selectedDate === d.value ? "text-primary" : "text-muted-foreground"}`}>{d.day}</span>
                         <span className="text-base font-black leading-tight">{d.date}</span>
@@ -1127,11 +1127,11 @@ export default function PlayerCardPage() {
                         <button key={slot.start_time}
                           onClick={() => { if (slot.available) setSelectedSlot(slot); }}
                           disabled={!slot.available}
-                          className={`flex flex-col items-center px-2 py-3 rounded-xl border-2 text-xs font-bold transition-all ${
+                          className={`flex flex-col items-center px-2 py-3 rounded-xl border text-xs font-bold transition-all ${
                             selectedSlot?.start_time === slot.start_time
                               ? "border-primary bg-primary/10 text-primary"
                               : slot.available
-                                ? "border-border/50 bg-background hover:border-primary/50 hover:bg-primary/5"
+                                ? "border-border/40 bg-background hover:border-primary/50 hover:bg-primary/5"
                                 : "border-border/20 bg-secondary/20 text-muted-foreground/40 cursor-not-allowed"
                           }`}>
                           <span className={slot.available ? "" : "line-through"}>{slot.start_time}</span>
@@ -1149,8 +1149,8 @@ export default function PlayerCardPage() {
                         <div className="flex flex-wrap gap-2">
                           {slotSports.map(s => (
                             <button key={s} onClick={() => setBookingSport(s)}
-                              className={`px-3 py-1.5 rounded-full text-xs font-bold border-2 capitalize transition-all ${
-                                bookingSport === s ? "border-primary bg-primary/10 text-primary" : "border-border/50 hover:border-primary/40"
+                              className={`px-3 py-1.5 rounded-full text-xs font-bold border capitalize transition-all ${
+                                bookingSport === s ? "border-primary bg-primary/10 text-primary" : "border-border/40 hover:border-primary/40"
                               }`}>
                               {s.replace("_", " ")}
                             </button>
@@ -1214,10 +1214,10 @@ export default function PlayerCardPage() {
 
             {/* Career Stats Row */}
             <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+              <div className="p-4 rounded-[24px] border border-border/40 bg-card text-center shadow-sm">
                 <div className="flex items-center justify-center mb-2">
-                  <div className="p-2 rounded-xl bg-violet-500/10">
-                    <Dumbbell className="h-4 w-4 text-violet-400" />
+                  <div className="p-2 rounded-xl bg-brand-500/10">
+                    <Dumbbell className="h-4 w-4 text-brand-400" />
                   </div>
                 </div>
                 <div className="font-display text-xl font-black">
@@ -1228,7 +1228,7 @@ export default function PlayerCardPage() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+              <div className="p-4 rounded-[24px] border border-border/40 bg-card text-center shadow-sm">
                 <div className="flex items-center justify-center mb-2">
                   <div className="p-2 rounded-xl bg-amber-500/10">
                     <Trophy className="h-4 w-4 text-amber-400" />
@@ -1242,7 +1242,7 @@ export default function PlayerCardPage() {
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl border border-border/50 bg-card text-center">
+              <div className="p-4 rounded-[24px] border border-border/40 bg-card text-center shadow-sm">
                 <div className="flex items-center justify-center mb-2">
                   <div className="p-2 rounded-xl bg-sky-500/10">
                     <Building2 className="h-4 w-4 text-sky-400" />
@@ -1263,7 +1263,7 @@ export default function PlayerCardPage() {
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
                   Recent Performance
                 </h4>
-                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
+                <div className="rounded-[24px] border border-border/40 bg-card overflow-hidden divide-y divide-border/30 shadow-sm">
                   {career.recent_performance.slice(0, 5).map((record, idx) => (
                     <motion.div
                       key={record.id || idx}
@@ -1305,7 +1305,7 @@ export default function PlayerCardPage() {
                 <h4 className="text-xs font-mono uppercase tracking-widest text-muted-foreground mb-3">
                   Organizations
                 </h4>
-                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden divide-y divide-border/30">
+                <div className="rounded-[24px] border border-border/40 bg-card overflow-hidden divide-y divide-border/30 shadow-sm">
                   {career.organizations.map((org, idx) => (
                     <motion.div
                       key={org.id || idx}
@@ -1347,7 +1347,7 @@ export default function PlayerCardPage() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : userPosts.length === 0 ? (
-            <div className="text-center py-12 rounded-2xl border border-border/50 bg-card">
+            <div className="text-center py-12 rounded-[24px] border border-border/40 bg-card shadow-sm">
               <MessageCircle className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
               <p className="text-sm text-muted-foreground">No posts yet</p>
             </div>
@@ -1356,7 +1356,7 @@ export default function PlayerCardPage() {
               {userPosts.slice(0, 10).map((post, idx) => (
                 <motion.div key={post.id}
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 + idx * 0.05 }}
-                  className="p-4 rounded-2xl border border-border/50 bg-card">
+                  className="p-4 rounded-[24px] border border-border/40 bg-card shadow-sm">
                   {post.content && <p className="text-sm leading-relaxed mb-2">{post.content}</p>}
                   {post.media_url && <img src={mediaUrl(post.media_url)} alt="" className="rounded-xl w-full max-h-60 object-cover mb-2" />}
                   <div className="flex items-center gap-3 text-xs text-muted-foreground pt-2 border-t border-border/30">
@@ -1387,7 +1387,7 @@ export default function PlayerCardPage() {
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-2xl border border-border/50 overflow-hidden"
+              className="w-full sm:max-w-md bg-card rounded-t-3xl sm:rounded-[24px] border border-border/40 overflow-hidden shadow-sm"
               onClick={e => e.stopPropagation()}
             >
               {/* Header */}
@@ -1420,7 +1420,7 @@ export default function PlayerCardPage() {
                 {/* Review — Session */}
                 {payStep === "review" && pendingSession && (
                   <div className="space-y-5">
-                    <div className="rounded-2xl border-2 border-border/50 bg-card/50 p-5 space-y-3">
+                    <div className="rounded-[24px] border border-border/40 bg-card/50 p-5 space-y-3 shadow-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Coach</span>
                         <span className="font-display font-black text-sm">{pendingSession.coach_name || card.name}</span>
@@ -1441,7 +1441,7 @@ export default function PlayerCardPage() {
                           <span className="font-bold text-sm capitalize">{pendingSession.sport.replace("_", " ")}</span>
                         </div>
                       )}
-                      <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                      <div className="flex justify-between items-center pt-3 border-t border-border/40">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Total</span>
                         <span className="font-display font-black text-2xl text-primary">₹{pendingSession.price}</span>
                       </div>
@@ -1451,7 +1451,7 @@ export default function PlayerCardPage() {
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-sky-500/10 border-2 border-sky-500/20 text-sm text-sky-400 font-semibold">
+                    <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sm text-sky-400 font-semibold">
                       Payment gateway is being configured. Please confirm to proceed.
                     </div>
 
@@ -1467,7 +1467,7 @@ export default function PlayerCardPage() {
                 {/* Review — Subscription */}
                 {payStep === "review" && pendingSubPkg && !pendingSession && (
                   <div className="space-y-5">
-                    <div className="rounded-2xl border-2 border-border/50 bg-card/50 p-5 space-y-3">
+                    <div className="rounded-[24px] border border-border/40 bg-card/50 p-5 space-y-3 shadow-sm">
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Coach</span>
                         <span className="font-display font-black text-sm">{card.name}</span>
@@ -1484,7 +1484,7 @@ export default function PlayerCardPage() {
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Duration</span>
                         <span className="font-bold text-sm">{pendingSubPkg.duration_minutes || 60} min each</span>
                       </div>
-                      <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                      <div className="flex justify-between items-center pt-3 border-t border-border/40">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Total</span>
                         <span className="font-display font-black text-2xl text-primary">₹{(pendingSubPkg.sub_price || pendingSubPkg.price || 0).toLocaleString()}</span>
                       </div>
@@ -1494,7 +1494,7 @@ export default function PlayerCardPage() {
                       </div>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-sky-500/10 border-2 border-sky-500/20 text-sm text-sky-400 font-semibold">
+                    <div className="p-3.5 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sm text-sky-400 font-semibold">
                       Payment gateway is being configured. Please confirm to proceed.
                     </div>
 
@@ -1511,7 +1511,7 @@ export default function PlayerCardPage() {
                 {payStep === "done" && (
                   <div className="space-y-5">
                     <div className="flex flex-col items-center py-6 gap-3">
-                      <div className="w-16 h-16 rounded-full bg-green-500/10 border-2 border-green-500/20 flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center">
                         <CheckCircle2 className="h-8 w-8 text-green-500" />
                       </div>
                       <p className="font-display font-black text-lg">

@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Shield, Plus, Search, X, Loader2, Trophy,
-  User, Users, Crown, LogOut, ChevronRight, Swords
+  Shield, Plus, Search, X, Loader2,
+  User, Users, Crown, LogOut, Swords
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -53,7 +53,7 @@ export default function TeamsPage() {
     if (!form.name.trim()) { toast.error("Team name is required"); return; }
     setCreating(true);
     try {
-      const res = await teamAPI.create(form);
+      await teamAPI.create(form);
       toast.success("Team created! You're the captain.");
       setShowCreate(false);
       setForm({ name: "", sport: "football", description: "", max_players: 20 });
@@ -80,7 +80,7 @@ export default function TeamsPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-600" /></div>;
   }
 
   return (
@@ -89,19 +89,19 @@ export default function TeamsPage() {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="font-display text-display-sm font-black tracking-athletic">Teams</h1>
+            <h1 className="admin-page-title">Teams</h1>
             <p className="text-muted-foreground text-sm mt-1">Build your squad, compete together</p>
           </div>
-          <Button variant="athletic" onClick={() => setShowCreate(true)}>
+          <Button className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={() => setShowCreate(true)}>
             <Plus className="h-4 w-4 mr-1.5" /> Create Team
           </Button>
         </motion.div>
 
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 bg-secondary/30 rounded-lg p-1 w-fit">
+        <div className="flex gap-1 mb-6 bg-secondary/30 rounded-[28px] p-1 w-fit">
           {[{ id: "discover", label: "Find Teams" }, { id: "my", label: "My Teams" }].map(t => (
             <button key={t.id} onClick={() => setTab(t.id)}
-              className={`px-4 py-2 rounded-md text-sm font-bold transition-all ${tab === t.id ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+              className={`px-4 py-2 rounded-2xl text-sm font-medium transition-all ${tab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "text-muted-foreground hover:text-foreground"}`}>
               {t.label} {t.id === "my" && myTeams.length > 0 && <span className="ml-1 text-xs opacity-70">({myTeams.length})</span>}
             </button>
           ))}
@@ -113,16 +113,16 @@ export default function TeamsPage() {
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search teams..." value={search} onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-secondary/30 border-border/50" />
+                className="pl-9 bg-secondary/20 border-border/40 rounded-xl" />
             </div>
             <div className="flex gap-1 flex-wrap">
               <button onClick={() => setSportFilter("")}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${!sportFilter ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                className={`px-3 py-1.5 rounded-full text-xs admin-btn transition-all ${!sportFilter ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"}`}>
                 All
               </button>
               {sports.map(s => (
                 <button key={s} onClick={() => setSportFilter(sportFilter === s ? "" : s)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold capitalize transition-all ${sportFilter === s ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                  className={`px-3 py-1.5 rounded-full text-xs admin-btn capitalize transition-all ${sportFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"}`}>
                   {s}
                 </button>
               ))}
@@ -137,18 +137,18 @@ export default function TeamsPage() {
               <motion.div key={t.id}
                 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.03 }}
-                className="p-5 rounded-2xl border-2 border-border/50 bg-card hover:border-primary/30 transition-all">
+                className="p-5 rounded-[28px] border border-border/40 bg-card shadow-sm hover:shadow-md hover:border-brand-600/30 transition-all duration-300">
                 {/* Header */}
                 <div className="flex items-start gap-4 mb-3">
-                  <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <div className="h-14 w-14 rounded-xl bg-brand-600/10 flex items-center justify-center flex-shrink-0">
                     {t.avatar_url ? (
                       <img src={mediaUrl(t.avatar_url)} alt="" className="h-14 w-14 rounded-xl object-cover" />
                     ) : (
-                      <Shield className="h-7 w-7 text-primary" />
+                      <Shield className="h-7 w-7 text-brand-600" />
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-bold text-sm truncate">{t.name}</h3>
+                    <h3 className="font-medium text-sm truncate">{t.name}</h3>
                     <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t.description || `${t.sport} team`}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="sport" className="text-[10px] capitalize">{t.sport}</Badge>
@@ -164,15 +164,15 @@ export default function TeamsPage() {
                     { label: "L", value: t.losses || 0, color: "text-red-500" },
                     { label: "D", value: t.draws || 0, color: "text-amber-500" },
                   ].map(s => (
-                    <div key={s.label} className="text-center p-2 rounded-lg bg-secondary/30">
-                      <div className={`font-display font-black text-lg ${s.color}`}>{s.value}</div>
-                      <div className="text-[10px] text-muted-foreground font-bold">{s.label}</div>
+                    <div key={s.label} className="text-center p-2 rounded-xl bg-secondary/30">
+                      <div className={`font-bold text-lg ${s.color}`}>{s.value}</div>
+                      <div className="text-[10px] text-muted-foreground admin-btn">{s.label}</div>
                     </div>
                   ))}
                 </div>
 
                 {/* Captain */}
-                <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-lg bg-secondary/20">
+                <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-xl bg-secondary/20">
                   <Crown className="h-3 w-3 text-amber-500" />
                   <span className="text-[11px] text-muted-foreground">Captain: <strong className="text-foreground">{t.captain_name}</strong></span>
                 </div>
@@ -180,8 +180,8 @@ export default function TeamsPage() {
                 {/* Player avatars */}
                 <div className="flex items-center gap-1 mb-3">
                   {(t.players || []).slice(0, 6).map((p, i) => (
-                    <div key={p.id} className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center border-2 border-card -ml-1 first:ml-0">
-                      <User className="h-3 w-3 text-primary" />
+                    <div key={p.id} className="h-7 w-7 rounded-full bg-brand-600/10 flex items-center justify-center border-2 border-card -ml-1 first:ml-0">
+                      <User className="h-3 w-3 text-brand-600" />
                     </div>
                   ))}
                   {(t.players || []).length > 6 && (
@@ -193,7 +193,7 @@ export default function TeamsPage() {
                 <div className="flex items-center gap-2">
                   {t.is_member ? (
                     <>
-                      <Button variant="athletic" size="sm" className="flex-1" onClick={() => navigate(`/player-card/${user?.id}`)}>
+                      <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-8 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all" size="sm" onClick={() => navigate(`/player-card/${user?.id}`)}>
                         <Swords className="h-3.5 w-3.5 mr-1.5" /> View Stats
                       </Button>
                       {!t.is_captain && (
@@ -203,7 +203,9 @@ export default function TeamsPage() {
                       )}
                     </>
                   ) : (
-                    <Button variant="athletic-outline" size="sm" className="flex-1"
+                    <Button
+                      className="flex-1 bg-transparent border border-brand-600 text-brand-600 hover:bg-brand-600 hover:text-white admin-btn rounded-xl h-8 text-xs active:scale-[0.98] transition-all"
+                      size="sm"
                       onClick={() => handleJoin(t.id)}
                       disabled={t.player_count >= t.max_players}>
                       {t.player_count >= t.max_players ? "Full" : <><Plus className="h-3.5 w-3.5 mr-1.5" /> Join Team</>}
@@ -218,7 +220,7 @@ export default function TeamsPage() {
         {(tab === "discover" ? teams : myTeams).length === 0 && (
           <div className="text-center py-20">
             <Shield className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="font-display text-xl font-bold text-muted-foreground">
+            <h3 className="admin-heading text-muted-foreground">
               {tab === "discover" ? "No teams found" : "You're not on any teams yet"}
             </h3>
             <p className="text-sm text-muted-foreground/70 mt-2">
@@ -234,38 +236,38 @@ export default function TeamsPage() {
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
               onClick={() => setShowCreate(false)}>
               <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-                className="w-full max-w-lg bg-card border-2 border-border rounded-2xl p-6"
+                className="w-full max-w-lg bg-card border border-border/40 rounded-[28px] p-6"
                 onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="font-display font-bold text-lg">Create Team</h2>
+                  <h2 className="admin-heading">Create Team</h2>
                   <button onClick={() => setShowCreate(false)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-xs text-muted-foreground">Team Name *</Label>
+                    <Label className="text-xs text-muted-foreground admin-label">Team Name *</Label>
                     <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                      placeholder="e.g. Thunder FC" className="mt-1 bg-background border-border" />
+                      placeholder="e.g. Thunder FC" className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Sport *</Label>
+                    <Label className="text-xs text-muted-foreground admin-label">Sport *</Label>
                     <select value={form.sport} onChange={e => setForm(p => ({ ...p, sport: e.target.value }))}
-                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm">
+                      className="mt-1 w-full rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-sm">
                       {sports.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Description</Label>
+                    <Label className="text-xs text-muted-foreground admin-label">Description</Label>
                     <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                       placeholder="Tell Lobbians about your team..." rows={3}
-                      className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                      className="mt-1 w-full rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50" />
                   </div>
                   <div>
-                    <Label className="text-xs text-muted-foreground">Max Lobbians</Label>
+                    <Label className="text-xs text-muted-foreground admin-label">Max Lobbians</Label>
                     <Input type="number" value={form.max_players} onChange={e => setForm(p => ({ ...p, max_players: parseInt(e.target.value) || 20 }))}
-                      min={2} max={50} className="mt-1 bg-background border-border" />
+                      min={2} max={50} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
                   </div>
-                  <Button variant="athletic" className="w-full" onClick={handleCreate} disabled={creating}>
+                  <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreate} disabled={creating}>
                     {creating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Shield className="h-4 w-4 mr-2" />}
                     Create Team
                   </Button>

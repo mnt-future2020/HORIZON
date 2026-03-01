@@ -15,7 +15,7 @@ import {
 function getTier(rating) {
   if (rating >= 2500) return { label: "Diamond", color: "text-cyan-400", bg: "bg-cyan-500/10 border-cyan-500/20", fill: "#22d3ee" };
   if (rating >= 2000) return { label: "Gold", color: "text-amber-400", bg: "bg-amber-500/10 border-amber-500/20", fill: "#fbbf24" };
-  if (rating >= 1500) return { label: "Silver", color: "text-slate-300", bg: "bg-slate-400/10 border-slate-400/20", fill: "#94a3b8" };
+  if (rating >= 1500) return { label: "Silver", color: "text-muted-foreground", bg: "bg-secondary border-border/40", fill: "#94a3b8" };
   return { label: "Bronze", color: "text-orange-400", bg: "bg-orange-500/10 border-orange-500/20", fill: "#fb923c" };
 }
 
@@ -118,13 +118,13 @@ function RecordRow({ record, index }) {
   const isLoss = record.result === "loss";
 
   return (
-    <div className={`rounded-lg border transition-colors ${expanded ? "glass-card" : "border-transparent hover:bg-secondary/20"}`}
+    <div className={`rounded-[24px] border transition-colors ${expanded ? "bg-card border-border/40 shadow-sm" : "border-transparent hover:bg-secondary/20"}`}
       data-testid={`history-record-${record.seq}`}>
       <button onClick={() => setExpanded(!expanded)} className="w-full text-left px-4 py-3 flex items-center gap-3">
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-[10px] font-mono text-muted-foreground w-6">#{record.seq}</span>
           <div className={`h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold ${
-            isWin ? "bg-brand-500/15 text-brand-400" : isLoss ? "bg-red-500/15 text-red-400" : "bg-slate-400/15 text-slate-400"
+            isWin ? "bg-brand-500/15 text-brand-400" : isLoss ? "bg-red-500/15 text-red-400" : "bg-secondary text-muted-foreground"
           }`}>
             {isWin ? "W" : isLoss ? "L" : "D"}
           </div>
@@ -139,7 +139,7 @@ function RecordRow({ record, index }) {
         </div>
         <div className="text-right shrink-0 flex items-center gap-3">
           <div>
-            <div className={`text-sm font-display font-bold ${isWin ? "text-brand-400" : isLoss ? "text-red-400" : "text-slate-400"}`}>
+            <div className={`text-sm font-display font-bold ${isWin ? "text-brand-400" : isLoss ? "text-red-400" : "text-muted-foreground"}`}>
               {record.delta > 0 ? "+" : ""}{record.delta}
             </div>
             <div className="text-[10px] text-muted-foreground">{record.previous_rating} &rarr; {record.new_rating}</div>
@@ -273,7 +273,7 @@ export default function RatingProfilePage() {
 
       {/* Rating Card */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-        className="glass-card rounded-xl p-6 mb-6" data-testid="rating-card">
+        className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 mb-6" data-testid="rating-card">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className={`h-16 w-16 rounded-xl flex items-center justify-center font-display font-black text-2xl ${tier.bg} ${tier.color} border`}>
@@ -294,7 +294,7 @@ export default function RatingProfilePage() {
               <div className="text-[10px] font-mono text-muted-foreground">LOSSES</div>
             </div>
             <div>
-              <div className="text-lg font-display font-bold text-slate-400">{j.total_draws || 0}</div>
+              <div className="text-lg font-display font-bold text-muted-foreground">{j.total_draws || 0}</div>
               <div className="text-[10px] font-mono text-muted-foreground">DRAWS</div>
             </div>
           </div>
@@ -314,7 +314,7 @@ export default function RatingProfilePage() {
 
       {/* Chain Verification */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-        className="glass-card rounded-xl p-5 mb-6" data-testid="chain-verification">
+        className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 mb-6" data-testid="chain-verification">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-display font-bold text-sm flex items-center gap-2">
             <Fingerprint className="h-4 w-4 text-primary" /> Chain Integrity
@@ -365,7 +365,7 @@ export default function RatingProfilePage() {
         </div>
 
         {records.length === 0 ? (
-          <div className="glass-card rounded-lg p-10 text-center text-muted-foreground">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-10 text-center text-muted-foreground">
             <Trophy className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
             <p className="text-sm">No match results recorded yet</p>
             <p className="text-xs mt-1">Play and report results to build your rating history!</p>

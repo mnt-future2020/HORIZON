@@ -24,7 +24,7 @@ const FORMATS = [
 const STATUS_COLORS = {
   registration: "bg-brand-500/15 text-brand-400",
   in_progress: "bg-sky-500/15 text-sky-400",
-  completed: "bg-violet-500/15 text-violet-400",
+  completed: "bg-brand-500/15 text-brand-400",
   cancelled: "bg-destructive/15 text-destructive",
 };
 const STATUS_LABELS = {
@@ -144,12 +144,12 @@ export default function TournamentsPage() {
       <div className="flex items-center justify-between gap-4 mb-6">
         <div>
           <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Compete</span>
-          <h1 className="font-display text-2xl font-black tracking-tight flex items-center gap-2">
+          <h1 className="admin-page-title flex items-center gap-2">
             <Trophy className="h-6 w-6 text-amber-400" /> Tournaments
           </h1>
         </div>
         {canCreate && (
-          <Button onClick={openCreate} className="bg-primary text-primary-foreground font-bold text-xs h-9"
+          <Button onClick={openCreate} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-9 px-4"
             data-testid="create-tournament-btn">
             <Plus className="h-4 w-4 mr-1" /> Create
           </Button>
@@ -162,10 +162,10 @@ export default function TournamentsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Search tournaments..." value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            className="pl-9 bg-background border-border h-9 text-sm" data-testid="tournament-search" />
+            className="pl-9 bg-secondary/20 border-border/40 rounded-xl h-9 text-sm" data-testid="tournament-search" />
         </div>
         <Select value={filterSport} onValueChange={v => setFilterSport(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-[130px] h-9 bg-background border-border text-xs">
+          <SelectTrigger className="w-[130px] h-9 bg-secondary/20 border-border/40 rounded-xl text-xs">
             <Filter className="h-3 w-3 mr-1" /><SelectValue placeholder="Sport" />
           </SelectTrigger>
           <SelectContent>
@@ -174,7 +174,7 @@ export default function TournamentsPage() {
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={v => setFilterStatus(v === "all" ? "" : v)}>
-          <SelectTrigger className="w-[130px] h-9 bg-background border-border text-xs">
+          <SelectTrigger className="w-[130px] h-9 bg-secondary/20 border-border/40 rounded-xl text-xs">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -185,7 +185,7 @@ export default function TournamentsPage() {
           </SelectContent>
         </Select>
         <button onClick={() => setShowMyOnly(!showMyOnly)}
-          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all border ${showMyOnly ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground"}`}>
+          className={`px-3 py-1.5 rounded-full text-xs admin-btn transition-all border ${showMyOnly ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/40 text-muted-foreground hover:text-foreground"}`}>
           My Tournaments
         </button>
       </div>
@@ -204,7 +204,7 @@ export default function TournamentsPage() {
             {liveMatches.map(lm => (
               <div key={lm.id}
                 onClick={() => navigate(`/tournaments/${lm.tournament_id}`)}
-                className="p-4 rounded-xl border border-red-500/20 bg-red-500/5 cursor-pointer hover:border-red-500/40 transition-all">
+                className="p-4 rounded-[28px] border border-red-500/20 bg-red-500/5 shadow-sm cursor-pointer hover:border-red-500/40 transition-all">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs text-muted-foreground">{lm.tournament_name}</span>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -213,7 +213,7 @@ export default function TournamentsPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium truncate flex-1">{lm.home?.name}</span>
-                  <span className="text-xl font-bold text-primary mx-3 tabular-nums">{lm.home?.score} — {lm.away?.score}</span>
+                  <span className="text-xl font-bold text-brand-600 mx-3 tabular-nums">{lm.home?.score} — {lm.away?.score}</span>
                   <span className="text-sm font-medium truncate flex-1 text-right">{lm.away?.name}</span>
                 </div>
                 <div className="flex items-center justify-between mt-2">
@@ -231,7 +231,7 @@ export default function TournamentsPage() {
       {/* Tournament Cards */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
@@ -255,7 +255,7 @@ export default function TournamentsPage() {
                   initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   onClick={() => navigate(`/tournaments/${t.id}`)}
-                  className="glass-card rounded-xl p-4 cursor-pointer hover:border-primary/40 transition-all group"
+                  className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 cursor-pointer hover:border-brand-600/40 transition-all group"
                   data-testid={`tournament-card-${t.id}`}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -271,7 +271,7 @@ export default function TournamentsPage() {
                           {t.sport?.replace("_", " ")}
                         </Badge>
                       </div>
-                      <h3 className="font-display font-black text-base leading-tight truncate">{t.name}</h3>
+                      <h3 className="font-medium text-base leading-tight truncate">{t.name}</h3>
                       {t.description && (
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{t.description}</p>
                       )}
@@ -293,7 +293,7 @@ export default function TournamentsPage() {
                           </span>
                         )}
                         {t.entry_fee > 0 && (
-                          <span className="font-bold text-primary">
+                          <span className="font-bold text-brand-600">
                             Entry: ₹{t.entry_fee}
                           </span>
                         )}
@@ -301,20 +301,20 @@ export default function TournamentsPage() {
                     </div>
                     <div className="flex flex-col items-end gap-2 shrink-0">
                       {t.status === "registration" && !isRegistered && !isOrganizer && (
-                        <Button size="sm" className="bg-primary text-primary-foreground font-bold text-[10px] h-7 px-3"
+                        <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-7 px-3 rounded-lg shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
                           onClick={e => handleRegister(e, t.id)} data-testid={`register-btn-${t.id}`}>
                           Register
                         </Button>
                       )}
                       {isRegistered && (
-                        <Badge className="bg-primary/15 text-primary text-[10px]">Registered</Badge>
+                        <Badge className="bg-brand-600/15 text-brand-600 text-[10px]">Registered</Badge>
                       )}
                       {isOrganizer && (
                         <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">
                           <Crown className="h-2.5 w-2.5 mr-0.5" /> Organizer
                         </Badge>
                       )}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                     </div>
                   </div>
                 </motion.div>
@@ -326,9 +326,9 @@ export default function TournamentsPage() {
 
       {/* Create Tournament Dialog */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border/40 max-w-md max-h-[85vh] overflow-y-auto rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="font-display flex items-center gap-2">
+            <DialogTitle className="admin-heading flex items-center gap-2">
               <Trophy className="h-5 w-5 text-amber-400" /> Create Tournament
             </DialogTitle>
           </DialogHeader>
@@ -348,7 +348,7 @@ export default function TournamentsPage() {
               <div>
                 <Label className="text-xs text-muted-foreground">Sport</Label>
                 <Select value={form.sport} onValueChange={v => setForm(p => ({ ...p, sport: v }))}>
-                  <SelectTrigger className="mt-1 bg-background border-border" data-testid="tournament-sport-select">
+                  <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="tournament-sport-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -359,7 +359,7 @@ export default function TournamentsPage() {
               <div>
                 <Label className="text-xs text-muted-foreground">Format</Label>
                 <Select value={form.format} onValueChange={v => setForm(p => ({ ...p, format: v }))}>
-                  <SelectTrigger className="mt-1 bg-background border-border" data-testid="tournament-format-select">
+                  <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="tournament-format-select">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -373,7 +373,7 @@ export default function TournamentsPage() {
                 <Label className="text-xs text-muted-foreground">Max Participants</Label>
                 <Input type="number" value={form.max_participants}
                   onChange={e => setForm(p => ({ ...p, max_participants: e.target.value }))}
-                  className="mt-1 bg-background border-border" data-testid="tournament-max-input" />
+                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="tournament-max-input" />
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">Entry Fee (₹)</Label>
@@ -386,7 +386,7 @@ export default function TournamentsPage() {
               <div>
                 <Label className="text-xs text-muted-foreground">Venue (optional)</Label>
                 <Select value={form.venue_id} onValueChange={v => setForm(p => ({ ...p, venue_id: v === "none" ? "" : v }))}>
-                  <SelectTrigger className="mt-1 bg-background border-border">
+                  <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl">
                     <SelectValue placeholder="Select venue" />
                   </SelectTrigger>
                   <SelectContent>
@@ -407,29 +407,29 @@ export default function TournamentsPage() {
                 <Label className="text-xs text-muted-foreground">Start Date</Label>
                 <Input type="date" value={form.start_date}
                   onChange={e => setForm(p => ({ ...p, start_date: e.target.value }))}
-                  className="mt-1 bg-background border-border" />
+                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
               </div>
               <div>
                 <Label className="text-xs text-muted-foreground">End Date</Label>
                 <Input type="date" value={form.end_date}
                   onChange={e => setForm(p => ({ ...p, end_date: e.target.value }))}
-                  className="mt-1 bg-background border-border" />
+                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
               </div>
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Registration Deadline</Label>
               <Input type="date" value={form.registration_deadline}
                 onChange={e => setForm(p => ({ ...p, registration_deadline: e.target.value }))}
-                className="mt-1 bg-background border-border" />
+                className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
             </div>
             <div>
               <Label className="text-xs text-muted-foreground">Rules</Label>
               <textarea value={form.rules}
                 onChange={e => setForm(p => ({ ...p, rules: e.target.value }))}
                 placeholder="Tournament rules..." rows={3}
-                className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none" />
+                className="mt-1 w-full rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50" />
             </div>
-            <Button className="w-full bg-primary text-primary-foreground font-bold h-10"
+            <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-10"
               onClick={handleCreate} disabled={creating} data-testid="submit-tournament-btn">
               {creating ? "Creating..." : "Create Tournament"}
             </Button>

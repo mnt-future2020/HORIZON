@@ -13,7 +13,7 @@ import {
   MoreVertical, Phone, Video, Users, UserPlus, ContactRound, Share2,
   Paperclip, FileText, Mic, Play, Pause, Square,
   Pin, PinOff, BarChart3, Image, BellOff, Bell, Forward, Vote, Eraser,
-  Inbox, ShieldCheck, ShieldX, Heart, Bookmark
+  Inbox, ShieldCheck, ShieldX, Heart, Bookmark, ChevronDown, Clock
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -90,6 +90,12 @@ export default function ChatPage() {
   const [forwardMsg, setForwardMsg] = useState(null);
   const [forwardConvos, setForwardConvos] = useState([]);
 
+  // UX: scroll FAB, image lightbox, emoji picker
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [newMsgWhileAway, setNewMsgWhileAway] = useState(0);
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   // Shared post detail modal
   const [viewPost, setViewPost] = useState(null);
   const [viewPostComments, setViewPostComments] = useState([]);
@@ -116,6 +122,10 @@ export default function ChatPage() {
   const audioChunksRef = useRef([]);
   const audioRef = useRef(null);
   const fileInputRef = useRef(null);
+  const msgContainerRef = useRef(null);
+  const isAtBottomRef = useRef(true);
+  const prevMsgLengthRef = useRef(0);
+  const emojiPickerRef = useRef(null);
 
   // WebSocket
   const { connected: wsConnected, sendTyping: wsSendTyping, on: wsOn, off: wsOff } = useChatWebSocket();
@@ -144,6 +154,22 @@ export default function ChatPage() {
   useEffect(() => {
     loadConversations().finally(() => setLoading(false));
   }, [loadConversations]);
+
+  // Lock page scroll when in active chat so only the message area scrolls
+  useEffect(() => {
+    if (activeConvo) {
+      window.scrollTo(0, 0);
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+  }, [activeConvo]);
 
   // Auto-start conversation if ?user= param
   useEffect(() => {
@@ -244,10 +270,40 @@ export default function ChatPage() {
     return () => clearInterval(interval);
   }, [activeConvo, wsConnected]);
 
-  // Scroll to bottom
+  // Scroll to bottom on initial convo load
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+    if (!activeConvo?.id) return;
+    const t = setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+      isAtBottomRef.current = true;
+      setShowScrollBtn(false);
+      setNewMsgWhileAway(0);
+      prevMsgLengthRef.current = messages.length;
+    }, 50);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeConvo?.id]);
+
+  // Handle new messages: auto-scroll if at bottom, else show FAB badge
+  useEffect(() => {
+    const newLen = messages.length;
+    if (newLen > prevMsgLengthRef.current) {
+      if (isAtBottomRef.current) {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        setNewMsgWhileAway(0);
+      } else {
+        setNewMsgWhileAway(prev => prev + (newLen - prevMsgLengthRef.current));
+      }
+    }
+    prevMsgLengthRef.current = newLen;
+  }, [messages]);
+
+  // Scroll to bottom when typing indicator appears (only if at bottom)
+  useEffect(() => {
+    if (isTyping && isAtBottomRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [isTyping]);
 
   // Filter conversations
   useEffect(() => {
@@ -272,6 +328,18 @@ export default function ChatPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [hoverReaction]);
 
+  // Close emoji input picker on outside click
+  useEffect(() => {
+    if (!showEmojiPicker) return;
+    const handleClickOutside = (e) => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target)) {
+        setShowEmojiPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmojiPicker]);
+
   // ─── Actions ────────────────────────────────────────────────────────────────
 
   const handleStartConversation = async (userId) => {
@@ -292,6 +360,7 @@ export default function ChatPage() {
     if ((!msgText.trim() && !pendingFile) || sending || !activeConvo) return;
     const text = msgText.trim();
     setMsgText("");
+    setShowEmojiPicker(false);
     setSending(true);
     const reply = replyTo;
     setReplyTo(null);
@@ -774,30 +843,56 @@ export default function ChatPage() {
     return acc;
   }, []);
 
+  // Scroll FAB handler
+  const handleMsgScroll = useCallback((e) => {
+    const el = e.currentTarget;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    isAtBottomRef.current = atBottom;
+    setShowScrollBtn(!atBottom);
+    if (atBottom) setNewMsgWhileAway(0);
+  }, []);
+
+  // Linkify URLs inside message text
+  const linkifyText = (text) => {
+    if (!text) return text;
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    if (parts.length === 1) return text;
+    return parts.map((part, i) =>
+      urlRegex.test(part) ? (
+        <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+          className="underline opacity-80 hover:opacity-100 break-all"
+          onClick={e => e.stopPropagation()}>
+          {part}
+        </a>
+      ) : part
+    );
+  };
+
   // Reusable row for the New Message modal
   const UserRow = ({ u, onSelect, badge }) => (
     <button onClick={onSelect}
-      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 active:bg-secondary/50 transition-all text-left">
-      <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 active:bg-white/10 transition-all text-left">
+      <div className="h-11 w-11 rounded-full bg-brand-600/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
         {u.avatar ? <img src={mediaUrl(u.avatar)} alt="" className="h-11 w-11 rounded-full object-cover" />
-          : <User className="h-5 w-5 text-primary" />}
+          : <User className="h-5 w-5 text-brand-600" />}
       </div>
       <div className="flex-1 min-w-0">
-        <span className="text-sm font-bold truncate block">{u.name}</span>
+        <span className="text-sm font-medium truncate block">{u.name}</span>
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-[10px] text-muted-foreground capitalize">{u.role === "player" ? "lobbian" : (u.role || "lobbian")}</span>
           {u.skill_rating && <span className="text-[10px] text-muted-foreground">{u.skill_rating} SR</span>}
-          {badge && <span className="text-[9px] text-primary font-bold capitalize bg-primary/10 px-1.5 py-0.5 rounded-full">{badge}</span>}
+          {badge && <span className="text-[9px] text-brand-600 font-bold capitalize bg-brand-600/10 px-1.5 py-0.5 rounded-full">{badge}</span>}
         </div>
       </div>
-      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-        <MessageCircle className="h-4 w-4 text-primary" />
+      <div className="h-8 w-8 rounded-full bg-brand-600/10 flex items-center justify-center flex-shrink-0">
+        <MessageCircle className="h-4 w-4 text-brand-600" />
       </div>
     </button>
   );
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Loading conversations" /></div>;
+    return <div className="min-h-screen flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-brand-600" aria-label="Loading conversations" /></div>;
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -805,9 +900,9 @@ export default function ChatPage() {
   // ═══════════════════════════════════════════════════════════════════════════
   if (activeConvo) {
     return (
-      <div className="flex flex-col bg-background" style={{ height: "100dvh", touchAction: 'manipulation' }}>
+      <div className="flex flex-col bg-background overflow-hidden -mb-24 md:-mb-8" style={{ height: "calc(100dvh - 72px)", touchAction: 'manipulation' }}>
         {/* Chat Header — WhatsApp style */}
-        <div className="bg-primary/5 border-b border-border px-3 py-2.5 flex-shrink-0">
+        <div className="bg-card border-b border-border/40 px-3 py-2.5 flex-shrink-0">
           <div className="max-w-3xl mx-auto flex items-center gap-3">
             <button onClick={() => { setActiveConvo(null); setOnlineStatus(null); setIsTyping(false); loadConversations(); }}
               className="text-muted-foreground hover:text-foreground p-1"
@@ -815,10 +910,10 @@ export default function ChatPage() {
               <ArrowLeft className="h-5 w-5" aria-hidden="true" />
             </button>
             <div className="relative cursor-pointer" onClick={() => navigate(`/player-card/${activeConvo.other_user?.id}`)}>
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden">
+              <div className="h-10 w-10 rounded-full bg-brand-600/10 flex items-center justify-center overflow-hidden">
                 {activeConvo.other_user?.avatar
                   ? <img src={mediaUrl(activeConvo.other_user.avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
-                  : <User className="h-5 w-5 text-primary" />}
+                  : <User className="h-5 w-5 text-brand-600" />}
               </div>
               {onlineStatus?.online && (
                 <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-background" />
@@ -828,7 +923,7 @@ export default function ChatPage() {
               <h2 className="font-bold text-sm truncate">{activeConvo.other_user?.name || "Unknown"}</h2>
               <p className="text-[10px] leading-tight">
                 {isTyping ? (
-                  <span className="text-primary font-semibold">typing...</span>
+                  <span className="text-brand-600 font-medium">typing...</span>
                 ) : onlineStatus?.online ? (
                   <span className="text-green-500 font-semibold">online</span>
                 ) : lastSeenText() ? (
@@ -879,7 +974,7 @@ export default function ChatPage() {
                   <span className="text-xs font-medium text-foreground/80 flex-1">
                     {activeConvo.other_user?.name} wants to message you
                   </span>
-                  <Button size="sm" variant="athletic" className="h-7 text-xs px-3 rounded-full"
+                  <Button size="sm" className="h-7 text-xs px-3 rounded-full bg-brand-600 text-white hover:bg-brand-500 admin-btn transition-all"
                     onClick={() => handleAcceptRequest(activeConvo)}>
                     <ShieldCheck className="h-3 w-3 mr-1" aria-hidden="true" /> Accept
                   </Button>
@@ -911,9 +1006,9 @@ export default function ChatPage() {
                 animate={prefersReducedMotion ? {} : { scale: 1 }} 
                 exit={prefersReducedMotion ? {} : { scale: 0.9 }}
                 transition={prefersReducedMotion ? { duration: 0 } : {}}
-                className="bg-card rounded-2xl p-6 w-full max-w-xs shadow-xl border border-border"
+                className="bg-card rounded-[28px] p-6 w-full max-w-xs shadow-xl border border-border"
                 onClick={e => e.stopPropagation()}>
-                <h3 id="clear-chat-title" className="font-bold text-base mb-2">Clear Chat?</h3>
+                <h3 id="clear-chat-title" className="admin-heading mb-2">Clear Chat?</h3>
                 <p className="text-xs text-muted-foreground mb-4">
                   Messages will be cleared only for you. The other person will still see their chat history.
                 </p>
@@ -951,7 +1046,8 @@ export default function ChatPage() {
         </AnimatePresence>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto px-3 py-3 bg-[radial-gradient(circle_at_50%_50%,rgba(var(--primary-rgb,59,130,246),0.02),transparent_70%)]">
+        <div className="flex-1 relative overflow-hidden">
+        <div ref={msgContainerRef} onScroll={handleMsgScroll} className="absolute inset-0 overflow-y-auto px-3 py-3" style={{ overscrollBehavior: 'contain' }}>
           <div className="max-w-3xl mx-auto space-y-0.5">
             {groupedMessages.map((dateGroup) => (
               <div key={dateGroup.date}>
@@ -975,7 +1071,7 @@ export default function ChatPage() {
                         {/* Reply preview */}
                         {(msg.reply_preview || msg.reply_to) && !isDeleted && (
                           <div className={`mx-1 mb-0.5 px-3 py-1.5 rounded-t-xl text-[10px] border-l-2 ${
-                            isMe ? "bg-primary/20 border-primary/50" : "bg-secondary/80 border-muted-foreground/30"
+                            isMe ? "bg-brand-600/20 border-brand-600/50" : "bg-secondary/80 border-muted-foreground/30"
                           }`}>
                             <span className="font-bold block">{msg.reply_sender || "Reply"}</span>
                             <span className="text-muted-foreground line-clamp-1">{msg.reply_preview || "..."}</span>
@@ -985,14 +1081,14 @@ export default function ChatPage() {
                         {/* Message bubble */}
                         <div className={`px-3 py-1.5 text-[13px] leading-relaxed relative ${
                           isMe
-                            ? `bg-primary text-primary-foreground ${showTail && !msg.reply_preview ? "rounded-2xl rounded-br-sm" : "rounded-2xl rounded-r-sm"}`
+                            ? `bg-brand-600 text-white ${showTail && !msg.reply_preview ? "rounded-2xl rounded-br-sm" : "rounded-2xl rounded-r-sm"}`
                             : `bg-card border border-border/50 shadow-sm text-foreground ${showTail && !msg.reply_preview ? "rounded-2xl rounded-bl-sm" : "rounded-2xl rounded-l-sm"}`
                         } ${isDeleted ? "italic opacity-60" : ""}`}>
                           {isDeleted ? (
                             <span className="text-xs">{"\uD83D\uDEAB"} This message was deleted</span>
                           ) : (
                             <>
-                              {msg.content && !msg.shared_post && <span>{msg.content}</span>}
+                              {msg.content && !msg.shared_post && <span>{linkifyText(msg.content)}</span>}
                               {/* Shared post card */}
                               {msg.shared_post && (
                                 <button onClick={() => openSharedPost(msg.shared_post.id)}
@@ -1015,7 +1111,7 @@ export default function ChatPage() {
                               )}
                               {/* Image */}
                               {msg.media_url && (!msg.media_type || msg.media_type === "image") && !msg.media_type?.startsWith("voice") && !msg.media_type?.startsWith("audio") && !msg.media_type?.startsWith("document") && (
-                                <img src={mediaUrl(msg.media_url)} alt="" className="rounded-lg mt-1 max-h-52 object-cover cursor-pointer" onClick={() => window.open(mediaUrl(msg.media_url), "_blank")} />
+                                <img src={mediaUrl(msg.media_url)} alt="" className="rounded-lg mt-1 max-h-52 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={(e) => { e.stopPropagation(); setLightboxImage(mediaUrl(msg.media_url)); }} />
                               )}
                               {/* Document */}
                               {msg.media_url && msg.media_type === "document" && (
@@ -1102,9 +1198,11 @@ export default function ChatPage() {
                         <div className={`flex items-center gap-1 mt-0.5 px-1 ${isMe ? "justify-end" : ""}`}>
                           <span className="text-[9px] text-muted-foreground/50">{formatTime(msg.created_at)}</span>
                           {isMe && !isDeleted && (
-                            msg.read
-                              ? <CheckCheck className="h-3 w-3 text-blue-400" />
-                              : <Check className="h-3 w-3 text-muted-foreground/40" />
+                            String(msg.id).startsWith("temp-")
+                              ? <Clock className="h-3 w-3 text-muted-foreground/30 animate-pulse" />
+                              : msg.read
+                                ? <CheckCheck className="h-3 w-3 text-blue-400" />
+                                : <Check className="h-3 w-3 text-muted-foreground/40" />
                           )}
                         </div>
 
@@ -1158,8 +1256,8 @@ export default function ChatPage() {
 
             {messages.length === 0 && (
               <div className="text-center py-16">
-                <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <MessageCircle className="h-8 w-8 text-primary" />
+                <div className="h-16 w-16 rounded-full bg-brand-600/10 flex items-center justify-center mx-auto mb-4">
+                  <MessageCircle className="h-8 w-8 text-brand-600" />
                 </div>
                 <p className="text-sm text-muted-foreground font-medium">Say hello! 👋</p>
                 <p className="text-[10px] text-muted-foreground/60 mt-1">Messages are private between you two</p>
@@ -1168,6 +1266,26 @@ export default function ChatPage() {
             <div ref={messagesEndRef} />
           </div>
         </div>
+        {/* Scroll to bottom FAB */}
+        {showScrollBtn && (
+          <button
+            onClick={() => {
+              messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+              isAtBottomRef.current = true;
+              setShowScrollBtn(false);
+              setNewMsgWhileAway(0);
+            }}
+            className="absolute bottom-4 right-4 h-10 w-10 rounded-full bg-brand-600 text-white shadow-lg shadow-brand-600/30 flex items-center justify-center z-20 hover:bg-brand-500 transition-all active:scale-95"
+            aria-label="Scroll to latest messages">
+            {newMsgWhileAway > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
+                {newMsgWhileAway > 9 ? "9+" : newMsgWhileAway}
+              </span>
+            )}
+            <ChevronDown className="h-5 w-5" />
+          </button>
+        )}
+        </div>
 
         {/* Reply preview bar */}
         <AnimatePresence>
@@ -1175,9 +1293,9 @@ export default function ChatPage() {
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
               className="bg-card border-t border-border overflow-hidden">
               <div className="max-w-3xl mx-auto flex items-center gap-2 px-4 py-2">
-                <Reply className="h-4 w-4 text-primary flex-shrink-0" />
-                <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
-                  <div className="text-[10px] font-bold text-primary">{replyTo.sender_name}</div>
+                <Reply className="h-4 w-4 text-brand-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0 border-l-2 border-brand-600 pl-2">
+                  <div className="text-[10px] font-bold text-brand-600">{replyTo.sender_name}</div>
                   <div className="text-xs text-muted-foreground truncate">{replyTo.content}</div>
                 </div>
                 <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground p-1">
@@ -1238,7 +1356,22 @@ export default function ChatPage() {
         ) : (
         <div className="bg-background border-t border-border px-3 sm:px-4 py-2 sm:py-3 flex-shrink-0"
           style={{ paddingBottom: "max(env(safe-area-inset-bottom, 12px), 12px)" }}>
-          <div className="max-w-3xl mx-auto flex items-end gap-2">
+          <div className="max-w-3xl mx-auto flex items-end gap-2 relative">
+            {/* Emoji quick-picker popup */}
+            {showEmojiPicker && (
+              <div ref={emojiPickerRef}
+                className="absolute bottom-full right-0 mb-2 bg-card border border-border/40 rounded-2xl shadow-xl p-2.5 z-20">
+                <div className="flex flex-wrap gap-1 max-w-[240px]">
+                  {["😊","😂","❤️","👍","🔥","🎉","😅","🙏","💪","👏","😍","🤔","😭","🥳","😎","🤩","💯","🙌","✅","⚽"].map(emoji => (
+                    <button key={emoji}
+                      onClick={() => { setMsgText(prev => prev + emoji); setShowEmojiPicker(false); inputRef.current?.focus(); }}
+                      className="h-9 w-9 flex items-center justify-center text-xl hover:bg-secondary/50 rounded-xl hover:scale-110 transition-all">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {/* Attachment button */}
             <input ref={fileInputRef} type="file" className="hidden"
               accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" onChange={handleFileSelect} />
@@ -1255,25 +1388,32 @@ export default function ChatPage() {
               <BarChart3 className="h-5 w-5" aria-hidden="true" />
             </button>
 
-            <div className="flex-1 bg-card rounded-2xl border border-border/50 px-3 sm:px-4 py-2 min-h-[44px] flex items-center">
+            <div className="flex-1 bg-card rounded-2xl border border-border/50 px-3 sm:px-4 py-2 min-h-[44px] flex items-center gap-1">
               <textarea
                 ref={inputRef}
                 value={msgText}
                 onChange={e => { setMsgText(e.target.value); handleTyping(); }}
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                 placeholder="Message..."
-                className="w-full bg-transparent border-none outline-none resize-none text-base sm:text-sm placeholder:text-muted-foreground max-h-[120px] touch-manipulation"
+                className="flex-1 bg-transparent border-none outline-none resize-none text-base sm:text-sm placeholder:text-muted-foreground max-h-[120px] touch-manipulation"
                 rows={1}
                 style={{ height: "auto", fontSize: "16px" }}
                 onInput={e => { e.target.style.height = "auto"; e.target.style.height = Math.min(e.target.scrollHeight, 120) + "px"; }}
                 aria-label="Type a message"
               />
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowEmojiPicker(prev => !prev); }}
+                className="flex-shrink-0 text-xl leading-none hover:scale-110 transition-transform opacity-60 hover:opacity-100"
+                aria-label="Add emoji"
+                type="button">
+                😊
+              </button>
             </div>
 
             {/* Send or Mic button */}
             {msgText.trim() || pendingFile ? (
               <button onClick={handleSend} disabled={sending || uploading}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 bg-primary text-primary-foreground shadow-lg transition-all touch-manipulation active:scale-95 disabled:opacity-50"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 bg-brand-600 text-white shadow-lg transition-all touch-manipulation active:scale-95 disabled:opacity-50"
                 aria-label="Send message">
                 {sending || uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Send className="h-4 w-4" aria-hidden="true" />}
               </button>
@@ -1302,7 +1442,7 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
               onClick={() => setLongPressMsg(null)}>
               <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                className="w-full max-w-md bg-card rounded-t-2xl sm:rounded-2xl border-t border-border p-4 sm:p-5 pb-8 sm:pb-6"
+                className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-[28px] border-t border-border p-4 sm:p-5 pb-8 sm:pb-6"
                 onClick={e => e.stopPropagation()}
                 role="dialog"
                 aria-modal="true"
@@ -1324,25 +1464,25 @@ export default function ChatPage() {
                 </div>
                 <div className="space-y-1">
                   <button onClick={() => { setReplyTo(longPressMsg); setLongPressMsg(null); inputRef.current?.focus(); }}
-                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-white/5 transition-colors text-left min-h-[44px] touch-manipulation">
                     <Reply className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm font-medium">Reply</span>
                   </button>
                   {/* Pin / Unpin */}
                   <button onClick={() => { longPressMsg.pinned ? handleUnpinMessage(longPressMsg) : handlePinMessage(longPressMsg); setLongPressMsg(null); }}
-                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-white/5 transition-colors text-left min-h-[44px] touch-manipulation">
                     {longPressMsg.pinned ? <PinOff className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" /> : <Pin className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />}
                     <span className="text-sm font-medium">{longPressMsg.pinned ? "Unpin Message" : "Pin Message"}</span>
                   </button>
                   {/* Forward */}
                   <button onClick={() => openForwardModal(longPressMsg)}
-                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                    className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-white/5 transition-colors text-left min-h-[44px] touch-manipulation">
                     <Forward className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                     <span className="text-sm font-medium">Forward</span>
                   </button>
                   {longPressMsg.content && (
                     <button onClick={() => { navigator.clipboard.writeText(longPressMsg.content); setLongPressMsg(null); toast.success("Copied!"); }}
-                      className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-secondary/50 transition-colors text-left min-h-[44px] touch-manipulation">
+                      className="w-full flex items-center gap-3 p-3 sm:p-2.5 rounded-xl hover:bg-white/5 transition-colors text-left min-h-[44px] touch-manipulation">
                       <MessageCircle className="h-5 w-5 text-muted-foreground flex-shrink-0" aria-hidden="true" />
                       <span className="text-sm font-medium">Copy Text</span>
                     </button>
@@ -1367,11 +1507,11 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
               onClick={() => setShowPinned(false)}>
               <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[60vh] flex flex-col"
+                className="w-full max-w-md bg-card rounded-t-3xl border-t border-border p-4 pb-8 max-h-[60vh] flex flex-col"
                 onClick={e => e.stopPropagation()}>
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-sm flex items-center gap-2"><Pin className="h-4 w-4" /> Pinned Messages</h3>
+                  <h3 className="admin-heading text-sm flex items-center gap-2"><Pin className="h-4 w-4" /> Pinned Messages</h3>
                   <button onClick={() => setShowPinned(false)}><X className="h-4 w-4" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto space-y-2">
@@ -1390,7 +1530,7 @@ export default function ChatPage() {
                       </div>
                       <p className="text-xs">{msg.content || (msg.media_type === "voice" ? "Voice message" : "Media")}</p>
                       <button onClick={() => { scrollToMessage(msg.id); setShowPinned(false); }}
-                        className="text-[10px] text-primary mt-1 hover:underline">Jump to message</button>
+                        className="text-[10px] text-brand-600 mt-1 hover:underline">Jump to message</button>
                     </div>
                   ))}
                 </div>
@@ -1406,16 +1546,16 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
               onClick={() => setShowPollCreate(false)}>
               <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8"
+                className="w-full max-w-md bg-card rounded-t-3xl border-t border-border p-4 pb-8"
                 onClick={e => e.stopPropagation()}>
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
-                <h3 className="font-bold text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Create Poll</h3>
+                <h3 className="admin-heading text-sm mb-3 flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Create Poll</h3>
                 <Input value={pollQuestion} onChange={e => setPollQuestion(e.target.value)}
-                  placeholder="Ask a question..." className="mb-3 bg-secondary/30 border-border/50 rounded-xl" />
+                  placeholder="Ask a question..." className="mb-3 bg-secondary/20 border-border/40 rounded-xl" />
                 {pollOptions.map((opt, i) => (
                   <div key={i} className="flex items-center gap-2 mb-2">
                     <Input value={opt} onChange={e => { const opts = [...pollOptions]; opts[i] = e.target.value; setPollOptions(opts); }}
-                      placeholder={`Option ${i + 1}`} className="bg-secondary/30 border-border/50 rounded-xl" />
+                      placeholder={`Option ${i + 1}`} className="bg-secondary/20 border-border/40 rounded-xl" />
                     {pollOptions.length > 2 && (
                       <button onClick={() => setPollOptions(pollOptions.filter((_, j) => j !== i))}
                         className="text-muted-foreground hover:text-destructive"><X className="h-4 w-4" /></button>
@@ -1424,11 +1564,11 @@ export default function ChatPage() {
                 ))}
                 {pollOptions.length < 6 && (
                   <button onClick={() => setPollOptions([...pollOptions, ""])}
-                    className="text-xs text-primary font-medium mb-3 hover:underline">+ Add option</button>
+                    className="text-xs text-brand-600 font-medium mb-3 hover:underline">+ Add option</button>
                 )}
                 <div className="flex gap-2 mt-3">
-                  <Button variant="outline" size="sm" onClick={() => setShowPollCreate(false)} className="flex-1">Cancel</Button>
-                  <Button variant="athletic" size="sm" onClick={handleCreatePoll} className="flex-1">Create Poll</Button>
+                  <Button size="sm" onClick={() => setShowPollCreate(false)} className="flex-1 admin-btn rounded-xl border border-border/40 bg-card text-foreground hover:bg-secondary">Cancel</Button>
+                  <Button size="sm" onClick={handleCreatePoll} className="flex-1 admin-btn rounded-xl bg-brand-600 hover:bg-brand-500 text-white shadow-lg shadow-brand-600/20">Create Poll</Button>
                 </div>
               </motion.div>
             </motion.div>
@@ -1442,11 +1582,11 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
               onClick={() => setShowMediaGallery(false)}>
               <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[70vh] flex flex-col"
+                className="w-full max-w-md bg-card rounded-t-3xl border-t border-border p-4 pb-8 max-h-[70vh] flex flex-col"
                 onClick={e => e.stopPropagation()}>
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-bold text-sm flex items-center gap-2"><Image className="h-4 w-4" /> Shared Media</h3>
+                  <h3 className="admin-heading text-sm flex items-center gap-2"><Image className="h-4 w-4" /> Shared Media</h3>
                   <button onClick={() => setShowMediaGallery(false)}><X className="h-4 w-4" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
@@ -1482,26 +1622,26 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 bg-black/40 flex items-end justify-center"
               onClick={() => { setShowForwardModal(false); setForwardMsg(null); }}>
               <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
-                className="w-full max-w-md bg-card rounded-t-2xl border-t border-border p-4 pb-8 max-h-[60vh] flex flex-col"
+                className="w-full max-w-md bg-card rounded-t-3xl border-t border-border p-4 pb-8 max-h-[60vh] flex flex-col"
                 onClick={e => e.stopPropagation()}>
                 <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mb-3" />
-                <h3 className="font-bold text-sm mb-1 flex items-center gap-2"><Forward className="h-4 w-4" /> Forward Message</h3>
+                <h3 className="admin-heading text-sm mb-1 flex items-center gap-2"><Forward className="h-4 w-4" /> Forward Message</h3>
                 <p className="text-[10px] text-muted-foreground mb-3 truncate">"{forwardMsg?.content || "Media"}"</p>
                 <div className="flex-1 overflow-y-auto space-y-1">
                   {forwardConvos.length === 0 ? (
                     <p className="text-center text-sm text-muted-foreground py-8">No other conversations</p>
                   ) : forwardConvos.map(convo => (
                     <button key={convo.id} onClick={() => handleForwardToConvo(convo)}
-                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/30 transition-colors text-left">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                      className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors text-left">
+                      <div className="h-10 w-10 rounded-full bg-brand-600/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                         {convo.other_user?.avatar
                           ? <img src={mediaUrl(convo.other_user.avatar)} alt="" className="h-10 w-10 rounded-full object-cover" />
-                          : <User className="h-5 w-5 text-primary" />}
+                          : <User className="h-5 w-5 text-brand-600" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-bold truncate block">{convo.other_user?.name || "Unknown"}</span>
                       </div>
-                      <Forward className="h-4 w-4 text-primary" />
+                      <Forward className="h-4 w-4 text-brand-600" />
                     </button>
                   ))}
                 </div>
@@ -1670,6 +1810,21 @@ export default function ChatPage() {
             </div>
           </div>
         )}
+
+        {/* Image Lightbox */}
+        {lightboxImage && (
+          <div className="fixed inset-0 z-[99999] bg-black/95 flex items-center justify-center p-4"
+            onClick={() => setLightboxImage(null)}>
+            <button className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all"
+              onClick={() => setLightboxImage(null)}
+              aria-label="Close image">
+              <X className="h-5 w-5" />
+            </button>
+            <img src={lightboxImage} alt=""
+              className="max-w-full max-h-full object-contain rounded-xl shadow-2xl"
+              onClick={e => e.stopPropagation()} />
+          </div>
+        )}
       </div>
     );
   }
@@ -1682,8 +1837,8 @@ export default function ChatPage() {
       <div className="max-w-2xl mx-auto px-4 py-6 pb-24 md:pb-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h1 className="font-display text-2xl font-black tracking-athletic">Chats</h1>
-          <Button variant="athletic" size="sm" onClick={openNewChatModal}>
+          <h1 className="admin-page-title">Chats</h1>
+          <Button size="sm" onClick={openNewChatModal} className="h-9 px-4 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all flex items-center gap-1">
             <Plus className="h-3.5 w-3.5 mr-1" /> New
           </Button>
         </div>
@@ -1693,7 +1848,7 @@ export default function ChatPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50" />
           <Input
             placeholder="Search conversations..."
-            className="pl-9 h-10 bg-secondary/30 border-border/50 rounded-xl text-sm"
+            className="pl-9 h-10 bg-secondary/20 border-border/40 rounded-full text-sm"
             value={convoSearch}
             onChange={e => setConvoSearch(e.target.value)}
           />
@@ -1702,40 +1857,41 @@ export default function ChatPage() {
         {/* Message Requests Banner */}
         {requestCount > 0 && (
           <button onClick={() => { setShowRequests(true); loadRequests(); }}
-            className="w-full flex items-center gap-3 p-3.5 mb-3 rounded-2xl bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-all text-left">
-            <div className="h-11 w-11 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Inbox className="h-5 w-5 text-primary" />
+            className="w-full flex items-center gap-3 p-3.5 mb-3 rounded-[28px] bg-brand-600/5 border border-brand-600/20 hover:bg-brand-600/10 transition-all text-left">
+            <div className="h-11 w-11 rounded-full bg-brand-600/10 flex items-center justify-center flex-shrink-0">
+              <Inbox className="h-5 w-5 text-brand-600" />
             </div>
             <div className="flex-1 min-w-0">
-              <span className="font-bold text-sm">Message Requests</span>
+              <span className="font-medium text-sm">Message Requests</span>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {requestCount} pending {requestCount === 1 ? "request" : "requests"}
               </p>
             </div>
-            <span className="h-6 min-w-[24px] px-1.5 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">
+            <span className="h-6 min-w-[24px] px-1.5 rounded-full bg-brand-600 text-white text-[11px] font-bold flex items-center justify-center">
               {requestCount}
             </span>
           </button>
         )}
 
         {/* Conversation List */}
-        <div className="space-y-0.5">
+        <div className="bg-card border border-border/40 rounded-[28px] overflow-hidden">
+          <div className="space-y-0.5">
           {filteredConvos.map((convo, idx) => (
             <motion.button key={convo.id}
               initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.02 }}
               onClick={() => openConversation(convo)}
-              className="w-full flex items-center gap-3 p-3.5 rounded-2xl hover:bg-secondary/30 active:bg-secondary/50 transition-all text-left">
+              className="w-full flex items-center gap-3 p-3.5 hover:bg-white/5 active:bg-white/10 transition-all text-left">
               {/* Avatar with online indicator */}
               <div className="relative flex-shrink-0">
-                <div className="h-13 w-13 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden"
+                <div className="h-13 w-13 rounded-full bg-brand-600/10 flex items-center justify-center overflow-hidden"
                   style={{ width: 52, height: 52 }}>
                   {convo.other_user?.avatar
                     ? <img src={mediaUrl(convo.other_user.avatar)} alt="" className="rounded-full object-cover" style={{ width: 52, height: 52 }} />
-                    : <User className="h-6 w-6 text-primary" />}
+                    : <User className="h-6 w-6 text-brand-600" />}
                 </div>
                 {convo.unread_count > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-5 min-w-[20px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  <span className="absolute -top-0.5 -right-0.5 h-5 min-w-[20px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
                     {convo.unread_count > 9 ? "9+" : convo.unread_count}
                   </span>
                 )}
@@ -1747,7 +1903,7 @@ export default function ChatPage() {
                   <span className={`font-bold text-sm truncate ${convo.unread_count > 0 ? "text-foreground" : ""}`}>
                     {convo.other_user?.name || "Unknown"}
                   </span>
-                  <span className={`text-[10px] flex-shrink-0 ml-2 ${convo.unread_count > 0 ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                  <span className={`text-[10px] flex-shrink-0 ml-2 ${convo.unread_count > 0 ? "text-brand-600 font-medium" : "text-muted-foreground"}`}>
                     {timeAgo(convo.last_message_at)}
                   </span>
                 </div>
@@ -1762,6 +1918,7 @@ export default function ChatPage() {
               </div>
             </motion.button>
           ))}
+          </div>
         </div>
 
         {filteredConvos.length === 0 && conversations.length > 0 && (
@@ -1773,12 +1930,12 @@ export default function ChatPage() {
 
         {conversations.length === 0 && !showNewChat && (
           <div className="text-center py-16">
-            <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-5">
-              <MessageCircle className="h-10 w-10 text-primary" />
+            <div className="h-20 w-20 rounded-full bg-brand-600/10 flex items-center justify-center mx-auto mb-5">
+              <MessageCircle className="h-10 w-10 text-brand-600" />
             </div>
-            <h3 className="font-display text-xl font-bold text-muted-foreground">No conversations yet</h3>
+            <h3 className="admin-heading text-muted-foreground">No conversations yet</h3>
             <p className="text-sm text-muted-foreground/70 mt-2 mb-6">Message Lobbians, coaches, and friends</p>
-            <Button variant="athletic" onClick={openNewChatModal}>
+            <Button onClick={openNewChatModal} className="h-11 px-6 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all flex items-center">
               <Plus className="h-4 w-4 mr-2" /> Start a Conversation
             </Button>
           </div>
@@ -1791,18 +1948,18 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60"
               onClick={closeNewChatModal}>
               <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-                className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-2xl max-h-[80vh] flex flex-col"
+                className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-[28px] max-h-[80vh] flex flex-col"
                 onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border/50">
-                  <h2 className="font-display font-bold text-lg">New Message</h2>
+                  <h2 className="admin-heading">New Message</h2>
                   <button onClick={closeNewChatModal}
                     className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
                 </div>
 
                 {/* Tabs */}
-                <div className="flex gap-1 mx-4 mt-3 bg-secondary/30 rounded-lg p-1">
+                <div className="flex flex-wrap gap-2 px-4 mt-3 border-b border-border/40 pb-2">
                   {[
                     { id: "all", label: "All", icon: Search },
                     { id: "followers", label: "Followers", icon: Users },
@@ -1810,8 +1967,8 @@ export default function ChatPage() {
                     { id: "contacts", label: "Contacts", icon: ContactRound },
                   ].map(t => (
                     <button key={t.id} onClick={() => { setActiveTab(t.id); setSearchQuery(""); }}
-                      className={`flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-[10px] font-bold transition-all ${
-                        activeTab === t.id ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      className={`flex items-center justify-center gap-1 px-4 py-1.5 rounded-full text-[10px] admin-btn transition-all ${
+                        activeTab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "text-muted-foreground hover:text-foreground"
                       }`}>
                       <t.icon className="h-3 w-3" />
                       {t.label}
@@ -1825,7 +1982,7 @@ export default function ChatPage() {
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input value={searchQuery} onChange={e => handleSearch(e.target.value)}
                       placeholder={activeTab === "all" ? "Search by name..." : `Search ${activeTab}...`}
-                      className="pl-9 bg-secondary/30 border-border/50 rounded-xl" autoFocus />
+                      className="pl-9 bg-secondary/20 border-border/40 rounded-xl" autoFocus />
                   </div>
                 </div>
 
@@ -1833,7 +1990,7 @@ export default function ChatPage() {
                 <div className="flex-1 overflow-y-auto p-4 space-y-1">
                   {/* Loading */}
                   {(searching || tabLoading) && (
-                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-brand-600" /></div>
                   )}
 
                   {/* All tab — existing search behavior */}
@@ -1931,12 +2088,12 @@ export default function ChatPage() {
               className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60"
               onClick={() => setShowRequests(false)}>
               <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }}
-                className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-2xl max-h-[80vh] flex flex-col"
+                className="w-full max-w-md bg-card rounded-t-3xl sm:rounded-[28px] max-h-[80vh] flex flex-col"
                 onClick={e => e.stopPropagation()}>
 
                 <div className="flex items-center justify-between p-4 border-b border-border/50">
-                  <h2 className="font-display font-bold text-lg flex items-center gap-2">
-                    <Inbox className="h-5 w-5 text-primary" /> Message Requests
+                  <h2 className="admin-heading flex items-center gap-2">
+                    <Inbox className="h-5 w-5 text-brand-600" /> Message Requests
                   </h2>
                   <button onClick={() => setShowRequests(false)}
                     className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
@@ -1948,7 +2105,7 @@ export default function ChatPage() {
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-2">
                   {requestsLoading && (
-                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+                    <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-brand-600" /></div>
                   )}
                   {!requestsLoading && messageRequests.length === 0 && (
                     <div className="text-center py-12">
@@ -1957,12 +2114,12 @@ export default function ChatPage() {
                     </div>
                   )}
                   {!requestsLoading && messageRequests.map(req => (
-                    <div key={req.id} className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-border/50">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer"
+                    <div key={req.id} className="flex items-center gap-3 p-3 rounded-2xl bg-secondary/20 border border-border/40">
+                      <div className="h-12 w-12 rounded-full bg-brand-600/10 flex items-center justify-center flex-shrink-0 overflow-hidden cursor-pointer"
                         onClick={() => navigate(`/player-card/${req.other_user?.id}`)}>
                         {req.other_user?.avatar
                           ? <img src={mediaUrl(req.other_user.avatar)} alt="" className="h-12 w-12 rounded-full object-cover" />
-                          : <User className="h-6 w-6 text-primary" />}
+                          : <User className="h-6 w-6 text-brand-600" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <span className="font-bold text-sm truncate block">{req.other_user?.name || "Unknown"}</span>
@@ -1972,7 +2129,7 @@ export default function ChatPage() {
                       </div>
                       <div className="flex gap-1.5 flex-shrink-0">
                         <button onClick={() => handleAcceptRequest(req)}
-                          className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
+                          className="h-9 w-9 rounded-full bg-brand-600 text-white flex items-center justify-center hover:bg-brand-500 transition-colors"
                           title="Accept">
                           <ShieldCheck className="h-4 w-4" />
                         </button>

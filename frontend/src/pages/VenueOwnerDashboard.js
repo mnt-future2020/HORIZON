@@ -1,13 +1,18 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation } from "react-router-dom";
-import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, payoutAPI } from "@/lib/api";
+import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, payoutAPI, venueFinanceAPI, teamAPI } from "@/lib/api";
+const pricingMLAPI = {
+  getMode: () => Promise.resolve({ data: { pricing_mode: "rule_based" } }),
+  demandForecast: () => Promise.resolve({ data: {} }),
+  setMode: () => Promise.resolve({ data: {} }),
+  trainModel: () => Promise.resolve({ data: {} }),
+};
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { AthleticStatCard } from "@/components/ui/stat-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -15,8 +20,32 @@ import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Banknote, Eye, Lightbulb } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { Building2, IndianRupee, TrendingUp, Calendar, Plus, Trash2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Banknote, Eye, Receipt, ArrowUpRight, ArrowDownRight, Download, MessageCircle, Wallet, Shield, User, LogOut, Swords } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+
+function TabsIndicator() {
+  return <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full opacity-0 transition-opacity [[data-state=active]_&]:opacity-100" />;
+}
+function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="bg-card rounded-[28px] p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div className="admin-label">{label}</div>
+        <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
+          <Icon className={`h-5 w-5 ${colorClass}`} />
+        </div>
+      </div>
+      <div className="admin-value">{value}</div>
+    </motion.div>
+  );
+}
+
 
 // Professional / venue owner imagery
 const OWNER_HERO = "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
@@ -73,9 +102,9 @@ function VenueImageUpload({ images = [], onChange }) {
         </div>
       )}
       {/* Upload button */}
-      <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-primary/40 hover:border-primary hover:bg-primary/5 text-muted-foreground hover:text-primary"}`}>
+      <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-brand-600/40 hover:border-brand-600 hover:bg-brand-600/5 text-muted-foreground hover:text-brand-600"}`}>
         {uploading ? (
-          <><div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />Uploading {uploadProgress > 0 ? `${uploadProgress}%` : "..."}</>
+          <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />Uploading {uploadProgress > 0 ? `${uploadProgress}%` : "..."}</>
         ) : (
           <><ImagePlus className="h-4 w-4" />{images.length > 0 ? "Add more images" : "Upload venue images"}</>
         )}
@@ -93,9 +122,9 @@ export default function VenueOwnerDashboard({ defaultView }) {
   if (user?.account_status === "pending") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="pending-approval-screen">
-        <div className="glass-card rounded-lg p-8 space-y-4">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-8 space-y-4">
           <ShieldAlert className="h-12 w-12 text-amber-400 mx-auto" />
-          <h1 className="font-display text-xl font-black">Account Pending Approval</h1>
+          <h1 className="admin-heading text-xl">Account Pending Approval</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Your venue owner registration is being reviewed by the Horizon team. You'll receive a notification once approved.
           </p>
@@ -109,9 +138,9 @@ export default function VenueOwnerDashboard({ defaultView }) {
   if (user?.account_status === "rejected" || user?.account_status === "suspended") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="account-blocked-screen">
-        <div className="glass-card rounded-lg p-8 space-y-4">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-8 space-y-4">
           <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
-          <h1 className="font-display text-xl font-black">Account {user.account_status === "rejected" ? "Not Approved" : "Suspended"}</h1>
+          <h1 className="admin-heading text-xl">Account {user.account_status === "rejected" ? "Not Approved" : "Suspended"}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {user.account_status === "rejected"
               ? "Your venue owner registration was not approved. Please contact support for more information."
@@ -146,11 +175,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [statusFilter, setStatusFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("desc");
-  const [bookingView, setBookingView] = useState("list");
-  const [pricingView, setPricingView] = useState("rules");
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState(false);
+  const [venueTeams, setVenueTeams] = useState([]);
+  const [teamsLoading, setTeamsLoading] = useState(false);
   const [editVenueOpen, setEditVenueOpen] = useState(false);
   const [editVenueForm, setEditVenueForm] = useState({});
   const [savingVenue, setSavingVenue] = useState(false);
@@ -276,6 +305,170 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
   useEffect(() => { loadPayoutData(); }, [loadPayoutData]);
 
+  // ─── Finance data loaders ───
+  const loadFinanceSummary = useCallback(async () => {
+    try {
+      const res = await venueFinanceAPI.financeSummary();
+      setFinanceSummaryData(res.data);
+    } catch { setFinanceSummaryData(null); }
+  }, []);
+
+  const loadVenueExpenses = useCallback(async () => {
+    try {
+      const res = await venueFinanceAPI.listExpenses();
+      setVenueExpenses(res.data || []);
+    } catch { setVenueExpenses([]); }
+  }, []);
+
+  const loadVenueTransactions = useCallback(async (filters = {}) => {
+    try {
+      const params = {};
+      if (filters.date_from) params.date_from = filters.date_from;
+      if (filters.date_to) params.date_to = filters.date_to;
+      if (filters.type && filters.type !== "all") params.type = filters.type;
+      const res = await venueFinanceAPI.listTransactions(params);
+      setVenueTransactions(res.data || []);
+    } catch { setVenueTransactions([]); }
+  }, []);
+
+  const loadVenueInvoices = useCallback(async (params = {}) => {
+    try {
+      const res = await venueFinanceAPI.listInvoices(params);
+      setVenueInvoices(res.data || []);
+    } catch { setVenueInvoices([]); }
+  }, []);
+
+  const loadGstSettings = useCallback(async () => {
+    try {
+      const res = await venueFinanceAPI.getGstSettings();
+      setGstSettings(res.data || { gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "VEN" });
+    } catch {}
+  }, []);
+
+  const loadVenueTeams = useCallback(async () => {
+    if (!selectedVenue) return;
+    setTeamsLoading(true);
+    try {
+      const sport = selectedVenue?.sports?.[0] || "";
+      const res = await teamAPI.list({ sport });
+      setVenueTeams(res.data?.teams || []);
+    } catch { toast.error("Failed to load teams"); }
+    finally { setTeamsLoading(false); }
+  }, [selectedVenue]);
+
+  const VENUE_EXPENSE_CATEGORIES = [
+    "maintenance", "staffing", "electricity", "water", "rent",
+    "equipment", "marketing", "insurance", "cleaning", "other",
+  ];
+
+  const handleSaveExpense = async () => {
+    try {
+      if (editExpenseId) {
+        await venueFinanceAPI.updateExpense(editExpenseId, expenseForm);
+        toast.success("Expense updated");
+      } else {
+        await venueFinanceAPI.createExpense(expenseForm);
+        toast.success("Expense added");
+      }
+      setAddExpenseOpen(false);
+      setEditExpenseId(null);
+      loadVenueExpenses();
+      loadFinanceSummary();
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+  };
+
+  const handleDeleteExpense = async (id) => {
+    try {
+      await venueFinanceAPI.deleteExpense(id);
+      toast.success("Expense deleted");
+      loadVenueExpenses();
+      loadFinanceSummary();
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+  };
+
+  const openEditExpense = (exp) => {
+    setEditExpenseId(exp.id);
+    setExpenseForm({
+      category: exp.category || "other", amount: String(exp.amount || ""),
+      date: exp.date || "", description: exp.description || "",
+      payment_mode: exp.payment_mode || "cash", reference: exp.reference || "",
+    });
+    setAddExpenseOpen(true);
+  };
+
+  const handleCreateInvoice = async () => {
+    if (!invoiceForm.client_name) { toast.error("Client name is required"); return; }
+    if (!invoiceItems.some(i => i.description && parseFloat(i.rate) > 0)) { toast.error("Add at least one item"); return; }
+    setInvoiceCreating(true);
+    try {
+      await venueFinanceAPI.createInvoice({
+        ...invoiceForm,
+        items: invoiceItems.filter(i => i.description),
+        gst_rate: gstSettings.gst_rate,
+        venue_id: selectedVenue?.id || "",
+      });
+      toast.success("Invoice created");
+      setShowCreateInvoice(false);
+      setInvoiceForm({ client_name: "", client_phone: "", client_email: "", date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
+      setInvoiceItems([{ description: "", qty: "1", rate: "" }]);
+      loadVenueInvoices({ month: invoiceMonth });
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    finally { setInvoiceCreating(false); }
+  };
+
+  const handleMarkInvoicePaid = async (id) => {
+    try {
+      await venueFinanceAPI.markInvoicePaid(id);
+      toast.success("Marked as paid");
+      loadVenueInvoices({ month: invoiceMonth });
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+  };
+
+  const handleDeleteInvoice = async (id) => {
+    try {
+      await venueFinanceAPI.deleteInvoice(id);
+      toast.success("Invoice deleted");
+      loadVenueInvoices({ month: invoiceMonth });
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+  };
+
+  const handleViewInvoicePdf = async (inv) => {
+    try {
+      const res = await venueFinanceAPI.getInvoicePdf(inv.id);
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      window.open(URL.createObjectURL(blob), "_blank");
+    } catch { toast.error("Failed to generate PDF"); }
+  };
+
+  const handleDownloadInvoicePdf = async (inv) => {
+    try {
+      const res = await venueFinanceAPI.getInvoicePdf(inv.id);
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `invoice-${inv.invoice_no}.pdf`;
+      a.click();
+    } catch { toast.error("Failed to download PDF"); }
+  };
+
+  const handleSendInvoiceWhatsapp = async (inv) => {
+    try {
+      const res = await venueFinanceAPI.sendInvoiceWhatsapp(inv.id);
+      if (res.data?.wa_link) window.open(res.data.wa_link, "_blank");
+      toast.success("Opening WhatsApp...");
+    } catch { toast.error("Failed"); }
+  };
+
+  const handleSaveGstSettings = async () => {
+    setGstSaving(true);
+    try {
+      await venueFinanceAPI.saveGstSettings(gstSettings);
+      toast.success("GST settings saved");
+      setShowGSTSettings(false);
+    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    finally { setGstSaving(false); }
+  };
+
   // Load reviews when selectedVenue changes
   useEffect(() => {
     if (selectedVenue) {
@@ -311,6 +504,38 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [bankForm, setBankForm] = useState({ account_number: "", ifsc_code: "", beneficiary_name: "", bank_name: "", business_type: "individual", phone: "", email: "" });
   const [bankSaving, setBankSaving] = useState(false);
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
+
+  // ─── Finance state ───
+  const [financeSubTab, setFinanceSubTab] = useState("overview");
+  const [financeSummaryData, setFinanceSummaryData] = useState(null);
+  const [venueExpenses, setVenueExpenses] = useState([]);
+  const [addExpenseOpen, setAddExpenseOpen] = useState(false);
+  const [editExpenseId, setEditExpenseId] = useState(null);
+  const [expenseForm, setExpenseForm] = useState({
+    category: "maintenance", amount: "", date: new Date().toISOString().slice(0, 10),
+    description: "", payment_mode: "cash", reference: "",
+  });
+  const [venueTransactions, setVenueTransactions] = useState([]);
+  const [transactionFilters, setTransactionFilters] = useState({ date_from: "", date_to: "", type: "all" });
+  const [venueInvoices, setVenueInvoices] = useState([]);
+  const [invoiceMonth, setInvoiceMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all");
+  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState({
+    client_name: "", client_phone: "", client_email: "",
+    date: new Date().toISOString().slice(0, 10),
+    due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+    status: "sent", payment_mode: "cash", gst_enabled: false, notes: "",
+  });
+  const [invoiceItems, setInvoiceItems] = useState([{ description: "", qty: "1", rate: "" }]);
+  const [invoiceCreating, setInvoiceCreating] = useState(false);
+  const [gstSettings, setGstSettings] = useState({ gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "VEN" });
+  const [showGSTSettings, setShowGSTSettings] = useState(false);
+  const [gstSaving, setGstSaving] = useState(false);
+
+  const invoiceSubtotal = invoiceItems.reduce((s, i) => s + (parseFloat(i.qty) || 0) * (parseFloat(i.rate) || 0), 0);
+  const invoiceGstAmt = invoiceForm.gst_enabled ? Math.round(invoiceSubtotal * gstSettings.gst_rate / 100 * 100) / 100 : 0;
+  const invoiceTotal = Math.round((invoiceSubtotal + invoiceGstAmt) * 100) / 100;
 
   // Edit form helpers — reuse same factory
   const editH = makeVenueHelpers(setEditVenueForm, setEditSportInput, setEditAmenityInput);
@@ -508,7 +733,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
   );
 
   return (
@@ -518,14 +743,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 rounded-2xl border-2 border-border/50 bg-card/50 backdrop-blur-md overflow-hidden"
+        className="mb-10 rounded-[28px] border border-border/40 bg-card overflow-hidden"
       >
         <div className="grid md:grid-cols-3 gap-0">
           {/* Text Content */}
           <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Venue Owner</span>
-            <h1 className="font-display text-display-md md:text-display-lg font-black tracking-athletic mt-2 truncate">
-              Welcome, <span className="bg-gradient-athletic bg-clip-text text-transparent">{user?.name}</span>
+            <h1 className="admin-page-title text-2xl md:text-3xl mt-2 truncate">
+              Welcome, <span className="text-brand-600">{user?.name}</span>
             </h1>
             <p className="text-muted-foreground font-semibold mt-3 text-base">
               Manage your venues, track revenue, and grow your sports business.
@@ -533,7 +758,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
             <div className="flex items-center gap-3 mt-5">
               <Button
                 onClick={() => setCreateVenueOpen(true)}
-                className="bg-gradient-athletic text-white shadow-glow-primary hover:shadow-glow-hover hover:scale-105 font-black uppercase tracking-wide h-12 px-6 shrink-0 rounded-xl"
+                className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-11 px-5 shrink-0"
                 data-testid="create-venue-btn"
               >
                 <Plus className="h-5 w-5 mr-2" /> Add Venue
@@ -553,35 +778,35 @@ function VenueOwnerDashboardContent({ defaultView }) {
       </motion.div>
 
       <Dialog open={createVenueOpen} onOpenChange={setCreateVenueOpen}>
-          <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogContent className="bg-card border-border max-w-lg max-h-[80vh] overflow-y-auto rounded-[28px]">
             <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-              <div><Label className="text-xs text-muted-foreground">Name *</Label>
+              <div><Label className="text-xs text-muted-foreground admin-label">Name *</Label>
                 <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))}
-                  className="mt-1 bg-background border-border" data-testid="venue-name-input" /></div>
-              <div><Label className="text-xs text-muted-foreground">Description</Label>
+                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="venue-name-input" /></div>
+              <div><Label className="text-xs text-muted-foreground admin-label">Description</Label>
                 <textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))}
                   rows={6} placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
-                  className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50" data-testid="venue-desc-input" /></div>
+                  className="mt-1 w-full bg-secondary/20 border border-border/40 rounded-xl px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand-600/50" data-testid="venue-desc-input" /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Address</Label>
+                <div><Label className="text-xs text-muted-foreground admin-label">Address</Label>
                   <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))}
-                    className="mt-1 bg-background border-border" data-testid="venue-address-input" /></div>
-                <div><Label className="text-xs text-muted-foreground">Area</Label>
+                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="venue-address-input" /></div>
+                <div><Label className="text-xs text-muted-foreground admin-label">Area</Label>
                   <Input value={venueForm.area} onChange={e => setVenueForm(p => ({ ...p, area: e.target.value }))}
-                    placeholder="Koramangala" className="mt-1 bg-background border-border" /></div>
+                    placeholder="Koramangala" className="mt-1 bg-secondary/20 border-border/40 rounded-xl" /></div>
               </div>
-              <div><Label className="text-xs text-muted-foreground">City *</Label>
+              <div><Label className="text-xs text-muted-foreground admin-label">City *</Label>
                 <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))}
-                  className="mt-1 bg-background border-border" data-testid="venue-city-input" /></div>
+                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="venue-city-input" /></div>
 
               {/* Sports — dynamic input */}
               <div>
-                <Label className="text-xs text-muted-foreground">Sports *</Label>
+                <Label className="text-xs text-muted-foreground admin-label">Sports *</Label>
                 <div className="flex gap-2 mt-1">
                   <Input value={sportInput} onChange={e => setSportInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addSport(sportInput))}
-                    placeholder="Type a sport and press Enter" className="bg-background border-border flex-1" />
+                    placeholder="Type a sport and press Enter" className="bg-secondary/20 border-border/40 rounded-xl flex-1" />
                   <Button type="button" size="sm" variant="outline" onClick={() => addSport(sportInput)} disabled={!sportInput.trim()}>
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -589,14 +814,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Added sports chips + remaining suggestions */}
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {venueForm.sports.map(s => (
-                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600/10 text-brand-600 border border-brand-600/20">
                       {s}
                       <button type="button" onClick={() => removeSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                     </span>
                   ))}
                   {SPORT_SUGGESTIONS.filter(s => !venueForm.sports.includes(s.toLowerCase())).map(s => (
                     <button key={s} type="button" onClick={() => addSport(s)}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/50 transition-colors">
                       + {s}
                     </button>
                   ))}
@@ -605,11 +830,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
               {/* Amenities — dynamic input */}
               <div>
-                <Label className="text-xs text-muted-foreground">Amenities</Label>
+                <Label className="text-xs text-muted-foreground admin-label">Amenities</Label>
                 <div className="flex gap-2 mt-1">
                   <Input value={amenityInput} onChange={e => setAmenityInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addAmenity(amenityInput))}
-                    placeholder="Type an amenity and press Enter" className="bg-background border-border flex-1" />
+                    placeholder="Type an amenity and press Enter" className="bg-secondary/20 border-border/40 rounded-xl flex-1" />
                   <Button type="button" size="sm" variant="outline" onClick={() => addAmenity(amenityInput)} disabled={!amenityInput.trim()}>
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -617,14 +842,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Added amenities chips + remaining suggestions */}
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {venueForm.amenities.map(a => (
-                    <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                    <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600/10 text-brand-600 border border-brand-600/20">
                       {a}
                       <button type="button" onClick={() => removeAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                     </span>
                   ))}
                   {AMENITY_SUGGESTIONS.filter(a => !venueForm.amenities.includes(a)).map(a => (
                     <button key={a} type="button" onClick={() => addAmenity(a)}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/50 transition-colors">
                       + {a}
                     </button>
                   ))}
@@ -637,9 +862,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   <Label className="text-xs text-muted-foreground">Turf Configuration</Label>
                   <div className="space-y-3 mt-1.5">
                     {venueForm.turf_config.map(tc => (
-                      <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
+                      <div key={tc.sport} className="border border-border/40 rounded-xl p-4 bg-secondary/20">
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-bold uppercase tracking-wider text-primary">{tc.sport}</span>
+                          <span className="text-xs font-bold uppercase tracking-wider text-brand-600">{tc.sport}</span>
                           <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addTurfToSport(tc.sport)}>
                             <Plus className="h-3 w-3 mr-1" /> Add Turf
                           </Button>
@@ -648,11 +873,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           {tc.turfs.map((t, idx) => (
                             <div key={idx} className="flex items-center gap-2">
                               <Input value={t.name} onChange={e => renameTurf(tc.sport, idx, e.target.value)}
-                                placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
+                                placeholder={`Turf ${idx + 1} name`} className="bg-secondary/20 border-border/40 rounded-xl text-xs h-8 flex-1" />
                               <div className="flex items-center gap-1">
                                 <span className="text-[10px] text-muted-foreground">₹</span>
                                 <Input type="number" value={t.price ?? venueForm.base_price} onChange={e => updateTurfPrice(tc.sport, idx, e.target.value)}
-                                  placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                                  placeholder="Price" className="bg-secondary/20 border-border/40 rounded-xl text-xs h-8 w-20" />
                               </div>
                               {tc.turfs.length > 1 && (
                                 <button type="button" onClick={() => removeTurfFromSport(tc.sport, idx)}
@@ -716,130 +941,152 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 images={venueForm.images}
                 onChange={imgs => setVenueForm(p => ({ ...p, images: imgs }))}
               />
-              <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
+              <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
             </div>
           </DialogContent>
         </Dialog>
 
       {/* Stats - Athletic Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <AthleticStatCard
-          icon={Building2}
-          label="Total Venues"
-          value={venues.length}
-          iconColor="primary"
-          delay={0.1}
-        />
-        <AthleticStatCard
-          icon={Calendar}
-          label="Total Bookings"
-          value={totalBookings}
-          iconColor="violet"
-          delay={0.2}
-        />
-        <AthleticStatCard
-          icon={IndianRupee}
-          label="Total Revenue"
-          value={`₹${(totalRevenue / 1000).toFixed(1)}K`}
-          iconColor="amber"
-          delay={0.3}
-        />
-        <AthleticStatCard
-          icon={TrendingUp}
-          label="Avg Booking"
-          value={`₹${analytics?.avg_booking_value || 0}`}
-          iconColor="sky"
-          delay={0.4}
-        />
+        <StatCard icon={Building2} label="Total Venues" value={venues.length} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
+        <StatCard icon={Calendar} label="Total Bookings" value={totalBookings} colorClass="text-purple-500" bgClass="bg-purple-500/10" index={1} />
+        <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${(totalRevenue / 1000).toFixed(1)}K`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
+        <StatCard icon={TrendingUp} label="Avg Booking" value={`₹${analytics?.avg_booking_value || 0}`} colorClass="text-sky-500" bgClass="bg-sky-500/10" index={3} />
       </div>
 
-      {/* Analytics — Revenue + Chart on Dashboard */}
-      {analytics && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-            <div className="glass-card rounded-lg p-4">
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-primary mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
-            </div>
-            <div className="glass-card rounded-lg p-4">
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
-            </div>
-            <div className="glass-card rounded-lg p-4">
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
-            </div>
+      {/* Venue Selector - Athletic Pills */}
+      {venues.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          className="mb-8 space-y-4"
+        >
+          <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Your Venues</h2>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1">
+            {venues.map((v, idx) => (
+              <motion.button
+                key={v.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.6 + idx * 0.05 }}
+                onClick={() => handleSelectVenue(v)}
+                data-testid={`venue-tab-${v.id}`}
+                className={`shrink-0 px-6 py-3 rounded-xl font-bold uppercase tracking-wide text-sm transition-all duration-300 border ${
+                  selectedVenue?.id === v.id
+                    ? "bg-brand-600 border-brand-600 text-white shadow-lg shadow-brand-600/20"
+                    : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"
+                }`}
+              >
+                {v.name}
+              </motion.button>
+            ))}
           </div>
-          {analytics.daily_revenue?.length > 0 && (
-            <div className="glass-card rounded-lg p-4 sm:p-6">
-              <h3 className="font-display font-bold mb-4">Revenue Trend</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={analytics.daily_revenue}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2, 32.6%, 17.5%)" />
-                  <XAxis dataKey="date" tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} />
-                  <YAxis tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} width={40} />
-                  <Tooltip contentStyle={{ background: "hsl(222.2, 47.4%, 11.2%)", border: "1px solid hsl(217.2, 32.6%, 17.5%)", borderRadius: 8 }}
-                    labelStyle={{ color: "hsl(210, 40%, 98%)" }} />
-                  <Bar dataKey="revenue" fill="hsl(160, 84%, 39.4%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          {/* Public page actions for selected venue */}
+          {selectedVenue?.slug && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-1.5">
+                <Globe className="w-3.5 h-3.5" />
+                <span className="font-mono">/venue/{selectedVenue.slug}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => navigate(`/venue/${selectedVenue.slug}`)}
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View Public Page
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setShowVenueQR(true)}
+              >
+                <QrCode className="w-3.5 h-3.5" />
+                QR Code
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={async () => {
+                  const url = `${window.location.origin}/venue/${selectedVenue.slug}`;
+                  await navigator.clipboard.writeText(url);
+                  setCopiedSlug(true);
+                  toast.success("Public link copied!");
+                  setTimeout(() => setCopiedSlug(false), 2000);
+                }}
+              >
+                {copiedSlug ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedSlug ? "Copied!" : "Copy Link"}
+              </Button>
+              <Button
+                size="sm"
+                className="h-7 text-xs gap-1.5 bg-brand-600 hover:bg-brand-500 text-white admin-btn"
+                onClick={openEditVenue}
+              >
+                <Pencil className="w-3.5 h-3.5" />
+                Edit Details
+              </Button>
             </div>
           )}
         </motion.div>
       )}
       </>)}
 
-      {/* Venue selector + actions on manage view */}
-      {isManageView && venues.length > 0 && (
-        <div className="mb-6 space-y-3">
-          <div className="flex gap-2 items-center overflow-x-auto pb-1">
-            {venues.map(v => (
-              <button key={v.id} onClick={() => handleSelectVenue(v)}
-                className={`shrink-0 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wide transition-all border-2 flex items-center gap-2 ${selectedVenue?.id === v.id ? "bg-primary/20 border-primary text-primary" : "bg-card/50 border-border/50 text-muted-foreground hover:border-primary/50 hover:text-primary"}`}>
-                {v.name}
-                {selectedVenue?.id === v.id && (
-                  <span onClick={e => { e.stopPropagation(); openEditVenue(); }}
-                    className="p-1 rounded-md hover:bg-primary/20 transition-colors" title="Edit venue">
-                    <Pencil className="h-3 w-3" />
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          {selectedVenue?.slug && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                onClick={() => window.open(`/venue/${selectedVenue.slug}`, "_blank")}>
-                <ExternalLink className="w-3.5 h-3.5" /> View Public Page
-              </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                onClick={() => setShowVenueQR(true)}>
-                <QrCode className="w-3.5 h-3.5" /> QR Code
-              </Button>
-            </div>
-          )}
+      {/* Compact venue selector on manage view */}
+      {isManageView && venues.length > 1 && (
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1">
+          {venues.map(v => (
+            <button key={v.id} onClick={() => handleSelectVenue(v)}
+              className={`shrink-0 px-4 py-2 rounded-xl admin-btn text-xs transition-all border ${selectedVenue?.id === v.id ? "bg-brand-600/10 border-brand-600/30 text-brand-600" : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/30"}`}>
+              {v.name}
+            </button>
+          ))}
         </div>
       )}
 
       {isManageView && (
-      <Tabs defaultValue="bookings" data-testid="owner-tabs">
-        <TabsList className="bg-secondary/50 mb-6 flex-wrap h-auto gap-1 p-1">
-          <TabsTrigger value="bookings" className="font-bold text-xs" data-testid="tab-bookings">Bookings</TabsTrigger>
-          <TabsTrigger value="slots" className="font-bold text-xs" data-testid="tab-slots">
-            <CalendarDays className="h-3 w-3 mr-1" />Slots
+      <Tabs defaultValue="bookings" onValueChange={(val) => {
+        if (val === "finance") {
+          loadFinanceSummary();
+          loadVenueExpenses();
+          loadVenueTransactions();
+          loadVenueInvoices({ month: invoiceMonth });
+          loadGstSettings();
+        }
+        if (val === "teams") loadVenueTeams();
+      }} data-testid="owner-tabs">
+        <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar border-b border-border/40 pb-2 mb-6">
+          <TabsTrigger value="bookings" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-bookings">Bookings<TabsIndicator /></TabsTrigger>
+          <TabsTrigger value="slots" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-slots">
+            <CalendarDays className="h-3 w-3 mr-1" />Slots<TabsIndicator />
           </TabsTrigger>
-          <TabsTrigger value="reviews" className="font-bold text-xs" data-testid="tab-reviews">
-            <Star className="h-3 w-3 mr-1" />Reviews
+          <TabsTrigger value="history" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-history">
+            <History className="h-3 w-3 mr-1" />History<TabsIndicator />
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="font-bold text-xs" data-testid="tab-pricing">Pricing</TabsTrigger>
-          <TabsTrigger value="checkin" className="font-bold text-xs" data-testid="tab-checkin">
-            <QrCode className="h-3 w-3 mr-1" />Check-in
+          <TabsTrigger value="reviews" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-reviews">
+            <Star className="h-3 w-3 mr-1" />Reviews<TabsIndicator />
           </TabsTrigger>
-          <TabsTrigger value="plan" className="font-bold text-xs" data-testid="tab-plan">Plan</TabsTrigger>
-          <TabsTrigger value="payouts" className="font-bold text-xs" data-testid="tab-payouts">Payouts</TabsTrigger>
+          <TabsTrigger value="pricing" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-pricing">Pricing<TabsIndicator /></TabsTrigger>
+          <TabsTrigger value="finance" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-finance">
+            <IndianRupee className="h-3 w-3 mr-1" />Finance<TabsIndicator />
+          </TabsTrigger>
+          <TabsTrigger value="ml-pricing" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-ml-pricing">
+            <Brain className="h-3 w-3 mr-1" />AI Pricing<TabsIndicator />
+          </TabsTrigger>
+          <TabsTrigger value="checkin" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-checkin">
+            <QrCode className="h-3 w-3 mr-1" />Check-in<TabsIndicator />
+          </TabsTrigger>
+          <TabsTrigger value="teams" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-teams">
+            <Shield className="h-3 w-3 mr-1" />Teams<TabsIndicator />
+          </TabsTrigger>
+          <TabsTrigger value="plan" className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" data-testid="tab-plan">Plan<TabsIndicator /></TabsTrigger>
         </TabsList>
 
-        {/* Bookings - Enhanced with filters, detail view, and timeline */}
+        {/* Bookings - Enhanced with filters, detail view */}
         <TabsContent value="bookings">
           {/* Quick Stats Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
@@ -850,192 +1097,104 @@ function VenueOwnerDashboardContent({ defaultView }) {
               { label: "Cancelled", value: bookingStats.cancelled, color: "text-destructive" },
               { label: "Upcoming", value: bookingStats.upcoming, color: "text-sky-400" },
             ].map(s => (
-              <div key={s.label} className="glass-card rounded-lg p-3 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
+              <div key={s.label} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
                 <div className={`text-lg font-display font-black ${s.color}`}>{s.value}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{s.label}</div>
               </div>
             ))}
           </div>
 
-          {/* View Toggle: List / Timeline */}
-          <div className="flex gap-1.5 mb-4">
-            {[{ key: "list", label: "List" }, { key: "timeline", label: "Timeline" }].map(v => (
-              <button key={v.key} onClick={() => setBookingView(v.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${bookingView === v.key ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                {v.label}
-              </button>
-            ))}
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2 mb-4" data-testid="booking-filters">
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground font-mono uppercase">Filters</span>
+            </div>
+            <div className="flex gap-1.5 flex-wrap">
+              {["all", "upcoming", "past"].map(f => (
+                <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${timeFilter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
+                  {f === "all" ? "All Time" : f === "upcoming" ? "Upcoming" : "Past"}
+                </button>
+              ))}
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="confirmed">Confirmed</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="payment_pending">Awaiting Pay</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+              </SelectContent>
+            </Select>
+            <button onClick={() => setSortOrder(s => s === "desc" ? "asc" : "desc")}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-secondary/50 text-xs text-muted-foreground hover:text-foreground transition-all"
+              data-testid="sort-toggle">
+              <ArrowUpDown className="h-3 w-3" /> {sortOrder === "desc" ? "Newest" : "Oldest"}
+            </button>
           </div>
 
-          {/* ── List View ── */}
-          {bookingView === "list" && (
-            <>
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-2 mb-4" data-testid="booking-filters">
-                <div className="flex items-center gap-1.5">
-                  <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-mono uppercase">Filters</span>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  {["all", "upcoming", "past"].map(f => (
-                    <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
-                      className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${timeFilter === f ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                      {f === "all" ? "All Time" : f === "upcoming" ? "Upcoming" : "Past"}
-                    </button>
-                  ))}
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="payment_pending">Awaiting Pay</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
-                <button onClick={() => setSortOrder(s => s === "desc" ? "asc" : "desc")}
-                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-secondary/50 text-xs text-muted-foreground hover:text-foreground transition-all"
-                  data-testid="sort-toggle">
-                  <ArrowUpDown className="h-3 w-3" /> {sortOrder === "desc" ? "Newest" : "Oldest"}
-                </button>
-              </div>
-
-              {/* Booking List */}
-              {filteredBookings.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Calendar className="h-8 w-8 mx-auto mb-3" />
-                  <p className="text-sm">{statusFilter !== "all" || timeFilter !== "all" ? "No bookings match your filters" : "No bookings yet"}</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground mb-2">{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</p>
-                  <AnimatePresence mode="popLayout">
-                    {filteredBookings.map((b, idx) => {
-                      const sc = statusConfig[b.status] || statusConfig.pending;
-                      const isPast = b.date < today;
-                      return (
-                        <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                          transition={{ delay: idx * 0.02 }}
-                          onClick={() => openBookingDetail(b)}
-                          className={`glass-card rounded-lg p-4 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
-                          data-testid={`booking-row-${b.id}`}>
-                          <div className="flex items-start justify-between gap-3 mb-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-bold text-sm text-foreground truncate">{b.host_name}</span>
-                                {b.payment_mode === "split" && (
-                                  <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">
-                                    <Users className="h-2.5 w-2.5 mr-0.5" />Split
-                                  </Badge>
-                                )}
-                              </div>
-                              <span className="text-xs text-muted-foreground">{b.venue_name} - Turf #{b.turf_number}</span>
-                            </div>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
-                              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                            </div>
-                          </div>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
-                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
-                              <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
-                            </div>
-                            <span className="font-bold text-primary text-sm">{"\u20B9"}{b.total_amount}</span>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </AnimatePresence>
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ── Timeline View (merged from History tab) ── */}
-          {bookingView === "timeline" && (
-            <div className="space-y-6" data-testid="booking-history-tab">
-              {bookings.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <History className="h-8 w-8 mx-auto mb-3" />
-                  <p className="text-sm">No booking history</p>
-                </div>
-              ) : (() => {
-                const sorted = [...bookings].sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
-                const grouped = {};
-                sorted.forEach(b => {
-                  const key = b.date;
-                  if (!grouped[key]) grouped[key] = [];
-                  grouped[key].push(b);
-                });
-                return (
-                  <div className="space-y-6">
-                    {Object.entries(grouped).map(([date, dateBookings]) => {
-                      const isPast = date < today;
-                      const isToday = date === today;
-                      const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? b.total_amount : 0), 0);
-                      return (
-                        <div key={date} data-testid={`history-date-${date}`}>
-                          <div className="flex items-center justify-between mb-3">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${isToday ? "bg-primary animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
-                              <span className="text-sm font-bold text-foreground">
-                                {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
-                              </span>
-                              <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
-                            </div>
-                            {totalAmount > 0 && (
-                              <span className="text-xs font-bold text-primary">{"\u20B9"}{totalAmount.toLocaleString()}</span>
+          {/* Booking List */}
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Calendar className="h-8 w-8 mx-auto mb-3" />
+              <p className="text-sm">{statusFilter !== "all" || timeFilter !== "all" ? "No bookings match your filters" : "No bookings yet"}</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground mb-2">{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</p>
+              <AnimatePresence mode="popLayout">
+                {filteredBookings.map((b, idx) => {
+                  const sc = statusConfig[b.status] || statusConfig.pending;
+                  const isPast = b.date < today;
+                  return (
+                    <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                      transition={{ delay: idx * 0.02 }}
+                      onClick={() => openBookingDetail(b)}
+                      className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-4 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
+                      data-testid={`booking-row-${b.id}`}>
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-foreground truncate">{b.host_name}</span>
+                            {b.payment_mode === "split" && (
+                              <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">
+                                <Users className="h-2.5 w-2.5 mr-0.5" />Split
+                              </Badge>
                             )}
                           </div>
-                          <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
-                            {dateBookings.map(b => {
-                              const sc = statusConfig[b.status] || statusConfig.pending;
-                              return (
-                                <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
-                                  onClick={() => openBookingDetail(b)}
-                                  className={`glass-card rounded-lg p-3 cursor-pointer transition-all hover:border-primary/30 group ${isPast ? "opacity-70" : ""}`}
-                                  data-testid={`history-booking-${b.id}`}>
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
-                                        <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
-                                        <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
-                                        {b.payment_mode === "split" && <Badge variant="outline" className="text-[9px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
-                                      </div>
-                                      <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-sm font-bold text-primary">{"\u20B9"}{b.total_amount}</span>
-                                      <Badge className={`text-[9px] border ${sc.color}`}>{sc.label}</Badge>
-                                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                    </div>
-                                  </div>
-                                </motion.div>
-                              );
-                            })}
-                          </div>
+                          <span className="text-xs text-muted-foreground">{b.venue_name} - Turf #{b.turf_number}</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <div className="flex items-center gap-3">
+                          <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
+                          <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
+                        </div>
+                        <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{b.total_amount}</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
             </div>
           )}
         </TabsContent>
 
         {/* Booking Detail Dialog */}
         <Dialog open={bookingDetailOpen} onOpenChange={setBookingDetailOpen}>
-          <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px]">
             <DialogHeader>
-              <DialogTitle className="font-display text-lg">Booking Details</DialogTitle>
+              <DialogTitle className="font-display text-lg admin-heading">Booking Details</DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">Booking ID: {selectedBooking?.id?.slice(0, 8)}...</DialogDescription>
             </DialogHeader>
             {selectedBooking && (
@@ -1056,7 +1215,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Booking Info Grid */}
-                <div className="glass-card rounded-lg p-4 space-y-3" data-testid="booking-detail-info">
+                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-info">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Venue</span>
@@ -1092,15 +1251,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Payment Details */}
-                <div className="glass-card rounded-lg p-4 space-y-3" data-testid="booking-detail-payment">
+                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-payment">
                   <div className="flex items-center gap-2 mb-1">
-                    <CreditCard className="h-4 w-4 text-primary" />
+                    <CreditCard className="h-4 w-4 text-brand-600" />
                     <span className="text-xs font-bold uppercase tracking-wider">Payment</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Total Amount</span>
-                      <p className="text-lg font-display font-black text-primary mt-0.5">{"\u20B9"}{selectedBooking.total_amount}</p>
+                      <p className="text-lg font-display font-black text-brand-600 mt-0.5">{"\u20B9"}{selectedBooking.total_amount}</p>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Commission</span>
@@ -1137,7 +1296,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* Split Payment Info */}
                 {selectedBooking.split_config && (
-                  <div className="glass-card rounded-lg p-4 space-y-3" data-testid="booking-detail-split">
+                  <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-split">
                     <div className="flex items-center gap-2 mb-1">
                       <Users className="h-4 w-4 text-violet-400" />
                       <span className="text-xs font-bold uppercase tracking-wider">Split Payment</span>
@@ -1171,7 +1330,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 )}
 
                 {/* Timestamps */}
-                <div className="glass-card rounded-lg p-4 space-y-2" data-testid="booking-detail-timestamps">
+                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-2" data-testid="booking-detail-timestamps">
                   <div className="flex items-center gap-2 mb-1">
                     <History className="h-4 w-4 text-muted-foreground" />
                     <span className="text-xs font-bold uppercase tracking-wider">Timeline</span>
@@ -1208,11 +1367,93 @@ function VenueOwnerDashboardContent({ defaultView }) {
           {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} />}
         </TabsContent>
 
+        {/* History Tab - Comprehensive booking timeline */}
+        <TabsContent value="history">
+          <div className="space-y-6" data-testid="booking-history-tab">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="admin-heading">Booking History</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Complete timeline of all bookings across your venues</p>
+              </div>
+            </div>
+
+            {/* History by Date Groups */}
+            {bookings.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <History className="h-8 w-8 mx-auto mb-3" />
+                <p className="text-sm">No booking history</p>
+              </div>
+            ) : (() => {
+              const sorted = [...bookings].sort((a, b) => b.date.localeCompare(a.date) || b.start_time.localeCompare(a.start_time));
+              const grouped = {};
+              sorted.forEach(b => {
+                const key = b.date;
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push(b);
+              });
+              return (
+                <div className="space-y-6">
+                  {Object.entries(grouped).map(([date, dateBookings]) => {
+                    const isPast = date < today;
+                    const isToday = date === today;
+                    const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? b.total_amount : 0), 0);
+                    return (
+                      <div key={date} data-testid={`history-date-${date}`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${isToday ? "bg-brand-600 animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
+                            <span className="text-sm font-bold text-foreground">
+                              {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                            </span>
+                            <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
+                          </div>
+                          {totalAmount > 0 && (
+                            <span className="text-xs font-bold text-brand-600">{"\u20B9"}{totalAmount.toLocaleString()}</span>
+                          )}
+                        </div>
+                        <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
+                          {dateBookings.map(b => {
+                            const sc = statusConfig[b.status] || statusConfig.pending;
+                            return (
+                              <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
+                                onClick={() => openBookingDetail(b)}
+                                className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-3 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
+                                data-testid={`history-booking-${b.id}`}>
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
+                                      <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
+                                      <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
+                                      {b.payment_mode === "split" && <Badge variant="outline" className="text-[9px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-sm font-bold text-brand-600">{"\u20B9"}{b.total_amount}</span>
+                                    <Badge className={`text-[9px] border ${sc.color}`}>{sc.label}</Badge>
+                                    <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-brand-600 transition-colors" />
+                                  </div>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+        </TabsContent>
+
+
         {/* Reviews Tab */}
         <TabsContent value="reviews">
           <div className="space-y-4" data-testid="owner-reviews-tab">
             <div>
-              <h3 className="font-display font-bold text-base sm:text-lg">
+              <h3 className="admin-heading">
                 Customer Reviews {selectedVenue && <span className="text-muted-foreground font-normal text-sm">- {selectedVenue.name}</span>}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">See what Lobbians say about your venue</p>
@@ -1232,18 +1473,18 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     const r5 = venueReviews.filter(r => r.rating === 5).length;
                     return (
                       <>
-                        <div className="glass-card rounded-lg p-3 text-center">
+                        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <Star className="h-4 w-4 text-primary fill-primary" />
-                            <span className="font-display font-black text-xl text-primary">{avg.toFixed(1)}</span>
+                            <Star className="h-4 w-4 text-brand-600 fill-brand-600" />
+                            <span className="font-display font-black text-xl text-brand-600">{avg.toFixed(1)}</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
                         </div>
-                        <div className="glass-card rounded-lg p-3 text-center">
+                        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
                           <div className="font-display font-black text-xl text-foreground">{venueReviews.length}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Total</div>
                         </div>
-                        <div className="glass-card rounded-lg p-3 text-center">
+                        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
                           <div className="font-display font-black text-xl text-brand-400">{r5}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">5-Star</div>
                         </div>
@@ -1255,17 +1496,17 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Review Cards */}
                 <div className="space-y-2">
                   {venueReviews.map(r => (
-                    <div key={r.id} className="glass-card rounded-lg p-4" data-testid={`owner-review-${r.id}`}>
+                    <div key={r.id} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4" data-testid={`owner-review-${r.id}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                          <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center text-xs font-bold text-brand-600">
                             {r.user_name?.[0]?.toUpperCase()}
                           </div>
                           <div>
                             <span className="font-bold text-sm">{r.user_name}</span>
                             <div className="flex gap-0.5 mt-0.5">
                               {[1, 2, 3, 4, 5].map(s => (
-                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-primary fill-primary" : "text-muted-foreground/40"}`} />
+                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-brand-600 fill-brand-600" : "text-muted-foreground/40"}`} />
                               ))}
                             </div>
                           </div>
@@ -1285,26 +1526,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
         {/* Pricing Rules - Enhanced P2 */}
         <TabsContent value="pricing">
-          {/* View Toggle: Rules / AI */}
-          <div className="flex gap-1.5 mb-4">
-            {[{ key: "rules", label: "Rules" }, { key: "analytics", label: "Analytics" }].map(v => (
-              <button key={v.key} onClick={() => setPricingView(v.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${pricingView === v.key ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                {v.label}
-              </button>
-            ))}
-          </div>
-
-          {pricingView === "rules" && (
-          <>
           <div className="flex items-center justify-between mb-4 gap-3">
             <div className="min-w-0">
-              <h3 className="font-display font-bold text-base sm:text-lg truncate">
+              <h3 className="admin-heading truncate">
                 Pricing Rules {selectedVenue && <span className="text-muted-foreground font-normal text-sm">- {selectedVenue.name}</span>}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Base price: <span className="text-primary font-bold">{"\u20B9"}{basePrice}/hr</span></p>
+              <p className="text-xs text-muted-foreground mt-0.5">Base price: <span className="text-brand-600 font-bold">{"\u20B9"}{basePrice}/hr</span></p>
             </div>
-            <Button size="sm" onClick={openCreateRule} className="bg-primary text-primary-foreground font-bold text-xs h-8 shrink-0" data-testid="create-rule-btn">
+            <Button size="sm" onClick={openCreateRule} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn font-bold text-xs h-8 shrink-0" data-testid="create-rule-btn">
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Rule
             </Button>
           </div>
@@ -1323,7 +1552,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 const isUp = diff > 0;
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`glass-card rounded-lg p-4 border-l-4 ${r.is_active ? (isUp ? "border-l-amber-500" : "border-l-brand-500") : "border-l-muted-foreground/30 opacity-60"}`}
+                    className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-4 border-l-4 ${r.is_active ? (isUp ? "border-l-amber-500" : "border-l-brand-500") : "border-l-muted-foreground/30 opacity-60"}`}
                     data-testid={`rule-card-${r.id}`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
@@ -1377,20 +1606,20 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
           {/* Rule Create/Edit Dialog */}
           <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-            <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto">
+            <DialogContent className="bg-card border-border max-w-md max-h-[85vh] overflow-y-auto rounded-[28px]">
               <DialogHeader>
-                <DialogTitle className="font-display">{editingRule ? "Edit" : "Create"} Pricing Rule</DialogTitle>
+                <DialogTitle className="font-display admin-heading">{editingRule ? "Edit" : "Create"} Pricing Rule</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Rule Name</Label>
+                  <Label className="text-xs text-muted-foreground admin-label">Rule Name</Label>
                   <Input value={ruleForm.name} onChange={e => setRuleForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="Weekend Peak Hours" className="mt-1 bg-background border-border" data-testid="rule-name-input" />
+                    placeholder="Weekend Peak Hours" className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="rule-name-input" />
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Priority (higher = applied first)</Label>
+                  <Label className="text-xs text-muted-foreground admin-label">Priority (higher = applied first)</Label>
                   <Input type="number" value={ruleForm.priority} onChange={e => setRuleForm(p => ({ ...p, priority: Number(e.target.value) }))}
-                    className="mt-1 bg-background border-border" data-testid="rule-priority-input" />
+                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="rule-priority-input" />
                 </div>
 
                 {/* Days of week */}
@@ -1402,7 +1631,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <button key={i} onClick={() => toggleDay(i)} data-testid={`day-btn-${i}`}
                         className={`h-9 w-9 rounded-lg text-xs font-bold transition-all ${
                           (ruleForm.conditions.days || []).includes(i)
-                            ? "bg-primary text-primary-foreground"
+                            ? "bg-brand-600 text-white shadow-md shadow-brand-600/20"
                             : "bg-secondary/50 text-muted-foreground hover:text-foreground"
                         }`}>{label}</button>
                     ))}
@@ -1415,10 +1644,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   <div className="grid grid-cols-2 gap-2 mt-1">
                     <Input value={ruleForm.conditions.time_range?.start || ""}
                       onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
-                      placeholder="18:00" className="bg-background border-border" data-testid="rule-time-start" />
+                      placeholder="18:00" className="bg-secondary/20 border-border/40 rounded-xl" data-testid="rule-time-start" />
                     <Input value={ruleForm.conditions.time_range?.end || ""}
                       onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
-                      placeholder="22:00" className="bg-background border-border" data-testid="rule-time-end" />
+                      placeholder="22:00" className="bg-secondary/20 border-border/40 rounded-xl" data-testid="rule-time-end" />
                   </div>
                 </div>
 
@@ -1426,7 +1655,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <div>
                   <Label className="text-xs text-muted-foreground">Action Type</Label>
                   <Select value={ruleForm.action.type} onValueChange={v => setRuleForm(p => ({ ...p, action: { ...p.action, type: v } }))}>
-                    <SelectTrigger className="mt-1 bg-background border-border" data-testid="rule-action-select"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="rule-action-select"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="multiplier">Multiplier (e.g., 1.2 = +20%)</SelectItem>
                       <SelectItem value="discount">Discount (e.g., 0.15 = -15%)</SelectItem>
@@ -1437,16 +1666,16 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   <Label className="text-xs text-muted-foreground">Value</Label>
                   <Input type="number" step="0.01" value={ruleForm.action.value}
                     onChange={e => setRuleForm(p => ({ ...p, action: { ...p.action, value: Number(e.target.value) } }))}
-                    className="mt-1 bg-background border-border" data-testid="rule-value-input" />
+                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl" data-testid="rule-value-input" />
                 </div>
 
                 {/* Live Preview */}
-                <div className="glass-card rounded-lg p-3" data-testid="rule-preview">
+                <div className="bg-secondary/30 rounded-2xl p-4 space-y-2 text-sm" data-testid="rule-preview">
                   <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Price Preview</span>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-sm text-muted-foreground">{"\u20B9"}{basePrice}</span>
                     <span className="text-muted-foreground">{"\u2192"}</span>
-                    <span className="text-lg font-display font-bold text-primary">{"\u20B9"}{previewPrice(ruleForm)}</span>
+                    <span className="text-lg font-display font-bold text-brand-600">{"\u20B9"}{previewPrice(ruleForm)}</span>
                     {(() => {
                       const d = previewPrice(ruleForm) - basePrice;
                       return d !== 0 && (
@@ -1458,35 +1687,757 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   </div>
                 </div>
 
-                <Button className="w-full bg-primary text-primary-foreground font-bold" onClick={handleSaveRule} data-testid="submit-rule-btn">
+                <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveRule} data-testid="submit-rule-btn">
                   {editingRule ? "Update Rule" : "Create Rule"}
                 </Button>
               </div>
             </DialogContent>
           </Dialog>
-          </>
-          )}
-
-          {/* ── Analytics View ── */}
-          {pricingView === "analytics" && selectedVenue && (
-            <VenueAnalyticsPanel venueId={selectedVenue.id} />
-          )}
         </TabsContent>
 
+        <TabsContent value="finance">
+          <div className="space-y-6">
+            {/* P&L Summary Cards */}
+            {financeSummaryData && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${(financeSummaryData.total_income || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
+                <StatCard icon={TrendingUp} label="Net Profit" value={`₹${(financeSummaryData.net_profit || 0).toLocaleString()}`} colorClass={financeSummaryData.net_profit >= 0 ? "text-emerald-500" : "text-red-500"} bgClass={financeSummaryData.net_profit >= 0 ? "bg-emerald-500/10" : "bg-red-500/10"} index={1} />
+                <StatCard icon={Wallet} label="Expenses" value={`₹${(financeSummaryData.total_expenses || 0).toLocaleString()}`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
+                <StatCard icon={Calendar} label="This Month" value={`₹${(financeSummaryData.current_month?.net || 0).toLocaleString()}`} colorClass="text-sky-500" bgClass="bg-sky-500/10" index={3} />
+              </div>
+            )}
+
+            {/* Commission banner */}
+            {financeSummaryData?.commission_pct > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-[28px] px-4 py-2 flex items-center gap-2 text-xs text-amber-500">
+                <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                Platform commission: {financeSummaryData.commission_pct}% on booking revenue (₹{(financeSummaryData.commission_total || 0).toLocaleString()})
+              </div>
+            )}
+
+            {/* Sub-tab switcher */}
+            <div className="flex gap-2 w-full sm:w-auto overflow-x-auto flex-wrap">
+              {[
+                { id: "overview", label: "Overview" },
+                { id: "transactions", label: "Ledger" },
+                { id: "expenses", label: "Expenses" },
+                { id: "invoices", label: `Invoices${venueInvoices.length ? ` (${venueInvoices.length})` : ""}` },
+                { id: "payouts", label: "Payouts" },
+              ].map(({ id, label }) => (
+                <button key={id} onClick={() => setFinanceSubTab(id)}
+                  className={`flex-shrink-0 transition-all ${
+                    financeSubTab === id
+                      ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn"
+                      : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"
+                  }`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* -- Overview sub-tab -- */}
+            {financeSubTab === "overview" && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Income by Sport */}
+                  <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6 space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground admin-section-label">Income by Sport</p>
+                    {Object.keys(financeSummaryData?.income_by_sport || {}).length > 0 ? (
+                      <div className="space-y-2">
+                        {Object.entries(financeSummaryData.income_by_sport).map(([sport, amt]) => (
+                          <div key={sport} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{sport}</span>
+                            <span className="font-bold text-sky-400">₹{amt.toLocaleString()}</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-border pt-2 flex justify-between text-sm font-black">
+                          <span>Total Revenue</span>
+                          <span className="text-brand-600">₹{(financeSummaryData?.total_income || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ) : <p className="text-xs text-muted-foreground">No bookings yet</p>}
+                  </div>
+
+                  {/* Expense Breakdown */}
+                  <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6 space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground admin-section-label">Expense Breakdown</p>
+                    {Object.keys(financeSummaryData?.expenses_by_category || {}).length > 0 ? (
+                      <div className="space-y-2">
+                        {Object.entries(financeSummaryData.expenses_by_category).map(([cat, amt]) => (
+                          <div key={cat} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground capitalize">{cat.replace("_", " ")}</span>
+                            <span className="font-bold text-amber-400">₹{amt.toLocaleString()}</span>
+                          </div>
+                        ))}
+                        <div className="border-t border-border pt-2 flex justify-between text-sm font-black">
+                          <span>Total</span>
+                          <span className="text-destructive">₹{(financeSummaryData?.total_expenses || 0).toLocaleString()}</span>
+                        </div>
+                      </div>
+                    ) : <p className="text-xs text-muted-foreground">No expenses recorded</p>}
+                  </div>
+                </div>
+
+                {/* Income by Venue (if multiple venues) */}
+                {Object.keys(financeSummaryData?.income_by_venue || {}).length > 1 && (
+                  <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground admin-section-label mb-3">Income by Venue</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {Object.entries(financeSummaryData.income_by_venue).map(([vname, amt]) => (
+                        <div key={vname} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
+                          <p className="font-black text-sm text-foreground">₹{amt.toLocaleString()}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{vname}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Monthly Trend Chart */}
+                {(financeSummaryData?.monthly_trend || []).length > 0 && (
+                  <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground admin-section-label mb-4">6-Month Trend</p>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={financeSummaryData.monthly_trend} barSize={18} barGap={4}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="month" tick={{ fill: "#94A3B8", fontSize: 10 }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fill: "#94A3B8", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => `₹${(v/1000).toFixed(0)}k`} />
+                        <Tooltip contentStyle={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, fontSize: 12 }}
+                          formatter={(value, name) => [`₹${value.toLocaleString()}`, name === "income" ? "Income" : name === "expenses" ? "Expenses" : "Net"]} />
+                        <Legend wrapperStyle={{ fontSize: 11, color: "#94A3B8" }} />
+                        <Bar dataKey="income" name="Income" fill="#10B981" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="expenses" name="Expenses" fill="#F59E0B" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="net" name="Net" fill="#7C3AED" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* -- Ledger sub-tab -- */}
+            {financeSubTab === "transactions" && (
+              <div className="space-y-4">
+                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide admin-label">From</Label>
+                    <Input type="date" value={transactionFilters.date_from} onChange={e => setTransactionFilters(f => ({ ...f, date_from: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs h-8" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide admin-label">To</Label>
+                    <Input type="date" value={transactionFilters.date_to} onChange={e => setTransactionFilters(f => ({ ...f, date_to: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs h-8" />
+                  </div>
+                  <div>
+                    <Label className="text-[10px] text-muted-foreground uppercase tracking-wide admin-label">Type</Label>
+                    <Select value={transactionFilters.type} onValueChange={v => setTransactionFilters(f => ({ ...f, type: v }))}>
+                      <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs h-8"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All</SelectItem>
+                        <SelectItem value="income">Income</SelectItem>
+                        <SelectItem value="expense">Expense</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex items-end">
+                    <Button size="sm" className="w-full h-8 text-xs font-bold bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={() => loadVenueTransactions(transactionFilters)}>
+                      <Filter className="h-3 w-3 mr-1" /> Apply
+                    </Button>
+                  </div>
+                </div>
+
+                {venueTransactions.length > 0 ? (
+                  <div className="space-y-2">
+                    {venueTransactions.map(txn => (
+                      <div key={txn.id} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 flex items-center gap-3">
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${txn.type === "income" ? "bg-brand-600/10" : "bg-destructive/10"}`}>
+                          {txn.type === "income" ? <ArrowUpRight className="h-4 w-4 text-brand-600" /> : <ArrowDownRight className="h-4 w-4 text-destructive" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span className="font-bold text-sm truncate">{txn.type === "income" ? (txn.client_name || txn.description) : txn.description || txn.category}</span>
+                            <Badge className={`text-[9px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>{txn.type}</Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground capitalize">{txn.date} · {txn.category?.replace("_", " ")}</p>
+                        </div>
+                        <span className={`font-black text-sm shrink-0 ${txn.type === "income" ? "text-brand-600" : "text-destructive"}`}>
+                          {txn.type === "income" ? "+" : "-"}₹{(txn.amount || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <Receipt className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No transactions found</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* -- Expenses sub-tab -- */}
+            {financeSubTab === "expenses" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-muted-foreground">{venueExpenses.length} expense{venueExpenses.length !== 1 ? "s" : ""} recorded</p>
+                  <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all font-bold text-xs h-8"
+                    onClick={() => { setEditExpenseId(null); setExpenseForm({ category: "maintenance", amount: "", date: new Date().toISOString().slice(0, 10), description: "", payment_mode: "cash", reference: "" }); setAddExpenseOpen(true); }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Add Expense
+                  </Button>
+                </div>
+
+                {venueExpenses.length > 0 ? (
+                  <div className="space-y-2">
+                    {venueExpenses.map(exp => (
+                      <div key={exp.id} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 flex items-center gap-3">
+                        <div className="bg-amber-500/10 h-8 w-8 rounded-full flex items-center justify-center shrink-0">
+                          <ArrowDownRight className="h-4 w-4 text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span className="font-bold text-sm capitalize">{exp.category?.replace("_", " ")}</span>
+                            <Badge variant="outline" className="text-[9px] capitalize">{exp.payment_mode?.replace("_", " ")}</Badge>
+                            {exp.recurring && <Badge className="text-[9px] bg-violet-500/10 text-violet-400">Recurring</Badge>}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{exp.date}{exp.description ? ` · ${exp.description}` : ""}</p>
+                        </div>
+                        <span className="font-black text-sm text-amber-400 shrink-0">₹{(exp.amount || 0).toLocaleString()}</span>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => openEditExpense(exp)} className="h-7 w-7 rounded-xl bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors">
+                            <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                          </button>
+                          <button onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors">
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16 text-muted-foreground">
+                    <Receipt className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                    <p className="text-sm">No expenses yet. Add your first expense.</p>
+                  </div>
+                )}
+
+                {/* Add/Edit Expense Dialog */}
+                <Dialog open={addExpenseOpen} onOpenChange={(o) => { setAddExpenseOpen(o); if (!o) setEditExpenseId(null); }}>
+                  <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                    <DialogHeader>
+                      <DialogTitle className="font-display admin-heading">{editExpenseId ? "Edit Expense" : "Add Expense"}</DialogTitle>
+                      <DialogDescription className="text-xs text-muted-foreground admin-label">Track your venue operating expenses</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Category</Label>
+                          <Select value={expenseForm.category} onValueChange={v => setExpenseForm(f => ({ ...f, category: v }))}>
+                            <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {VENUE_EXPENSE_CATEGORIES.map(c => (
+                                <SelectItem key={c} value={c} className="capitalize">{c.replace("_", " ")}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Amount (₹) *</Label>
+                          <Input type="number" value={expenseForm.amount} onChange={e => setExpenseForm(f => ({ ...f, amount: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" placeholder="0" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Date</Label>
+                          <Input type="date" value={expenseForm.date} onChange={e => setExpenseForm(f => ({ ...f, date: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Payment Mode</Label>
+                          <Select value={expenseForm.payment_mode} onValueChange={v => setExpenseForm(f => ({ ...f, payment_mode: v }))}>
+                            <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="cash">Cash</SelectItem>
+                              <SelectItem value="upi">UPI</SelectItem>
+                              <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                              <SelectItem value="cheque">Cheque</SelectItem>
+                              <SelectItem value="card">Card</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground admin-label">Description</Label>
+                        <Input value={expenseForm.description} onChange={e => setExpenseForm(f => ({ ...f, description: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" placeholder="e.g. Monthly electricity bill" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground admin-label">Reference / Receipt No.</Label>
+                        <Input value={expenseForm.reference} onChange={e => setExpenseForm(f => ({ ...f, reference: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" placeholder="Optional" />
+                      </div>
+                      <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveExpense}>
+                        {editExpenseId ? "Update Expense" : "Add Expense"}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+
+            {/* -- Invoices sub-tab -- */}
+            {financeSubTab === "invoices" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {["all", "sent", "paid", "draft"].map(s => (
+                      <button key={s} onClick={() => { setInvoiceStatusFilter(s); loadVenueInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined }); }}
+                        className={`transition-all ${invoiceStatusFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"}`}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </button>
+                    ))}
+                    <input type="month" value={invoiceMonth} onChange={e => { setInvoiceMonth(e.target.value); loadVenueInvoices({ month: e.target.value, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }); }}
+                      className="bg-secondary/20 border border-border/40 rounded-xl px-2 py-1 text-xs text-foreground" />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { loadGstSettings(); setShowGSTSettings(true); }}
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-border bg-muted/40 hover:bg-muted text-muted-foreground transition-all flex items-center gap-1.5">
+                      GST Settings {gstSettings.gst_enabled && <span className="text-[10px] text-brand-600">ON</span>}
+                    </button>
+                    <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all font-bold text-xs h-8" onClick={() => setShowCreateInvoice(true)}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Create Invoice
+                    </Button>
+                  </div>
+                </div>
+
+                {/* GST Settings Dialog */}
+                <Dialog open={showGSTSettings} onOpenChange={setShowGSTSettings}>
+                  <DialogContent className="bg-card border-border max-w-sm rounded-[28px]">
+                    <DialogHeader>
+                      <DialogTitle className="font-display admin-heading">GST & Invoice Settings</DialogTitle>
+                      <DialogDescription className="text-xs text-muted-foreground admin-label">Configure GST for your venue invoices</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-sm font-bold">Enable GST</Label>
+                          <p className="text-xs text-muted-foreground">Apply GST to all invoices by default</p>
+                        </div>
+                        <button onClick={() => setGstSettings(g => ({ ...g, gst_enabled: !g.gst_enabled }))}
+                          className={`w-11 h-6 rounded-full transition-colors relative ${gstSettings.gst_enabled ? "bg-brand-600" : "bg-muted"}`}>
+                          <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${gstSettings.gst_enabled ? "translate-x-5" : "translate-x-0"}`} />
+                        </button>
+                      </div>
+                      {gstSettings.gst_enabled && (
+                        <>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">GSTIN</Label>
+                            <Input value={gstSettings.gstin || ""} onChange={e => setGstSettings(g => ({ ...g, gstin: e.target.value.toUpperCase() }))} placeholder="29ABCDE1234F1Z5" className="mt-1 bg-secondary/20 border-border/40 rounded-xl font-mono text-xs" />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">GST Rate</Label>
+                            <div className="flex gap-2">
+                              {[5, 12, 18].map(r => (
+                                <button key={r} type="button" onClick={() => setGstSettings(g => ({ ...g, gst_rate: r }))}
+                                  className={`flex-1 transition-all ${gstSettings.gst_rate === r ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn"}`}>
+                                  {r}%
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      <div>
+                        <Label className="text-xs text-muted-foreground">Invoice Prefix</Label>
+                        <Input value={gstSettings.invoice_prefix || "VEN"} onChange={e => setGstSettings(g => ({ ...g, invoice_prefix: e.target.value.toUpperCase() }))} placeholder="VEN" className="mt-1 bg-secondary/20 border-border/40 rounded-xl w-28" />
+                        <p className="text-[10px] text-muted-foreground mt-1">e.g. VEN → VEN-2026-0001</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveGstSettings} disabled={gstSaving}>
+                          {gstSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <CheckCircle className="h-4 w-4 mr-1" />}
+                          Save Settings
+                        </Button>
+                        <Button variant="outline" onClick={() => setShowGSTSettings(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Create Invoice Dialog */}
+                <Dialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
+                  <DialogContent className="bg-card border-border max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
+                    <DialogHeader>
+                      <DialogTitle className="font-display admin-heading">Create Invoice</DialogTitle>
+                      <DialogDescription className="text-xs text-muted-foreground admin-label">Create a manual invoice for your venue</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="col-span-2 sm:col-span-1">
+                          <Label className="text-xs text-muted-foreground admin-label">Client Name *</Label>
+                          <Input value={invoiceForm.client_name} onChange={e => setInvoiceForm(f => ({ ...f, client_name: e.target.value }))} placeholder="Client name" className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Client Phone</Label>
+                          <Input value={invoiceForm.client_phone} onChange={e => setInvoiceForm(f => ({ ...f, client_phone: e.target.value }))} placeholder="+91..." className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Invoice Date</Label>
+                          <Input type="date" value={invoiceForm.date} onChange={e => setInvoiceForm(f => ({ ...f, date: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Due Date</Label>
+                          <Input type="date" value={invoiceForm.due_date} onChange={e => setInvoiceForm(f => ({ ...f, due_date: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
+                        </div>
+                      </div>
+
+                      {/* Line items */}
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <Label className="text-xs text-muted-foreground">Items</Label>
+                          <button type="button" onClick={() => setInvoiceItems(prev => [...prev, { description: "", qty: "1", rate: "" }])} className="text-xs font-bold text-brand-600 flex items-center gap-1 hover:underline">
+                            <Plus className="h-3 w-3" /> Add Row
+                          </button>
+                        </div>
+                        <div className="rounded-[28px] border border-border overflow-hidden">
+                          <div className="grid grid-cols-12 bg-muted/50 px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase">
+                            <span className="col-span-6">Description</span>
+                            <span className="col-span-2 text-center">Qty</span>
+                            <span className="col-span-2 text-right">Rate (₹)</span>
+                            <span className="col-span-2 text-right">Amount</span>
+                          </div>
+                          {invoiceItems.map((item, i) => (
+                            <div key={i} className="grid grid-cols-12 items-center px-2 py-1.5 border-t border-border gap-1">
+                              <input value={item.description} onChange={e => setInvoiceItems(prev => prev.map((x, j) => j === i ? { ...x, description: e.target.value } : x))} placeholder="e.g. Badminton court booking"
+                                className="col-span-6 bg-secondary/20 border border-border/40 rounded-xl px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-brand-600/50 min-w-0" />
+                              <input type="number" value={item.qty} onChange={e => setInvoiceItems(prev => prev.map((x, j) => j === i ? { ...x, qty: e.target.value } : x))}
+                                className="col-span-2 bg-secondary/20 border border-border/40 rounded-xl px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
+                              <input type="number" value={item.rate} onChange={e => setInvoiceItems(prev => prev.map((x, j) => j === i ? { ...x, rate: e.target.value } : x))} placeholder="0"
+                                className="col-span-2 bg-secondary/20 border border-border/40 rounded-xl px-2 py-1 text-xs text-right focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
+                              <div className="col-span-1 text-right text-xs font-bold text-foreground">
+                                {((parseFloat(item.qty) || 0) * (parseFloat(item.rate) || 0)).toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+                              </div>
+                              {invoiceItems.length > 1 && (
+                                <button type="button" onClick={() => setInvoiceItems(prev => prev.filter((_, j) => j !== i))}
+                                  className="col-span-1 h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                  <X className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* GST + payment mode + totals */}
+                      <div className="grid grid-cols-2 gap-4 items-start">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <button type="button" onClick={() => setInvoiceForm(f => ({ ...f, gst_enabled: !f.gst_enabled }))}
+                              className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${invoiceForm.gst_enabled ? "bg-brand-600" : "bg-muted"}`}>
+                              <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${invoiceForm.gst_enabled ? "translate-x-4" : "translate-x-0"}`} />
+                            </button>
+                            <Label className="text-xs font-bold">Apply GST {gstSettings.gst_enabled ? `(${gstSettings.gst_rate}%)` : ""}</Label>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground mb-1.5 block">Payment Mode</Label>
+                            <div className="flex gap-1.5 flex-wrap">
+                              {["cash", "upi", "bank_transfer"].map(m => (
+                                <button key={m} type="button" onClick={() => setInvoiceForm(f => ({ ...f, payment_mode: m }))}
+                                  className={`px-2.5 py-1 rounded-full text-xs font-bold border transition-all ${invoiceForm.payment_mode === m ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "bg-secondary/30 border-border text-muted-foreground"}`}>
+                                  {m.replace("_", " ")}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="bg-secondary/30 rounded-2xl p-4 space-y-2 text-sm">
+                          <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>₹{invoiceSubtotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
+                          {invoiceForm.gst_enabled && <div className="flex justify-between text-muted-foreground"><span>GST ({gstSettings.gst_rate}%)</span><span>₹{invoiceGstAmt.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>}
+                          <div className="flex justify-between font-black text-sm border-t border-border pt-1.5"><span>Total</span><span className="text-brand-600">₹{invoiceTotal.toLocaleString("en-IN", { maximumFractionDigits: 2 })}</span></div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-xs text-muted-foreground admin-label">Notes (optional)</Label>
+                        <textarea value={invoiceForm.notes} onChange={e => setInvoiceForm(f => ({ ...f, notes: e.target.value }))} placeholder="Payment instructions, thank you note..."
+                          className="mt-1 w-full bg-secondary/20 border border-border/40 rounded-xl px-3 py-2 text-sm min-h-[50px] resize-none focus:outline-none focus:ring-1 focus:ring-brand-600/50" />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateInvoice} disabled={invoiceCreating}>
+                          {invoiceCreating ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+                          Create Invoice
+                        </Button>
+                        <Button variant="outline" className="font-bold" onClick={() => setShowCreateInvoice(false)}>Cancel</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+
+                {/* Invoice list */}
+                {venueInvoices.length === 0 ? (
+                  <div className="text-center py-16 bg-card rounded-[28px] border border-border/40 shadow-sm text-muted-foreground">
+                    <Receipt className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                    <p className="font-bold mb-1">No Invoices Yet</p>
+                    <p className="text-sm">Create your first invoice or invoices will auto-generate on booking payments.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 gap-3 mb-2">
+                      {[
+                        { label: "Total", value: `₹${venueInvoices.reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-foreground" },
+                        { label: "Collected", value: `₹${venueInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-brand-600" },
+                        { label: "Pending", value: `₹${venueInvoices.filter(i => i.status !== "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-amber-400" },
+                      ].map(({ label, value, color }) => (
+                        <div key={label} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
+                          <p className={`font-black text-sm ${color}`}>{value}</p>
+                          <p className="text-[10px] text-muted-foreground">{label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {venueInvoices.map(inv => (
+                      <motion.div key={inv.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 flex-wrap mb-1">
+                              <span className="font-bold text-sm">{inv.invoice_no}</span>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${inv.status === "paid" ? "bg-brand-600/10 border-brand-600/20 text-brand-600" : inv.status === "sent" ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-muted border-border text-muted-foreground"}`}>
+                                {inv.status.toUpperCase()}
+                              </span>
+                              {inv.gst_enabled && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">GST</span>}
+                              {inv.auto_generated && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">AUTO</span>}
+                            </div>
+                            <p className="text-sm font-medium">{inv.client_name}</p>
+                            <p className="text-xs text-muted-foreground">{inv.date} · Due {inv.due_date}</p>
+                            {inv.items?.length > 0 && <p className="text-xs text-muted-foreground mt-0.5 truncate">{inv.items.map(i => i.description).filter(Boolean).join(" · ")}</p>}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-black text-base text-brand-600">₹{(inv.total || 0).toLocaleString()}</p>
+                            {inv.gst_enabled && <p className="text-[10px] text-muted-foreground">incl. GST {inv.gst_rate}%</p>}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 mt-3 flex-wrap">
+                          <button onClick={() => handleViewInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
+                            <Eye className="h-3 w-3" /> View PDF
+                          </button>
+                          <button onClick={() => handleDownloadInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs font-bold text-muted-foreground hover:text-foreground transition-colors">
+                            <Download className="h-3 w-3" /> Download
+                          </button>
+                          <button onClick={() => handleSendInvoiceWhatsapp(inv)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-xs font-bold text-green-600 transition-colors">
+                            <MessageCircle className="h-3 w-3" /> WhatsApp
+                          </button>
+                          {inv.status !== "paid" && (
+                            <button onClick={() => handleMarkInvoicePaid(inv.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-600/10 hover:bg-brand-600/20 text-xs font-bold text-brand-600 transition-colors">
+                              <CheckCircle className="h-3 w-3" /> Mark Paid
+                            </button>
+                          )}
+                          {!inv.auto_generated && (
+                            <button onClick={() => handleDeleteInvoice(inv.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs font-bold text-destructive transition-colors ml-auto">
+                              <Trash2 className="h-3 w-3" /> Delete
+                            </button>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* -- Payouts sub-tab -- */}
+            {financeSubTab === "payouts" && (
+              <div className="space-y-6">
+                {/* Bank Account Section */}
+                <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-foreground">Bank Account</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Link your bank account to receive venue payouts</p>
+                    </div>
+                    {linkedAccount && (
+                      <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-500"}`}>
+                        {linkedAccount.status || "pending"}
+                      </Badge>
+                    )}
+                  </div>
+                  {linkedAccount ? (
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Account</p>
+                        <p className="font-semibold">{linkedAccount.bank_account?.account_number || "****"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">IFSC</p>
+                        <p className="font-semibold">{linkedAccount.bank_account?.ifsc_code || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Name</p>
+                        <p className="font-semibold">{linkedAccount.bank_account?.beneficiary_name || "—"}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Bank</p>
+                        <p className="font-semibold">{linkedAccount.bank_account?.bank_name || "—"}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <Label className="text-xs">Account Number</Label>
+                          <Input value={bankForm.account_number} onChange={e => setBankForm(p => ({ ...p, account_number: e.target.value }))} placeholder="Enter account number" className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">IFSC Code</Label>
+                          <Input value={bankForm.ifsc_code} onChange={e => setBankForm(p => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))} placeholder="e.g. SBIN0001234" className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Beneficiary Name</Label>
+                          <Input value={bankForm.beneficiary_name} onChange={e => setBankForm(p => ({ ...p, beneficiary_name: e.target.value }))} placeholder="Name as on bank account" className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Bank Name</Label>
+                          <Input value={bankForm.bank_name} onChange={e => setBankForm(p => ({ ...p, bank_name: e.target.value }))} placeholder="e.g. State Bank of India" className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Phone</Label>
+                          <Input value={bankForm.phone} onChange={e => setBankForm(p => ({ ...p, phone: e.target.value }))} placeholder="10-digit phone" className="mt-1" />
+                        </div>
+                        <div>
+                          <Label className="text-xs">Email</Label>
+                          <Input value={bankForm.email} onChange={e => setBankForm(p => ({ ...p, email: e.target.value }))} placeholder="your@email.com" className="mt-1" />
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        disabled={bankSaving || !bankForm.account_number || !bankForm.ifsc_code || !bankForm.beneficiary_name}
+                        onClick={async () => {
+                          setBankSaving(true);
+                          try {
+                            await payoutAPI.createLinkedAccount(bankForm);
+                            toast.success("Bank account linked successfully");
+                            loadPayoutData();
+                          } catch (err) { toast.error(err?.response?.data?.detail || "Failed to link account"); }
+                          finally { setBankSaving(false); }
+                        }}
+                        className="gap-2"
+                      >
+                        {bankSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Banknote className="h-4 w-4" />}
+                        Link Bank Account
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payout Summary Cards */}
+                {payoutSummary && (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    <StatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
+                    <StatCard icon={CheckCircle} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} colorClass="text-emerald-500" bgClass="bg-emerald-500/10" index={1} />
+                    <StatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
+                    <StatCard icon={Banknote} label="Last Payout" value={payoutSummary.last_payout_amount ? `₹${payoutSummary.last_payout_amount.toLocaleString()}` : "—"} colorClass="text-sky-500" bgClass="bg-sky-500/10" index={3} />
+                  </div>
+                )}
+
+                {/* Payout History */}
+                <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Payout History</p>
+                  {myPayouts.length === 0 ? (
+                    <div className="text-center py-12 text-muted-foreground">
+                      <Banknote className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                      <p className="text-sm">No payouts yet. Payouts are processed by the platform admin.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {myPayouts.map(p => (
+                        <motion.div
+                          key={p.id}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-card rounded-xl border border-border p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors"
+                          onClick={() => setPayoutDetailDialog(p)}
+                        >
+                          <div>
+                            <p className="text-sm font-bold text-foreground">₹{(p.net_amount || 0).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.period_start} → {p.period_end}
+                              {p.transfer_utr && <span className="ml-2 font-mono">UTR: {p.transfer_utr}</span>}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge className={`text-xs font-bold rounded-full px-3 ${
+                              p.status === "completed" ? "bg-green-500/10 text-green-600" :
+                              p.status === "processing" ? "bg-blue-500/10 text-blue-600" :
+                              p.status === "failed" ? "bg-red-500/10 text-red-600" :
+                              "bg-secondary text-muted-foreground"
+                            }`}>
+                              {p.status}
+                            </Badge>
+                            <Eye className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Payout Detail Dialog */}
+                {payoutDetailDialog && (
+                  <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
+                    <DialogContent className="bg-card border-border max-w-md rounded-[28px]">
+                      <DialogHeader>
+                        <DialogTitle className="admin-heading">Payout Details</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div><p className="text-xs text-muted-foreground">Period</p><p className="font-semibold">{payoutDetailDialog.period_start} → {payoutDetailDialog.period_end}</p></div>
+                          <div><p className="text-xs text-muted-foreground">Status</p><p className="font-semibold capitalize">{payoutDetailDialog.status}</p></div>
+                        </div>
+                        <div className="bg-secondary/30 rounded-xl p-4 space-y-2 text-sm">
+                          <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-medium">₹{(payoutDetailDialog.gross_amount || 0).toLocaleString()}</span></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Commission ({payoutDetailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(payoutDetailDialog.commission_amount || 0).toLocaleString()}</span></div>
+                          <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-bold">Net Payout</span><span className="font-black text-green-600">₹{(payoutDetailDialog.net_amount || 0).toLocaleString()}</span></div>
+                        </div>
+                        {payoutDetailDialog.razorpay_transfer_id && (
+                          <p className="text-xs text-muted-foreground">Transfer: <span className="font-mono">{payoutDetailDialog.razorpay_transfer_id}</span></p>
+                        )}
+                        {payoutDetailDialog.transfer_utr && (
+                          <p className="text-xs text-muted-foreground">UTR: <span className="font-mono">{payoutDetailDialog.transfer_utr}</span></p>
+                        )}
+                        {payoutDetailDialog.line_items?.length > 0 && (
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Items ({payoutDetailDialog.line_items.length})</p>
+                            <div className="max-h-48 overflow-y-auto space-y-1">
+                              {payoutDetailDialog.line_items.map((item, i) => (
+                                <div key={i} className="flex justify-between py-1.5 px-3 bg-secondary/20 rounded-lg text-xs">
+                                  <span>{item.description || item.type} <span className="text-muted-foreground">{item.date}</span></span>
+                                  <span className="font-semibold">₹{(item.net || 0).toLocaleString()}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+
+        {/* ML Pricing Tab */}
+        <TabsContent value="ml-pricing" data-testid="ml-pricing-tab-content">
+          {selectedVenue && <MLPricingPanel venueId={selectedVenue.id} venueName={selectedVenue.name} />}
+        </TabsContent>
 
         <TabsContent value="plan" data-testid="plan-tab-content">
           {planData ? (
             <div className="space-y-6">
-              <div className="glass-card rounded-lg p-4 sm:p-5" data-testid="current-plan-card">
+              <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6" data-testid="current-plan-card">
                 <div className="flex items-center gap-3 mb-4">
-                  <Crown className="h-5 w-5 text-primary shrink-0" />
+                  <Crown className="h-5 w-5 text-brand-600 shrink-0" />
                   <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-primary">{planData.current_plan?.name}</span></h3>
+                    <h3 className="text-sm sm:text-base font-bold truncate">Current Plan: <span className="text-brand-600">{planData.current_plan?.name}</span></h3>
                     <p className="text-xs text-muted-foreground">{planData.venues_used} / {planData.venues_limit} venues used</p>
                   </div>
                 </div>
                 <div className="w-full bg-secondary/50 rounded-full h-2 mb-2">
-                  <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${Math.min(100, (planData.venues_used / planData.venues_limit) * 100)}%` }} />
+                  <div className="bg-brand-600 rounded-full h-2 transition-all" style={{ width: `${Math.min(100, (planData.venues_used / planData.venues_limit) * 100)}%` }} />
                 </div>
               </div>
 
@@ -1495,10 +2446,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {(planData.all_plans || []).map(plan => {
                   const isCurrent = plan.id === planData.current_plan?.id;
                   return (
-                    <div key={plan.id} className={`glass-card rounded-lg p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-primary" : "border-transparent hover:border-primary/30"}`}
+                    <div key={plan.id} className={`bg-card rounded-[28px] border shadow-sm p-6 transition-all ${isCurrent ? "border-brand-600" : "border-border/40 hover:border-brand-600/30"}`}
                       data-testid={`plan-card-${plan.id}`}>
                       <div className="text-sm font-bold mb-1">{plan.name}</div>
-                      <div className="text-2xl font-display font-black text-primary mb-3">
+                      <div className="text-2xl font-display font-black text-brand-600 mb-3">
                         {!plan.price ? "Free" : `\u20B9${Number(plan.price).toLocaleString()}`}
                         {plan.price > 0 && <span className="text-xs text-muted-foreground font-normal">/mo</span>}
                       </div>
@@ -1506,12 +2457,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <ul className="space-y-1 mb-4">
                         {(plan.features || []).map((f, i) => (
                           <li key={i} className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <CheckCircle className="h-3 w-3 text-primary shrink-0" /> {f}
+                            <CheckCircle className="h-3 w-3 text-brand-600 shrink-0" /> {f}
                           </li>
                         ))}
                       </ul>
                       {isCurrent ? (
-                        <Badge className="w-full justify-center bg-primary/20 text-primary text-xs py-1">Current Plan</Badge>
+                        <Badge className="w-full justify-center bg-brand-600/20 text-brand-600 text-xs py-1">Current Plan</Badge>
                       ) : (
                         <Button size="sm" className="w-full text-xs font-bold" disabled={upgrading}
                           onClick={() => handleUpgrade(plan.id)} data-testid={`upgrade-${plan.id}`}>
@@ -1524,7 +2475,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
             </div>
           ) : (
-            <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+            <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
           )}
         </TabsContent>
 
@@ -1536,251 +2487,147 @@ function VenueOwnerDashboardContent({ defaultView }) {
           />
         </TabsContent>
 
-        {/* Payouts Tab */}
-        <TabsContent value="payouts" data-testid="payouts-tab-content">
-          <div className="space-y-6">
-            {/* Bank Account Section */}
-            <div className="bg-card rounded-xl border border-border p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-foreground">Bank Account</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">Link your bank account to receive venue payouts</p>
-                </div>
-                {linkedAccount && (
-                  <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-500"}`}>
-                    {linkedAccount.status || "pending"}
-                  </Badge>
-                )}
-              </div>
-              {linkedAccount ? (
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Account</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.account_number || "****"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">IFSC</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.ifsc_code || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Name</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.beneficiary_name || "—"}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Bank</p>
-                    <p className="font-semibold">{linkedAccount.bank_account?.bank_name || "—"}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-xs">Account Number</Label>
-                      <Input value={bankForm.account_number} onChange={e => setBankForm(p => ({ ...p, account_number: e.target.value }))} placeholder="Enter account number" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">IFSC Code</Label>
-                      <Input value={bankForm.ifsc_code} onChange={e => setBankForm(p => ({ ...p, ifsc_code: e.target.value.toUpperCase() }))} placeholder="e.g. SBIN0001234" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Beneficiary Name</Label>
-                      <Input value={bankForm.beneficiary_name} onChange={e => setBankForm(p => ({ ...p, beneficiary_name: e.target.value }))} placeholder="Name as on bank account" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Bank Name</Label>
-                      <Input value={bankForm.bank_name} onChange={e => setBankForm(p => ({ ...p, bank_name: e.target.value }))} placeholder="e.g. State Bank of India" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Phone</Label>
-                      <Input value={bankForm.phone} onChange={e => setBankForm(p => ({ ...p, phone: e.target.value }))} placeholder="10-digit phone" className="mt-1" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Email</Label>
-                      <Input value={bankForm.email} onChange={e => setBankForm(p => ({ ...p, email: e.target.value }))} placeholder="your@email.com" className="mt-1" />
-                    </div>
-                  </div>
-                  <Button
-                    size="sm"
-                    disabled={bankSaving || !bankForm.account_number || !bankForm.ifsc_code || !bankForm.beneficiary_name}
-                    onClick={async () => {
-                      setBankSaving(true);
-                      try {
-                        await payoutAPI.createLinkedAccount(bankForm);
-                        toast.success("Bank account linked successfully");
-                        loadPayoutData();
-                      } catch (err) { toast.error(err?.response?.data?.detail || "Failed to link account"); }
-                      finally { setBankSaving(false); }
-                    }}
-                    className="gap-2"
-                  >
-                    {bankSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Banknote className="h-4 w-4" />}
-                    Link Bank Account
-                  </Button>
-                </div>
-              )}
+        <TabsContent value="teams" data-testid="teams-tab-content">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h3 className="admin-heading">Teams at this Venue</h3>
+              <p className="text-xs text-muted-foreground mt-0.5 admin-label">
+                Teams playing {selectedVenue?.sports?.join(", ") || "sports"} at {selectedVenue?.name}
+              </p>
             </div>
-
-            {/* Payout Summary Cards */}
-            {payoutSummary && (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <AthleticStatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} iconColor="primary" delay={0.1} />
-                <AthleticStatCard icon={CheckCircle} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} iconColor="emerald" delay={0.2} />
-                <AthleticStatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} iconColor="amber" delay={0.3} />
-                <AthleticStatCard icon={Banknote} label="Last Payout" value={payoutSummary.last_payout_amount ? `₹${payoutSummary.last_payout_amount.toLocaleString()}` : "—"} iconColor="sky" delay={0.4} />
-              </div>
-            )}
-
-            {/* Payout History */}
-            <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Payout History</p>
-              {myPayouts.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Banknote className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">No payouts yet. Payouts are processed by the platform admin.</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {myPayouts.map(p => (
-                    <motion.div
-                      key={p.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-card rounded-xl border border-border p-4 flex items-center justify-between cursor-pointer hover:bg-secondary/30 transition-colors"
-                      onClick={() => setPayoutDetailDialog(p)}
-                    >
-                      <div>
-                        <p className="text-sm font-bold text-foreground">₹{(p.net_amount || 0).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {p.period_start} → {p.period_end}
-                          {p.transfer_utr && <span className="ml-2 font-mono">UTR: {p.transfer_utr}</span>}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs font-bold rounded-full px-3 ${
-                          p.status === "completed" ? "bg-green-500/10 text-green-600" :
-                          p.status === "processing" ? "bg-blue-500/10 text-blue-600" :
-                          p.status === "failed" ? "bg-red-500/10 text-red-600" :
-                          "bg-secondary text-muted-foreground"
-                        }`}>
-                          {p.status}
-                        </Badge>
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Payout Detail Dialog */}
-            {payoutDetailDialog && (
-              <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
-                <DialogContent className="bg-card border-border max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Payout Details</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div><p className="text-xs text-muted-foreground">Period</p><p className="font-semibold">{payoutDetailDialog.period_start} → {payoutDetailDialog.period_end}</p></div>
-                      <div><p className="text-xs text-muted-foreground">Status</p><p className="font-semibold capitalize">{payoutDetailDialog.status}</p></div>
-                    </div>
-                    <div className="bg-secondary/30 rounded-xl p-4 space-y-2 text-sm">
-                      <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-medium">₹{(payoutDetailDialog.gross_amount || 0).toLocaleString()}</span></div>
-                      <div className="flex justify-between"><span className="text-muted-foreground">Commission ({payoutDetailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(payoutDetailDialog.commission_amount || 0).toLocaleString()}</span></div>
-                      <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-bold">Net Payout</span><span className="font-black text-green-600">₹{(payoutDetailDialog.net_amount || 0).toLocaleString()}</span></div>
-                    </div>
-                    {payoutDetailDialog.razorpay_transfer_id && (
-                      <p className="text-xs text-muted-foreground">Transfer: <span className="font-mono">{payoutDetailDialog.razorpay_transfer_id}</span></p>
-                    )}
-                    {payoutDetailDialog.transfer_utr && (
-                      <p className="text-xs text-muted-foreground">UTR: <span className="font-mono">{payoutDetailDialog.transfer_utr}</span></p>
-                    )}
-                    {payoutDetailDialog.line_items?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">Items ({payoutDetailDialog.line_items.length})</p>
-                        <div className="max-h-48 overflow-y-auto space-y-1">
-                          {payoutDetailDialog.line_items.map((item, i) => (
-                            <div key={i} className="flex justify-between py-1.5 px-3 bg-secondary/20 rounded-lg text-xs">
-                              <span>{item.description || item.type} <span className="text-muted-foreground">{item.date}</span></span>
-                              <span className="font-semibold">₹{(item.net || 0).toLocaleString()}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </DialogContent>
-              </Dialog>
-            )}
+            <button
+              onClick={loadVenueTeams}
+              className="px-4 py-2 rounded-full bg-brand-600 text-white text-xs admin-btn shadow-md shadow-brand-600/20 hover:bg-brand-500 active:scale-[0.98] transition-all">
+              Refresh
+            </button>
           </div>
+
+          {teamsLoading ? (
+            <div className="flex justify-center py-16">
+              <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : venueTeams.length === 0 ? (
+            <div className="text-center py-16 bg-card rounded-[28px] border border-border/40">
+              <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="admin-heading text-muted-foreground">No teams found</p>
+              <p className="text-xs text-muted-foreground/70 mt-1 admin-label">No teams are registered for the sports at this venue yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {venueTeams.map((t, idx) => (
+                <div key={t.id}
+                  className="p-5 rounded-[28px] border border-border/40 bg-card shadow-sm hover:shadow-md hover:border-brand-600/30 transition-all duration-300">
+                  {/* Team header */}
+                  <div className="flex items-start gap-3 mb-3">
+                    <div className="h-12 w-12 rounded-xl bg-brand-600/10 flex items-center justify-center flex-shrink-0">
+                      <Shield className="h-6 w-6 text-brand-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-sm truncate">{t.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{t.description || `${t.sport} team`}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-2 py-0.5 rounded-full bg-brand-600/10 text-brand-600 text-[10px] admin-btn capitalize">{t.sport}</span>
+                        <span className="text-[10px] text-muted-foreground">{t.player_count || 0}/{t.max_players} members</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats row */}
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    {[
+                      { label: "W", value: t.wins || 0, color: "text-green-500" },
+                      { label: "L", value: t.losses || 0, color: "text-red-500" },
+                      { label: "D", value: t.draws || 0, color: "text-amber-500" },
+                    ].map(s => (
+                      <div key={s.label} className="text-center p-2 rounded-xl bg-secondary/30">
+                        <div className={`font-bold text-base ${s.color}`}>{s.value}</div>
+                        <div className="text-[10px] text-muted-foreground admin-btn">{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Captain */}
+                  <div className="flex items-center gap-2 px-2 py-1.5 rounded-xl bg-secondary/20">
+                    <Crown className="h-3 w-3 text-amber-500" />
+                    <span className="text-[11px] text-muted-foreground">Captain: <strong className="text-foreground">{t.captain_name || "—"}</strong></span>
+                    <span className="ml-auto text-[10px] text-muted-foreground admin-label">
+                      <Users className="h-3 w-3 inline mr-0.5" />{t.player_count || 0} players
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </TabsContent>
+
       </Tabs>
       )}
 
       {/* Edit Venue Dialog */}
       <Dialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
-        <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="font-display">Edit Venue Details</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground pt-1">
-              Changes will be pushed <span className="text-primary font-semibold">live</span> to all viewers of the public page instantly.
+            <DialogTitle className="font-display admin-heading">Edit Venue Details</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground admin-label pt-1">
+              Changes will be pushed <span className="text-brand-600 font-semibold">live</span> to all viewers of the public page instantly.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 pt-1">
             <div>
-              <Label className="text-xs text-muted-foreground">Venue Name</Label>
+              <Label className="text-xs text-muted-foreground admin-label">Venue Name</Label>
               <Input value={editVenueForm.name || ""} onChange={e => setEditVenueForm(p => ({ ...p, name: e.target.value }))}
-                className="mt-1 bg-background border-border" />
+                className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Description</Label>
+              <Label className="text-xs text-muted-foreground admin-label">Description</Label>
               <textarea
                 value={editVenueForm.description || ""}
                 onChange={e => setEditVenueForm(p => ({ ...p, description: e.target.value }))}
                 rows={6}
                 placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
-                className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                className="mt-1 w-full bg-secondary/20 border border-border/40 rounded-xl px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand-600/50"
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="text-xs text-muted-foreground">Address</Label>
+                <Label className="text-xs text-muted-foreground admin-label">Address</Label>
                 <Input value={editVenueForm.address || ""} onChange={e => setEditVenueForm(p => ({ ...p, address: e.target.value }))}
-                  className="mt-1 bg-background border-border" />
+                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
               </div>
               <div>
-                <Label className="text-xs text-muted-foreground">Area</Label>
+                <Label className="text-xs text-muted-foreground admin-label">Area</Label>
                 <Input value={editVenueForm.area || ""} onChange={e => setEditVenueForm(p => ({ ...p, area: e.target.value }))}
-                  placeholder="Koramangala" className="mt-1 bg-background border-border" />
+                  placeholder="Koramangala" className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
               </div>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">City</Label>
+              <Label className="text-xs text-muted-foreground admin-label">City</Label>
               <Input value={editVenueForm.city || ""} onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
-                className="mt-1 bg-background border-border" />
+                className="mt-1 bg-secondary/20 border-border/40 rounded-xl" />
             </div>
 
             {/* Sports — dynamic input */}
             <div>
-              <Label className="text-xs text-muted-foreground">Sports</Label>
+              <Label className="text-xs text-muted-foreground admin-label">Sports</Label>
               <div className="flex gap-2 mt-1">
                 <Input value={editSportInput} onChange={e => setEditSportInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addEditSport(editSportInput))}
-                  placeholder="Type a sport and press Enter" className="bg-background border-border flex-1" />
+                  placeholder="Type a sport and press Enter" className="bg-secondary/20 border-border/40 rounded-xl flex-1" />
                 <Button type="button" size="sm" variant="outline" onClick={() => addEditSport(editSportInput)} disabled={!editSportInput.trim()}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {(editVenueForm.sports || []).map(s => (
-                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600/10 text-brand-600 border border-brand-600/20">
                     {s}
                     <button type="button" onClick={() => removeEditSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
                 {SPORT_SUGGESTIONS.filter(s => !(editVenueForm.sports || []).includes(s.toLowerCase())).map(s => (
                   <button key={s} type="button" onClick={() => addEditSport(s)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/50 transition-colors">
                     + {s}
                   </button>
                 ))}
@@ -1789,25 +2636,25 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
             {/* Amenities — dynamic input */}
             <div>
-              <Label className="text-xs text-muted-foreground">Amenities</Label>
+              <Label className="text-xs text-muted-foreground admin-label">Amenities</Label>
               <div className="flex gap-2 mt-1">
                 <Input value={editAmenityInput} onChange={e => setEditAmenityInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addEditAmenity(editAmenityInput))}
-                  placeholder="Type an amenity and press Enter" className="bg-background border-border flex-1" />
+                  placeholder="Type an amenity and press Enter" className="bg-secondary/20 border-border/40 rounded-xl flex-1" />
                 <Button type="button" size="sm" variant="outline" onClick={() => addEditAmenity(editAmenityInput)} disabled={!editAmenityInput.trim()}>
                   <Plus className="h-4 w-4" />
                 </Button>
               </div>
               <div className="flex flex-wrap gap-1.5 mt-1.5">
                 {(editVenueForm.amenities || []).map(a => (
-                  <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-primary text-primary-foreground border border-primary">
+                  <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600/10 text-brand-600 border border-brand-600/20">
                     {a}
                     <button type="button" onClick={() => removeEditAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
                   </span>
                 ))}
                 {AMENITY_SUGGESTIONS.filter(a => !(editVenueForm.amenities || []).includes(a)).map(a => (
                   <button key={a} type="button" onClick={() => addEditAmenity(a)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-primary/50 transition-colors">
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/50 transition-colors">
                     + {a}
                   </button>
                 ))}
@@ -1820,9 +2667,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <Label className="text-xs text-muted-foreground">Turf Configuration</Label>
                 <div className="space-y-3 mt-1.5">
                   {(editVenueForm.turf_config || []).map(tc => (
-                    <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
+                    <div key={tc.sport} className="border border-border/40 rounded-xl p-4 bg-secondary/20">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold uppercase tracking-wider text-primary">{tc.sport}</span>
+                        <span className="text-xs font-bold uppercase tracking-wider text-brand-600">{tc.sport}</span>
                         <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addEditTurf(tc.sport)}>
                           <Plus className="h-3 w-3 mr-1" /> Add Turf
                         </Button>
@@ -1831,11 +2678,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         {tc.turfs.map((t, idx) => (
                           <div key={idx} className="flex items-center gap-2">
                             <Input value={t.name} onChange={e => renameEditTurf(tc.sport, idx, e.target.value)}
-                              placeholder={`Turf ${idx + 1} name`} className="bg-background border-border text-xs h-8 flex-1" />
+                              placeholder={`Turf ${idx + 1} name`} className="bg-secondary/20 border-border/40 rounded-xl text-xs h-8 flex-1" />
                             <div className="flex items-center gap-1">
                               <span className="text-[10px] text-muted-foreground">₹</span>
                               <Input type="number" value={t.price ?? editVenueForm.base_price ?? 2000} onChange={e => updateEditTurfPrice(tc.sport, idx, e.target.value)}
-                                placeholder="Price" className="bg-background border-border text-xs h-8 w-20" />
+                                placeholder="Price" className="bg-secondary/20 border-border/40 rounded-xl text-xs h-8 w-20" />
                             </div>
                             {tc.turfs.length > 1 && (
                               <button type="button" onClick={() => removeEditTurf(tc.sport, idx)}
@@ -1901,7 +2748,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
             />
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1" onClick={() => setEditVenueOpen(false)}>Cancel</Button>
-              <Button className="flex-1 bg-primary text-primary-foreground font-bold" onClick={handleSaveVenue} disabled={savingVenue}>
+              <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveVenue} disabled={savingVenue}>
                 {savingVenue ? "Saving..." : "Save & Go Live"}
               </Button>
             </div>
@@ -1955,189 +2802,170 @@ function VenueOwnerDashboardContent({ defaultView }) {
   );
 }
 
-// ─── Venue Analytics Panel ───────────────────────────────────────────────────
-function VenueAnalyticsPanel({ venueId }) {
-  const [insights, setInsights] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [selectedTurf, setSelectedTurf] = useState("all");
-  const [period, setPeriod] = useState(90);
+// ─── ML Pricing Panel Component ─────────────────────────────────────────────
+function MLPricingPanel({ venueId, venueName }) {
+  const [pricingMode, setPricingMode] = useState("rule_based");
+  const [forecast, setForecast] = useState(null);
+  const [forecastDate, setForecastDate] = useState(new Date().toISOString().split("T")[0]);
+  const [training, setTraining] = useState(false);
+  const [trainResult, setTrainResult] = useState(null);
+  const [loadingForecast, setLoadingForecast] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setSelectedTurf("all");
-      try {
-        const res = await analyticsAPI.venueInsights(venueId, period);
-        setInsights(res.data);
-      } catch {
-        setInsights(null);
-      } finally {
-        setLoading(false);
+    pricingMLAPI.getMode(venueId).then(r => setPricingMode(r.data.pricing_mode || "rule_based")).catch(() => {});
+  }, [venueId]);
+
+  const loadForecast = useCallback(async () => {
+    setLoadingForecast(true);
+    try {
+      const res = await pricingMLAPI.demandForecast(venueId, forecastDate);
+      setForecast(res.data);
+    } catch {
+      setForecast(null);
+    } finally {
+      setLoadingForecast(false);
+    }
+  }, [venueId, forecastDate]);
+
+  useEffect(() => { loadForecast(); }, [loadForecast]);
+
+  const handleToggleMode = async () => {
+    const newMode = pricingMode === "rule_based" ? "ml" : "rule_based";
+    setSwitching(true);
+    try {
+      await pricingMLAPI.setMode(venueId, newMode);
+      setPricingMode(newMode);
+      toast.success(`Pricing mode switched to ${newMode === "ml" ? "AI/ML" : "Rule-based"}`);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to switch mode");
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const handleTrain = async () => {
+    setTraining(true);
+    setTrainResult(null);
+    try {
+      const res = await pricingMLAPI.trainModel(venueId);
+      setTrainResult(res.data);
+      if (res.data.status === "trained") {
+        toast.success("ML model trained successfully!");
+      } else {
+        toast.info(res.data.message);
       }
-    };
-    load();
-  }, [venueId, period]);
-
-  const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const activeHeatmap = !insights ? [] :
-    selectedTurf === "all" ? insights.heatmap :
-    (insights.heatmap_by_turf?.[selectedTurf] || []);
-  const maxCount = activeHeatmap.length > 0 ? Math.max(...activeHeatmap.map(h => h.count), 1) : 1;
-
-  const heatColor = (count) => {
-    const ratio = count / maxCount;
-    if (ratio >= 0.75) return "bg-brand-500/80 text-white";
-    if (ratio >= 0.5)  return "bg-brand-500/50 text-foreground";
-    if (ratio >= 0.25) return "bg-brand-500/25 text-foreground";
-    if (ratio > 0)     return "bg-brand-500/10 text-muted-foreground";
-    return "bg-secondary/20 text-muted-foreground/40";
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Training failed");
+    } finally {
+      setTraining(false);
+    }
   };
 
-  const insightIcon = (type) => {
-    if (type === "peak")    return <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />;
-    if (type === "low")     return <TrendingDown className="h-4 w-4 text-blue-400 shrink-0" />;
-    if (type === "loyalty") return <Users className="h-4 w-4 text-amber-400 shrink-0" />;
-    if (type === "warning") return <Zap className="h-4 w-4 text-destructive shrink-0" />;
-    return <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0" />;
+  const demandColor = (level) => {
+    if (level === "high") return "text-brand-400 bg-brand-500/15";
+    if (level === "medium") return "text-amber-400 bg-amber-500/15";
+    return "text-muted-foreground bg-secondary/50";
   };
-
-  const insightBg = (type) => {
-    if (type === "peak")    return "bg-brand-500/10 border-brand-500/20";
-    if (type === "low")     return "bg-blue-500/10 border-blue-500/20";
-    if (type === "loyalty") return "bg-amber-500/10 border-amber-500/20";
-    if (type === "warning") return "bg-destructive/10 border-destructive/20";
-    return "bg-secondary/50 border-border";
-  };
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!insights) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <BarChart2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-        <p className="text-sm">Could not load analytics. Try again later.</p>
-      </div>
-    );
-  }
-
-  // Build a 24×7 grid (hours 0–23, dow 0–6)
-  const countMap = {};
-  activeHeatmap.forEach(h => { countMap[`${h.hour}_${h.dow}`] = h.count; });
-  const activeHours = [...new Set(activeHeatmap.map(h => h.hour))].sort((a, b) => a - b);
-
-  const periodLabel = period === 0 ? "all time" : `last ${period} days`;
 
   return (
-    <div className="space-y-4" data-testid="analytics-panel">
-      {/* Period selector */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-xs text-muted-foreground">Showing data for <span className="text-foreground font-semibold">{periodLabel}</span></p>
-        <div className="flex gap-1">
-          {[{ label: "30d", days: 30 }, { label: "90d", days: 90 }, { label: "180d", days: 180 }, { label: "All", days: 0 }].map(p => (
-            <button key={p.days} onClick={() => setPeriod(p.days)}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${period === p.days ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-              {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Avg Occupancy", value: `${insights.avg_occupancy}%`, sub: periodLabel },
-          { label: "Cancellation", value: `${insights.cancellation_rate}%`, sub: "of all bookings" },
-          { label: "Repeat Customers", value: `${insights.repeat_customer_rate}%`, sub: "returning users" },
-          { label: "Avg Lead Time", value: `${insights.avg_lead_time_days}d`, sub: "before slot date" },
-        ].map(s => (
-          <div key={s.label} className="glass-card rounded-xl p-4">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="font-display font-bold text-xl text-foreground">{s.value}</p>
-            <p className="text-[10px] text-muted-foreground mt-0.5">{s.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Heatmap */}
-      <div className="glass-card rounded-xl p-4">
-        <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
-          <h3 className="font-bold text-sm flex items-center gap-2">
-            <BarChart2 className="h-4 w-4 text-primary" />
-            Booking Heatmap
-            <span className="text-[10px] text-muted-foreground font-normal">— how often each slot gets booked</span>
-          </h3>
-          {insights.turf_list?.length > 1 && (
-            <div className="flex gap-1 flex-wrap">
-              <button onClick={() => setSelectedTurf("all")}
-                className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${selectedTurf === "all" ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                All
-              </button>
-              {insights.turf_list.map(t => (
-                <button key={t.turf_number} onClick={() => setSelectedTurf(String(t.turf_number))}
-                  className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${selectedTurf === String(t.turf_number) ? "bg-primary text-primary-foreground" : "bg-secondary/50 text-muted-foreground hover:text-foreground"}`}>
-                  {t.name}
-                </button>
-              ))}
+    <div className="space-y-5" data-testid="ml-pricing-panel">
+      {/* Mode Toggle Card */}
+      <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <Brain className="h-5 w-5 text-brand-600" />
+              <h3 className="font-bold text-sm">AI Dynamic Pricing</h3>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground">
+              {pricingMode === "ml"
+                ? "ML model is actively adjusting prices based on demand patterns"
+                : "Using rule-based pricing. Switch to ML for AI-driven dynamic prices."}
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">Rule-based</span>
+            <button onClick={handleToggleMode} disabled={switching}
+              className={`w-12 h-6 rounded-full transition-all relative ${pricingMode === "ml" ? "bg-brand-600" : "bg-secondary"}`}>
+              <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${pricingMode === "ml" ? "left-6" : "left-0.5"}`} />
+            </button>
+            <span className="text-xs font-bold text-brand-600">AI/ML</span>
+          </div>
         </div>
-        {activeHours.length === 0 ? (
-          <p className="text-xs text-muted-foreground py-4 text-center">No confirmed bookings yet in the last 90 days.</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[10px] border-collapse">
-              <thead>
-                <tr>
-                  <th className="text-left pr-2 py-1 text-muted-foreground font-medium w-10">Time</th>
-                  {DAYS.map(d => (
-                    <th key={d} className="text-center px-1 py-1 text-muted-foreground font-medium">{d}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {activeHours.map(h => (
-                  <tr key={h}>
-                    <td className="pr-2 py-0.5 font-mono text-muted-foreground whitespace-nowrap">{String(h).padStart(2, "0")}:00</td>
-                    {DAYS.map((_, dow) => {
-                      const cnt = countMap[`${h}_${dow}`] || 0;
-                      return (
-                        <td key={dow} className="px-0.5 py-0.5">
-                          <div className={`rounded text-center py-1 px-1 min-w-[28px] font-bold ${heatColor(cnt)}`}>
-                            {cnt > 0 ? cnt : ""}
-                          </div>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <p className="text-[9px] text-muted-foreground mt-2">Numbers = bookings in last 90 days · darker = more bookings</p>
+      </div>
+
+      {/* Train Model Card */}
+      <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <div>
+            <h3 className="font-bold text-sm mb-1">Train ML Model</h3>
+            <p className="text-xs text-muted-foreground">
+              Train the pricing model using your venue's historical booking data.
+              Requires at least 50 confirmed bookings.
+            </p>
+          </div>
+          <Button onClick={handleTrain} disabled={training}
+            className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-9"
+            data-testid="train-model-btn">
+            {training ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1" />
+            ) : (
+              <Zap className="h-4 w-4 mr-1" />
+            )}
+            {training ? "Training..." : "Train Model"}
+          </Button>
+        </div>
+        {trainResult && (
+          <div className={`mt-3 p-3 rounded-xl text-xs ${trainResult.status === "trained" ? "bg-brand-500/10 text-brand-400" : "bg-amber-500/10 text-amber-400"}`}>
+            {trainResult.message}
           </div>
         )}
       </div>
 
-      {/* Insights */}
-      {insights.insights?.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="font-bold text-sm flex items-center gap-2">
-            <Lightbulb className="h-4 w-4 text-amber-400" />
-            Insights
-          </h3>
-          {insights.insights.map((ins, i) => (
-            <div key={i} className={`rounded-lg p-3 border flex items-start gap-3 ${insightBg(ins.type)}`}>
-              {insightIcon(ins.type)}
-              <p className="text-xs leading-relaxed">{ins.text}</p>
-            </div>
-          ))}
+      {/* Demand Forecast */}
+      <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div>
+            <h3 className="font-bold text-sm mb-1">Demand Forecast</h3>
+            <p className="text-xs text-muted-foreground">Predicted demand and ML-suggested prices for each slot</p>
+          </div>
+          <Input type="date" value={forecastDate}
+            onChange={e => setForecastDate(e.target.value)}
+            className="w-40 h-9 bg-secondary/20 border-border/40 rounded-xl text-xs" />
         </div>
-      )}
+        {loadingForecast ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : forecast?.forecasts?.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {forecast.forecasts.map((f, i) => (
+              <div key={i} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 text-center">
+                <div className="text-xs font-mono text-muted-foreground mb-1">{f.start_time}</div>
+                <div className={`text-lg font-display font-black ${f.ml_price ? "text-brand-600" : "text-foreground"}`}>
+                  ₹{f.ml_price || f.base_price || "—"}
+                </div>
+                {f.demand_level && (
+                  <Badge className={`text-[9px] mt-1 ${demandColor(f.demand_level)}`}>
+                    {f.demand_level}
+                  </Badge>
+                )}
+                {f.confidence != null && (
+                  <div className="text-[9px] text-muted-foreground mt-0.5">
+                    {Math.round(f.confidence * 100)}% conf
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Brain className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-xs">No forecast data. Train the model with 50+ bookings first.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -2221,18 +3049,18 @@ function SlotAvailabilityPanel({ venueId }) {
       {/* Header + Date Nav */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="font-display font-bold text-base sm:text-lg">Slot Availability</h3>
+          <h3 className="admin-heading">Slot Availability</h3>
           <p className="text-xs text-muted-foreground mt-0.5">View turf availability for any date</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => shiftDate(-1)}
-            className="h-9 w-9 flex items-center justify-center rounded-lg border border-border hover:bg-secondary transition-colors">
+            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-white/5 transition-colors">
             <ChevronLeft className="h-4 w-4" />
           </button>
           <Input type="date" value={slotDate} onChange={e => setSlotDate(e.target.value)}
-            className="w-40 h-9 bg-background border-border text-xs" />
+            className="w-40 h-9 bg-secondary/20 border-border/40 rounded-xl text-xs" />
           <button onClick={() => shiftDate(1)}
-            className="h-9 w-9 flex items-center justify-center rounded-lg border border-border hover:bg-secondary transition-colors">
+            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-white/5 transition-colors">
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
@@ -2240,20 +3068,20 @@ function SlotAvailabilityPanel({ venueId }) {
 
       {/* Stats Bar */}
       <div className="flex flex-wrap gap-3">
-        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-3 text-center min-w-[70px]">
           <p className="font-display font-black text-lg">{stats.total}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Total</p>
         </div>
-        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-3 text-center min-w-[70px]">
           <p className="font-display font-black text-lg text-emerald-500">{stats.available}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Available</p>
         </div>
-        <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-3 text-center min-w-[70px]">
           <p className="font-display font-black text-lg text-red-500">{stats.booked}</p>
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Booked</p>
         </div>
         {stats.held > 0 && (
-          <div className="glass-card rounded-lg px-4 py-2 text-center min-w-[70px]">
+          <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-3 text-center min-w-[70px]">
             <p className="font-display font-black text-lg text-amber-500">{stats.held}</p>
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Held</p>
           </div>
@@ -2263,7 +3091,7 @@ function SlotAvailabilityPanel({ venueId }) {
       {/* Grid */}
       {loadingSlots ? (
         <div className="flex items-center justify-center py-16 gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
           <span className="text-sm text-muted-foreground">Loading slots...</span>
         </div>
       ) : slots.length === 0 ? (
@@ -2273,7 +3101,7 @@ function SlotAvailabilityPanel({ venueId }) {
           <p className="text-xs text-muted-foreground/60 mt-1">Try selecting a different date</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
+        <div className="overflow-x-auto rounded-[28px] border border-border/40">
           <div className="inline-grid min-w-full" style={{ gridTemplateColumns: `80px repeat(${turfs.length}, minmax(100px, 1fr))` }}>
             {/* Header row */}
             <div className="sticky left-0 z-10 bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-r border-border">
@@ -2396,20 +3224,20 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
   return (
     <div className="space-y-6">
       {/* Mode tabs */}
-      <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg w-fit">
+      <div className="flex gap-2 w-fit">
         <button onClick={() => { setScanMode("camera"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1.5 text-xs font-bold transition-all admin-btn ${scanMode === "camera" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 hover:text-foreground"}`}>
           <Camera className="h-3.5 w-3.5" />Camera Scan
         </button>
         <button onClick={() => { setScanMode("upload"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1.5 text-xs font-bold transition-all admin-btn ${scanMode === "upload" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 hover:text-foreground"}`}>
           <Upload className="h-3.5 w-3.5" />Upload QR
         </button>
         <button onClick={() => { setScanMode("attendance"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1.5 text-xs font-bold transition-all admin-btn ${scanMode === "attendance" ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 hover:text-foreground"}`}>
           <ClipboardList className="h-3.5 w-3.5" />Attendance
           {todayBookings.length > 0 && (
-            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+            <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center">
               {checkedIn.length}/{todayBookings.length}
             </span>
           )}
@@ -2418,10 +3246,10 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Camera */}
       {scanMode === "camera" && (
-        <div className="glass-card rounded-xl p-6">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Camera className="h-6 w-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
+              <Camera className="h-6 w-6 text-brand-600" />
             </div>
             <div>
               <h3 className="font-display font-bold text-base">Scan Lobbian's QR Code</h3>
@@ -2438,7 +3266,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 <p className="text-sm text-muted-foreground mb-1">Camera preview will appear here</p>
                 {cameraError && <p className="text-xs text-destructive mt-2 px-4">{cameraError}</p>}
               </div>
-              <Button className="bg-gradient-athletic text-white font-bold shadow-glow-primary hover:shadow-glow-hover" onClick={startCamera}>
+              <Button className="bg-brand-600 hover:bg-brand-500 text-white admin-btn shadow-lg shadow-brand-600/20" onClick={startCamera}>
                 <Camera className="h-4 w-4 mr-2" /> Start Camera Scanner
               </Button>
             </div>
@@ -2459,10 +3287,10 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Upload QR Image */}
       {scanMode === "upload" && (
-        <div className="glass-card rounded-xl p-6">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Upload className="h-6 w-6 text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
+              <Upload className="h-6 w-6 text-brand-600" />
             </div>
             <div>
               <h3 className="font-display font-bold text-base">Upload QR Image</h3>
@@ -2470,7 +3298,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             </div>
           </div>
           <div className="space-y-3">
-            <label className="flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border-2 border-dashed border-border cursor-pointer hover:border-primary/50 hover:bg-primary/5 transition-all">
+            <label className="flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border-2 border-dashed border-border cursor-pointer hover:border-brand-600/50 hover:bg-brand-600/5 transition-all">
               <ImagePlus className="h-10 w-10 text-muted-foreground mb-2" />
               <span className="text-sm font-bold text-muted-foreground">Click to select QR image</span>
               <span className="text-[10px] text-muted-foreground/60 mt-1">JPG, PNG, or screenshot</span>
@@ -2499,11 +3327,11 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Attendance */}
       {scanMode === "attendance" && (
-        <div className="glass-card rounded-xl p-5">
+        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <ClipboardList className="h-5 w-5 text-primary" />
+              <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+                <ClipboardList className="h-5 w-5 text-brand-600" />
               </div>
               <div>
                 <h3 className="font-display font-bold text-sm">Today's Attendance — {venueName}</h3>
@@ -2512,7 +3340,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             </div>
             {todayBookings.length > 0 && (
               <div className="text-right">
-                <div className="font-display font-black text-xl text-primary">{checkedIn.length}/{todayBookings.length}</div>
+                <div className="font-display font-black text-xl text-brand-600">{checkedIn.length}/{todayBookings.length}</div>
                 <div className="text-[10px] text-muted-foreground font-bold">Checked In</div>
               </div>
             )}
@@ -2520,7 +3348,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
           {todayBookings.length > 0 && (
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-gradient-athletic rounded-full transition-all duration-500"
+              <div className="h-full bg-brand-600 rounded-full transition-all duration-500"
                 style={{ width: `${(checkedIn.length / todayBookings.length) * 100}%` }} />
             </div>
           )}
@@ -2533,7 +3361,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
           ) : (
             <div className="space-y-2">
               {notCheckedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/50">
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary/20 border border-border/50 hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
                     <UserX className="h-4 w-4 text-amber-400" />
                   </div>
@@ -2550,7 +3378,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 </div>
               ))}
               {checkedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20">
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-xl bg-brand-500/5 border border-brand-500/20 hover:bg-white/5 transition-colors">
                   <div className="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center shrink-0">
                     <UserCheck className="h-4 w-4 text-brand-400" />
                   </div>
@@ -2580,7 +3408,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Result */}
       {scanMode !== "attendance" && result && (
-        <div className={`rounded-xl border-2 p-6 text-center ${
+        <div className={`rounded-[28px] border p-6 text-center ${
           result.error ? "border-destructive/50 bg-destructive/5"
             : result.already_checked_in ? "border-amber-500/50 bg-amber-500/5"
             : "border-brand-500/50 bg-brand-500/5"

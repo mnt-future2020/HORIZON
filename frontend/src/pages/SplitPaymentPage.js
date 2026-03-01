@@ -104,7 +104,7 @@ export default function SplitPaymentPage() {
           <p className="text-sm text-muted-foreground mt-1">You've been invited to share the cost</p>
         </div>
 
-        <div className="glass-card rounded-lg p-6 space-y-5">
+        <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 space-y-5">
           {/* Booking Info */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

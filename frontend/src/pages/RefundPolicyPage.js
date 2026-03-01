@@ -23,24 +23,24 @@ export default function RefundPolicyPage() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-          <div className="glass-card rounded-xl p-4 border-l-4 border-green-500">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-4 border-l-4 border-green-500">
             <CheckCircle2 className="w-5 h-5 text-green-500 mb-2" />
             <div className="text-sm font-bold">Full Refund</div>
             <div className="text-xs text-muted-foreground mt-1">Cancelled 24+ hrs before slot</div>
           </div>
-          <div className="glass-card rounded-xl p-4 border-l-4 border-yellow-500">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-4 border-l-4 border-yellow-500">
             <Clock className="w-5 h-5 text-yellow-500 mb-2" />
             <div className="text-sm font-bold">50% Refund</div>
             <div className="text-xs text-muted-foreground mt-1">Cancelled 4–24 hrs before slot</div>
           </div>
-          <div className="glass-card rounded-xl p-4 border-l-4 border-red-500">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-4 border-l-4 border-red-500">
             <XCircle className="w-5 h-5 text-red-500 mb-2" />
             <div className="text-sm font-bold">No Refund</div>
             <div className="text-xs text-muted-foreground mt-1">Cancelled &lt;4 hrs before slot</div>
           </div>
         </div>
 
-        <div className="glass-card rounded-2xl p-6 sm:p-10">
+        <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 sm:p-10">
           <Sec title="1. Cancellation by Lobbian">
             <div className="overflow-x-auto">
               <table className="w-full text-xs border-collapse">

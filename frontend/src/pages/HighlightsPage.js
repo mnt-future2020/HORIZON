@@ -28,7 +28,7 @@ const SIGNIFICANCE_ICONS = {
 const SIGNIFICANCE_COLORS = {
   goal: "text-amber-400 bg-amber-500/15",
   save: "text-sky-400 bg-sky-500/15",
-  rally: "text-violet-400 bg-violet-500/15",
+  rally: "text-brand-400 bg-brand-500/15",
   foul: "text-red-400 bg-red-500/15",
   celebration: "text-brand-400 bg-brand-500/15",
   turning_point: "text-orange-400 bg-orange-500/15",
@@ -103,7 +103,7 @@ function UploadSection({ onUpload }) {
   };
 
   return (
-    <div className="glass-card rounded-xl p-5 sm:p-6" data-testid="upload-section">
+    <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-5 sm:p-6" data-testid="upload-section">
       <h3 className="font-display font-bold text-base sm:text-lg mb-4 flex items-center gap-2">
         <Upload className="h-4 w-4 text-primary" /> Upload Match Video
       </h3>
@@ -129,7 +129,7 @@ function UploadSection({ onUpload }) {
         </div>
       ) : (
         <div className="space-y-3">
-          <div className="flex items-center gap-3 glass-card rounded-lg p-3">
+          <div className="flex items-center gap-3 rounded-2xl bg-card border border-border/40 shadow-sm p-3">
             <Video className="h-5 w-5 text-primary shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{file.name}</p>
@@ -171,7 +171,7 @@ function HighlightCard({ highlight, onAnalyze, onView, onDelete }) {
 
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-      className="glass-card rounded-xl p-4 sm:p-5" data-testid={`highlight-card-${highlight.id}`}>
+      className="rounded-[24px] bg-card border border-border/40 shadow-sm p-4 sm:p-5" data-testid={`highlight-card-${highlight.id}`}>
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -312,7 +312,7 @@ function AnalysisDialog({ highlight, open, onClose, baseUrl }) {
           </div>
 
           {/* Summary */}
-          <div className="glass-card rounded-lg p-4" data-testid="analysis-summary">
+          <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-4" data-testid="analysis-summary">
             <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Match Summary</span>
             <p className="text-sm mt-2 text-foreground leading-relaxed">{a.summary}</p>
             {a.players_observed && (
@@ -330,7 +330,7 @@ function AnalysisDialog({ highlight, open, onClose, baseUrl }) {
                 {a.key_moments.map((m, i) => (
                   <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="glass-card rounded-lg p-3 flex items-start gap-3" data-testid={`moment-${i}`}>
+                    className="rounded-2xl bg-card border border-border/40 shadow-sm p-3 flex items-start gap-3" data-testid={`moment-${i}`}>
                     <div className="shrink-0 h-9 w-16 rounded-md bg-background flex items-center justify-center">
                       <span className="text-xs font-mono font-bold text-primary">{m.timestamp}</span>
                     </div>

@@ -13,7 +13,7 @@ export default function NotFoundPage() {
           The page you're looking for doesn't exist or has been moved.
         </p>
         <Button onClick={() => navigate("/")}
-          className="bg-gradient-athletic text-white font-bold rounded-xl h-11 px-8">
+          className="bg-gradient-athletic text-white font-bold rounded-full h-11 px-8 shadow-md shadow-brand-600/20">
           <ArrowLeft className="h-4 w-4 mr-2" /> Go Home
         </Button>
       </div>
