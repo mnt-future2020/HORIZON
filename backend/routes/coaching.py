@@ -38,23 +38,28 @@ async def list_coaches(
         {"_id": 0, "password_hash": 0}
     ).sort("coaching_rating", -1).to_list(100)
 
-    # Enrich with session count and rating
+    if not coaches:
+        return coaches
+
+    # Batch: get session counts + ratings in 1 aggregation query
+    coach_ids = [c["id"] for c in coaches]
+    stats_agg = await db.coaching_sessions.aggregate([
+        {"$match": {"coach_id": {"$in": coach_ids}}},
+        {"$group": {
+            "_id": "$coach_id",
+            "total_sessions": {"$sum": {"$cond": [{"$eq": ["$status", "completed"]}, 1, 0]}},
+            "avg_rating": {"$avg": {"$cond": [{"$gt": ["$rating", 0]}, "$rating", None]}},
+            "total_reviews": {"$sum": {"$cond": [{"$gt": ["$rating", 0]}, 1, 0]}}
+        }}
+    ]).to_list(len(coach_ids))
+
+    stats_map = {s["_id"]: s for s in stats_agg}
     for coach in coaches:
-        coach["total_sessions"] = await db.coaching_sessions.count_documents(
-            {"coach_id": coach["id"], "status": "completed"}
-        )
-        # Get average rating from session reviews
-        pipeline = [
-            {"$match": {"coach_id": coach["id"], "rating": {"$exists": True, "$gt": 0}}},
-            {"$group": {"_id": None, "avg": {"$avg": "$rating"}, "count": {"$sum": 1}}}
-        ]
-        agg = await db.coaching_sessions.aggregate(pipeline).to_list(1)
-        if agg:
-            coach["coaching_rating"] = round(agg[0]["avg"], 1)
-            coach["total_reviews"] = agg[0]["count"]
-        else:
-            coach["coaching_rating"] = coach.get("coaching_rating", 0)
-            coach["total_reviews"] = 0
+        s = stats_map.get(coach["id"], {})
+        coach["total_sessions"] = s.get("total_sessions", 0)
+        coach["total_reviews"] = s.get("total_reviews", 0)
+        avg = s.get("avg_rating")
+        coach["coaching_rating"] = round(avg, 1) if avg else coach.get("coaching_rating", 0)
 
     return coaches
 

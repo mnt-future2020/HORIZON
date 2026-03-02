@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   socialAPI,
@@ -63,10 +63,11 @@ const STORY_COLORS = [
 export default function SocialFeedPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [nextCursor, setNextCursor] = useState(null);
+  const [hasMore, setHasMore] = useState(false);
   const [posting, setPosting] = useState(false);
   const [feedTab, setFeedTab] = useState("for_you");
 
@@ -100,6 +101,7 @@ export default function SocialFeedPage() {
   const [expandedComments, setExpandedComments] = useState(new Set());
   const [comments, setComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+  const [commentPages, setCommentPages] = useState({}); // {postId: {page, pages, hasMore, loading}}
 
   // Reaction picker
   const [reactionPickerPost, setReactionPickerPost] = useState(null);
@@ -110,21 +112,52 @@ export default function SocialFeedPage() {
 
   const storiesRef = useRef(null);
   const reactionPickerRef = useRef(null);
+  const restoredRef = useRef(false); // prevent double-load on re-render
 
   const loadFeed = useCallback(
-    async (p = 1, tab = feedTab) => {
+    async (cursor = null, tab = feedTab) => {
       try {
-        const res = await socialAPI.getFeed(p, tab);
+        const res = await socialAPI.getFeed(tab, cursor);
         const data = res.data || {};
-        if (p === 1) {
-          setPosts(data.posts || []);
+        const newPosts = data.posts || [];
+        if (!cursor) {
+          setPosts(newPosts);
         } else {
-          setPosts((prev) => [...prev, ...(data.posts || [])]);
+          setPosts((prev) => [...prev, ...newPosts]);
         }
-        setTotalPages(data.pages || 1);
-        setPage(p);
+        setNextCursor(data.next_cursor || null);
+        setHasMore(data.has_more || false);
       } catch {
         toast.error("Failed to load feed");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [feedTab],
+  );
+
+  // Restore all pages up to a saved cursor (for browser back button)
+  const restoreToPosition = useCallback(
+    async (targetCursor, tab = feedTab) => {
+      let cursor = null;
+      let allPosts = [];
+      const target = parseInt(targetCursor, 10);
+      try {
+        while (true) {
+          const res = await socialAPI.getFeed(tab, cursor);
+          const data = res.data || {};
+          allPosts = [...allPosts, ...(data.posts || [])];
+          const next = data.next_cursor;
+          if (!data.has_more || !next || parseInt(next, 10) >= target) {
+            setNextCursor(next || null);
+            setHasMore(data.has_more || false);
+            break;
+          }
+          cursor = next;
+        }
+        setPosts(allPosts);
+      } catch {
+        toast.error("Failed to restore feed");
       } finally {
         setLoading(false);
       }
@@ -167,28 +200,102 @@ export default function SocialFeedPage() {
     } catch {}
   }, []);
 
+  // Save posts + scroll when leaving — so back button restores exact same view
   useEffect(() => {
+    return () => {
+      const urlCursor = new URLSearchParams(window.location.search).get("cursor");
+      if (urlCursor) {
+        sessionStorage.setItem("feedSnapshot", JSON.stringify({
+          cursor: urlCursor,
+          scrollY: window.scrollY,
+        }));
+        sessionStorage.setItem("feedPosts", JSON.stringify(posts));
+      }
+    };
+  }, [posts]);
+
+  // On mount: restore snapshot or fresh load
+  useEffect(() => {
+    if (restoredRef.current) return;
+    restoredRef.current = true;
+
+    const urlCursor = searchParams.get("cursor");
+    const snapshotRaw = sessionStorage.getItem("feedSnapshot");
+    const postsRaw = sessionStorage.getItem("feedPosts");
+    const snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
+
+    if (urlCursor && snapshot && snapshot.cursor === urlCursor && postsRaw) {
+      // Restore post ORDER from snapshot (no re-ranking), then refresh counts from server
+      const savedPosts = JSON.parse(postsRaw);
+      setPosts(savedPosts);
+      setNextCursor(urlCursor);
+      setHasMore(true);
+      setLoading(false);
+      sessionStorage.removeItem("feedSnapshot");
+      sessionStorage.removeItem("feedPosts");
+      setTimeout(() => {
+        window.scrollTo({ top: snapshot.scrollY || 0, behavior: "instant" });
+      }, 80);
+      // Background count refresh: re-fetch all loaded pages silently, merge updated counts by post ID
+      const numToRefresh = savedPosts.length;
+      (async () => {
+        try {
+          const allFresh = [];
+          let cursor = null;
+          while (allFresh.length < numToRefresh) {
+            const res = await socialAPI.getFeed(feedTab, cursor);
+            const data = res.data || {};
+            allFresh.push(...(data.posts || []));
+            if (!data.has_more || !data.next_cursor || allFresh.length >= numToRefresh) break;
+            cursor = data.next_cursor;
+          }
+          const freshMap = Object.fromEntries(allFresh.map((p) => [p.id, p]));
+          setPosts((prev) =>
+            prev.map((p) =>
+              freshMap[p.id]
+                ? { ...p, likes_count: freshMap[p.id].likes_count, comments_count: freshMap[p.id].comments_count, liked_by_me: freshMap[p.id].liked_by_me }
+                : p
+            )
+          );
+        } catch {}
+      })();
+      Promise.all([loadStories(), loadEngagement(), loadSuggested(), loadAlgoPlayers(), loadEngScore()]);
+      return;
+    }
+
+    sessionStorage.removeItem("feedSnapshot");
+    sessionStorage.removeItem("feedPosts");
+
     Promise.all([
-      loadFeed(1),
+      loadFeed(),
       loadStories(),
       loadEngagement(),
       loadSuggested(),
       loadAlgoPlayers(),
       loadEngScore(),
     ]);
-  }, [
-    loadFeed,
-    loadStories,
-    loadEngagement,
-    loadSuggested,
-    loadAlgoPlayers,
-    loadEngScore,
-  ]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Instagram-style: clicking Feed nav button while on feed → scroll top + refresh
+  useEffect(() => {
+    const handler = () => {
+      setSearchParams({});
+      sessionStorage.removeItem("feedSnapshot");
+      sessionStorage.removeItem("feedPosts");
+      loadFeed(null, feedTab);
+      loadStories();
+      loadEngagement();
+    };
+    window.addEventListener("feed:refresh", handler);
+    return () => window.removeEventListener("feed:refresh", handler);
+  }, [feedTab, loadFeed, loadStories, loadEngagement]);
 
   const handleTabChange = (tab) => {
     setFeedTab(tab);
     setLoading(true);
-    loadFeed(1, tab);
+    setSearchParams({});
+    sessionStorage.removeItem("feedScrollY");
+    loadFeed(null, tab);
   };
 
   // Close reaction picker on outside click
@@ -291,7 +398,7 @@ export default function SocialFeedPage() {
     try {
       await socialAPI.react(postId, reaction);
     } catch {
-      loadFeed(1);
+      loadFeed();
     }
   };
 
@@ -487,7 +594,8 @@ export default function SocialFeedPage() {
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([loadFeed(1, feedTab), loadStories(), loadEngagement()]);
+    setSearchParams({});
+    await Promise.all([loadFeed(null, feedTab), loadStories(), loadEngagement()]);
     setRefreshing(false);
   };
 
@@ -569,13 +677,37 @@ export default function SocialFeedPage() {
       if (!comments[postId]) {
         try {
           const res = await socialAPI.getComments(postId);
-          setComments((prev) => ({ ...prev, [postId]: res.data || [] }));
+          const data = res.data;
+          const list = data?.comments || data || [];
+          const page = data?.page || 1;
+          const pages = data?.pages || 1;
+          setComments((prev) => ({ ...prev, [postId]: list }));
+          setCommentPages((prev) => ({ ...prev, [postId]: { page, pages, hasMore: page < pages, loading: false } }));
         } catch {
           toast.error("Failed to load comments");
         }
       }
     }
     setExpandedComments(newSet);
+  };
+
+  const loadMoreComments = async (postId) => {
+    const pg = commentPages[postId];
+    if (!pg || !pg.hasMore || pg.loading) return;
+    setCommentPages((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: true } }));
+    try {
+      const res = await socialAPI.getComments(postId, pg.page + 1);
+      const data = res.data;
+      const newList = data?.comments || [];
+      setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), ...newList] }));
+      setCommentPages((prev) => ({
+        ...prev,
+        [postId]: { page: data.page, pages: data.pages, hasMore: data.page < data.pages, loading: false },
+      }));
+    } catch {
+      setCommentPages((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: false } }));
+      toast.error("Failed to load more comments");
+    }
   };
 
   const handleComment = async (postId) => {
@@ -1311,6 +1443,15 @@ export default function SocialFeedPage() {
                             </div>
                           </div>
                         ))}
+                        {commentPages[post.id]?.hasMore && (
+                          <button
+                            className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline py-1 mb-1 disabled:opacity-50"
+                            onClick={() => loadMoreComments(post.id)}
+                            disabled={commentPages[post.id]?.loading}
+                          >
+                            {commentPages[post.id]?.loading ? "Loading..." : "Load more comments"}
+                          </button>
+                        )}
                         <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4 items-center">
                           <Input
                             placeholder="Write a comment\u2026"
@@ -1346,11 +1487,14 @@ export default function SocialFeedPage() {
           </div>
 
           {/* Load More */}
-          {page < totalPages && (
+          {hasMore && (
             <div className="text-center mt-8">
               <button
                 className="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline px-6 py-3 sm:py-2 transition-colors min-h-[44px]"
-                onClick={() => loadFeed(page + 1)}
+                onClick={() => {
+                  loadFeed(nextCursor);
+                  if (nextCursor) setSearchParams({ cursor: nextCursor });
+                }}
               >
                 Load More
               </button>

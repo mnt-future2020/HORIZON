@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime, timezone
 from database import db
 from tz import now_ist
@@ -11,7 +11,7 @@ logger = logging.getLogger("horizon")
 
 
 @router.get("/venues/{venue_id}/reviews")
-async def get_reviews(venue_id: str, limit: int = 50):
+async def get_reviews(venue_id: str, limit: int = Query(50, ge=1, le=200)):
     venue = await db.venues.find_one({"id": venue_id}, {"_id": 0, "id": 1})
     if not venue:
         raise HTTPException(404, "Venue not found")

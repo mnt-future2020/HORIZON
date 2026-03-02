@@ -24,7 +24,7 @@ export default class ErrorBoundary extends Component {
             <p className="text-muted-foreground font-semibold mt-3 mb-8">
               An unexpected error occurred. Please try reloading the page.
             </p>
-            {this.state.error && (
+            {this.state.error && process.env.NODE_ENV === "development" && (
               <div className="mb-6 p-4 rounded-lg bg-destructive/10 border border-destructive/30 text-left">
                 <p className="text-xs font-mono text-destructive break-all">
                   {this.state.error.message || String(this.state.error)}

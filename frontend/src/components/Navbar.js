@@ -24,6 +24,14 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+
+  const handleFeedClick = (e) => {
+    if (path === "/feed") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.dispatchEvent(new CustomEvent("feed:refresh"));
+    }
+  };
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -255,7 +263,9 @@ export default function Navbar() {
         style={{ paddingBottom: "env(safe-area-inset-bottom, 4px)" }}
         data-testid="mobile-navbar">
         {mobileNavLinks.map(l => (
-          <Link key={l.to} to={l.to} data-testid={`mobile-nav-${l.label.toLowerCase()}`}
+          <Link key={l.to} to={l.to}
+            onClick={l.to === "/feed" ? handleFeedClick : undefined}
+            data-testid={`mobile-nav-${l.label.toLowerCase()}`}
             className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
               path === l.to || path.startsWith(l.to + "/")
                 ? "text-brand-600"
@@ -308,7 +318,16 @@ export default function Navbar() {
 export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const path = location.pathname;
+
+  const handleFeedClick = (e) => {
+    if (path === "/feed") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.dispatchEvent(new CustomEvent("feed:refresh"));
+    }
+  };
 
   const links = {
     player: [
@@ -360,7 +379,9 @@ export function Sidebar() {
         {navLinks.map(l => {
            const active = l.exact ? path === l.to : (path === l.to || path.startsWith(l.to + "/"));
            return (
-             <Link key={l.to} to={l.to} data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+             <Link key={l.to} to={l.to}
+               onClick={l.to === "/feed" ? handleFeedClick : undefined}
+               data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 ${
                  active
                   ? "bg-brand-600/10 text-brand-600 font-bold"

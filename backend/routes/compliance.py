@@ -76,7 +76,7 @@ async def update_consent(request: Request, user=Depends(get_current_user)):
              "$push": {"history": {
                  "action": "granted" if granted else "revoked",
                  "timestamp": now,
-                 "ip": data.get("ip", "")
+                 "ip": request.client.host if request.client else ""
              }}}
         )
     else:
@@ -90,7 +90,7 @@ async def update_consent(request: Request, user=Depends(get_current_user)):
             "history": [{
                 "action": "granted" if granted else "revoked",
                 "timestamp": now,
-                "ip": data.get("ip", "")
+                "ip": request.client.host if request.client else ""
             }]
         })
 

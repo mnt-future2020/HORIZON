@@ -3,7 +3,7 @@ from typing import Optional
 import math
 from datetime import datetime
 from database import db
-from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw
+from auth import get_current_user, get_platform_settings, require_admin, hash_pw, verify_pw, validate_password_strength
 from tz import now_ist
 from routes.venues import min_turf_price
 import s3_service
@@ -23,51 +23,54 @@ async def admin_dashboard(user=Depends(get_current_user)):
     pending_owners = await db.users.count_documents({"role": "venue_owner", "account_status": "pending"})
     pending_coaches = await db.users.count_documents({"role": "coach", "account_status": "pending"})
     active_venues = await db.venues.count_documents({"status": "active"})
-    confirmed_bookings = await db.bookings.find(
-        {"status": {"$in": ["confirmed", "completed"]}}, {"_id": 0, "total_amount": 1}
-    ).to_list(10000)
-    total_revenue = sum(b.get("total_amount", 0) for b in confirmed_bookings)
-
     settings = await db.platform_settings.find_one({"key": "platform"}, {"_id": 0})
     commission_pct = settings.get("booking_commission_pct", 0) if settings else 0
+    coaching_commission_pct = settings.get("coaching_commission_pct", 10) if settings else 10
+    tournament_commission_pct = settings.get("tournament_commission_pct", 10) if settings else 10
+
+    # Aggregation: booking revenue
+    booking_agg = await db.bookings.aggregate([
+        {"$match": {"status": {"$in": ["confirmed", "completed"]}}},
+        {"$group": {"_id": None, "total": {"$sum": "$total_amount"}}}
+    ]).to_list(1)
+    total_revenue = booking_agg[0]["total"] if booking_agg else 0
     platform_earnings = int(total_revenue * commission_pct / 100)
 
-    # Coaching revenue (per-session + packages)
-    coaching_commission_pct = settings.get("coaching_commission_pct", 10) if settings else 10
-    completed_coaching = await db.coaching_sessions.find(
-        {"status": "completed"}, {"_id": 0, "price": 1}
-    ).to_list(10000)
-    coaching_session_revenue = sum(s.get("price", 0) for s in completed_coaching)
+    # Aggregation: coaching session revenue
+    coaching_agg = await db.coaching_sessions.aggregate([
+        {"$match": {"status": "completed"}},
+        {"$group": {"_id": None, "total": {"$sum": "$price"}}}
+    ]).to_list(1)
+    coaching_session_revenue = coaching_agg[0]["total"] if coaching_agg else 0
 
-    # Package subscription revenue
-    paid_subs = await db.coaching_subscriptions.find(
-        {"status": {"$in": ["active", "expired", "cancelled"]},
-         "payment_details": {"$exists": True}},
-        {"_id": 0, "price": 1}
-    ).to_list(10000)
-    coaching_package_revenue = sum(s.get("price", 0) for s in paid_subs)
+    # Aggregation: coaching package revenue
+    pkg_agg = await db.coaching_subscriptions.aggregate([
+        {"$match": {"status": {"$in": ["active", "expired", "cancelled"]}, "payment_details": {"$exists": True}}},
+        {"$group": {"_id": None, "total": {"$sum": "$price"}}}
+    ]).to_list(1)
+    coaching_package_revenue = pkg_agg[0]["total"] if pkg_agg else 0
 
     coaching_revenue = coaching_session_revenue + coaching_package_revenue
     coaching_earnings = int(coaching_revenue * coaching_commission_pct / 100)
 
-    # Tournament revenue
-    tournament_commission_pct = settings.get("tournament_commission_pct", 10) if settings else 10
+    # Tournament revenue — needs participants array, keep lightweight fetch but project minimally
     all_tournaments = await db.tournaments.find(
-        {"entry_fee": {"$gt": 0}}, {"_id": 0, "entry_fee": 1, "participants": 1}
-    ).to_list(10000)
-    tournament_revenue = 0
-    for t in all_tournaments:
-        paid_count = sum(1 for p in t.get("participants", []) if p.get("payment_status") == "paid")
-        tournament_revenue += t.get("entry_fee", 0) * paid_count
+        {"entry_fee": {"$gt": 0}}, {"_id": 0, "entry_fee": 1, "participants.payment_status": 1}
+    ).to_list(1000)
+    tournament_revenue = sum(
+        t.get("entry_fee", 0) * sum(1 for p in t.get("participants", []) if p.get("payment_status") == "paid")
+        for t in all_tournaments
+    )
     tournament_earnings = int(tournament_revenue * tournament_commission_pct / 100)
 
     total_platform_earnings = platform_earnings + coaching_earnings + tournament_earnings
 
-    # Payout summary
-    settled_docs = await db.settlements.find(
-        {"status": {"$in": ["completed", "processing"]}}, {"_id": 0, "net_amount": 1}
-    ).to_list(10000)
-    total_settled = sum(s.get("net_amount", 0) for s in settled_docs)
+    # Aggregation: settled payouts
+    settled_agg = await db.settlements.aggregate([
+        {"$match": {"status": {"$in": ["completed", "processing"]}}},
+        {"$group": {"_id": None, "total": {"$sum": "$net_amount"}}}
+    ]).to_list(1)
+    total_settled = settled_agg[0]["total"] if settled_agg else 0
     pending_settlements = await db.settlements.count_documents({"status": "processing"})
     linked_count = await db.linked_accounts.count_documents({})
 
@@ -352,8 +355,10 @@ async def admin_change_password(request: Request, user=Depends(get_current_user)
     full_user = await db.users.find_one({"id": user["id"]})
     if not full_user or not verify_pw(current_pw, full_user.get("password_hash", "")):
         raise HTTPException(400, "Current password is incorrect")
-    if len(new_pw) < 6:
-        raise HTTPException(400, "Password must be at least 6 characters")
+    try:
+        validate_password_strength(new_pw)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_pw(new_pw)}})
     return {"message": "Password updated"}
 

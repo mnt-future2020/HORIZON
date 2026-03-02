@@ -254,7 +254,7 @@ async def refresh_token(request: Request):
 @router.post("/auth/dev-login")
 async def dev_login(request: Request):
     """Quick login by email — development/testing only, no password needed."""
-    if os.environ.get("ENVIRONMENT", "development") != "development":
+    if os.environ.get("ENVIRONMENT", "development").strip().lower() != "development":
         raise HTTPException(403, "Dev login is disabled in production")
     data = await request.json()
     email = data.get("email", "").strip().lower()

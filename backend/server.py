@@ -56,6 +56,7 @@ from routes.payouts import router as payouts_router
 from routes.venue_finance import router as venue_finance_router
 from routes.venue_invoices import router as venue_invoices_router
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from indexes import ensure_indexes
 
 scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
 
@@ -211,6 +212,7 @@ async def startup():
                 raise RuntimeError(f"Cannot connect to MongoDB: {e}")
 
     await init_redis()
+    await ensure_indexes(db)
     # Migrate existing venues without slugs
     import re
     venues_without_slug = await db.venues.find({"slug": {"$exists": False}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)

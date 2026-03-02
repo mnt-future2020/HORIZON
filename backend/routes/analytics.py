@@ -261,6 +261,8 @@ async def player_analytics(user=Depends(get_current_user)):
 @router.get("/analytics/player/{player_id}/career")
 async def player_career(player_id: str, user=Depends(get_current_user)):
     """Aggregated career data from all performance records."""
+    if user["id"] != player_id and user.get("role") != "admin":
+        raise HTTPException(403, "Not authorized to view this player's career data")
     records = await db.performance_records.find(
         {"player_id": player_id}, {"_id": 0}
     ).sort("date", -1).to_list(500)
