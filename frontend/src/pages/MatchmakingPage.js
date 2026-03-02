@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { matchAPI, mercenaryAPI, bookingAPI } from "@/lib/api";
+import { matchAPI, mercenaryAPI, bookingAPI, venueAPI } from "@/lib/api";
+import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,8 +13,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Swords, Users, Plus, Clock, Trophy, Target, MapPin,
   IndianRupee, CheckCircle, XCircle, CreditCard, Loader2, Star, UserCheck,
-  Sparkles, Zap, FileCheck, BarChart3, ThumbsUp, ThumbsDown
+  Sparkles, Zap, FileCheck, BarChart3, ThumbsUp, ThumbsDown, ChevronDown, Shield
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const SPORT_EMOJI = { football: "⚽", cricket: "🏏", badminton: "🏸", tennis: "🎾", basketball: "🏀" };
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball"];
@@ -38,7 +41,9 @@ function CompatBadge({ score }) {
   );
 }
 
-function MatchCard({ match, onJoin, userId, showCompat, index = 0 }) {
+function MatchCard({ match, onJoin, userId, showCompat, index = 0, isExpanded, onToggleExpand }) {
+  const navigate = useNavigate();
+  const expanded = isExpanded;
   const isCreator = match.creator_id === userId;
   const hasJoined = match.players_joined?.includes(userId);
   const spotsLeft = match.players_needed - (match.players_joined?.length || 0);
@@ -47,12 +52,22 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0 }) {
   const sportLabel = match.sport?.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase());
   const sportEmoji = SPORT_EMOJI[match.sport] || "🏅";
 
+  const players = (match.players_joined || []).map((id, i) => ({
+    id,
+    name: match.player_names?.[i] || "Player",
+    rating: match.player_ratings?.[id] ?? 1500,
+    avatar: match.player_avatars?.[id] || "",
+    isHost: id === match.creator_id,
+    isYou: id === userId,
+  }));
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 hover:shadow-md hover:border-brand-600/20 transition-all duration-300"
+      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 hover:shadow-md hover:border-brand-600/20 transition-all duration-300 cursor-pointer"
+      onClick={() => onToggleExpand?.(match.id)}
       data-testid={`match-card-${match.id}`}>
 
       {/* Header */}
@@ -84,10 +99,58 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0 }) {
       {/* Meta info row */}
       <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground mb-3 pl-[52px]">
         <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{match.date} · {match.time}</span>
-        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{match.venue_name || "TBD"}</span>
+        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{match.venue_name || match.area || "TBD"}{match.area && match.venue_name ? ` (${match.area})` : ""}</span>
         <span className="flex items-center gap-1"><Trophy className="h-3 w-3" />{match.min_skill}–{match.max_skill} skill</span>
-        <span className="flex items-center gap-1"><Users className="h-3 w-3" />{match.players_joined?.length || 0}/{match.players_needed}</span>
+        <button className="flex items-center gap-1 hover:text-foreground transition-colors">
+          <Users className="h-3 w-3" />{match.players_joined?.length || 0}/{match.players_needed}
+          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+        </button>
       </div>
+
+      {/* Expandable Player Roster */}
+      <AnimatePresence>
+        {expanded && players.length > 0 && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.25, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="rounded-2xl bg-secondary/30 border border-border/30 p-3 mb-3 ml-[52px]">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
+                Players ({players.length}/{match.players_needed})
+              </span>
+              <div className="space-y-2">
+                {players.map(p => (
+                  <div key={p.id}
+                    onClick={(e) => { e.stopPropagation(); navigate(`/player-card/${p.id}`); }}
+                    className="flex items-center gap-2.5 cursor-pointer hover:bg-secondary/50 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors">
+                    <Avatar className="h-7 w-7 border border-border/40">
+                      {p.avatar && <AvatarImage src={mediaUrl(p.avatar)} alt={p.name} />}
+                      <AvatarFallback className="text-[10px] font-medium bg-brand-600/10 text-brand-600">
+                        {p.name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium text-foreground flex-1 truncate hover:text-brand-600 transition-colors">{p.name}</span>
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                      <Star className="h-3 w-3 text-amber-500" />{p.rating}
+                    </span>
+                    {p.isHost && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium flex items-center gap-0.5">
+                        <Shield className="h-2.5 w-2.5" />Host
+                      </span>
+                    )}
+                    {p.isYou && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand-600/10 text-brand-600 font-medium">You</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Result banner */}
       {hasResult && (
@@ -118,7 +181,7 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0 }) {
             <span className="text-[10px] px-2.5 py-1 rounded-full bg-brand-600/10 text-brand-600 font-medium">Joined</span>
           )}
           {!isCreator && !hasJoined && spotsLeft > 0 && match.status === "open" && (
-            <Button size="sm" onClick={() => onJoin(match.id)} data-testid={`join-match-${match.id}`}
+            <Button size="sm" onClick={(e) => { e.stopPropagation(); onJoin(match.id); }} data-testid={`join-match-${match.id}`}
               className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-8 px-4 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all">
               Join
             </Button>
@@ -429,7 +492,8 @@ function EmptyState({ icon: Icon, title, sub }) {
 
 export default function MatchmakingPage() {
   const { user } = useAuth();
-  const [tab, setTab] = useState("recommended");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get("tab") || "recommended");
   const [matches, setMatches] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [mercenaries, setMercenaries] = useState([]);
@@ -441,19 +505,39 @@ export default function MatchmakingPage() {
   const [paying, setPaying] = useState(null);
   const [autoMatchResult, setAutoMatchResult] = useState(null);
   const [autoMatching, setAutoMatching] = useState(false);
-  const [autoSport, setAutoSport] = useState("football");
+  const [autoSport, setAutoSport] = useState(searchParams.get("autoSport") || "football");
+  const [filterSport, setFilterSport] = useState(searchParams.get("sport") || "all");
+  const [filterArea, setFilterArea] = useState(searchParams.get("area") || "all");
+  const [expandedMatchId, setExpandedMatchId] = useState(searchParams.get("expanded") || null);
+  const [areas, setAreas] = useState([]);
+
+  // Sync state to URL params so back-navigation preserves filters & expanded card
+  useEffect(() => {
+    const params = {};
+    if (tab !== "recommended") params.tab = tab;
+    if (filterSport !== "all") params.sport = filterSport;
+    if (filterArea !== "all") params.area = filterArea;
+    if (autoSport !== "football") params.autoSport = autoSport;
+    if (expandedMatchId) params.expanded = expandedMatchId;
+    setSearchParams(params, { replace: true });
+  }, [tab, filterSport, filterArea, autoSport, expandedMatchId, setSearchParams]);
   const [form, setForm] = useState({
-    sport: "football", date: "", time: "18:00", venue_name: "",
+    sport: "football", date: "", time: "18:00", venue_name: "", area: "", city: "",
     players_needed: 10, min_skill: 0, max_skill: 3000, description: "",
     booking_id: "", position_needed: "", amount_per_player: 200, spots_available: 1,
   });
 
   const loadData = useCallback(() => {
     setLoading(true);
+    const matchParams = {};
+    if (filterSport !== "all") matchParams.sport = filterSport;
+    if (filterArea !== "all") matchParams.area = filterArea;
+    const recParams = {};
+    if (autoSport) recParams.sport = autoSport;
     Promise.all([
-      matchAPI.list().catch(() => ({ data: [] })),
-      matchAPI.recommended().catch(() => ({ data: [] })),
-      mercenaryAPI.list().catch(() => ({ data: [] })),
+      matchAPI.list(matchParams).catch(() => ({ data: [] })),
+      matchAPI.recommended(recParams).catch(() => ({ data: [] })),
+      mercenaryAPI.list(filterSport !== "all" ? { sport: filterSport } : {}).catch(() => ({ data: [] })),
       mercenaryAPI.myPosts().catch(() => ({ data: [] })),
       bookingAPI.list().catch(() => ({ data: [] })),
     ]).then(([m, rec, mer, mp, bk]) => {
@@ -463,9 +547,14 @@ export default function MatchmakingPage() {
       setMyPosts(mp.data || []);
       setMyBookings((bk.data || []).filter(b => b.status === "confirmed" && b.host_id === user?.id));
     }).finally(() => setLoading(false));
-  }, [user?.id]);
+  }, [user?.id, filterSport, filterArea, autoSport]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Load areas for filter dropdowns
+  useEffect(() => {
+    venueAPI.areas().then(res => setAreas(res.data || [])).catch(() => {});
+  }, []);
 
   const handleJoin = async (id) => {
     try { await matchAPI.join(id); toast.success("Joined match!"); loadData(); }
@@ -475,7 +564,7 @@ export default function MatchmakingPage() {
   const handleAutoMatch = async () => {
     setAutoMatching(true);
     try {
-      const res = await matchAPI.autoMatch({ sport: autoSport });
+      const res = await matchAPI.autoMatch({ sport: autoSport, area: user?.area || user?.city || "" });
       setAutoMatchResult(res.data);
       if (res.data.found) toast.success(`Found a ${res.data.match.compatibility_score}% compatible match!`);
       else toast.info(res.data.message);
@@ -554,7 +643,8 @@ export default function MatchmakingPage() {
       if (formType === "match") {
         await matchAPI.create({
           sport: form.sport, date: form.date, time: form.time,
-          venue_name: form.venue_name, players_needed: Number(form.players_needed),
+          venue_name: form.venue_name, area: form.area, city: form.city,
+          players_needed: Number(form.players_needed),
           min_skill: Number(form.min_skill), max_skill: Number(form.max_skill), description: form.description,
         });
         toast.success("Match created!");
@@ -575,18 +665,14 @@ export default function MatchmakingPage() {
 
   const [allMatches, setAllMatches] = useState([]);
   useEffect(() => {
-    matchAPI.list({ status: "filled" }).then(res => {
-      const filled = res.data || [];
-      matchAPI.list({ status: "pending_result" }).then(res2 => {
-        const pending = res2.data || [];
-        matchAPI.list({ status: "completed" }).then(res3 => {
-          const completed = res3.data || [];
-          setAllMatches([...matches, ...filled, ...pending, ...completed].filter(
-            (m, i, arr) => arr.findIndex(x => x.id === m.id) === i
-          ));
-        }).catch(() => setAllMatches(matches));
-      }).catch(() => setAllMatches(matches));
-    }).catch(() => setAllMatches(matches));
+    matchAPI.list({ status: "filled,pending_result,completed", include_past: true })
+      .then(res => {
+        const extra = res.data || [];
+        setAllMatches([...matches, ...extra].filter(
+          (m, i, arr) => arr.findIndex(x => x.id === m.id) === i
+        ));
+      })
+      .catch(() => setAllMatches(matches));
   }, [matches]);
 
   const myActiveMatches = allMatches.filter(m =>
@@ -674,6 +760,20 @@ export default function MatchmakingPage() {
                       <Label className="admin-section-label mb-1.5 block">Venue Name</Label>
                       <Input value={form.venue_name} onChange={e => setForm(p => ({ ...p, venue_name: e.target.value }))}
                         className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-venue-input" />
+                    </div>
+                    <div>
+                      <Label className="admin-section-label mb-1.5 block">Area</Label>
+                      <Select value={form.area || "none"} onValueChange={v => setForm(p => ({ ...p, area: v === "none" ? "" : v }))}>
+                        <SelectTrigger className="bg-secondary/20 border-border/40 rounded-xl text-sm">
+                          <SelectValue placeholder="Select area (optional)" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-border/40">
+                          <SelectItem value="none">No area selected</SelectItem>
+                          {areas.map(a => (
+                            <SelectItem key={a.area} value={a.area}>{a.area}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div>
                       <Label className="admin-section-label mb-1.5 block">Lobbians Needed</Label>
@@ -816,7 +916,9 @@ export default function MatchmakingPage() {
                           <CompatBadge score={autoMatchResult.match.compatibility_score} />
                           <span className="text-xs text-muted-foreground">Best match found for you!</span>
                         </div>
-                        <MatchCard match={autoMatchResult.match} onJoin={handleJoin} userId={user?.id} showCompat />
+                        <MatchCard match={autoMatchResult.match} onJoin={handleJoin} userId={user?.id} showCompat
+                          isExpanded={expandedMatchId === autoMatchResult.match.id}
+                          onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground text-center py-2">{autoMatchResult.message}</p>
@@ -832,7 +934,8 @@ export default function MatchmakingPage() {
               ) : (
                 <div className="space-y-4">
                   <span className="admin-section-label">Recommended for you</span>
-                  {recommended.map((m, i) => <MatchCard key={m.id} match={m} onJoin={handleJoin} userId={user?.id} showCompat index={i} />)}
+                  {recommended.map((m, i) => <MatchCard key={m.id} match={m} onJoin={handleJoin} userId={user?.id} showCompat index={i}
+                    isExpanded={expandedMatchId === m.id} onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />)}
                 </div>
               )}
             </motion.div>
@@ -841,14 +944,52 @@ export default function MatchmakingPage() {
           {/* ALL GAMES */}
           {tab === "matches" && (
             <motion.div key="matches" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              {/* Filter bar */}
+              <div className="flex flex-wrap gap-3 mb-5">
+                <div className="w-40">
+                  <Select value={filterSport} onValueChange={setFilterSport}>
+                    <SelectTrigger className="h-10 rounded-xl bg-secondary/20 border-border/40 admin-btn text-sm">
+                      <SelectValue placeholder="All Sports" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-border/40">
+                      <SelectItem value="all">All Sports</SelectItem>
+                      {SPORTS.map(s => (
+                        <SelectItem key={s} value={s}>{SPORT_EMOJI[s]} {s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-44">
+                  <Select value={filterArea} onValueChange={setFilterArea}>
+                    <SelectTrigger className="h-10 rounded-xl bg-secondary/20 border-border/40 admin-btn text-sm">
+                      <SelectValue placeholder="All Areas" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-border/40">
+                      <SelectItem value="all">All Areas</SelectItem>
+                      {areas.map(a => (
+                        <SelectItem key={a.area} value={a.area}>{a.area}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {(filterSport !== "all" || filterArea !== "all") && (
+                  <button
+                    onClick={() => { setFilterSport("all"); setFilterArea("all"); }}
+                    className="px-3 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground border border-border/40 admin-btn transition-all">
+                    Clear filters
+                  </button>
+                )}
+              </div>
+
               {loading ? (
                 <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
               ) : matches.length === 0 ? (
-                <EmptyState icon={Swords} title="No open games" sub="Be the first to create one!" />
+                <EmptyState icon={Swords} title="No open games" sub={filterSport !== "all" || filterArea !== "all" ? "Try changing your filters" : "Be the first to create one!"} />
               ) : (
                 <div className="space-y-4">
                   <span className="admin-section-label">{matches.length} open game{matches.length !== 1 ? "s" : ""}</span>
-                  {matches.map((m, i) => <MatchCard key={m.id} match={m} onJoin={handleJoin} userId={user?.id} index={i} />)}
+                  {matches.map((m, i) => <MatchCard key={m.id} match={m} onJoin={handleJoin} userId={user?.id} index={i}
+                    isExpanded={expandedMatchId === m.id} onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />)}
                 </div>
               )}
             </motion.div>
@@ -864,7 +1005,8 @@ export default function MatchmakingPage() {
                   <span className="admin-section-label">Report & confirm results</span>
                   {myActiveMatches.map((m, i) => (
                     <div key={m.id}>
-                      <MatchCard match={m} onJoin={handleJoin} userId={user?.id} index={i} />
+                      <MatchCard match={m} onJoin={handleJoin} userId={user?.id} index={i}
+                        isExpanded={expandedMatchId === m.id} onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />
                       <div className="mt-2 flex gap-2 justify-end">
                         <ResultDialog match={m} onSubmit={handleSubmitResult} userId={user?.id} />
                       </div>

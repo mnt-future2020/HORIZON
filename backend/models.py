@@ -96,6 +96,8 @@ class MatchRequestCreate(BaseModel):
     date: str
     time: str
     venue_name: Optional[str] = ""
+    area: Optional[str] = ""
+    city: Optional[str] = ""
     players_needed: int
     min_skill: Optional[int] = 0
     max_skill: Optional[int] = 3000

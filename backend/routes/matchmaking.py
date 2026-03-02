@@ -7,23 +7,57 @@ from tz import now_ist
 from models import MatchRequestCreate, MercenaryCreate, MatchResultSubmit
 from glicko2 import update_rating, calculate_compatibility, suggest_balanced_teams
 import uuid
+import re
 import logging
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
 
 
+async def _fill_player_avatars(matches):
+    """Backfill player_avatars for matches that don't have them yet."""
+    needs = set()
+    for m in matches:
+        if not m.get("player_avatars"):
+            needs.update(m.get("players_joined", []))
+    if not needs:
+        return matches
+    users = await db.users.find({"id": {"$in": list(needs)}}, {"_id": 0, "id": 1, "avatar": 1}).to_list(len(needs))
+    avatar_map = {u["id"]: u.get("avatar", "") for u in users}
+    for m in matches:
+        if not m.get("player_avatars"):
+            m["player_avatars"] = {pid: avatar_map.get(pid, "") for pid in m.get("players_joined", [])}
+    return matches
+
+
 # --- Matchmaking Routes ---
 @router.get("/matchmaking")
-async def list_matches(sport: Optional[str] = None, status: Optional[str] = None):
+async def list_matches(
+    sport: Optional[str] = None,
+    status: Optional[str] = None,
+    area: Optional[str] = None,
+    city: Optional[str] = None,
+    include_past: bool = False,
+):
     query = {}
+    # Status: support comma-separated values for $in query
     if status:
-        query["status"] = status
+        statuses = [s.strip() for s in status.split(",") if s.strip()]
+        query["status"] = {"$in": statuses} if len(statuses) > 1 else statuses[0]
     else:
         query["status"] = {"$in": ["open", "filled"]}
     if sport:
         query["sport"] = sport
-    matches = await db.match_requests.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    if area:
+        query["area"] = {"$regex": re.escape(area), "$options": "i"}
+    if city:
+        query["city"] = {"$regex": f"^{re.escape(city)}$", "$options": "i"}
+    # Exclude past matches by default
+    if not include_past:
+        today = now_ist().strftime("%Y-%m-%d")
+        query["date"] = {"$gte": today}
+    matches = await db.match_requests.find(query, {"_id": 0}).sort("date", 1).to_list(200)
+    await _fill_player_avatars(matches)
     return matches
 
 
@@ -34,6 +68,7 @@ async def create_match(input: MatchRequestCreate, user=Depends(get_current_user)
         "creator_name": user["name"], **input.model_dump(),
         "players_joined": [user["id"]], "player_names": [user["name"]],
         "player_ratings": {user["id"]: user.get("skill_rating", 1500)},
+        "player_avatars": {user["id"]: user.get("avatar", "")},
         "status": "open",
         "created_at": now_ist().isoformat()
     }
@@ -59,7 +94,10 @@ async def join_match(match_id: str, user=Depends(get_current_user)):
                 "players_joined": user["id"],
                 "player_names": user["name"]
             },
-            "$set": {f"player_ratings.{user['id']}": user.get("skill_rating", 1500)}
+            "$set": {
+                f"player_ratings.{user['id']}": user.get("skill_rating", 1500),
+                f"player_avatars.{user['id']}": user.get("avatar", "")
+            }
         },
         return_document=True
     )
@@ -75,16 +113,21 @@ async def join_match(match_id: str, user=Depends(get_current_user)):
 
 
 @router.get("/matchmaking/recommended")
-async def recommended_matches(user=Depends(get_current_user)):
-    """Get open matches sorted by skill compatibility for the current user."""
+async def recommended_matches(sport: Optional[str] = None, user=Depends(get_current_user)):
+    """Get open matches sorted by multi-factor compatibility for the current user."""
     user_rating = user.get("skill_rating", 1500)
     user_rd = user.get("skill_deviation", 350)
     user_sports = user.get("sports", [])
+    user_area = user.get("area", "") or user.get("city", "")
 
-    query = {"status": "open", "creator_id": {"$ne": user["id"]}}
+    today = now_ist().strftime("%Y-%m-%d")
+    query = {"status": "open", "creator_id": {"$ne": user["id"]}, "date": {"$gte": today}}
+    if sport:
+        query["sport"] = sport
     matches = await db.match_requests.find(query, {"_id": 0}).to_list(100)
 
     scored = []
+    today_date = now_ist().date()
     for m in matches:
         if user["id"] in m.get("players_joined", []):
             continue
@@ -93,47 +136,91 @@ async def recommended_matches(user=Depends(get_current_user)):
             m.get("min_skill", 0), m.get("max_skill", 3000)
         )
         sport_bonus = 10 if m.get("sport") in user_sports else 0
+        # Area bonus: +8 if match area matches user area
+        area_bonus = 0
+        match_area = m.get("area", "") or m.get("city", "")
+        if user_area and match_area and user_area.lower() == match_area.lower():
+            area_bonus = 8
+        # Date proximity bonus
+        date_bonus = 0
+        try:
+            match_date = datetime.strptime(m.get("date", ""), "%Y-%m-%d").date()
+            days_away = (match_date - today_date).days
+            if days_away == 0: date_bonus = 5
+            elif days_away == 1: date_bonus = 3
+            elif days_away == 2: date_bonus = 1
+        except (ValueError, TypeError):
+            pass
         spots_left = m.get("players_needed", 10) - len(m.get("players_joined", []))
-        m["compatibility_score"] = min(100, compat + sport_bonus)
+        m["compatibility_score"] = min(100, compat + sport_bonus + area_bonus + date_bonus)
         m["spots_left"] = spots_left
         scored.append(m)
 
     scored.sort(key=lambda x: x["compatibility_score"], reverse=True)
+    await _fill_player_avatars(scored)
     return scored
 
 
 @router.post("/matchmaking/auto-match")
 async def auto_match(request: Request, user=Depends(get_current_user)):
-    """Find the best match for the user or suggest creating one."""
+    """Find the best match using multi-factor scoring: skill + location + date + fullness."""
     body = await request.json()
     sport = body.get("sport", "")
+    area = body.get("area", "")
     user_rating = user.get("skill_rating", 1500)
     user_rd = user.get("skill_deviation", 350)
 
-    query = {"status": "open", "creator_id": {"$ne": user["id"]}}
+    today = now_ist().strftime("%Y-%m-%d")
+    query = {"status": "open", "creator_id": {"$ne": user["id"]}, "date": {"$gte": today}}
     if sport:
         query["sport"] = sport
+    if area:
+        query["area"] = {"$regex": re.escape(area), "$options": "i"}
     matches = await db.match_requests.find(query, {"_id": 0}).to_list(100)
 
     best_match = None
     best_score = -1
+    today_date = now_ist().date()
 
     for m in matches:
         if user["id"] in m.get("players_joined", []):
             continue
-        spots = m.get("players_needed", 10) - len(m.get("players_joined", []))
+        total_spots = m.get("players_needed", 10)
+        joined = len(m.get("players_joined", []))
+        spots = total_spots - joined
         if spots <= 0:
             continue
+        # Skill compatibility (0-100)
         compat = calculate_compatibility(
             user_rating, user_rd,
             m.get("min_skill", 0), m.get("max_skill", 3000)
         )
-        if compat > best_score:
-            best_score = compat
+        # Fullness bonus (0-15): prefer matches closer to filling
+        fullness_bonus = round((joined / max(total_spots, 1)) * 15)
+        # Date proximity bonus (0-10)
+        date_bonus = 0
+        try:
+            match_date = datetime.strptime(m.get("date", ""), "%Y-%m-%d").date()
+            days_away = (match_date - today_date).days
+            if days_away == 0: date_bonus = 10
+            elif days_away == 1: date_bonus = 7
+            elif days_away <= 3: date_bonus = 4
+            elif days_away <= 7: date_bonus = 2
+        except (ValueError, TypeError):
+            pass
+        # Area bonus (0-10)
+        area_bonus = 0
+        match_area = m.get("area", "") or m.get("city", "")
+        user_area = area or user.get("area", "") or user.get("city", "")
+        if user_area and match_area and user_area.lower() == match_area.lower():
+            area_bonus = 10
+        total_score = compat + fullness_bonus + date_bonus + area_bonus
+        if total_score > best_score:
+            best_score = total_score
             best_match = m
 
     if best_match:
-        best_match["compatibility_score"] = best_score
+        best_match["compatibility_score"] = min(best_score, 100)
         return {"found": True, "match": best_match}
     return {"found": False, "message": "No compatible matches found. Try creating one!"}
 
