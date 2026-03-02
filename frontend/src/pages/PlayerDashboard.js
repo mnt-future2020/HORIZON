@@ -6,15 +6,38 @@ import { mediaUrl, fmt12h } from "@/lib/utils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import {
-  MapPin, Swords, Calendar, Trophy, TrendingUp, Clock, ChevronRight,
+  MapPin, Swords, Calendar, Trophy, TrendingUp, Clock,
   Star, Search, Play, ListOrdered, X, User, Loader2, Dumbbell,
   BarChart3, Target, Zap, Flame, Building2,
 } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Input } from "@/components/ui/input";
 import BookingReceipt from "@/components/BookingReceipt";
 
-const PLAYER_HERO = "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80";
+const SPORT_HERO_IMAGES = {
+  football:    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
+  cricket:     "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&w=800&q=80",
+  badminton:   "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=800&q=80",
+  tennis:      "https://images.unsplash.com/photo-1554068865-24cecd4e34b8?auto=format&fit=crop&w=800&q=80",
+  basketball:  "https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80",
+  volleyball:  "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?auto=format&fit=crop&w=800&q=80",
+  default:     "https://images.unsplash.com/photo-1517649763962-0c623066013b?auto=format&fit=crop&w=800&q=80",
+};
+const QUICK_ACTION_IMAGES = {
+  "Find Venue":  "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?auto=format&fit=crop&w=400&q=80",
+  "Find Game":   "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=400&q=80",
+  "Find Coach":  "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80",
+  "My Profile":  "https://images.unsplash.com/photo-1526676037777-05a232554f77?auto=format&fit=crop&w=400&q=80",
+};
+const SPORT_EMOJI = { football: "\u26BD", cricket: "\uD83C\uDFCF", badminton: "\uD83C\uDFF8", tennis: "\uD83C\uDFBE", basketball: "\uD83C\uDFC0", volleyball: "\uD83C\uDFD0", table_tennis: "\uD83C\uDFD3", swimming: "\uD83C\uDFCA", hockey: "\uD83C\uDFD1" };
 const MOTIVATION_IMG = "https://images.unsplash.com/photo-1552674605-db6ffd4facb5?auto=format&fit=crop&w=600&q=80";
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 17) return "Good afternoon";
+  return "Good evening";
+}
 
 /* ─── Local stat card (admin-style) ─────────────────────────────────────── */
 function StatCard({ icon: Icon, label, value, colorClass = "text-brand-600", bgClass = "bg-brand-600/10", delay = 0 }) {
@@ -55,9 +78,16 @@ function BookingCard({ booking, onClick, delay = 0 }) {
       data-testid={`booking-card-${booking.id}`}
     >
       <div className="flex items-center justify-between gap-4 mb-4">
-        <h3 className="font-semibold text-base text-foreground truncate group-hover:text-brand-600 transition-colors">
-          {booking.venue_name}
-        </h3>
+        <div className="min-w-0">
+          <h3 className="font-semibold text-base text-foreground truncate group-hover:text-brand-600 transition-colors">
+            {booking.venue_name}
+          </h3>
+          {booking.sport && (
+            <span className="text-[10px] admin-label capitalize mt-0.5 block">
+              {SPORT_EMOJI[booking.sport] || "\uD83C\uDFC5"} {booking.sport.replace("_", " ")}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 shrink-0">
           {booking.checked_in && (
             <span className="px-2.5 py-1 rounded-full text-[10px] font-medium admin-badge bg-brand-600/10 text-brand-600 border border-brand-600/20">
@@ -144,6 +174,8 @@ export default function PlayerDashboard() {
     return { label: "Bronze", color: "text-orange-400" };
   };
   const tier = getRatingTier(user?.skill_rating || 1500);
+  const primarySport = stats?.sport_breakdown ? Object.entries(stats.sport_breakdown).sort((a, b) => b[1] - a[1])[0]?.[0] : null;
+  const heroImage = SPORT_HERO_IMAGES[primarySport] || SPORT_HERO_IMAGES.default;
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -164,11 +196,13 @@ export default function PlayerDashboard() {
           <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
             <span className="admin-section-label mb-2">Dashboard</span>
             <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-1">
-              Welcome back,{" "}
+              {getGreeting()},{" "}
               <span className="text-brand-600">{user?.name?.split(" ")[0]}</span>
             </h1>
             <p className="admin-label text-sm mt-2">
-              Ready to play? Book your next game and dominate the field.
+              {new Date().getHours() < 17
+                ? "Ready to play? Book your next game and dominate the field."
+                : "Wind down with a game tonight or plan tomorrow's session."}
             </p>
             <div className="flex items-center gap-3 mt-6 flex-wrap">
               <button
@@ -186,7 +220,7 @@ export default function PlayerDashboard() {
             </div>
           </div>
           <div className="hidden md:block relative h-full min-h-[220px]">
-            <img src={PLAYER_HERO} alt="Athletes" className="absolute inset-0 w-full h-full object-cover" />
+            <img src={heroImage} alt="Sport" className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-r from-card/80 to-transparent" />
           </div>
         </div>
@@ -236,28 +270,36 @@ export default function PlayerDashboard() {
       {/* ── Quick Actions ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-10">
         {[
-          { icon: MapPin,   label: "Find Venue",  desc: "Browse available turfs",    to: "/venues",       colorClass: "text-brand-600",  bgClass: "bg-brand-600/10"  },
-          { icon: Swords,   label: "Find Game",   desc: "Join or create matches",    to: "/matchmaking",  colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10" },
-          { icon: Dumbbell, label: "Find Coach",  desc: "Book 1-on-1 sessions",      to: "/coaching",     colorClass: "text-sky-500",    bgClass: "bg-sky-500/10"    },
-          { icon: Trophy,   label: "My Profile",  desc: "Stats & match history",     to: "/rating-profile", colorClass: "text-amber-500",  bgClass: "bg-amber-500/10"  },
+          { icon: MapPin,   label: "Find Venue",  desc: "Browse available turfs",    to: "/venues"        },
+          { icon: Swords,   label: "Find Game",   desc: "Join or create matches",    to: "/matchmaking"   },
+          { icon: Dumbbell, label: "Find Coach",  desc: "Book 1-on-1 sessions",      to: "/coaching"      },
+          { icon: Trophy,   label: "My Profile",  desc: "Stats & match history",     to: "/rating-profile" },
         ].map((a, i) => (
           <motion.button
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.35 + i * 0.07 }}
+            whileHover={{ y: -6, scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => navigate(a.to)}
             data-testid={`quick-action-${a.label.toLowerCase().replace(/\s/g, "-")}`}
-            className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 hover:bg-white/5 hover:shadow-md transition-all duration-200 text-left group"
+            className="relative rounded-[28px] overflow-hidden shadow-sm h-36 sm:h-40 group text-left"
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center border border-border/40 ${a.bgClass}`}>
-                <a.icon className={`h-5 w-5 ${a.colorClass}`} />
+            <img
+              src={QUICK_ACTION_IMAGES[a.label]}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
+            <div className="relative h-full flex flex-col justify-end p-5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2 bg-white/15 backdrop-blur-sm border border-white/10">
+                <a.icon className="h-4 w-4 text-white" />
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
+              <div className="font-semibold text-sm text-white">{a.label}</div>
+              <div className="text-[11px] text-white/70 mt-0.5">{a.desc}</div>
             </div>
-            <div className="font-semibold text-sm text-foreground group-hover:text-brand-600 transition-colors">{a.label}</div>
-            <div className="admin-label text-[11px] mt-0.5">{a.desc}</div>
           </motion.button>
         ))}
       </div>
@@ -280,9 +322,19 @@ export default function PlayerDashboard() {
                 </div>
                 <span className="admin-heading text-sm">Engagement</span>
               </div>
-              <div className="text-center mb-5">
-                <div className="admin-value text-4xl text-brand-600">{engagementScore.score}</div>
-                <span className="mt-1 inline-block px-3 py-1 rounded-full text-xs font-medium admin-badge bg-brand-600/10 text-brand-600 border border-brand-600/20">
+              <div className="flex flex-col items-center mb-5">
+                <div className="relative w-24 h-24">
+                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/10" />
+                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
+                      strokeDasharray={`${Math.min(engagementScore.score, 100) * 2.64} 264`}
+                      strokeLinecap="round" className="text-brand-600 transition-all duration-700" />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-display text-2xl font-bold text-brand-600">{engagementScore.score}</span>
+                  </div>
+                </div>
+                <span className="mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium admin-badge bg-brand-600/10 text-brand-600 border border-brand-600/20">
                   {engagementScore.level}
                 </span>
               </div>
@@ -348,37 +400,36 @@ export default function PlayerDashboard() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.65 + idx * 0.05 }}
+                    whileHover={{ y: -4 }}
                     onClick={() => v.slug ? navigate(`/venue/${v.slug}`) : navigate(`/venues/${v.id}`)}
-                    className="p-3 rounded-2xl border border-border/40 bg-secondary/20 hover:bg-white/5 hover:shadow-sm transition-all cursor-pointer group"
+                    className="rounded-2xl border border-border/40 bg-secondary/20 overflow-hidden hover:shadow-md transition-all cursor-pointer group"
                   >
-                    <div className="flex items-start gap-3">
-                      <div className="h-10 w-10 rounded-xl bg-brand-600/10 border border-border/40 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {v.images?.[0] ? (
-                          <img src={mediaUrl(v.images[0])} alt="" className="h-10 w-10 rounded-xl object-cover" />
-                        ) : (
-                          <Building2 className="h-5 w-5 text-brand-600" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-xs truncate group-hover:text-brand-600 transition-colors">{v.name}</h4>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
-                          <span className="text-[10px] admin-label truncate">{v.area || v.city}</span>
+                    <div className="relative h-28 sm:h-32 overflow-hidden">
+                      <img
+                        src={v.images?.[0] ? mediaUrl(v.images[0]) : `/turf/unnamed (${(idx % 10) + 1}).png`}
+                        alt={v.name}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      {v.average_rating > 0 && (
+                        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold">
+                          <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />
+                          {v.average_rating?.toFixed(1)}
                         </div>
-                        <div className="flex items-center gap-2 mt-1">
-                          {v.average_rating > 0 && (
-                            <span className="flex items-center gap-0.5 text-[10px]">
-                              <Star className="h-2.5 w-2.5 text-amber-400 fill-amber-400" />
-                              {v.average_rating?.toFixed(1)}
-                            </span>
-                          )}
-                          {v.rec_reason && (
-                            <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-secondary/50 text-muted-foreground border border-border/40 capitalize">
-                              {v.rec_reason.replace(/_/g, " ")}
-                            </span>
-                          )}
-                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h4 className="font-semibold text-xs truncate group-hover:text-brand-600 transition-colors">{v.name}</h4>
+                      <div className="flex items-center gap-1 mt-1">
+                        <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
+                        <span className="text-[10px] admin-label truncate">{v.area || v.city}</span>
                       </div>
+                      {v.rec_reason && (
+                        <span className="mt-1.5 inline-block text-[8px] px-1.5 py-0.5 rounded-full bg-brand-600/10 text-brand-600 border border-brand-600/20 capitalize font-medium">
+                          {v.rec_reason.replace(/_/g, " ")}
+                        </span>
+                      )}
                     </div>
                   </motion.div>
                 ))}
@@ -477,7 +528,7 @@ export default function PlayerDashboard() {
                   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
                   return (
                     <div key={sport} className="flex items-center gap-2 bg-secondary/30 border border-border/40 rounded-full px-3 py-1.5">
-                      <span className="text-xs font-semibold capitalize">{sport.replace("_", " ")}</span>
+                      <span className="text-xs font-semibold capitalize">{SPORT_EMOJI[sport] || "\uD83C\uDFC5"} {sport.replace("_", " ")}</span>
                       <div className="w-14 h-1.5 bg-secondary rounded-full overflow-hidden">
                         <div className="h-full bg-brand-600/70 rounded-full" style={{ width: `${pct}%` }} />
                       </div>
@@ -495,21 +546,20 @@ export default function PlayerDashboard() {
               <p className="admin-section-label mb-3 flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5" /> Monthly Activity
               </p>
-              <div className="flex items-end gap-1.5 h-24">
-                {stats.monthly_bookings.slice(-6).map((m, i) => {
-                  const maxVal = Math.max(...stats.monthly_bookings.slice(-6).map(x => x.count || 0), 1);
-                  const height = ((m.count || 0) / maxVal) * 100;
-                  return (
-                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                      <div
-                        className="w-full max-w-[36px] rounded-t-lg bg-brand-600/70 hover:bg-brand-600 transition-colors"
-                        style={{ height: `${Math.max(height, 6)}%` }}
-                        title={`${m.month}: ${m.count} bookings`}
-                      />
-                      <span className="text-[10px] admin-label">{m.month?.slice(-2) || ""}</span>
-                    </div>
-                  );
-                })}
+              <div className="h-36">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.monthly_bookings.slice(-6).map(m => ({ month: m.month?.slice(-2) || "", count: m.count || 0 }))}>
+                    <XAxis dataKey="month" tick={{ fill: "#94A3B8", fontSize: 10 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: "#94A3B8", fontSize: 10 }} width={24} axisLine={false} tickLine={false} allowDecimals={false} />
+                    <Tooltip
+                      contentStyle={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 12, fontSize: 12 }}
+                      labelStyle={{ color: "#F8FAFC" }}
+                      cursor={{ fill: "#1E293B", radius: 4 }}
+                      formatter={(value) => [`${value} bookings`, "Activity"]}
+                    />
+                    <Bar dataKey="count" fill="#10B981" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </div>
           )}

@@ -327,6 +327,7 @@ export function Sidebar() {
       { to: "/feed",           ms: "rss_feed",            label: "Feed" },
       { to: "/owner",          ms: "store",               label: "Dashboard", exact: true },
       { to: "/owner/manage",   ms: "assignment",          label: "Venue Management" },
+      { to: "/owner/finance",  ms: "account_balance",     label: "Finance" },
       { to: "/pos",            ms: "point_of_sale",       label: "POS" },
       { to: "/iot",            ms: "sensors",             label: "IoT" },
       { to: "/communities",    ms: "groups",              label: "Groups" },

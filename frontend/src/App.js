@@ -29,6 +29,7 @@ const VenueDiscovery = lazyRetry(() => import("@/pages/VenueDiscovery"));
 const VenueDetail = lazyRetry(() => import("@/pages/VenueDetail"));
 const MatchmakingPage = lazyRetry(() => import("@/pages/MatchmakingPage"));
 const VenueOwnerDashboard = lazyRetry(() => import("@/pages/VenueOwnerDashboard"));
+const VenueFinancePage = lazyRetry(() => import("@/pages/VenueFinancePage"));
 const CoachDashboard = lazyRetry(() => import("@/pages/CoachDashboard"));
 const CoachSettingsPage = lazyRetry(() => import("@/pages/CoachSettingsPage"));
 const SplitPaymentPage = lazyRetry(() => import("@/pages/SplitPaymentPage"));
@@ -186,6 +187,7 @@ function AppRouteDefinitions() {
           <Route path="/rating-profile/:userId" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
           <Route path="/owner" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard /></ProtectedRoute>} />
           <Route path="/owner/manage" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard defaultView="manage" /></ProtectedRoute>} />
+          <Route path="/owner/finance" element={<ProtectedRoute roles={["venue_owner"]}><VenueFinancePage /></ProtectedRoute>} />
           <Route path="/coach" element={<ProtectedRoute roles={["coach"]}><CoachDashboard /></ProtectedRoute>} />
           <Route path="/coach/manage" element={<ProtectedRoute roles={["coach"]}><CoachDashboard defaultView="coach_mgmt" /></ProtectedRoute>} />
           <Route path="/coach/settings" element={<ProtectedRoute roles={["coach"]}><CoachSettingsPage /></ProtectedRoute>} />

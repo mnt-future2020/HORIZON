@@ -122,7 +122,10 @@ async def delete_expense(expense_id: str, user=Depends(get_current_user)):
 # ─── Finance Summary (P&L) ───────────────────────────────────────────────────
 
 @router.get("/analytics/finance-summary")
-async def finance_summary(user=Depends(get_current_user)):
+async def finance_summary(
+    user=Depends(get_current_user),
+    venue_id: Optional[str] = Query(None),
+):
     """Full P&L: income by sport/venue, expenses by category, monthly trend."""
     if user.get("role") != "venue_owner":
         raise HTTPException(403, "Only venue owners can view finance summary")
@@ -137,6 +140,10 @@ async def finance_summary(user=Depends(get_current_user)):
         venues.append(v)
         venue_ids.append(v["id"])
         venue_names[v["id"]] = v.get("name", "Venue")
+
+    # Filter to specific venue if requested
+    if venue_id and venue_id in venue_ids:
+        venue_ids = [venue_id]
 
     if not venue_ids:
         return {
@@ -251,6 +258,7 @@ async def list_transactions(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     type: Optional[str] = Query(None),
+    venue_id: Optional[str] = Query(None),
     limit: int = Query(200, le=500),
 ):
     """Unified transaction ledger: booking income + expenses merged chronologically."""
@@ -276,6 +284,10 @@ async def list_transactions(
         async for v in db.venues.find({"owner_id": owner_id}, {"_id": 0, "id": 1, "name": 1}):
             venue_ids.append(v["id"])
             venue_names[v["id"]] = v.get("name", "Venue")
+
+        # Filter to specific venue if requested
+        if venue_id and venue_id in venue_ids:
+            venue_ids = [venue_id]
 
         if venue_ids:
             async for b in db.bookings.find(
