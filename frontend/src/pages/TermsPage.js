@@ -1,74 +1,178 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { motion } from "framer-motion";
 import Footer from "@/components/Footer";
+import { FileText, ArrowLeft } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
-const Sec = ({ title, children }) => (
-  <div className="mb-8">
-    <h2 className="font-display font-bold text-xl text-foreground mb-3">{title}</h2>
-    <div className="text-muted-foreground text-sm leading-relaxed space-y-3">{children}</div>
-  </div>
+const Sec = ({ title, children, prefersReducedMotion, delay = 0 }) => (
+  <motion.div 
+    initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+    whileInView={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+    viewport={{ once: true, margin: "-50px" }}
+    transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, delay }}
+    className="mb-10 sm:mb-12 scroll-mt-24"
+  >
+    <h2 className="font-black text-xl md:text-2xl uppercase tracking-wide mb-6 flex items-center gap-3 text-white">
+      <span className="w-8 h-0.5 bg-brand-600" />
+      {title}
+    </h2>
+    <div className="text-white/60 text-sm sm:text-base leading-relaxed space-y-4">{children}</div>
+  </motion.div>
 );
 
 export default function TermsPage() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  // Check for reduced motion preference
+  const prefersReducedMotion = useMemo(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
+
   return (
-    <div className="min-h-screen bg-background">
-      <nav className="sticky top-0 z-40 h-14 flex items-center justify-between px-6 bg-background/95 backdrop-blur-xl border-b border-border">
-        <Link to="/" className="font-display font-black text-lg tracking-tighter uppercase text-primary">HORIZON</Link>
-        <Link to="/contact" className="text-xs text-muted-foreground hover:text-primary transition-colors">Contact Us</Link>
-      </nav>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
-        <div className="mb-10">
-          <h1 className="font-display font-black text-4xl text-foreground mb-2">Terms of Service</h1>
-          <p className="text-xs text-muted-foreground">Last updated: December 1, 2025 · Magizh NexGen Technologies</p>
-        </div>
-        <div className="rounded-[24px] bg-card border border-border/40 shadow-sm p-6 sm:p-10">
-          <Sec title="1. Acceptance of Terms">
-            <p>By accessing HORIZON operated by Magizh NexGen Technologies, you agree to be bound by these Terms. If you disagree, please do not use our Service.</p>
-          </Sec>
-          <Sec title="2. Description of Service">
-            <p>HORIZON enables Lobbians to discover and book sports facilities, venue owners to manage and monetise facilities, coaches to offer training, and Lobbians to find opponents via AI matchmaking.</p>
-          </Sec>
-          <Sec title="3. User Accounts">
-            <p>You are responsible for maintaining account confidentiality and for all activities under your account. Provide accurate registration information. We may suspend accounts that violate these terms.</p>
-          </Sec>
-          <Sec title="4. Booking Terms">
-            <p><strong className="text-foreground">4.1 Reservation:</strong> A temporary slot lock is placed for up to 30 minutes to complete payment. Unpaid bookings are auto-cancelled.</p>
-            <p><strong className="text-foreground">4.2 Payment:</strong> Full payment is required to confirm a booking.</p>
-            <p><strong className="text-foreground">4.3 Split Payments:</strong> Multiple Lobbians may split booking costs. Confirmation requires all participants to pay.</p>
-          </Sec>
-          <Sec title="5. Cancellation & Refunds">
-            <p>See our <Link to="/refund-policy" className="text-primary hover:underline">Cancellation and Refund Policy</Link> for full details.</p>
-          </Sec>
-          <Sec title="6. Venue Owner Obligations">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Provide accurate venue information and availability</li>
-              <li>Honour all confirmed bookings made via HORIZON</li>
-              <li>Maintain facilities in a safe condition</li>
-              <li>Comply with all applicable local regulations</li>
-            </ul>
-          </Sec>
-          <Sec title="7. Prohibited Activities">
-            <ul className="list-disc pl-5 space-y-1">
-              <li>Use for illegal or unauthorised purposes</li>
-              <li>Manipulating rating or matchmaking systems</li>
-              <li>Posting false or misleading reviews</li>
-              <li>Reselling booked slots without written consent</li>
-            </ul>
-          </Sec>
-          <Sec title="8. Limitation of Liability">
-            <p>MnT is not liable for injuries at facilities, loss of revenue, or actions of third parties. Total liability is capped at the amount paid for the specific booking.</p>
-          </Sec>
-          <Sec title="9. Governing Law">
-            <p>These Terms are governed by the laws of India. Disputes are subject to the exclusive jurisdiction of the courts of Chennai, Tamil Nadu.</p>
-          </Sec>
-          <Sec title="10. Contact">
-            <div className="bg-secondary/50 rounded-lg p-4">
-              <p><strong className="text-foreground">Magizh NexGen Technologies</strong></p>
-              <p>Email: <a href="mailto:legal@magizhnexgen.com" className="text-primary hover:underline">legal@magizhnexgen.com</a></p>
-              <p>Chennai, Tamil Nadu, India</p>
+    <div className="min-h-screen bg-[#0a0c0a] text-white">
+      {/* Navbar */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0c0a]/80 backdrop-blur-md border-b border-white/5">
+        <div className="px-6 md:px-12 py-5">
+          <div className="flex items-center justify-between">
+            <Link
+              to="/"
+              className="text-3xl md:text-4xl font-black tracking-tighter text-brand-600 font-brier"
+            >
+              LOBBI
+            </Link>
+            <div className="flex items-center gap-3 md:gap-4">
+              <button
+                onClick={() => navigate(-1)}
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm text-black font-bold hover:text-brand-700 transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+              <Link
+                to={user ? "/feed" : "/auth"}
+                className="hidden sm:inline-flex items-center px-5 md:px-6 py-2 md:py-2.5 bg-brand-600 text-white font-bold text-sm rounded-full hover:bg-brand-700 transition-all hover:scale-105"
+              >
+                {user ? "Dashboard" : "Get Started"}
+              </Link>
             </div>
-          </Sec>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <div className="pt-36 pb-16 px-6 md:px-12">
+        <div className="max-w-3xl mx-auto text-center">
+          <motion.div
+            initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+            animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-600/10 border border-brand-600/20 text-brand-400 text-xs font-bold tracking-widest uppercase mb-6">
+              <FileText className="w-3.5 h-3.5" />
+              Legal & Compliance
+            </div>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-black uppercase tracking-tight leading-[0.9] mb-6">
+              <span className="block text-white font-sans">Terms of</span>
+              <span className="block text-brand-600 font-brier mt-2">Service</span>
+            </h1>
+            <p className="text-white/40 text-[11px] uppercase tracking-widest font-bold">
+              Last updated: December 1, 2025 <span className="mx-2">•</span> Magizh NexGen Technologies
+            </p>
+          </motion.div>
         </div>
       </div>
+
+      {/* Content */}
+      <main className="max-w-3xl mx-auto px-6 md:px-12 pb-24">
+        <motion.article 
+          initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.98 }}
+          animate={prefersReducedMotion ? {} : { opacity: 1, scale: 1 }}
+          transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6, delay: 0.2 }}
+          className="rounded-2xl bg-white/5 border border-white/10 p-6 sm:p-10 md:p-12 mb-8"
+        >
+          <Sec title="1. Acceptance of Terms" prefersReducedMotion={prefersReducedMotion} delay={0.3}>
+            <p className="break-words">By accessing LOBBI operated by Magizh NexGen Technologies, you agree to be bound by these Terms. If you disagree, please do not use our Service.</p>
+          </Sec>
+
+          <Sec title="2. Description of Service" prefersReducedMotion={prefersReducedMotion} delay={0.4}>
+            <p className="break-words">LOBBI enables players to discover and book sports facilities, venue owners to manage and monetise facilities, coaches to offer training, and players to find opponents via AI matchmaking.</p>
+          </Sec>
+
+          <Sec title="3. User Accounts" prefersReducedMotion={prefersReducedMotion} delay={0.5}>
+            <p className="break-words">You are responsible for maintaining account confidentiality and for all activities under your account. Provide accurate registration information. We may suspend accounts that violate these terms.</p>
+          </Sec>
+
+          <Sec title="4. Booking Terms" prefersReducedMotion={prefersReducedMotion}>
+            <p className="break-words"><strong className="text-white">4.1 Reservation:</strong> A temporary slot lock is placed for up to 30 minutes to complete payment. Unpaid bookings are auto-cancelled.</p>
+            <p className="break-words"><strong className="text-white">4.2 Payment:</strong> Full payment is required to confirm a booking.</p>
+            <p className="break-words"><strong className="text-white">4.3 Split Payments:</strong> Multiple players may split booking costs. Confirmation requires all participants to pay.</p>
+          </Sec>
+
+          <Sec title="5. Cancellation & Refunds" prefersReducedMotion={prefersReducedMotion}>
+            <p className="break-words">See our <Link to="/refund-policy" className="text-brand-400 font-bold hover:text-brand-300 transition-colors">Cancellation and Refund Policy</Link> for full details.</p>
+          </Sec>
+
+          <Sec title="6. Venue Owner Obligations" prefersReducedMotion={prefersReducedMotion}>
+            <ul className="list-none space-y-3 mt-4">
+              {[
+                "Provide accurate venue information and availability",
+                "Honour all confirmed bookings made via LOBBI",
+                "Maintain facilities in a safe condition",
+                "Comply with all applicable local regulations"
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shrink-0" />
+                  <span className="break-words">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </Sec>
+
+          <Sec title="7. Prohibited Activities" prefersReducedMotion={prefersReducedMotion}>
+            <ul className="list-none space-y-3 mt-4">
+              {[
+                "Use for illegal or unauthorised purposes",
+                "Manipulating rating or matchmaking systems",
+                "Posting false or misleading reviews",
+                "Reselling booked slots without written consent"
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-400 mt-2 shrink-0" />
+                  <span className="break-words">{item}</span>
+                </li>
+              ))}
+            </ul>
+          </Sec>
+
+          <Sec title="8. Limitation of Liability" prefersReducedMotion={prefersReducedMotion}>
+            <p className="break-words">MnT is not liable for injuries at facilities, loss of revenue, or actions of third parties. Total liability is capped at the amount paid for the specific booking.</p>
+          </Sec>
+
+          <Sec title="9. Governing Law" prefersReducedMotion={prefersReducedMotion}>
+            <p className="break-words">These Terms are governed by the laws of India. Disputes are subject to the exclusive jurisdiction of the courts of Chennai, Tamil Nadu.</p>
+          </Sec>
+
+          <Sec title="10. Contact" prefersReducedMotion={prefersReducedMotion}>
+            <div className="bg-brand-600/5 rounded-xl p-5 md:p-6 border border-brand-600/20 mt-4">
+              <p className="font-bold text-base uppercase tracking-widest text-white mb-3">Magizh NexGen Technologies</p>
+              <div className="space-y-2 text-sm md:text-base">
+                <p className="flex items-center gap-2">
+                  <span className="text-white/40 font-bold uppercase tracking-widest text-[11px]">Email</span>
+                  <a href="mailto:legal@magizhnexgen.com" className="text-brand-400 font-bold hover:text-brand-300 transition-colors break-all mt-0.5">legal@magizhnexgen.com</a>
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="text-white/40 font-bold uppercase tracking-widest text-[11px]">Location</span>
+                  <span className="mt-0.5">Chennai, Tamil Nadu, India</span>
+                </p>
+              </div>
+            </div>
+          </Sec>
+        </motion.article>
+      </main>
+
       <Footer />
     </div>
   );

@@ -3,7 +3,6 @@ import SmoothScroll from "@/components/landing/SmoothScroll";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroSection from "@/components/landing/HeroSection";
 import MissionSection from "@/components/landing/MissionSection";
-import MasonryGallerySection from "@/components/landing/MasonryGallerySection";
 import ArenaSplitSection from "@/components/landing/ArenaSplitSection";
 import BrowseByCitySection from "@/components/landing/BrowseByCitySection";
 import PlatformFeaturesSection from "@/components/landing/PlatformFeaturesSection";
@@ -23,7 +22,6 @@ export default function LandingPage() {
           <HeroSection />
           <div className="relative z-10">
             <MissionSection />
-            <MasonryGallerySection />
             <ArenaSplitSection />
             <BrowseByCitySection />
             <PlatformFeaturesSection />
