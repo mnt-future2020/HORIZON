@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { teamAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -17,12 +17,13 @@ import { toast } from "sonner";
 export default function TeamsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState("discover");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get("tab") || "discover");
   const [teams, setTeams] = useState([]);
   const [myTeams, setMyTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [sportFilter, setSportFilter] = useState("");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -48,6 +49,15 @@ export default function TeamsPage() {
   useEffect(() => {
     Promise.all([loadTeams(), loadMyTeams()]).finally(() => setLoading(false));
   }, [loadTeams, loadMyTeams]);
+
+  // Sync filter state to URL so browser back/forward restores filters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (tab !== "discover") params.set("tab", tab);
+    if (search) params.set("q", search);
+    if (sportFilter) params.set("sport", sportFilter);
+    setSearchParams(params, { replace: true });
+  }, [tab, search, sportFilter, setSearchParams]);
 
   const handleCreate = async () => {
     if (!form.name.trim()) { toast.error("Team name is required"); return; }

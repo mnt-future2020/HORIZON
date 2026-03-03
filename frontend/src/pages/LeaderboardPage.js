@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { matchAPI } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,8 +33,9 @@ function getRankIcon(rank) {
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [players, setPlayers] = useState([]);
-  const [sport, setSport] = useState("all");
+  const [sport, setSport] = useState(searchParams.get("sport") || "all");
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -52,6 +53,13 @@ export default function LeaderboardPage() {
   }, [sport]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Sync sport filter to URL so browser back/forward restores it
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (sport !== "all") params.set("sport", sport);
+    setSearchParams(params, { replace: true });
+  }, [sport, setSearchParams]);
 
   const myRank = players.findIndex(p => p.id === user?.id) + 1;
 

@@ -69,7 +69,7 @@ export default function SocialFeedPage() {
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [posting, setPosting] = useState(false);
-  const [feedTab, setFeedTab] = useState("for_you");
+  const [feedTab, setFeedTab] = useState(searchParams.get("tab") || "for_you");
 
   // Post composer
   const [newContent, setNewContent] = useState("");
@@ -293,7 +293,7 @@ export default function SocialFeedPage() {
   const handleTabChange = (tab) => {
     setFeedTab(tab);
     setLoading(true);
-    setSearchParams({});
+    setSearchParams(tab !== "for_you" ? { tab } : {}, { replace: true });
     sessionStorage.removeItem("feedScrollY");
     loadFeed(null, tab);
   };
@@ -1493,7 +1493,7 @@ export default function SocialFeedPage() {
                 className="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline px-6 py-3 sm:py-2 transition-colors min-h-[44px]"
                 onClick={() => {
                   loadFeed(nextCursor);
-                  if (nextCursor) setSearchParams({ cursor: nextCursor });
+                  if (nextCursor) setSearchParams(feedTab !== "for_you" ? { tab: feedTab, cursor: nextCursor } : { cursor: nextCursor });
                 }}
               >
                 Load More

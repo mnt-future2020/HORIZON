@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { tournamentAPI, venueAPI, liveAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -38,12 +38,13 @@ const FORMAT_ICONS = { knockout: Swords, round_robin: Target, league: Medal };
 export default function TournamentsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterSport, setFilterSport] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [showMyOnly, setShowMyOnly] = useState(false);
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [filterSport, setFilterSport] = useState(searchParams.get("sport") || "");
+  const [filterStatus, setFilterStatus] = useState(searchParams.get("status") || "");
+  const [showMyOnly, setShowMyOnly] = useState(searchParams.get("mine") === "1");
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [venues, setVenues] = useState([]);
@@ -57,6 +58,16 @@ export default function TournamentsPage() {
   useEffect(() => {
     loadTournaments();
   }, [filterSport, filterStatus, showMyOnly]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync filter state to URL so browser back/forward restores filters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQuery) params.set("q", searchQuery);
+    if (filterSport) params.set("sport", filterSport);
+    if (filterStatus) params.set("status", filterStatus);
+    if (showMyOnly) params.set("mine", "1");
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, filterSport, filterStatus, showMyOnly, setSearchParams]);
 
   useEffect(() => {
     const loadLive = async () => {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { academyAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -69,10 +70,11 @@ function AcademyCard({ academy, onSelect, delay = 0 }) {
 
 export default function AcademyDiscoveryPage() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [academies, setAcademies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [sportFilter, setSportFilter] = useState("all");
+  const [search, setSearch] = useState(searchParams.get("q") || "");
+  const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "all");
   const [selected, setSelected] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
   const [enrolledIds, setEnrolledIds] = useState(new Set());
@@ -89,6 +91,14 @@ export default function AcademyDiscoveryPage() {
   }, [sportFilter]);
 
   useEffect(() => { loadAcademies(); }, [loadAcademies]);
+
+  // Sync filter state to URL so browser back/forward restores filters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set("q", search);
+    if (sportFilter !== "all") params.set("sport", sportFilter);
+    setSearchParams(params, { replace: true });
+  }, [search, sportFilter, setSearchParams]);
 
   const filtered = academies.filter(a => {
     if (search) {

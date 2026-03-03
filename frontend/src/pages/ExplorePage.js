@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { socialAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -42,10 +42,11 @@ function EmptyState({ query }) {
 export default function ExplorePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [query, setQuery] = useState(searchParams.get("q") || "");
   const [results, setResults] = useState({ users: [], posts: [], venues: [] });
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "all");
   const searchTimeout = useRef(null);
 
   const doSearch = useCallback(async (q) => {
@@ -59,7 +60,15 @@ export default function ExplorePage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { doSearch(""); }, [doSearch]);
+  useEffect(() => { doSearch(query); }, [doSearch]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync search and tab to URL so browser back/forward restores them
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (activeTab !== "all") params.set("tab", activeTab);
+    setSearchParams(params, { replace: true });
+  }, [query, activeTab, setSearchParams]);
 
   const handleSearchChange = (value) => {
     setQuery(value);

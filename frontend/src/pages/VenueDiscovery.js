@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI } from "@/lib/api";
@@ -133,16 +133,21 @@ export default function VenueDiscovery() {
   const [selectedCity, setSelectedCity] = useState(searchParams.get("city") || "all");
   const [selectedArea, setSelectedArea] = useState(searchParams.get("area") || "all");
   const [selectedSport, setSelectedSport] = useState(searchParams.get("sport") || "all");
-  const [sortBy, setSortBy] = useState("rating");
-  const [priceRange, setPriceRange] = useState("all");
-  const [selectedAmenity, setSelectedAmenity] = useState("all");
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "rating");
+  const [priceRange, setPriceRange] = useState(searchParams.get("price") || "all");
+  const [selectedAmenity, setSelectedAmenity] = useState(searchParams.get("amenity") || "all");
+  // Auto-open filters panel if any panel-level filter was active when navigating back
+  const [filtersOpen, setFiltersOpen] = useState(
+    !!(searchParams.get("sort") || searchParams.get("price") || searchParams.get("amenity") ||
+       searchParams.get("area") || searchParams.get("sport"))
+  );
   const [nearMeActive, setNearMeActive] = useState(searchParams.get("nearme") === "1");
   const [userLocation, setUserLocation] = useState(null);
   const [locatingUser, setLocatingUser] = useState(false);
   const [distanceMap, setDistanceMap] = useState({});
   const [driveTimeMap, setDriveTimeMap] = useState({});
-  const [driveTimeMode, setDriveTimeMode] = useState(false);
+  const [driveTimeMode, setDriveTimeMode] = useState(searchParams.get("drivetime") === "1");
+  const isInitialMount = useRef(true);
 
   // Load initial data
   useEffect(() => {
@@ -159,8 +164,15 @@ export default function VenueDiscovery() {
     loadMeta();
   }, []);
 
-  // Load areas when city changes
+  // Load areas when city changes; skip area reset on initial mount so URL-restored area is kept
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (selectedCity !== "all") {
+        venueAPI.areas(selectedCity).then(res => setAreas(res.data)).catch(() => {});
+      }
+      return;
+    }
     if (selectedCity && selectedCity !== "all") {
       venueAPI.areas(selectedCity).then(res => setAreas(res.data)).catch(() => {});
     } else {
@@ -255,7 +267,8 @@ export default function VenueDiscovery() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Update URL params
+  // Update URL params — all filter state is encoded in the URL so browser
+  // back/forward navigation fully restores the applied filters.
   useEffect(() => {
     const params = new URLSearchParams();
     if (searchText) params.set("q", searchText);
@@ -263,8 +276,12 @@ export default function VenueDiscovery() {
     if (selectedArea !== "all") params.set("area", selectedArea);
     if (selectedSport !== "all") params.set("sport", selectedSport);
     if (nearMeActive) params.set("nearme", "1");
+    if (sortBy !== "rating") params.set("sort", sortBy);
+    if (priceRange !== "all") params.set("price", priceRange);
+    if (selectedAmenity !== "all") params.set("amenity", selectedAmenity);
+    if (driveTimeMode) params.set("drivetime", "1");
     setSearchParams(params, { replace: true });
-  }, [searchText, selectedCity, selectedArea, selectedSport, nearMeActive, setSearchParams]);
+  }, [searchText, selectedCity, selectedArea, selectedSport, nearMeActive, sortBy, priceRange, selectedAmenity, driveTimeMode, setSearchParams]);
 
   const activeFilterCount = [
     selectedCity !== "all", selectedArea !== "all", selectedSport !== "all",

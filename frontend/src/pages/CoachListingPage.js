@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate as useNav } from "react-router-dom";
+import { Link, useNavigate as useNav, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { coachingAPI, paymentAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
@@ -85,11 +85,12 @@ function CoachCard({ coach, onBook, delay = 0 }) {
 
 export default function CoachListingPage() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQ, setSearchQ] = useState("");
-  const [sportFilter, setSportFilter] = useState("all");
+  const [searchQ, setSearchQ] = useState(searchParams.get("q") || "");
+  const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "all");
   const [selectedCoach, setSelectedCoach] = useState(null);
   const [coachSlots, setCoachSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -122,6 +123,14 @@ export default function CoachListingPage() {
     coachingAPI.listSessions({}).then(res => setMySessions(res.data || [])).catch(() => {});
     coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync filter state to URL so browser back/forward restores filters
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (searchQ) params.set("q", searchQ);
+    if (sportFilter !== "all") params.set("sport", sportFilter);
+    setSearchParams(params, { replace: true });
+  }, [searchQ, sportFilter, setSearchParams]);
 
   // Auto-select sport when slot changes (use slot's sports, fallback to coach sports)
   useEffect(() => {
