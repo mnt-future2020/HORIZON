@@ -5,45 +5,33 @@ import {
   Search,
   Users,
   UserPlus,
-  ContactRound,
   Loader2,
   MessageCircle,
-  Share2,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import UserRow from "./UserRow";
 import { userSearchAPI, socialAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("followers");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [tabFollowers, setTabFollowers] = useState([]);
   const [tabFollowing, setTabFollowing] = useState([]);
-  const [syncedContacts, setSyncedContacts] = useState([]);
   const [tabLoading, setTabLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [contactSyncing, setContactSyncing] = useState(false);
 
   const loadTabData = useCallback(async () => {
     if (!user?.id) return;
     setTabLoading(true);
-    try {
-      const [followersRes, followingRes, contactsRes] = await Promise.all([
-        socialAPI.getFollowers(user.id),
-        socialAPI.getFollowing(user.id),
-        socialAPI.getSyncedContacts(),
-      ]);
-      setTabFollowers(followersRes.data || []);
-      setTabFollowing(followingRes.data || []);
-      setSyncedContacts(contactsRes.data || []);
-    } catch {
-      toast.error("Failed to load contacts/followers");
-    } finally {
-      setTabLoading(false);
-    }
+    const results = await Promise.allSettled([
+      socialAPI.getFollowers(user.id),
+      socialAPI.getFollowing(user.id),
+    ]);
+    if (results[0].status === "fulfilled") setTabFollowers(results[0].value.data || []);
+    if (results[1].status === "fulfilled") setTabFollowing(results[1].value.data || []);
+    setTabLoading(false);
   }, [user?.id]);
 
   useEffect(() => {
@@ -54,7 +42,6 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
 
   const handleSearch = async (q) => {
     setSearchQuery(q);
-    if (activeTab !== "all") return;
     if (q.length < 2) {
       setSearchResults([]);
       return;
@@ -64,73 +51,22 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
       const res = await userSearchAPI.search(q);
       setSearchResults(res.data || []);
     } catch {
-      // Keep results same or toast
+      // Keep results same
     } finally {
       setSearching(false);
     }
   };
 
-  const handleSyncContacts = async () => {
-    setContactSyncing(true);
-    try {
-      if (!("contacts" in navigator)) {
-        toast.info("Contacts selection not supported on this browser.");
-        return;
-      }
-      const contacts = await navigator.contacts.select(["tel", "email"], {
-        multiple: true,
-      });
-      const phones = contacts.flatMap((c) => c.tel || []);
-      const emails = contacts.flatMap((c) => c.email || []);
-      if (phones.length === 0 && emails.length === 0) {
-        toast.info("No contacts selected");
-        return;
-      }
-      await socialAPI.syncContacts({ phones, emails });
-      const freshContacts = await socialAPI.getSyncedContacts();
-      setSyncedContacts(freshContacts.data || []);
-      toast.success("Contacts synced successfully!");
-    } catch (err) {
-      toast.error("Failed to sync contacts");
-    } finally {
-      setContactSyncing(false);
-    }
-  };
-
-  const handleInvite = async () => {
-    try {
-      const res = await socialAPI.getInviteLink();
-      const msg = res.data?.message || "Join me on Horizon Sports!";
-      if (navigator.share) {
-        await navigator.share({ title: "Join Horizon", text: msg });
-      } else {
-        await navigator.clipboard.writeText(msg);
-        toast.success("Invite link copied!");
-      }
-    } catch {}
-  };
-
-  const getFilteredTabList = () => {
+  const getFilteredList = () => {
     const q = searchQuery.toLowerCase();
-    switch (activeTab) {
-      case "followers":
-        return q.length >= 1
-          ? tabFollowers.filter((u) => u.name?.toLowerCase().includes(q))
-          : tabFollowers;
-      case "following":
-        return q.length >= 1
-          ? tabFollowing.filter((u) => u.name?.toLowerCase().includes(q))
-          : tabFollowing;
-      case "contacts":
-        return q.length >= 1
-          ? syncedContacts.filter((u) => u.name?.toLowerCase().includes(q))
-          : syncedContacts;
-      default:
-        return searchResults;
-    }
+    // If searching, always show search results across all users
+    if (q.length >= 2) return searchResults;
+    // Otherwise show tab data
+    if (activeTab === "following") return tabFollowing;
+    return tabFollowers;
   };
 
-  const filteredList = getFilteredTabList();
+  const filteredList = getFilteredList();
 
   return (
     <AnimatePresence>
@@ -139,7 +75,7 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xl p-0 sm:p-4"
+          className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/20 backdrop-blur-[2px] p-0 sm:p-4"
           onClick={onClose}
         >
           <motion.div
@@ -186,11 +122,7 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
                 <Input
                   value={searchQuery}
                   onChange={(e) => handleSearch(e.target.value)}
-                  placeholder={
-                    activeTab === "all"
-                      ? "Search name or specialty..."
-                      : `Search ${activeTab}...`
-                  }
+                  placeholder="Search name or specialty..."
                   className="pl-12 h-12 sm:h-14 bg-secondary/40 border-border/40 rounded-2xl text-[15px] sm:text-base font-medium focus-visible:ring-brand-600/20 focus-visible:border-brand-600/30 shadow-none transition-all placeholder:text-muted-foreground/40"
                   autoFocus
                 />
@@ -202,19 +134,19 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
               </div>
             </div>
 
+            {/* Tabs */}
             <div className="px-5 sm:px-6 pb-4">
               <div className="flex p-1 bg-secondary/20 rounded-2xl border border-border/50 gap-0.5">
                 {[
-                  { id: "all", label: "Discovery", icon: Search },
                   { id: "followers", label: "Followers", icon: Users },
                   { id: "following", label: "Following", icon: UserPlus },
-                  { id: "contacts", label: "Network", icon: ContactRound },
                 ].map((t) => (
                   <button
                     key={t.id}
                     onClick={() => {
                       setActiveTab(t.id);
                       setSearchQuery("");
+                      setSearchResults([]);
                     }}
                     className={`flex-1 flex items-center justify-center py-2.5 rounded-[12px] sm:rounded-[14px] transition-all relative overflow-hidden ${
                       activeTab === t.id
@@ -247,9 +179,7 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
             {/* List Header */}
             <div className="px-7 py-2 flex items-center justify-between">
               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">
-                {activeTab === "all" && searchQuery.length === 0
-                  ? "Recommended"
-                  : "Results"}
+                {searchQuery.length >= 2 ? "Search Results" : activeTab === "followers" ? "Followers" : "Following"}
               </span>
               <span className="text-[10px] font-bold text-brand-600/80">
                 {filteredList.length} Found
@@ -270,43 +200,6 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
                 </div>
               ) : (
                 <div className="space-y-2 px-2">
-                  {/* Contacts Tab Special Actions */}
-                  {activeTab === "contacts" && !searchQuery && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="grid grid-cols-2 gap-3 mb-6"
-                    >
-                      <button
-                        className="flex flex-col items-center justify-center gap-3 p-4 rounded-3xl bg-brand-600/5 border border-brand-600/10 hover:bg-brand-600/10 transition-all group active:scale-[0.98]"
-                        onClick={handleSyncContacts}
-                        disabled={contactSyncing}
-                      >
-                        <div className="h-10 w-10 rounded-2xl bg-brand-600 flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform">
-                          {contactSyncing ? (
-                            <Loader2 className="h-5 w-5 animate-spin" />
-                          ) : (
-                            <ContactRound className="h-5 w-5" />
-                          )}
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-600">
-                          Sync Contacts
-                        </span>
-                      </button>
-                      <button
-                        className="flex flex-col items-center justify-center gap-3 p-4 rounded-3xl bg-secondary/30 border border-border/40 hover:bg-secondary/50 transition-all group active:scale-[0.98]"
-                        onClick={handleInvite}
-                      >
-                        <div className="h-10 w-10 rounded-2xl bg-foreground flex items-center justify-center text-background shadow-lg group-hover:scale-110 transition-transform">
-                          <Share2 className="h-5 w-5" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest">
-                          Invite Friends
-                        </span>
-                      </button>
-                    </motion.div>
-                  )}
-
                   <AnimatePresence mode="popLayout">
                     {filteredList.length > 0 ? (
                       filteredList.map((u, idx) => (
@@ -325,11 +218,7 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
                           <UserRow
                             u={u}
                             onSelect={() => onStartConvo(u.id)}
-                            badge={
-                              activeTab === "all" && !searchQuery
-                                ? "Top Match"
-                                : u.match_type
-                            }
+                            badge={u.match_type}
                           />
                         </motion.div>
                       ))
@@ -347,21 +236,9 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
                             No results found
                           </p>
                           <p className="text-[10px] uppercase tracking-widest mt-2 leading-relaxed font-bold opacity-60">
-                            Try searching for something else or check your
-                            network
+                            Try searching for a name above
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setActiveTab("all");
-                            setSearchQuery("");
-                          }}
-                          className="rounded-xl text-[10px] font-black uppercase tracking-widest text-brand-600 hover:bg-brand-600/10"
-                        >
-                          Reset Discovery
-                        </Button>
                       </motion.div>
                     )}
                   </AnimatePresence>

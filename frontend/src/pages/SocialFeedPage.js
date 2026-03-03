@@ -60,6 +60,19 @@ const STORY_COLORS = [
   "from-rose-500 to-pink-600",
 ];
 
+function safeSessionSet(key, value) {
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // QuotaExceededError — clear feed cache and retry once
+    try {
+      sessionStorage.removeItem("feedPosts");
+      sessionStorage.removeItem("feedSnapshot");
+      sessionStorage.setItem(key, value);
+    } catch { /* give up silently */ }
+  }
+}
+
 export default function SocialFeedPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -96,6 +109,13 @@ export default function SocialFeedPage() {
   // Trending
   const [trendingPosts, setTrendingPosts] = useState([]);
   const [showTrending, setShowTrending] = useState(false);
+
+  // Discover users
+  const [showDiscover, setShowDiscover] = useState(false);
+  const [discoverQuery, setDiscoverQuery] = useState("");
+  const [discoverResults, setDiscoverResults] = useState([]);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const discoverRef = useRef(null);
 
   // Comments
   const [expandedComments, setExpandedComments] = useState(new Set());
@@ -205,11 +225,11 @@ export default function SocialFeedPage() {
     return () => {
       const urlCursor = new URLSearchParams(window.location.search).get("cursor");
       if (urlCursor) {
-        sessionStorage.setItem("feedSnapshot", JSON.stringify({
+        safeSessionSet("feedSnapshot", JSON.stringify({
           cursor: urlCursor,
           scrollY: window.scrollY,
         }));
-        sessionStorage.setItem("feedPosts", JSON.stringify(posts));
+        safeSessionSet("feedPosts", JSON.stringify(posts));
       }
     };
   }, [posts]);
@@ -450,6 +470,27 @@ export default function SocialFeedPage() {
     }
   };
 
+  // Discover search
+  const handleDiscoverSearch = async (q) => {
+    setDiscoverQuery(q);
+    if (q.length < 2) { setDiscoverResults([]); return; }
+    setDiscoverLoading(true);
+    try {
+      const res = await userSearchAPI.search(q);
+      setDiscoverResults((res.data || []).filter((u) => u.id !== user?.id));
+    } catch {} finally { setDiscoverLoading(false); }
+  };
+
+  // Close discover on click outside
+  useEffect(() => {
+    if (!showDiscover) return;
+    const handler = (e) => {
+      if (discoverRef.current && !discoverRef.current.contains(e.target)) setShowDiscover(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showDiscover]);
+
   const openFollowModal = async (type) => {
     setFollowModalLoading(true);
     setFollowModal({ type, list: [] });
@@ -458,10 +499,13 @@ export default function SocialFeedPage() {
         type === "followers"
           ? await socialAPI.getFollowers(user.id)
           : await socialAPI.getFollowing(user.id);
-      const list = res.data || [];
+      const data = res.data || {};
+      const list = data.users || data || [];
       // Mark which users we follow
       const followingRes = await socialAPI.getFollowing(user.id);
-      const followingIds = new Set((followingRes.data || []).map((u) => u.id));
+      const fData = followingRes.data || {};
+      const followingList = fData.users || fData || [];
+      const followingIds = new Set(followingList.map((u) => u.id));
       setFollowedUsers(followingIds);
       setFollowModal({
         type,
@@ -542,7 +586,7 @@ export default function SocialFeedPage() {
     if (sharePost && user?.id) {
       socialAPI
         .getFollowing(user.id)
-        .then((r) => setShareFollowing(r.data || []))
+        .then((r) => { const d = r.data || {}; setShareFollowing(d.users || d || []); })
         .catch(() => {});
     }
   }, [sharePost, user?.id]);
@@ -679,10 +723,8 @@ export default function SocialFeedPage() {
           const res = await socialAPI.getComments(postId);
           const data = res.data;
           const list = data?.comments || data || [];
-          const page = data?.page || 1;
-          const pages = data?.pages || 1;
           setComments((prev) => ({ ...prev, [postId]: list }));
-          setCommentPages((prev) => ({ ...prev, [postId]: { page, pages, hasMore: page < pages, loading: false } }));
+          setCommentPages((prev) => ({ ...prev, [postId]: { cursor: data?.next_cursor || null, hasMore: data?.has_more || false, loading: false } }));
         } catch {
           toast.error("Failed to load comments");
         }
@@ -696,13 +738,13 @@ export default function SocialFeedPage() {
     if (!pg || !pg.hasMore || pg.loading) return;
     setCommentPages((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: true } }));
     try {
-      const res = await socialAPI.getComments(postId, pg.page + 1);
+      const res = await socialAPI.getComments(postId, pg.cursor);
       const data = res.data;
       const newList = data?.comments || [];
       setComments((prev) => ({ ...prev, [postId]: [...(prev[postId] || []), ...newList] }));
       setCommentPages((prev) => ({
         ...prev,
-        [postId]: { page: data.page, pages: data.pages, hasMore: data.page < data.pages, loading: false },
+        [postId]: { cursor: data?.next_cursor || null, hasMore: data?.has_more || false, loading: false },
       }));
     } catch {
       setCommentPages((prev) => ({ ...prev, [postId]: { ...prev[postId], loading: false } }));
@@ -947,11 +989,13 @@ export default function SocialFeedPage() {
                 />
               </button>
               <button
-                onClick={() => navigate("/explore")}
-                className="sm:flex items-center gap-1.5 text-xs font-bold text-muted-foreground px-3 py-1.5 rounded-full border border-border/60 hover:bg-card hover:text-foreground transition-colors"
+                onClick={() => { setShowDiscover((v) => !v); setDiscoverQuery(""); setDiscoverResults([]); }}
+                className={`sm:flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full border transition-colors ${
+                  showDiscover ? "bg-brand-600 text-white border-brand-600" : "text-muted-foreground border-border/60 hover:bg-card hover:text-foreground"
+                }`}
               >
                 <Search className="h-3.5 w-3.5" />
-                <span className="hidden sm:block">Filter</span>
+                <span className="hidden sm:block">Discover</span>
               </button>
               <button
                 onClick={() => navigate("/bookmarks")}
@@ -2004,6 +2048,89 @@ export default function SocialFeedPage() {
                       )}
                     </div>
                   ))
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ DISCOVER USERS PANEL ═══ */}
+      <AnimatePresence>
+        {showDiscover && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-28 px-4"
+            onClick={() => setShowDiscover(false)}
+          >
+            <motion.div
+              ref={discoverRef}
+              initial={{ opacity: 0, y: -16, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="w-full max-w-md bg-card border border-border/40 rounded-2xl shadow-2xl overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-3 border-b border-border/30">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/50" />
+                  <input
+                    autoFocus
+                    value={discoverQuery}
+                    onChange={(e) => handleDiscoverSearch(e.target.value)}
+                    placeholder="Search by username..."
+                    className="w-full h-10 pl-9 pr-3 bg-secondary/30 border border-border/30 rounded-xl text-sm placeholder:text-muted-foreground/40 outline-none focus:border-brand-600/40 focus:ring-2 focus:ring-brand-600/10 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="max-h-[320px] overflow-y-auto custom-scrollbar">
+                {discoverLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
+                  </div>
+                ) : discoverResults.length > 0 ? (
+                  discoverResults.map((u) => (
+                    <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
+                      <div
+                        className="h-10 w-10 rounded-full bg-secondary/40 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer"
+                        onClick={() => { setShowDiscover(false); navigate(`/player-card/${u.id}`); }}
+                      >
+                        {u.avatar ? (
+                          <img src={mediaUrl(u.avatar)} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <User className="h-5 w-5 text-muted-foreground/50" />
+                        )}
+                      </div>
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => { setShowDiscover(false); navigate(`/player-card/${u.id}`); }}
+                      >
+                        <p className="text-sm font-semibold truncate">{u.name}</p>
+                        {u.sport && <p className="text-[11px] text-muted-foreground capitalize">{u.sport}</p>}
+                      </div>
+                      <button
+                        onClick={() => handleFollow(u.id)}
+                        className={`text-[11px] font-bold px-3 py-1.5 rounded-full transition-colors ${
+                          followedUsers.has(u.id) || u.is_following
+                            ? "bg-secondary/40 text-muted-foreground"
+                            : "bg-brand-600 text-white hover:bg-brand-500"
+                        }`}
+                      >
+                        {followedUsers.has(u.id) || u.is_following ? "Following" : "Follow"}
+                      </button>
+                    </div>
+                  ))
+                ) : discoverQuery.length >= 2 ? (
+                  <div className="text-center py-8 text-sm text-muted-foreground/60">
+                    No users found
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-sm text-muted-foreground/40">
+                    Type a name to search...
+                  </div>
                 )}
               </div>
             </motion.div>

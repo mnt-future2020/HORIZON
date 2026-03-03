@@ -29,8 +29,12 @@ async def ensure_indexes(db):
         [("content", "text"), ("tags", "text")],
         name="post_text_search", default_language="english"
     )
+    await db.social_posts.create_index([("visibility", 1), ("created_at", -1)])
+    await db.social_posts.create_index([("user_id", 1), ("created_at", -1)])
     await db.social_likes.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await db.social_likes.create_index([("user_id", 1), ("created_at", -1)])
     await db.social_reactions.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await db.social_comments.create_index([("post_id", 1), ("created_at", 1)])
 
     await db.users.create_index(
         [("name", "text"), ("username", "text")],
@@ -42,6 +46,7 @@ async def ensure_indexes(db):
     )
 
     await db.follows.create_index([("follower_id", 1), ("following_id", 1)], unique=True)
+    await db.follows.create_index("following_id")
 
     await db.notifications.create_index([("user_id", 1), ("is_read", 1), ("created_at", -1)])
 
@@ -52,5 +57,18 @@ async def ensure_indexes(db):
     await db.direct_messages.create_index([("conversation_id", 1), ("created_at", -1)])
 
     await db.bookmarks.create_index([("post_id", 1), ("user_id", 1)], unique=True)
+    await db.bookmarks.create_index([("user_id", 1), ("created_at", -1)])
+
+    await db.stories.create_index([("user_id", 1), ("expires_at", 1)])
+    await db.story_views.create_index([("story_id", 1), ("viewer_id", 1)], unique=True)
+    await db.streaks.create_index("user_id")
+
+    # --- Audit round 2: missing indexes for performance ---
+    await db.social_posts.create_index([("likes_count", -1)])          # explore sorts by likes
+    await db.bookings.create_index("players")                          # affinity map, player card $or queries
+    await db.performance_records.create_index("player_id")             # player card perf records
+    await db.groups.create_index("members")                            # group recommendations
+    await db.social_reactions.create_index([("user_id", 1), ("created_at", -1)])  # engagement score
+    await db.stories.create_index([("user_id", 1), ("created_at", -1)])           # engagement score
 
     logger.info("MongoDB indexes ensured")

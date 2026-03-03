@@ -1042,6 +1042,71 @@ async def get_conversations(user=Depends(get_current_user)):
     return {"conversations": result, "request_count": request_count}
 
 
+@router.get("/chat/unified-conversations")
+async def get_unified_conversations(user=Depends(get_current_user)):
+    """Merge DM conversations + user's groups into one sorted list."""
+    # 1. DM conversations (reuse get_conversations logic)
+    convos = await db.conversations.find(
+        {"participants": user["id"]}, {"_id": 0}
+    ).sort("last_message_at", -1).to_list(50)
+
+    result = []
+    request_count = 0
+    for c in convos:
+        status = c.get("status", "active")
+        if status == "request" and c.get("requester_id") != user["id"]:
+            request_count += 1
+            continue
+        if status == "declined":
+            continue
+        other_id = next((p for p in c.get("participants", []) if p != user["id"]), None)
+        if other_id:
+            other = await db.users.find_one(
+                {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1, "current_streak": 1}
+            )
+            c["other_user"] = other or {"id": other_id, "name": "Unknown", "avatar": ""}
+        if c.get("last_message"):
+            c["last_message"] = decrypt_message(c["last_message"], c["id"])
+        c["unread_count"] = await db.direct_messages.count_documents({
+            "conversation_id": c["id"],
+            "sender_id": {"$ne": user["id"]},
+            "read": False
+        })
+        c["type"] = "dm"
+        c["display_name"] = c.get("other_user", {}).get("name", "Unknown")
+        c["display_avatar"] = c.get("other_user", {}).get("avatar", "")
+        result.append(c)
+
+    # 2. User's groups
+    groups = await db.groups.find(
+        {"members": user["id"]}, {"_id": 0}
+    ).sort("last_message_at", -1).to_list(100)
+
+    for g in groups:
+        # Compute unread count
+        read_status = await db.group_read_status.find_one(
+            {"group_id": g["id"], "user_id": user["id"]}
+        )
+        last_read = read_status.get("last_read_at", "") if read_status else ""
+        unread_query = {"group_id": g["id"]}
+        if last_read:
+            unread_query["created_at"] = {"$gt": last_read}
+        unread = await db.group_messages.count_documents(unread_query)
+
+        g["type"] = "group"
+        g["unread_count"] = unread
+        g["display_name"] = g.get("name", "Group")
+        g["display_avatar"] = g.get("avatar_url", "")
+        g["is_member"] = True
+        g["is_admin"] = user["id"] in g.get("admins", [])
+        result.append(g)
+
+    # 3. Sort merged list by last_message_at DESC
+    result.sort(key=lambda x: x.get("last_message_at", ""), reverse=True)
+
+    return {"conversations": result, "request_count": request_count}
+
+
 @router.post("/chat/conversations")
 async def start_conversation(request: Request, user=Depends(get_current_user)):
     """Start or get existing conversation with another user.

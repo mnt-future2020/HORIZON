@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import Optional, List
 from pydantic import BaseModel as PydanticBaseModel
 from datetime import datetime, timezone, timedelta
-from database import db, redis_client
+from database import db, redis_client, db_retry
 from auth import get_current_user
 from tz import now_ist
 from models import SocialPostCreate
@@ -14,15 +14,35 @@ import uuid
 import math
 import logging
 import time
+import json
+import asyncio
+import re as _re
 from services.algorithms import rank_feed_posts, compute_trending_scores
 
-# Module-level trending cache (TTL = 5 minutes)
+# In-memory trending fallback (used only when Redis is unavailable)
 _trending_cache: dict = {"posts": [], "expires": 0.0}
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
 
 REACTION_TYPES = ["fire", "trophy", "clap", "heart", "100", "muscle"]
+
+
+async def _rate_limit(user_id: str, action: str, max_per_min: int):
+    """Reusable Redis rate limiter. Raises 429 if exceeded. Silent if Redis is down."""
+    if not redis_client:
+        return
+    try:
+        rl_key = f"rl:{action}:{user_id}"
+        count = await redis_client.incr(rl_key)
+        if count == 1:
+            await redis_client.expire(rl_key, 60)
+        if count > max_per_min:
+            raise HTTPException(429, "Too many requests. Slow down!")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Redis rate limit unavailable: {e}")
 STORY_EXPIRY_HOURS = 24
 POST_PROMPTS = [
     "How was your game today?",
@@ -52,6 +72,8 @@ async def create_story(request: Request, user=Depends(get_current_user)):
 
     if not content and not media_url:
         raise HTTPException(400, "Story must have text or media")
+    if len(content) > 2000:
+        raise HTTPException(400, "Story text must be under 2000 characters")
 
     story = {
         "id": str(uuid.uuid4()),
@@ -62,7 +84,6 @@ async def create_story(request: Request, user=Depends(get_current_user)):
         "media_url": media_url,
         "bg_color": bg_color,
         "sport_tag": sport_tag,
-        "views": [],
         "view_count": 0,
         "reactions": {},
         "expires_at": (now_ist() + timedelta(hours=STORY_EXPIRY_HOURS)).isoformat(),
@@ -78,6 +99,7 @@ async def create_story(request: Request, user=Depends(get_current_user)):
 
 
 @router.get("/stories")
+@db_retry
 async def get_stories(user=Depends(get_current_user)):
     """Get active stories from people user follows + own stories."""
     now = now_ist().isoformat()
@@ -89,14 +111,23 @@ async def get_stories(user=Depends(get_current_user)):
 
     stories = await db.stories.find(
         {"user_id": {"$in": target_ids}, "expires_at": {"$gt": now}},
-        {"_id": 0}
+        {"_id": 0}, max_time_ms=10000
     ).sort("created_at", -1).to_list(200)
+
+    # Batch check which stories the current user has viewed
+    story_ids = [s["id"] for s in stories]
+    viewed_docs = await db.story_views.find(
+        {"story_id": {"$in": story_ids}, "viewer_id": user["id"]},
+        {"_id": 0, "story_id": 1}
+    ).to_list(len(story_ids))
+    viewed_set = {d["story_id"] for d in viewed_docs}
 
     # Group by user
     user_stories = {}
     for s in stories:
         uid = s["user_id"]
-        s["viewed_by_me"] = user["id"] in s.get("views", [])
+        s.pop("views", None)
+        s["viewed_by_me"] = s["id"] in viewed_set
         if uid not in user_stories:
             user_stories[uid] = {
                 "user_id": uid,
@@ -119,10 +150,13 @@ async def get_stories(user=Depends(get_current_user)):
 
 @router.post("/stories/{story_id}/view")
 async def view_story(story_id: str, user=Depends(get_current_user)):
-    await db.stories.update_one(
-        {"id": story_id, "views": {"$ne": user["id"]}},
-        {"$push": {"views": user["id"]}, "$inc": {"view_count": 1}}
+    result = await db.story_views.update_one(
+        {"story_id": story_id, "viewer_id": user["id"]},
+        {"$setOnInsert": {"story_id": story_id, "viewer_id": user["id"], "viewed_at": now_ist().isoformat()}},
+        upsert=True,
     )
+    if result.upserted_id:
+        await db.stories.update_one({"id": story_id}, {"$inc": {"view_count": 1}})
     return {"viewed": True}
 
 
@@ -155,6 +189,7 @@ async def delete_story(story_id: str, user=Depends(get_current_user)):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/feed")
+@db_retry
 async def get_feed(
     before: Optional[str] = Query(None),  # cursor: ISO timestamp (following) or int offset (for_you)
     limit: int = Query(20, ge=1, le=50),
@@ -167,7 +202,7 @@ async def get_feed(
         # Timestamp cursor works perfectly for chronological feed
         if before:
             query["created_at"] = {"$lt": before}
-        posts = await db.social_posts.find(query, {"_id": 0}).sort(
+        posts = await db.social_posts.find(query, {"_id": 0}, max_time_ms=10000).sort(
             "created_at", -1
         ).limit(limit).to_list(limit)
         next_cursor = posts[-1]["created_at"] if posts else None
@@ -175,9 +210,9 @@ async def get_feed(
         # "for_you" — ranked feed uses integer offset to avoid duplicate on re-rank
         query = {"$or": [{"visibility": "public"}, {"user_id": user["id"]}]}
         offset = int(before) if before and before.isdigit() else 0
-        raw_posts = await db.social_posts.find(query, {"_id": 0}).sort(
+        raw_posts = await db.social_posts.find(query, {"_id": 0}, max_time_ms=10000).sort(
             "created_at", -1
-        ).limit(200).to_list(200)
+        ).limit(50).to_list(50)
         try:
             ranked = await rank_feed_posts(raw_posts, user["id"])
         except Exception as e:
@@ -216,7 +251,11 @@ async def get_feed(
 
 
 @router.post("/feed")
+@db_retry
 async def create_post(inp: SocialPostCreate, user=Depends(get_current_user)):
+    await _rate_limit(user["id"], "post", 10)
+    if len(inp.content) > 5000:
+        raise HTTPException(400, "Post content must be under 5000 characters")
     post = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -243,27 +282,26 @@ async def create_post(inp: SocialPostCreate, user=Depends(get_current_user)):
 
 
 @router.post("/feed/{post_id}/like")
+@db_retry
 async def toggle_like(post_id: str, user=Depends(get_current_user)):
-    if redis_client:
-        rl_key = f"rl:like:{user['id']}"
-        count = await redis_client.incr(rl_key)
-        if count == 1:
-            await redis_client.expire(rl_key, 60)
-        if count > 30:
-            raise HTTPException(429, "Too many requests. Slow down!")
-    existing = await db.social_likes.find_one(
+    await _rate_limit(user["id"], "like", 30)
+    # Atomic: try delete first — if doc existed, it was a unlike
+    removed = await db.social_likes.find_one_and_delete(
         {"post_id": post_id, "user_id": user["id"]}
     )
-    if existing:
-        await db.social_likes.delete_one({"_id": existing["_id"]})
+    if removed:
         await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": -1}})
         return {"liked": False}
-    else:
+    # Not found → insert (unique index prevents duplicates if double-tapped)
+    try:
         await db.social_likes.insert_one({
             "post_id": post_id, "user_id": user["id"],
             "created_at": now_ist().isoformat()
         })
         await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": 1}})
+        return {"liked": True}
+    except Exception:
+        # Duplicate key — already liked by a concurrent request
         return {"liked": True}
 
 
@@ -275,29 +313,31 @@ async def react_to_post(post_id: str, request: Request, user=Depends(get_current
     if reaction not in REACTION_TYPES:
         raise HTTPException(400, f"Invalid reaction. Must be one of: {REACTION_TYPES}")
 
-    existing = await db.social_reactions.find_one(
-        {"post_id": post_id, "user_id": user["id"]}
+    # Step 1: Toggle off? Atomically delete exact match
+    removed = await db.social_reactions.find_one_and_delete(
+        {"post_id": post_id, "user_id": user["id"], "reaction": reaction}
     )
-    if existing:
-        old_reaction = existing["reaction"]
-        if old_reaction == reaction:
-            # Remove reaction (toggle off)
-            await db.social_reactions.delete_one({"_id": existing["_id"]})
-            await db.social_posts.update_one(
-                {"id": post_id}, {"$inc": {f"reactions.{reaction}": -1}}
-            )
-            return {"reacted": False, "reaction": None}
-        else:
-            # Change reaction
-            await db.social_reactions.update_one(
-                {"_id": existing["_id"]}, {"$set": {"reaction": reaction}}
-            )
-            await db.social_posts.update_one(
-                {"id": post_id},
-                {"$inc": {f"reactions.{old_reaction}": -1, f"reactions.{reaction}": 1}}
-            )
-            return {"reacted": True, "reaction": reaction}
-    else:
+    if removed:
+        await db.social_posts.update_one(
+            {"id": post_id}, {"$inc": {f"reactions.{reaction}": -1}}
+        )
+        return {"reacted": False, "reaction": None}
+
+    # Step 2: Change existing? Atomically swap and return old value
+    old = await db.social_reactions.find_one_and_update(
+        {"post_id": post_id, "user_id": user["id"]},
+        {"$set": {"reaction": reaction}},
+    )
+    if old:
+        old_reaction = old["reaction"]
+        await db.social_posts.update_one(
+            {"id": post_id},
+            {"$inc": {f"reactions.{old_reaction}": -1, f"reactions.{reaction}": 1}}
+        )
+        return {"reacted": True, "reaction": reaction}
+
+    # Step 3: New reaction — insert with DuplicateKey protection
+    try:
         await db.social_reactions.insert_one({
             "post_id": post_id, "user_id": user["id"],
             "reaction": reaction,
@@ -307,18 +347,24 @@ async def react_to_post(post_id: str, request: Request, user=Depends(get_current
             {"id": post_id}, {"$inc": {f"reactions.{reaction}": 1}}
         )
         return {"reacted": True, "reaction": reaction}
+    except Exception:
+        return {"reacted": True, "reaction": reaction}
 
 
 @router.post("/feed/{post_id}/comment")
 async def add_comment(post_id: str, request: Request, user=Depends(get_current_user)):
+    await _rate_limit(user["id"], "comment", 20)
     data = await request.json()
+    content = data.get("content", "").strip()
+    if not content or len(content) > 2000:
+        raise HTTPException(400, "Comment must be 1-2000 characters")
     comment = {
         "id": str(uuid.uuid4()),
         "post_id": post_id,
         "user_id": user["id"],
         "user_name": user.get("name", "Unknown"),
         "user_avatar": user.get("avatar", ""),
-        "content": data.get("content", ""),
+        "content": content,
         "created_at": now_ist().isoformat(),
     }
     await db.social_comments.insert_one(comment)
@@ -328,18 +374,21 @@ async def add_comment(post_id: str, request: Request, user=Depends(get_current_u
 
 
 @router.get("/feed/{post_id}/comments")
+@db_retry
 async def get_comments(
     post_id: str,
     user=Depends(get_current_user),
-    page: int = 1,
+    after: str = None,
     limit: int = Query(30, ge=1, le=50),
 ):
-    skip = (page - 1) * limit
-    total = await db.social_comments.count_documents({"post_id": post_id})
+    query = {"post_id": post_id}
+    if after:
+        query["created_at"] = {"$gt": after}
     comments = await db.social_comments.find(
-        {"post_id": post_id}, {"_id": 0}
-    ).sort("created_at", 1).skip(skip).limit(limit).to_list(limit)
-    return {"comments": comments, "total": total, "page": page, "pages": math.ceil(total / limit) if total else 1}
+        query, {"_id": 0}
+    ).sort("created_at", 1).limit(limit).to_list(limit)
+    next_cursor = comments[-1]["created_at"] if len(comments) == limit else None
+    return {"comments": comments, "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
 
 @router.delete("/feed/{post_id}")
@@ -349,10 +398,13 @@ async def delete_post(post_id: str, user=Depends(get_current_user)):
         raise HTTPException(404, "Post not found")
     if post["user_id"] != user["id"]:
         raise HTTPException(403, "Not your post")
-    await db.social_posts.delete_one({"id": post_id})
-    await db.social_comments.delete_many({"post_id": post_id})
-    await db.social_likes.delete_many({"post_id": post_id})
-    await db.social_reactions.delete_many({"post_id": post_id})
+    await asyncio.gather(
+        db.social_posts.delete_one({"id": post_id}),
+        db.social_comments.delete_many({"post_id": post_id}),
+        db.social_likes.delete_many({"post_id": post_id}),
+        db.social_reactions.delete_many({"post_id": post_id}),
+        db.bookmarks.delete_many({"post_id": post_id}),
+    )
     return {"message": "Post deleted"}
 
 
@@ -366,11 +418,27 @@ async def trending_posts(
     user=Depends(get_current_user)
 ):
     """Trending posts using Wilson score confidence interval + velocity + recency."""
+    await _rate_limit(user["id"], "trending", 20)
     global _trending_cache
-    now_ts = time.time()
-    if _trending_cache["expires"] > now_ts and len(_trending_cache["posts"]) >= limit:
-        posts = _trending_cache["posts"][:limit]
-    else:
+    posts = None
+
+    # Primary: Redis cache (shared across all workers/pods)
+    if redis_client:
+        try:
+            cached = await redis_client.get("trending:posts")
+            if cached:
+                posts = json.loads(cached)
+        except Exception as e:
+            logger.warning(f"Redis trending read failed: {e}")
+
+    # Fallback: in-memory cache (single-worker dev / Redis unavailable)
+    if posts is None:
+        now_ts = time.time()
+        if _trending_cache["expires"] > now_ts and len(_trending_cache["posts"]) >= limit:
+            posts = _trending_cache["posts"]
+
+    # Cache miss — compute fresh
+    if posts is None:
         try:
             posts = await compute_trending_scores(hours=48, limit=30)
         except Exception as e:
@@ -378,14 +446,21 @@ async def trending_posts(
             cutoff = (now_ist() - timedelta(hours=48)).isoformat()
             posts = await db.social_posts.find(
                 {"created_at": {"$gte": cutoff}, "visibility": "public"},
-                {"_id": 0}
+                {"_id": 0}, max_time_ms=10000
             ).sort("likes_count", -1).limit(30).to_list(30)
         for p in posts:
             p.pop("_trending_score", None)
             p.pop("_engagement_total", None)
             p.pop("_velocity", None)
-        _trending_cache = {"posts": posts, "expires": now_ts + 300}
-        posts = posts[:limit]
+        # Store in Redis (primary) or in-memory (fallback)
+        if redis_client:
+            try:
+                await redis_client.setex("trending:posts", 300, json.dumps(posts))
+            except Exception as e:
+                logger.warning(f"Redis trending write failed: {e}")
+        _trending_cache = {"posts": posts, "expires": time.time() + 300}
+
+    posts = posts[:limit]
 
     if posts:
         t_ids = [p["id"] for p in posts]
@@ -408,7 +483,9 @@ async def trending_posts(
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.post("/follow/{target_id}")
+@db_retry
 async def toggle_follow(target_id: str, user=Depends(get_current_user)):
+    await _rate_limit(user["id"], "follow", 30)
     if target_id == user["id"]:
         raise HTTPException(400, "Cannot follow yourself")
 
@@ -416,15 +493,16 @@ async def toggle_follow(target_id: str, user=Depends(get_current_user)):
     if not target:
         raise HTTPException(404, "User not found")
 
-    existing = await db.follows.find_one(
+    # Atomic: try delete first — if doc existed, it was an unfollow
+    removed = await db.follows.find_one_and_delete(
         {"follower_id": user["id"], "following_id": target_id}
     )
-    if existing:
-        await db.follows.delete_one({"_id": existing["_id"]})
+    if removed:
         await db.users.update_one({"id": user["id"]}, {"$inc": {"following_count": -1}})
         await db.users.update_one({"id": target_id}, {"$inc": {"followers_count": -1}})
         return {"following": False}
-    else:
+    # Not found → insert (unique index prevents duplicates if double-tapped)
+    try:
         await db.follows.insert_one({
             "follower_id": user["id"],
             "following_id": target_id,
@@ -432,6 +510,9 @@ async def toggle_follow(target_id: str, user=Depends(get_current_user)):
         })
         await db.users.update_one({"id": user["id"]}, {"$inc": {"following_count": 1}})
         await db.users.update_one({"id": target_id}, {"$inc": {"followers_count": 1}})
+        return {"following": True}
+    except Exception:
+        # Duplicate key — already followed by a concurrent request
         return {"following": True}
 
 
@@ -447,29 +528,43 @@ async def follow_status(target_id: str, user=Depends(get_current_user)):
 
 
 @router.get("/followers/{user_id}")
-async def get_followers(user_id: str, user=Depends(get_current_user)):
+async def get_followers(
+    user_id: str, user=Depends(get_current_user),
+    after: str = None, limit: int = Query(50, ge=1, le=100),
+):
+    query = {"following_id": user_id}
+    if after:
+        query["created_at"] = {"$lt": after}
     follows = await db.follows.find(
-        {"following_id": user_id}, {"_id": 0, "follower_id": 1}
-    ).to_list(200)
+        query, {"_id": 0, "follower_id": 1, "created_at": 1}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
     ids = [f["follower_id"] for f in follows]
     users = await db.users.find(
         {"id": {"$in": ids}},
         {"_id": 0, "id": 1, "name": 1, "avatar": 1, "skill_rating": 1, "role": 1}
-    ).to_list(200)
-    return users
+    ).to_list(limit)
+    next_cursor = follows[-1]["created_at"] if len(follows) == limit else None
+    return {"users": users, "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
 
 @router.get("/following/{user_id}")
-async def get_following(user_id: str, user=Depends(get_current_user)):
+async def get_following(
+    user_id: str, user=Depends(get_current_user),
+    after: str = None, limit: int = Query(50, ge=1, le=100),
+):
+    query = {"follower_id": user_id}
+    if after:
+        query["created_at"] = {"$lt": after}
     follows = await db.follows.find(
-        {"follower_id": user_id}, {"_id": 0, "following_id": 1}
-    ).to_list(200)
+        query, {"_id": 0, "following_id": 1, "created_at": 1}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
     ids = [f["following_id"] for f in follows]
     users = await db.users.find(
         {"id": {"$in": ids}},
         {"_id": 0, "id": 1, "name": 1, "avatar": 1, "skill_rating": 1, "role": 1}
-    ).to_list(200)
-    return users
+    ).to_list(limit)
+    next_cursor = follows[-1]["created_at"] if len(follows) == limit else None
+    return {"users": users, "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -477,6 +572,7 @@ async def get_following(user_id: str, user=Depends(get_current_user)):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/engagement/me")
+@db_retry
 async def my_engagement(user=Depends(get_current_user)):
     """Get current user's engagement stats: streak, post count, prompts."""
     streak = await db.streaks.find_one({"user_id": user["id"]}, {"_id": 0})
@@ -582,157 +678,181 @@ async def get_my_card(user=Depends(get_current_user)):
 
 @router.get("/player-card/{user_id}")
 async def get_player_card(user_id: str, user=Depends(get_current_user)):
+    await _rate_limit(user["id"], "player_card", 60)
     return await _build_player_card(user_id, viewer_id=user["id"])
 
 
+@db_retry
 async def _build_player_card(user_id: str, viewer_id: str = None):
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
-    if not user:
-        raise HTTPException(404, "Player not found")
+    # Redis cache check (viewer-agnostic data only)
+    cache_key = f"player_card:{user_id}"
+    card = None
+    if redis_client:
+        try:
+            cached = await redis_client.get(cache_key)
+            if cached:
+                card = json.loads(cached)
+        except Exception as e:
+            logger.warning(f"Redis player_card read failed: {e}")
 
-    bookings_count = await db.bookings.count_documents(
-        {"$or": [{"host_id": user_id}, {"players": user_id}],
-         "status": {"$in": ["confirmed", "completed"]}}
-    )
-    reviews = await db.reviews.find({"user_id": user_id}, {"_id": 0, "rating": 1}).to_list(100)
-    avg_rating = sum(r.get("rating", 0) for r in reviews) / max(len(reviews), 1) if reviews else 0
+    if card is None:
+        # Parallel fetch — all 9 queries at once
+        (
+            user, bookings_count, reviews, sport_bookings,
+            streak, followers_count, following_count, post_count, perf_records
+        ) = await asyncio.gather(
+            db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0}),
+            db.bookings.count_documents(
+                {"$or": [{"host_id": user_id}, {"players": user_id}],
+                 "status": {"$in": ["confirmed", "completed"]}}
+            ),
+            db.reviews.find({"user_id": user_id}, {"_id": 0, "rating": 1}, max_time_ms=10000).to_list(100),
+            db.bookings.find(
+                {"$or": [{"host_id": user_id}, {"players": user_id}]},
+                {"sport": 1, "_id": 0}, max_time_ms=10000
+            ).to_list(500),
+            db.streaks.find_one({"user_id": user_id}, {"_id": 0}),
+            db.follows.count_documents({"following_id": user_id}),
+            db.follows.count_documents({"follower_id": user_id}),
+            db.social_posts.count_documents({"user_id": user_id}),
+            db.performance_records.find(
+                {"player_id": user_id}, {"_id": 0, "record_type": 1, "tournament_id": 1, "stats": 1}, max_time_ms=10000
+            ).to_list(500),
+        )
 
-    sport_bookings = await db.bookings.find(
-        {"$or": [{"host_id": user_id}, {"players": user_id}]},
-        {"sport": 1, "_id": 0}
-    ).to_list(500)
-    sport_freq = {}
-    for b in sport_bookings:
-        s = b.get("sport", "other")
-        sport_freq[s] = sport_freq.get(s, 0) + 1
-    primary_sport = max(sport_freq, key=sport_freq.get) if sport_freq else "none"
+        if not user:
+            raise HTTPException(404, "Player not found")
 
-    badges = []
-    if user.get("is_verified"):
-        badges.append({"name": "Verified", "icon": "badge-check", "description": "Verified by Horizon"})
-    if bookings_count >= 100:
-        badges.append({"name": "Century", "icon": "trophy", "description": "100+ games played"})
-    elif bookings_count >= 50:
-        badges.append({"name": "Veteran", "icon": "star", "description": "50+ games played"})
-    elif bookings_count >= 10:
-        badges.append({"name": "Regular", "icon": "zap", "description": "10+ games played"})
+        avg_rating = sum(r.get("rating", 0) for r in reviews) / max(len(reviews), 1) if reviews else 0
 
-    rating = user.get("skill_rating", 1500)
-    if rating >= 2000:
-        badges.append({"name": "Elite", "icon": "crown", "description": "2000+ skill rating"})
-    elif rating >= 1700:
-        badges.append({"name": "Pro", "icon": "award", "description": "1700+ skill rating"})
+        sport_freq = {}
+        for b in sport_bookings:
+            s = b.get("sport", "other")
+            sport_freq[s] = sport_freq.get(s, 0) + 1
+        primary_sport = max(sport_freq, key=sport_freq.get) if sport_freq else "none"
 
-    if user.get("reliability_score", 100) >= 95:
-        badges.append({"name": "Reliable", "icon": "shield", "description": "95%+ reliability"})
-    if user.get("wins", 0) >= 50:
-        badges.append({"name": "Champion", "icon": "medal", "description": "50+ wins"})
+        badges = []
+        if user.get("is_verified"):
+            badges.append({"name": "Verified", "icon": "badge-check", "description": "Verified by Horizon"})
+        if bookings_count >= 100:
+            badges.append({"name": "Century", "icon": "trophy", "description": "100+ games played"})
+        elif bookings_count >= 50:
+            badges.append({"name": "Veteran", "icon": "star", "description": "50+ games played"})
+        elif bookings_count >= 10:
+            badges.append({"name": "Regular", "icon": "zap", "description": "10+ games played"})
 
-    # Streak badge
-    streak = await db.streaks.find_one({"user_id": user_id}, {"_id": 0})
-    if streak and streak.get("current_streak", 0) >= 7:
-        badges.append({"name": "On Fire", "icon": "flame", "description": f"{streak['current_streak']}-day posting streak"})
+        rating = user.get("skill_rating", 1500)
+        if rating >= 2000:
+            badges.append({"name": "Elite", "icon": "crown", "description": "2000+ skill rating"})
+        elif rating >= 1700:
+            badges.append({"name": "Pro", "icon": "award", "description": "1700+ skill rating"})
 
-    # Follow stats
-    followers_count = await db.follows.count_documents({"following_id": user_id})
-    following_count = await db.follows.count_documents({"follower_id": user_id})
-    post_count = await db.social_posts.count_documents({"user_id": user_id})
+        if user.get("reliability_score", 100) >= 95:
+            badges.append({"name": "Reliable", "icon": "shield", "description": "95%+ reliability"})
+        if user.get("wins", 0) >= 50:
+            badges.append({"name": "Champion", "icon": "medal", "description": "50+ wins"})
 
-    # Viewer follow status
-    is_following = False
+        if streak and streak.get("current_streak", 0) >= 7:
+            badges.append({"name": "On Fire", "icon": "flame", "description": f"{streak['current_streak']}-day posting streak"})
+
+        sr = user.get("skill_rating", 1500)
+        skill_score = max(0, min(100, (sr - 1000) / 15))
+        total_g = user.get("total_games", 0) or bookings_count
+        wins_count = user.get("wins", 0)
+        losses_count = user.get("losses", 0)
+        draws_count = user.get("draws", 0)
+        played = wins_count + losses_count + draws_count
+        win_rate_score = (wins_count / played * 100) if played > 0 else 0
+
+        t_ids = set()
+        t_wins = 0
+        train_mins = 0
+        for pr in perf_records:
+            if pr.get("record_type") == "tournament_result":
+                tid = pr.get("tournament_id")
+                if tid:
+                    t_ids.add(tid)
+                if pr.get("stats", {}).get("result") == "win":
+                    t_wins += 1
+            if pr.get("record_type") == "training":
+                train_mins += pr.get("stats", {}).get("duration_minutes", 0)
+        tournaments_played = len(t_ids)
+        training_hours = round(train_mins / 60, 1)
+
+        tournament_score = min(100, tournaments_played * 8 + t_wins * 12)
+        training_score = min(100, training_hours * 4)
+        reliability = user.get("reliability_score", 100)
+        experience_score = min(100, total_g * 2)
+
+        overall_score = round(
+            skill_score * 0.40 + win_rate_score * 0.20 +
+            tournament_score * 0.15 + training_score * 0.10 +
+            reliability * 0.10 + experience_score * 0.05
+        )
+        overall_score = max(0, min(100, overall_score))
+
+        if overall_score >= 86:
+            overall_tier = "Elite"
+        elif overall_score >= 71:
+            overall_tier = "Pro"
+        elif overall_score >= 51:
+            overall_tier = "Advanced"
+        elif overall_score >= 31:
+            overall_tier = "Intermediate"
+        else:
+            overall_tier = "Beginner"
+
+        card = {
+            "user_id": user_id,
+            "name": user.get("name", "Unknown"),
+            "avatar": user.get("avatar", ""),
+            "role": user.get("role", "player"),
+            "is_verified": user.get("is_verified", False),
+            "skill_rating": sr,
+            "reliability_score": reliability,
+            "wins": wins_count,
+            "losses": losses_count,
+            "draws": draws_count,
+            "total_games": bookings_count,
+            "avg_review_rating": round(avg_rating, 1),
+            "primary_sport": primary_sport,
+            "sports_played": sport_freq,
+            "member_since": user.get("created_at", ""),
+            "badges": badges,
+            "followers_count": followers_count,
+            "following_count": following_count,
+            "post_count": post_count,
+            "current_streak": streak.get("current_streak", 0) if streak else 0,
+            "overall_score": overall_score,
+            "overall_tier": overall_tier,
+            "score_breakdown": {
+                "skill": round(skill_score),
+                "win_rate": round(win_rate_score),
+                "tournament": round(tournament_score),
+                "training": round(training_score),
+                "reliability": round(reliability),
+                "experience": round(experience_score),
+            },
+        }
+
+        # Store in Redis (without is_following — viewer specific)
+        if redis_client:
+            try:
+                await redis_client.setex(cache_key, 300, json.dumps(card))
+            except Exception as e:
+                logger.warning(f"Redis player_card write failed: {e}")
+
+    # is_following — always fresh, viewer specific
+    card["is_following"] = False
     if viewer_id and viewer_id != user_id:
-        is_following = await db.follows.find_one(
-            {"follower_id": viewer_id, "following_id": user_id}
-        ) is not None
+        try:
+            card["is_following"] = await db.follows.find_one(
+                {"follower_id": viewer_id, "following_id": user_id}
+            ) is not None
+        except Exception:
+            pass
 
-    # Overall Skill Score (0-100)
-    sr = user.get("skill_rating", 1500)
-    skill_score = max(0, min(100, (sr - 1000) / 15))  # 1000→0, 1500→33, 2500→100
-    total_g = user.get("total_games", 0) or bookings_count
-    wins_count = user.get("wins", 0)
-    losses_count = user.get("losses", 0)
-    draws_count = user.get("draws", 0)
-    played = wins_count + losses_count + draws_count
-    win_rate_score = (wins_count / played * 100) if played > 0 else 0
-
-    # Fetch career stats for tournament & training scores
-    perf_records = await db.performance_records.find(
-        {"player_id": user_id}, {"_id": 0, "record_type": 1, "tournament_id": 1, "stats": 1}
-    ).to_list(500)
-    t_ids = set()
-    t_wins = 0
-    train_mins = 0
-    for pr in perf_records:
-        if pr.get("record_type") == "tournament_result":
-            tid = pr.get("tournament_id")
-            if tid:
-                t_ids.add(tid)
-            if pr.get("stats", {}).get("result") == "win":
-                t_wins += 1
-        if pr.get("record_type") == "training":
-            train_mins += pr.get("stats", {}).get("duration_minutes", 0)
-    tournaments_played = len(t_ids)
-    training_hours = round(train_mins / 60, 1)
-
-    tournament_score = min(100, tournaments_played * 8 + t_wins * 12)
-    training_score = min(100, training_hours * 4)
-    reliability = user.get("reliability_score", 100)
-    experience_score = min(100, total_g * 2)
-
-    overall_score = round(
-        skill_score * 0.40 +
-        win_rate_score * 0.20 +
-        tournament_score * 0.15 +
-        training_score * 0.10 +
-        reliability * 0.10 +
-        experience_score * 0.05
-    )
-    overall_score = max(0, min(100, overall_score))
-
-    if overall_score >= 86:
-        overall_tier = "Elite"
-    elif overall_score >= 71:
-        overall_tier = "Pro"
-    elif overall_score >= 51:
-        overall_tier = "Advanced"
-    elif overall_score >= 31:
-        overall_tier = "Intermediate"
-    else:
-        overall_tier = "Beginner"
-
-    return {
-        "user_id": user_id,
-        "name": user.get("name", "Unknown"),
-        "avatar": user.get("avatar", ""),
-        "role": user.get("role", "player"),
-        "is_verified": user.get("is_verified", False),
-        "skill_rating": sr,
-        "reliability_score": reliability,
-        "wins": wins_count,
-        "losses": losses_count,
-        "draws": draws_count,
-        "total_games": bookings_count,
-        "avg_review_rating": round(avg_rating, 1),
-        "primary_sport": primary_sport,
-        "sports_played": sport_freq,
-        "member_since": user.get("created_at", ""),
-        "badges": badges,
-        "followers_count": followers_count,
-        "following_count": following_count,
-        "post_count": post_count,
-        "is_following": is_following,
-        "current_streak": streak.get("current_streak", 0) if streak else 0,
-        "overall_score": overall_score,
-        "overall_tier": overall_tier,
-        "score_breakdown": {
-            "skill": round(skill_score),
-            "win_rate": round(win_rate_score),
-            "tournament": round(tournament_score),
-            "training": round(training_score),
-            "reliability": round(reliability),
-            "experience": round(experience_score),
-        },
-    }
+    return card
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -741,25 +861,32 @@ async def _build_player_card(user_id: str, viewer_id: str = None):
 
 @router.post("/feed/{post_id}/bookmark")
 async def toggle_bookmark(post_id: str, user=Depends(get_current_user)):
-    existing = await db.bookmarks.find_one({"user_id": user["id"], "post_id": post_id})
-    if existing:
-        await db.bookmarks.delete_one({"_id": existing["_id"]})
+    # Atomic: try delete first — if found, was an unbookmark
+    removed = await db.bookmarks.find_one_and_delete(
+        {"user_id": user["id"], "post_id": post_id}
+    )
+    if removed:
         return {"bookmarked": False}
-    await db.bookmarks.insert_one({
-        "id": str(uuid.uuid4()),
-        "user_id": user["id"],
-        "post_id": post_id,
-        "created_at": now_ist().isoformat(),
-    })
-    return {"bookmarked": True}
+    try:
+        await db.bookmarks.insert_one({
+            "id": str(uuid.uuid4()),
+            "user_id": user["id"],
+            "post_id": post_id,
+            "created_at": now_ist().isoformat(),
+        })
+        return {"bookmarked": True}
+    except Exception:
+        return {"bookmarked": True}
 
 
 @router.get("/feed/bookmarks")
-async def get_bookmarks(user=Depends(get_current_user), page: int = 1, limit: int = 20):
-    skip = (page - 1) * limit
+async def get_bookmarks(user=Depends(get_current_user), before: str = None, limit: int = Query(20, ge=1, le=50)):
+    query = {"user_id": user["id"]}
+    if before:
+        query["created_at"] = {"$lt": before}
     bookmarks = await db.bookmarks.find(
-        {"user_id": user["id"]}, {"_id": 0}
-    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+        query, {"_id": 0}
+    ).sort("created_at", -1).limit(limit).to_list(limit)
     post_ids = [b["post_id"] for b in bookmarks]
     if not post_ids:
         return {"posts": [], "total": 0}
@@ -780,8 +907,8 @@ async def get_bookmarks(user=Depends(get_current_user), page: int = 1, limit: in
         p["user_avatar"] = au.get("avatar", "")
         p["bookmarked_by_me"] = True
         p["liked_by_me"] = p["id"] in bm_liked_set
-    total = await db.bookmarks.count_documents({"user_id": user["id"]})
-    return {"posts": posts, "total": total}
+    next_cursor = bookmarks[-1]["created_at"] if len(bookmarks) == limit else None
+    return {"posts": posts, "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -789,28 +916,39 @@ async def get_bookmarks(user=Depends(get_current_user), page: int = 1, limit: in
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/feed/user/{user_id}")
-async def get_user_posts(user_id: str, user=Depends(get_current_user), page: int = 1, limit: int = 20):
-    skip = (page - 1) * limit
-    total = await db.social_posts.count_documents({"user_id": user_id})
+async def get_user_posts(
+    user_id: str, user=Depends(get_current_user),
+    before: str = None, limit: int = Query(20, ge=1, le=50),
+):
+    # Visibility: own posts always visible, others' only public
+    if user_id == user["id"]:
+        query = {"user_id": user_id}
+    else:
+        query = {"user_id": user_id, "visibility": "public"}
+    if before:
+        query["created_at"] = {"$lt": before}
     posts = await db.social_posts.find(
-        {"user_id": user_id}, {"_id": 0}
-    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+        query, {"_id": 0}, max_time_ms=10000
+    ).sort("created_at", -1).limit(limit).to_list(limit)
     u = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "avatar": 1})
     u_name = u.get("name", "Unknown") if u else "Unknown"
     u_avatar = u.get("avatar", "") if u else ""
     up_ids = [p["id"] for p in posts]
-    up_liked = {d["post_id"] for d in await db.social_likes.find(
-        {"post_id": {"$in": up_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
-    ).to_list(len(up_ids))}
-    up_bm = {d["post_id"] for d in await db.bookmarks.find(
-        {"post_id": {"$in": up_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
-    ).to_list(len(up_ids))}
+    up_liked, up_bm = set(), set()
+    if up_ids:
+        up_liked = {d["post_id"] for d in await db.social_likes.find(
+            {"post_id": {"$in": up_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+        ).to_list(len(up_ids))}
+        up_bm = {d["post_id"] for d in await db.bookmarks.find(
+            {"post_id": {"$in": up_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+        ).to_list(len(up_ids))}
     for p in posts:
         p["user_name"] = u_name
         p["user_avatar"] = u_avatar
         p["liked_by_me"] = p["id"] in up_liked
         p["bookmarked_by_me"] = p["id"] in up_bm
-    return {"posts": posts, "total": total, "page": page, "pages": math.ceil(total / limit) if total else 1}
+    next_cursor = posts[-1]["created_at"] if len(posts) == limit else None
+    return {"posts": posts, "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
 
 # Single post by ID — MUST be after all /feed/xxx static routes to avoid conflicts
@@ -839,69 +977,99 @@ async def get_single_post(post_id: str, user=Depends(get_current_user)):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 @router.get("/explore")
+@db_retry
 async def explore(user=Depends(get_current_user), q: str = "", category: str = "all", page: int = 1, limit: int = 20):
+    await _rate_limit(user["id"], "explore", 20)
     skip = (page - 1) * limit
     results = {"users": [], "posts": [], "venues": []}
 
     if q:
-        # Search users — batch follow/post/follower stats
+        # Parallel search: users, posts, venues at once
         user_query = {"$text": {"$search": q}, "id": {"$ne": user["id"]}}
-        users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).limit(10).to_list(10)
+        post_query = {"$text": {"$search": q}}
+        safe_q = _re.escape(q)
+        venue_query = {"$or": [
+            {"name": {"$regex": safe_q, "$options": "i"}},
+            {"area": {"$regex": safe_q, "$options": "i"}},
+        ]}
+        users, posts, venues = await asyncio.gather(
+            db.users.find(user_query, {"_id": 0, "password_hash": 0}).limit(10).to_list(10),
+            db.social_posts.find(post_query, {"_id": 0}, max_time_ms=10000).sort("created_at", -1).skip(skip).limit(limit).to_list(limit),
+            db.venues.find(venue_query, {"_id": 0}, max_time_ms=10000).limit(10).to_list(10),
+        )
+        # Enrich users with follow/post/follower stats
         if users:
             ex_user_ids = [u["id"] for u in users]
-            ex_following = {d["following_id"] for d in await db.follows.find(
-                {"follower_id": user["id"], "following_id": {"$in": ex_user_ids}}, {"_id": 0, "following_id": 1}
-            ).to_list(10)}
-            ex_post_counts = {d["_id"]: d["count"] for d in await db.social_posts.aggregate([
-                {"$match": {"user_id": {"$in": ex_user_ids}}},
-                {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
-            ]).to_list(10)}
-            ex_follower_counts = {d["_id"]: d["count"] for d in await db.follows.aggregate([
-                {"$match": {"following_id": {"$in": ex_user_ids}}},
-                {"$group": {"_id": "$following_id", "count": {"$sum": 1}}}
-            ]).to_list(10)}
+            ex_following_docs, ex_post_agg, ex_follower_agg = await asyncio.gather(
+                db.follows.find(
+                    {"follower_id": user["id"], "following_id": {"$in": ex_user_ids}}, {"_id": 0, "following_id": 1}
+                ).to_list(10),
+                db.social_posts.aggregate([
+                    {"$match": {"user_id": {"$in": ex_user_ids}}},
+                    {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+                ]).to_list(10),
+                db.follows.aggregate([
+                    {"$match": {"following_id": {"$in": ex_user_ids}}},
+                    {"$group": {"_id": "$following_id", "count": {"$sum": 1}}}
+                ]).to_list(10),
+            )
+            ex_following = {d["following_id"] for d in ex_following_docs}
+            ex_post_counts = {d["_id"]: d["count"] for d in ex_post_agg}
+            ex_follower_counts = {d["_id"]: d["count"] for d in ex_follower_agg}
             for u in users:
                 u["is_following"] = u["id"] in ex_following
                 u["post_count"] = ex_post_counts.get(u["id"], 0)
                 u["followers_count"] = ex_follower_counts.get(u["id"], 0)
         results["users"] = users
-
-        # Search posts — batch author lookup and like status
-        post_query = {"$text": {"$search": q}}
-        posts = await db.social_posts.find(post_query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+        # Enrich posts with author info and like status
         if posts:
             ex_post_ids = [p["id"] for p in posts]
             ex_author_ids = list({p["user_id"] for p in posts})
-            ex_authors = {u["id"]: u for u in await db.users.find(
-                {"id": {"$in": ex_author_ids}}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
-            ).to_list(len(ex_author_ids))}
-            ex_liked = {d["post_id"] for d in await db.social_likes.find(
-                {"post_id": {"$in": ex_post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
-            ).to_list(len(ex_post_ids))}
+            ex_author_docs, ex_liked_docs = await asyncio.gather(
+                db.users.find(
+                    {"id": {"$in": ex_author_ids}}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
+                ).to_list(len(ex_author_ids)),
+                db.social_likes.find(
+                    {"post_id": {"$in": ex_post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+                ).to_list(len(ex_post_ids)),
+            )
+            ex_authors = {u["id"]: u for u in ex_author_docs}
+            ex_liked = {d["post_id"] for d in ex_liked_docs}
             for p in posts:
                 pu = ex_authors.get(p["user_id"], {})
                 p["user_name"] = pu.get("name", "Unknown")
                 p["user_avatar"] = pu.get("avatar", "")
                 p["liked_by_me"] = p["id"] in ex_liked
         results["posts"] = posts
-
-        # Search venues
-        venue_query = {"$or": [
-            {"name": {"$regex": q, "$options": "i"}},
-            {"area": {"$regex": q, "$options": "i"}},
-        ]}
-        venues = await db.venues.find(venue_query, {"_id": 0}).limit(10).to_list(10)
         results["venues"] = venues
     else:
         # No query — show trending/popular content
-        # Popular users: use aggregation to get follower counts, avoid 150 per-user queries
-        follower_agg = await db.follows.aggregate([
-            {"$group": {"_id": "$following_id", "count": {"$sum": 1}}},
-            {"$sort": {"count": -1}},
-            {"$limit": 10},
-        ]).to_list(10)
-        pop_user_ids = [d["_id"] for d in follower_agg]
-        follower_count_map = {d["_id"]: d["count"] for d in follower_agg}
+        # Popular users: cached in Redis to avoid full-collection aggregation
+        pop_user_ids = None
+        follower_count_map = {}
+        if redis_client:
+            try:
+                cached = await redis_client.get("explore:popular")
+                if cached:
+                    _data = json.loads(cached)
+                    pop_user_ids = _data["ids"]
+                    follower_count_map = _data["counts"]
+            except Exception:
+                pass
+        if pop_user_ids is None:
+            follower_agg = await db.follows.aggregate([
+                {"$group": {"_id": "$following_id", "count": {"$sum": 1}}},
+                {"$sort": {"count": -1}},
+                {"$limit": 10},
+            ]).to_list(10)
+            pop_user_ids = [d["_id"] for d in follower_agg]
+            follower_count_map = {d["_id"]: d["count"] for d in follower_agg}
+            if redis_client:
+                try:
+                    await redis_client.setex("explore:popular", 600,
+                        json.dumps({"ids": pop_user_ids, "counts": follower_count_map}))
+                except Exception:
+                    pass
         if pop_user_ids:
             pop_users = await db.users.find(
                 {"id": {"$in": pop_user_ids}, "id": {"$ne": user["id"]}},
@@ -942,143 +1110,6 @@ async def explore(user=Depends(get_current_user), q: str = "", category: str = "
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CONTACT SYNC
-# ═══════════════════════════════════════════════════════════════════════════════
-
-class ContactSyncRequest(PydanticBaseModel):
-    phones: List[str] = []
-    emails: List[str] = []
-
-
-def normalize_phone(phone: str) -> str:
-    """Strip non-digit chars, keep last 10 digits for matching."""
-    digits = "".join(c for c in phone if c.isdigit())
-    return digits[-10:] if len(digits) >= 10 else digits
-
-
-@router.post("/contacts/sync")
-async def sync_contacts(req: ContactSyncRequest, user=Depends(get_current_user)):
-    """Match phone numbers and emails against registered users."""
-    matched_users = []
-    seen_ids = set()
-
-    # Normalize input phones
-    normalized_phones = [normalize_phone(p) for p in req.phones if p.strip()]
-    normalized_phones = [p for p in normalized_phones if len(p) >= 7]
-
-    # Collect matched user docs (no follow queries yet)
-    matched_docs: list = []  # (user_doc, match_type)
-
-    # Match by phone — fetch users with phone, normalize+match in Python
-    if normalized_phones:
-        normalized_set = set(normalized_phones)
-        all_users = await db.users.find(
-            {"id": {"$ne": user["id"]}, "phone": {"$exists": True, "$ne": ""}},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(1000)
-        for u in all_users:
-            u_phone = normalize_phone(u.get("phone", ""))
-            if u_phone and u_phone in normalized_set and u["id"] not in seen_ids:
-                seen_ids.add(u["id"])
-                matched_docs.append((u, "phone"))
-
-    # Match by email — MongoDB handles matching directly
-    clean_emails = [e.strip().lower() for e in req.emails if e.strip()]
-    if clean_emails:
-        email_users = await db.users.find(
-            {"id": {"$ne": user["id"]}, "email": {"$in": clean_emails}},
-            {"_id": 0, "password_hash": 0}
-        ).to_list(100)
-        for u in email_users:
-            if u["id"] not in seen_ids:
-                seen_ids.add(u["id"])
-                matched_docs.append((u, "email"))
-
-    # Batch follow-status check (1 query instead of N)
-    if matched_docs:
-        all_matched_ids = [u["id"] for u, _ in matched_docs]
-        following_set = {d["following_id"] for d in await db.follows.find(
-            {"follower_id": user["id"], "following_id": {"$in": all_matched_ids}},
-            {"_id": 0, "following_id": 1}
-        ).to_list(len(all_matched_ids))}
-        for u, match_type in matched_docs:
-            entry = {
-                "id": u["id"],
-                "name": u.get("name", "Unknown"),
-                "avatar": u.get("avatar", ""),
-                "sport": u.get("preferred_sport", ""),
-                "is_following": u["id"] in following_set,
-                "match_type": match_type,
-            }
-            if match_type == "phone":
-                entry["phone"] = u.get("phone", "")
-            else:
-                entry["email"] = u.get("email", "")
-            matched_users.append(entry)
-
-    # Persist synced contacts for later retrieval (chat, etc.)
-    for mu in matched_users:
-        await db.synced_contacts.update_one(
-            {"owner_id": user["id"], "contact_user_id": mu["id"]},
-            {"$set": {
-                "owner_id": user["id"],
-                "contact_user_id": mu["id"],
-                "match_type": mu["match_type"],
-                "synced_at": now_ist().isoformat(),
-            }},
-            upsert=True,
-        )
-
-    return {
-        "matched": matched_users,
-        "total_checked": len(normalized_phones) + len(clean_emails),
-        "total_found": len(matched_users),
-    }
-
-
-@router.get("/contacts/synced")
-async def get_synced_contacts(user=Depends(get_current_user)):
-    """Return previously synced contacts with fresh user data."""
-    synced = await db.synced_contacts.find(
-        {"owner_id": user["id"]}, {"_id": 0}
-    ).sort("synced_at", -1).to_list(200)
-
-    contact_ids = [s["contact_user_id"] for s in synced]
-    if not contact_ids:
-        return []
-
-    fresh_users = await db.users.find(
-        {"id": {"$in": contact_ids}},
-        {"_id": 0, "id": 1, "name": 1, "avatar": 1, "skill_rating": 1, "role": 1, "preferred_sport": 1}
-    ).to_list(200)
-    user_map = {u["id"]: u for u in fresh_users}
-
-    result = []
-    for s in synced:
-        fresh = user_map.get(s["contact_user_id"])
-        if fresh:
-            result.append({
-                "id": fresh["id"],
-                "name": fresh["name"],
-                "avatar": fresh.get("avatar", ""),
-                "skill_rating": fresh.get("skill_rating"),
-                "role": fresh.get("role", "player"),
-                "match_type": s.get("match_type", "phone"),
-                "sport": fresh.get("preferred_sport", ""),
-            })
-    return result
-
-
-@router.post("/contacts/invite")
-async def invite_contact(user=Depends(get_current_user)):
-    """Generate an invite link for the current user."""
-    return {
-        "invite_link": f"https://horizon.app/invite/{user['id']}",
-        "message": f"Join me on Horizon Sports! 🏟️ Let's play together. Download now: https://horizon.app/invite/{user['id']}",
-    }
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1090,39 +1121,32 @@ async def _get_following_ids(user_id: str) -> list:
 
 
 async def _update_streak(user_id: str):
-    """Update posting streak when user creates a post or story."""
+    """Update posting streak when user creates a post or story. Atomic via conditional update."""
     today = now_ist().strftime("%Y-%m-%d")
-    streak = await db.streaks.find_one({"user_id": user_id})
+    yesterday = (now_ist() - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    if not streak:
-        await db.streaks.insert_one({
-            "user_id": user_id,
-            "current_streak": 1,
-            "longest_streak": 1,
+    # Atomic: try to upsert. If last_post_date is already today → no-op.
+    # Case 1: Continue streak (last_post_date == yesterday)
+    result = await db.streaks.update_one(
+        {"user_id": user_id, "last_post_date": yesterday},
+        [{"$set": {
+            "current_streak": {"$add": ["$current_streak", 1]},
+            "longest_streak": {"$max": ["$longest_streak", {"$add": ["$current_streak", 1]}]},
             "last_post_date": today,
-        })
+        }}],
+    )
+    if result.modified_count > 0:
         return
 
-    last_date = streak.get("last_post_date", "")
-    if last_date == today:
-        return  # Already posted today, no streak update needed
+    # Case 2: Already posted today → skip
+    exists_today = await db.streaks.find_one({"user_id": user_id, "last_post_date": today})
+    if exists_today:
+        return
 
-    yesterday = (now_ist() - timedelta(days=1)).strftime("%Y-%m-%d")
-    current = streak.get("current_streak", 0)
-    longest = streak.get("longest_streak", 0)
-
-    if last_date == yesterday:
-        new_streak = current + 1
-    else:
-        new_streak = 1  # Streak broken, restart
-
-    new_longest = max(longest, new_streak)
-
+    # Case 3: Streak broken or first post — reset to 1
     await db.streaks.update_one(
         {"user_id": user_id},
-        {"$set": {
-            "current_streak": new_streak,
-            "longest_streak": new_longest,
-            "last_post_date": today,
-        }}
+        {"$set": {"current_streak": 1, "last_post_date": today},
+         "$max": {"longest_streak": 1}},
+        upsert=True,
     )

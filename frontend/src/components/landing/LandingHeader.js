@@ -34,7 +34,7 @@ export default function LandingHeader() {
     { label: "Home", path: "/" },
     { label: "Venues", path: "/venues" },
     { label: "Tournaments", path: user ? "/tournaments" : "/auth" },
-    { label: "Communities", path: user ? "/communities" : "/auth" },
+    { label: "Communities", path: user ? "/chat?discover=true" : "/auth" },
     { label: "Contact", path: "/contact" },
   ];
 

@@ -6,9 +6,11 @@ recommendation engine, engagement scoring, churn prediction.
 """
 import math
 import logging
+import json
+import asyncio
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
-from database import db
+from database import db, redis_client
 from tz import now_ist
 
 logger = logging.getLogger("horizon")
@@ -47,8 +49,24 @@ async def rank_feed_posts(posts: list, viewer_id: str) -> list:
     if not posts:
         return posts
 
-    # Pre-compute viewer's social graph for affinity
-    affinity_cache = await _compute_affinity_map(viewer_id, [p["user_id"] for p in posts])
+    # Affinity map — Redis cache (15 min TTL), fallback to compute
+    author_ids = [p["user_id"] for p in posts]
+    affinity_cache = None
+    if redis_client:
+        try:
+            cached = await redis_client.get(f"affinity:{viewer_id}")
+            if cached:
+                affinity_cache = json.loads(cached)
+        except Exception as e:
+            logger.warning(f"Redis affinity read failed: {e}")
+
+    if affinity_cache is None:
+        affinity_cache = await _compute_affinity_map(viewer_id, author_ids)
+        if redis_client:
+            try:
+                await redis_client.setex(f"affinity:{viewer_id}", 900, json.dumps(affinity_cache))
+            except Exception as e:
+                logger.warning(f"Redis affinity write failed: {e}")
 
     now = now_ist()
     scored = []
@@ -417,6 +435,16 @@ async def recommend_venues(user_id: str, limit: int = 10) -> list:
     2. Weight by sport preference match (content-based)
     3. Boost by rating and proximity
     """
+    # Redis cache (5 min TTL) — these aggregations are expensive
+    cache_key = f"rec:venues:{user_id}"
+    if redis_client:
+        try:
+            cached = await redis_client.get(cache_key)
+            if cached:
+                return json.loads(cached)[:limit]
+        except Exception:
+            pass
+
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     if not user:
         return []
@@ -525,7 +553,13 @@ async def recommend_venues(user_id: str, limit: int = 10) -> list:
         scored.append(v)
 
     scored.sort(key=lambda x: x["rec_score"], reverse=True)
-    return scored[:limit]
+    result = scored[:limit]
+    if redis_client:
+        try:
+            await redis_client.setex(cache_key, 300, json.dumps(result))
+        except Exception:
+            pass
+    return result
 
 
 async def recommend_players(user_id: str, limit: int = 15) -> list:
@@ -533,6 +567,15 @@ async def recommend_players(user_id: str, limit: int = 15) -> list:
     Recommend players to follow/connect with.
     Signals: co-play history, sport overlap, skill proximity, mutual follows.
     """
+    cache_key = f"rec:players:{user_id}"
+    if redis_client:
+        try:
+            cached = await redis_client.get(cache_key)
+            if cached:
+                return json.loads(cached)[:limit]
+        except Exception:
+            pass
+
     user = await db.users.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
     if not user:
         return []
@@ -630,7 +673,13 @@ async def recommend_players(user_id: str, limit: int = 15) -> list:
         scored.append(c)
 
     scored.sort(key=lambda x: x["rec_score"], reverse=True)
-    return scored[:limit]
+    result = scored[:limit]
+    if redis_client:
+        try:
+            await redis_client.setex(cache_key, 300, json.dumps(result))
+        except Exception:
+            pass
+    return result
 
 
 async def recommend_groups(user_id: str, limit: int = 10) -> list:
@@ -730,44 +779,24 @@ async def compute_engagement_score(user_id: str) -> dict:
     week_ago = (now - timedelta(days=7)).isoformat()
     month_ago = (now - timedelta(days=30)).isoformat()
 
-    # Posts in last 7 days
-    posts_week = await db.social_posts.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": week_ago}}
+    # Parallel fetch — all counts at once
+    (
+        posts_week, posts_month, comments_week, likes_week,
+        reactions_week, stories_week, streak, bookings_month
+    ) = await asyncio.gather(
+        db.social_posts.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}}),
+        db.social_posts.count_documents({"user_id": user_id, "created_at": {"$gte": month_ago}}),
+        db.social_comments.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}}),
+        db.social_likes.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}}),
+        db.social_reactions.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}}),
+        db.stories.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}}),
+        db.streaks.find_one({"user_id": user_id}, {"_id": 0}),
+        db.bookings.count_documents(
+            {"$or": [{"host_id": user_id}, {"players": user_id}],
+             "created_at": {"$gte": month_ago}}
+        ),
     )
-    # Posts in last 30 days
-    posts_month = await db.social_posts.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": month_ago}}
-    )
-
-    # Comments given in last 7 days
-    comments_week = await db.social_comments.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": week_ago}}
-    )
-
-    # Likes given in last 7 days
-    likes_week = await db.social_likes.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": week_ago}}
-    )
-
-    # Reactions given
-    reactions_week = await db.social_reactions.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": week_ago}}
-    )
-
-    # Stories in last 7 days
-    stories_week = await db.stories.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": week_ago}}
-    )
-
-    # Streak
-    streak = await db.streaks.find_one({"user_id": user_id}, {"_id": 0})
     current_streak = streak.get("current_streak", 0) if streak else 0
-
-    # Bookings (platform engagement)
-    bookings_month = await db.bookings.count_documents(
-        {"$or": [{"host_id": user_id}, {"players": user_id}],
-         "created_at": {"$gte": month_ago}}
-    )
 
     # Scoring
     scores = {}
@@ -789,21 +818,27 @@ async def compute_engagement_score(user_id: str) -> dict:
     # Platform usage — bookings (0-15)
     scores["platform_use"] = min(15, bookings_month * 3)
 
+    # Parallel: consistency + community counts
+    async def _empty():
+        return []
+    post_dates_coro = db.social_posts.find(
+        {"user_id": user_id, "created_at": {"$gte": month_ago}},
+        {"_id": 0, "created_at": 1}
+    ).to_list(200) if posts_month > 0 else _empty()
+    post_dates, groups_count, teams_count = await asyncio.gather(
+        post_dates_coro,
+        db.groups.count_documents({"members": user_id}),
+        db.teams.count_documents({"players.id": user_id}),
+    )
+
     # Consistency — posting across multiple days (0-10)
-    if posts_month > 0:
-        # Get unique posting days
-        post_dates = await db.social_posts.find(
-            {"user_id": user_id, "created_at": {"$gte": month_ago}},
-            {"_id": 0, "created_at": 1}
-        ).to_list(200)
+    if posts_month > 0 and post_dates:
         unique_days = len(set(p["created_at"][:10] for p in post_dates))
         scores["consistency"] = min(10, unique_days)
     else:
         scores["consistency"] = 0
 
     # Community (0-10)
-    groups_count = await db.groups.count_documents({"members": user_id})
-    teams_count = await db.teams.count_documents({"players.id": user_id})
     scores["community"] = min(10, (groups_count + teams_count) * 2)
 
     total = sum(scores.values())
@@ -848,9 +883,24 @@ async def predict_churn_risk(user_id: str) -> dict:
 
     signals = {}
 
-    # 1. Login recency (check last activity)
-    user = await db.users.find_one({"id": user_id}, {"_id": 0, "last_login": 1, "created_at": 1})
-    last_login = user.get("last_login", user.get("created_at", ""))
+    # Parallel fetch: user, activity counts, streak — all at once
+    (
+        churn_user, posts_this_week, posts_last_week,
+        bookings_this_week, bookings_last_week, streak
+    ) = await asyncio.gather(
+        db.users.find_one({"id": user_id}, {"_id": 0, "last_login": 1, "created_at": 1}),
+        db.social_posts.count_documents({"user_id": user_id, "created_at": {"$gte": week_ago}}),
+        db.social_posts.count_documents({"user_id": user_id, "created_at": {"$gte": two_weeks_ago, "$lt": week_ago}}),
+        db.bookings.count_documents(
+            {"$or": [{"host_id": user_id}, {"players": user_id}], "created_at": {"$gte": week_ago}}),
+        db.bookings.count_documents(
+            {"$or": [{"host_id": user_id}, {"players": user_id}], "created_at": {"$gte": two_weeks_ago, "$lt": week_ago}}),
+        db.streaks.find_one({"user_id": user_id}, {"_id": 0}),
+    )
+
+    # 1. Login recency
+    user = churn_user
+    last_login = user.get("last_login", user.get("created_at", "")) if user else ""
     if last_login:
         try:
             last_dt = datetime.fromisoformat(last_login.replace("Z", "+00:00"))
@@ -863,26 +913,13 @@ async def predict_churn_risk(user_id: str) -> dict:
         days_since_login = 0
     signals["days_since_login"] = days_since_login
 
-    # 2. Activity decline: compare this week vs last week
-    posts_this_week = await db.social_posts.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": week_ago}})
-    posts_last_week = await db.social_posts.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": two_weeks_ago, "$lt": week_ago}})
-
-    bookings_this_week = await db.bookings.count_documents(
-        {"$or": [{"host_id": user_id}, {"players": user_id}],
-         "created_at": {"$gte": week_ago}})
-    bookings_last_week = await db.bookings.count_documents(
-        {"$or": [{"host_id": user_id}, {"players": user_id}],
-         "created_at": {"$gte": two_weeks_ago, "$lt": week_ago}})
-
+    # 2. Activity decline
     signals["posts_this_week"] = posts_this_week
     signals["posts_last_week"] = posts_last_week
     signals["bookings_this_week"] = bookings_this_week
     signals["bookings_last_week"] = bookings_last_week
 
     # 3. Streak broken?
-    streak = await db.streaks.find_one({"user_id": user_id}, {"_id": 0})
     streak_broken = False
     if streak:
         last_post = streak.get("last_post_date", "")
@@ -896,13 +933,15 @@ async def predict_churn_risk(user_id: str) -> dict:
     signals["streak_broken"] = streak_broken
 
     # 4. Social isolation: no interactions received
-    interactions_received = await db.social_likes.count_documents({
-        "post_id": {"$in": [
-            p["id"] async for p in db.social_posts.find(
-                {"user_id": user_id, "created_at": {"$gte": month_ago}}, {"id": 1}
-            )
-        ]}
-    })
+    user_posts = await db.social_posts.find(
+        {"user_id": user_id, "created_at": {"$gte": month_ago}}, {"_id": 0, "id": 1}
+    ).to_list(200)
+    user_post_ids = [p["id"] for p in user_posts]
+    interactions_received = 0
+    if user_post_ids:
+        interactions_received = await db.social_likes.count_documents(
+            {"post_id": {"$in": user_post_ids}}
+        )
     signals["interactions_received_month"] = interactions_received
 
     # Compute risk score (0-100, higher = more at risk)
@@ -936,11 +975,13 @@ async def predict_churn_risk(user_id: str) -> dict:
         risk += 15  # Posting but no engagement = frustration risk
 
     # No activity at all in last month
-    total_month = await db.social_posts.count_documents(
-        {"user_id": user_id, "created_at": {"$gte": month_ago}})
-    total_bookings_month = await db.bookings.count_documents(
-        {"$or": [{"host_id": user_id}, {"players": user_id}],
-         "created_at": {"$gte": month_ago}})
+    total_month, total_bookings_month = await asyncio.gather(
+        db.social_posts.count_documents(
+            {"user_id": user_id, "created_at": {"$gte": month_ago}}),
+        db.bookings.count_documents(
+            {"$or": [{"host_id": user_id}, {"players": user_id}],
+             "created_at": {"$gte": month_ago}}),
+    )
     if total_month == 0 and total_bookings_month == 0:
         risk += 25
 

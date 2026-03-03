@@ -213,9 +213,9 @@ async def startup():
 
     await init_redis()
     await ensure_indexes(db)
-    # Migrate existing venues without slugs
+    # Migrate existing venues without slugs (one-time, skips if none found)
     import re
-    venues_without_slug = await db.venues.find({"slug": {"$exists": False}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    venues_without_slug = await db.venues.find({"slug": {"$exists": False}}, {"_id": 0, "id": 1, "name": 1}).limit(100).to_list(100)
     for v in venues_without_slug:
         base = re.sub(r'[^a-z0-9\s-]', '', v["name"].lower())
         base = re.sub(r'[\s_]+', '-', base).strip('-')
@@ -230,14 +230,17 @@ async def startup():
         await mqtt_service.connect()
     except Exception as e:
         logging.warning(f"MQTT connection failed on startup: {e}")
-    # Start WhatsApp automation scheduler
-    scheduler.add_job(run_daily_reminders,         "cron", hour=9,  minute=0,  id="daily_reminders",    replace_existing=True)
-    scheduler.add_job(run_package_expiry_reminders,"cron", hour=9,  minute=30, id="package_expiry",     replace_existing=True)
-    scheduler.add_job(run_session_reminders,       "cron", hour=20, minute=0,  id="session_reminders",  replace_existing=True)
-    scheduler.add_job(run_no_show_followup,        "cron", hour=21, minute=0,  id="no_show_followup",   replace_existing=True)
-    scheduler.add_job(run_monthly_progress,        "cron", day="last", hour=20, minute=0, id="monthly_progress", replace_existing=True)
-    scheduler.start()
-    logger.info("WhatsApp automation scheduler started (5 jobs)")
+    # Start WhatsApp automation scheduler (only on designated leader to avoid duplicates in multi-pod)
+    if os.environ.get("SCHEDULER_ENABLED", "true").strip().lower() == "true":
+        scheduler.add_job(run_daily_reminders,         "cron", hour=9,  minute=0,  id="daily_reminders",    replace_existing=True)
+        scheduler.add_job(run_package_expiry_reminders,"cron", hour=9,  minute=30, id="package_expiry",     replace_existing=True)
+        scheduler.add_job(run_session_reminders,       "cron", hour=20, minute=0,  id="session_reminders",  replace_existing=True)
+        scheduler.add_job(run_no_show_followup,        "cron", hour=21, minute=0,  id="no_show_followup",   replace_existing=True)
+        scheduler.add_job(run_monthly_progress,        "cron", day="last", hour=20, minute=0, id="monthly_progress", replace_existing=True)
+        scheduler.start()
+        logger.info("WhatsApp automation scheduler started (5 jobs)")
+    else:
+        logger.info("Scheduler disabled on this instance (SCHEDULER_ENABLED != true)")
 
 
 @app.on_event("shutdown")

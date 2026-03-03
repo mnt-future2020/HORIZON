@@ -83,11 +83,9 @@ const CoachListingPage = lazyRetry(() => import("@/pages/CoachListingPage"));
 const AcademyDiscoveryPage = lazyRetry(
   () => import("@/pages/AcademyDiscoveryPage"),
 );
-const CommunitiesPage = lazyRetry(() => import("@/pages/CommunitiesPage"));
 const GroupDetailPage = lazyRetry(() => import("@/pages/GroupDetailPage"));
 const TeamsPage = lazyRetry(() => import("@/pages/TeamsPage"));
 const ChatPage = lazyRetry(() => import("@/pages/ChatPage"));
-const ExplorePage = lazyRetry(() => import("@/pages/ExplorePage"));
 const BookmarksPage = lazyRetry(() => import("@/pages/BookmarksPage"));
 const ContactSyncPage = lazyRetry(() => import("@/pages/ContactSyncPage"));
 const NotFoundPage = lazyRetry(() => import("@/pages/NotFoundPage"));
@@ -100,7 +98,6 @@ function PageLoader() {
 const VENUE_OWNER_ALLOWED_PATHS = [
   "/feed",
   "/chat",
-  "/communities",
   "/profile",
 ];
 
@@ -478,11 +475,7 @@ function AppRouteDefinitions() {
       />
       <Route
         path="/communities"
-        element={
-          <ProtectedRoute>
-            <CommunitiesPage />
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/chat?discover=true" replace />}
       />
       <Route
         path="/communities/:groupId"
@@ -505,14 +498,6 @@ function AppRouteDefinitions() {
         element={
           <ProtectedRoute>
             <ChatPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/explore"
-        element={
-          <ProtectedRoute>
-            <ExplorePage />
           </ProtectedRoute>
         }
       />
@@ -543,15 +528,15 @@ function AppRoutes() {
   const isChat = location.pathname === "/chat";
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className={`bg-background flex flex-col ${isChat ? "h-screen overflow-hidden" : "min-h-screen"}`}>
       {user && <Navbar />}
       <DocVerificationPopup />
       <Suspense fallback={<PageLoader />}>
         {user ? (
-          <div className="flex flex-1 w-full gap-4 lg:gap-8 relative px-3 sm:px-4 md:px-6 max-w-[1600px] mx-auto">
+          <div className="flex flex-1 w-full gap-4 lg:gap-8 relative px-3 sm:px-4 md:px-6 max-w-[1600px] mx-auto min-h-0">
             <Sidebar />
             <main
-              className={`flex-1 min-w-0 md:pb-8 ${isChat ? "pb-0" : "pb-24"}`}
+              className={`flex-1 min-w-0 min-h-0 ${isChat ? "pb-0 flex flex-col overflow-hidden" : "pb-24 md:pb-8"}`}
             >
               <AppRouteDefinitions />
             </main>

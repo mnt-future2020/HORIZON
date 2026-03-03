@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timezone
-from database import db
+from database import db, redis_client
 from auth import hash_pw, verify_pw, create_token, create_refresh_token, verify_refresh_token, validate_password_strength, get_current_user, invalidate_user_tokens
 from tz import now_ist
 from models import RegisterInput, LoginInput
@@ -149,6 +149,11 @@ async def update_profile(request: Request, user=Depends(get_current_user)):
     updates = {k: v for k, v in data.items() if k in allowed}
     if updates:
         await db.users.update_one({"id": user["id"]}, {"$set": updates})
+        if redis_client:
+            try:
+                await redis_client.delete(f"player_card:{user['id']}")
+            except Exception:
+                pass
     updated = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
     return updated
 

@@ -354,16 +354,12 @@ export const socialAPI = {
   toggleLike: (postId) => api.post(`/feed/${postId}/like`),
   react: (postId, reaction) => api.post(`/feed/${postId}/react`, { reaction }),
   addComment: (postId, data) => api.post(`/feed/${postId}/comment`, data),
-  getComments: (postId, page = 1) => api.get(`/feed/${postId}/comments`, { params: { page } }),
+  getComments: (postId, after = null) => api.get(`/feed/${postId}/comments`, { params: after ? { after } : {} }),
   deletePost: (postId) => api.delete(`/feed/${postId}`),
   trending: () => api.get("/feed/trending"),
   toggleBookmark: (postId) => api.post(`/feed/${postId}/bookmark`),
-  getBookmarks: (page) => api.get("/feed/bookmarks", { params: { page } }),
-  getUserPosts: (userId, page) => api.get(`/feed/user/${userId}`, { params: { page } }),
-  explore: (q, category, page) => api.get("/explore", { params: { q, category, page } }),
-  syncContacts: (data) => api.post("/contacts/sync", data),
-  getSyncedContacts: () => api.get("/contacts/synced"),
-  getInviteLink: () => api.post("/contacts/invite"),
+  getBookmarks: (before) => api.get("/feed/bookmarks", { params: before ? { before } : {} }),
+  getUserPosts: (userId, before) => api.get(`/feed/user/${userId}`, { params: before ? { before } : {} }),
   // Stories
   getStories: () => api.get("/stories"),
   createStory: (data) => api.post("/stories", data),
@@ -373,8 +369,8 @@ export const socialAPI = {
   // Follow
   toggleFollow: (userId) => api.post(`/follow/${userId}`),
   followStatus: (userId) => api.get(`/follow/status/${userId}`),
-  getFollowers: (userId) => api.get(`/followers/${userId}`),
-  getFollowing: (userId) => api.get(`/following/${userId}`),
+  getFollowers: (userId, after) => api.get(`/followers/${userId}`, { params: after ? { after } : {} }),
+  getFollowing: (userId, after) => api.get(`/following/${userId}`, { params: after ? { after } : {} }),
   // Engagement
   myEngagement: () => api.get("/engagement/me"),
   suggestedFollows: () => api.get("/engagement/suggested-follows"),
@@ -554,6 +550,7 @@ export const teamAPI = {
 
 export const chatAPI = {
   conversations: () => api.get("/chat/conversations"),
+  unifiedConversations: () => api.get("/chat/unified-conversations"),
   startConversation: (userId) => api.post("/chat/conversations", { user_id: userId }),
   getMessages: (convoId, before) => api.get(`/chat/${convoId}/messages`, { params: { before } }),
   sendMessage: (convoId, data) => api.post(`/chat/${convoId}/messages`, data),

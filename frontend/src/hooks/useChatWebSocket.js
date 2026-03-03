@@ -33,8 +33,8 @@ export function useChatWebSocket() {
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === "pong") return;
-        const handler = handlersRef.current[msg.type];
-        if (handler) handler(msg);
+        const arr = handlersRef.current[msg.type];
+        if (arr) arr.forEach((h) => h(msg));
       } catch { /* ignore */ }
     };
 
@@ -55,12 +55,24 @@ export function useChatWebSocket() {
     }
   }, []);
 
-  const on = useCallback((type, handler) => {
-    handlersRef.current[type] = handler;
+  const sendGroupTyping = useCallback((groupId) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify({ type: "group_typing", group_id: groupId }));
+    }
   }, []);
 
-  const off = useCallback((type) => {
-    delete handlersRef.current[type];
+  const on = useCallback((type, handler) => {
+    if (!handlersRef.current[type]) handlersRef.current[type] = [];
+    handlersRef.current[type].push(handler);
+  }, []);
+
+  const off = useCallback((type, handler) => {
+    if (!handler) {
+      delete handlersRef.current[type];
+      return;
+    }
+    const arr = handlersRef.current[type];
+    if (arr) handlersRef.current[type] = arr.filter((h) => h !== handler);
   }, []);
 
   useEffect(() => {
@@ -79,5 +91,5 @@ export function useChatWebSocket() {
     };
   }, [connect]);
 
-  return { connected, sendTyping, on, off };
+  return { connected, sendTyping, sendGroupTyping, on, off };
 }
