@@ -776,9 +776,10 @@ export default function VenueDetail() {
             name: venue?.name || "LOBBI",
             description: `${cart.length} booking${cart.length > 1 ? "s" : ""}`,
             onSuccess: async (response) => {
+              const successBookings = [];
+              const failedItems = [];
               try {
                 // Payment done → NOW create bookings as confirmed
-                const allBookings = [];
                 for (const item of cart) {
                   const data = {
                     venue_id: id,
@@ -794,18 +795,27 @@ export default function VenueDetail() {
                     razorpay_signature: response.razorpay_signature,
                   };
                   if (payMode === "split") data.split_count = splitCount;
-                  const res = await bookingAPI.create(data);
-                  allBookings.push(res.data);
+                  try {
+                    const res = await bookingAPI.create(data);
+                    successBookings.push(res.data);
+                  } catch (itemErr) {
+                    console.error("Booking creation failed for item:", item, itemErr);
+                    failedItems.push(item);
+                  }
                 }
-                // Release Redis locks — slot is now in MongoDB as confirmed
-                for (const lk of lockedKeys) {
-                  await slotLockAPI.unlock(lk).catch(() => {});
+                if (successBookings.length > 0) {
+                  setConfirmResults(successBookings);
+                  setPayStep("done");
+                  setBookingDialog(true);
+                  setCart([]);
                 }
-                setConfirmResults(allBookings);
-                setPayStep("done");
-                setBookingDialog(true);
-                toast.success("Payment successful! All bookings confirmed.");
-                setCart([]);
+                if (failedItems.length > 0 && successBookings.length > 0) {
+                  toast.error(`${failedItems.length} booking(s) failed after payment. ${successBookings.length} succeeded. Contact support for a partial refund.`);
+                } else if (failedItems.length > 0) {
+                  toast.error("All bookings failed after payment. Contact support for a refund.");
+                } else {
+                  toast.success("Payment successful! All bookings confirmed.");
+                }
                 loadSlots();
               } catch (err) {
                 const detail =
@@ -816,8 +826,13 @@ export default function VenueDetail() {
                   err,
                 );
                 toast.error(`Booking creation failed: ${detail}`);
+              } finally {
+                // Always release remaining locks (backend already released locks for successful bookings)
+                for (const lk of lockedKeys) {
+                  await slotLockAPI.unlock(lk).catch(() => {});
+                }
+                setCheckoutLoading(false);
               }
-              setCheckoutLoading(false);
             },
             onDismiss: async () => {
               // No bookings to cancel — just release locks

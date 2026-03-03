@@ -152,9 +152,12 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     elif input.payment_mode == "split" and input.split_count:
         split_token = str(uuid.uuid4())[:8]
         per_share = price // input.split_count
+        # Last payer covers the remainder so no money is lost
+        last_share = price - (per_share * (input.split_count - 1))
         booking["split_config"] = {
             "total_shares": input.split_count,
             "per_share": per_share,
+            "last_share": last_share,
             "shares_paid": 0,
             "split_token": split_token
         }
@@ -408,8 +411,11 @@ async def razorpay_webhook(request: Request):
     order_id = payment_entity.get("order_id", "")
 
     if event == "payment.captured" and order_id:
-        # Find booking by razorpay_order_id
-        booking = await db.bookings.find_one({"razorpay_order_id": order_id}, {"_id": 0})
+        # Find booking by razorpay_order_id or split_order_ids (for split payers 2+)
+        booking = await db.bookings.find_one(
+            {"$or": [{"razorpay_order_id": order_id}, {"split_order_ids": order_id}]},
+            {"_id": 0}
+        )
         if not booking:
             logger.warning(f"Webhook: no booking found for order {order_id}")
             return {"status": "ok"}
@@ -510,8 +516,16 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
         raise HTTPException(404, "Booking not found")
     if booking["host_id"] != user["id"]:
         raise HTTPException(403, "Only the host can cancel")
-    await db.bookings.update_one({"id": booking_id}, {"$set": {"status": "cancelled"}})
-    # Decrement counters that were incremented at booking creation
+    if booking.get("status") in ("cancelled", "expired"):
+        raise HTTPException(400, f"Booking is already {booking['status']}")
+    # Atomic: only cancel if status hasn't changed since we read it
+    result = await db.bookings.update_one(
+        {"id": booking_id, "status": {"$nin": ["cancelled", "expired"]}},
+        {"$set": {"status": "cancelled"}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(400, "Booking was already cancelled or expired")
+    # Decrement counters — safe because the atomic update above ensures single execution
     await db.venues.update_one({"id": booking["venue_id"]}, {"$inc": {"total_bookings": -1}})
     await db.users.update_one({"id": booking["host_id"]}, {"$inc": {"total_games": -1}})
     if booking.get("split_config"):
@@ -560,6 +574,8 @@ async def get_split_info(token: str):
     booking = await db.bookings.find_one({"split_config.split_token": token}, {"_id": 0})
     if not booking:
         raise HTTPException(404, "Split payment not found")
+    if booking.get("status") in ("cancelled", "expired"):
+        raise HTTPException(400, "This booking has been cancelled or expired")
     payments = await db.split_payments.find({"split_token": token}, {"_id": 0}).to_list(100)
     sc = booking.get("split_config", {})
     # CRITICAL FIX: Only expose necessary booking fields, not full payment/user details
@@ -598,20 +614,31 @@ async def pay_split(token: str, request: Request):
     booking = await db.bookings.find_one({"split_config.split_token": token})
     if not booking:
         raise HTTPException(404, "Split payment not found")
+    if booking.get("status") in ("cancelled", "expired"):
+        raise HTTPException(400, "This booking has been cancelled or expired")
     sc = booking.get("split_config", {})
     if sc.get("shares_paid", 0) >= sc.get("total_shares", 0):
         raise HTTPException(400, "All shares already paid")
 
+    # Last payer pays remainder to avoid rounding loss
+    is_last_share = sc.get("shares_paid", 0) + 1 >= sc.get("total_shares", 0)
+    share_amount = sc.get("last_share", sc["per_share"]) if is_last_share else sc["per_share"]
+
     rzp_client = await get_razorpay_client()
-    result = {"payer_name": payer_name, "amount": sc["per_share"]}
+    result = {"payer_name": payer_name, "amount": share_amount}
 
     if rzp_client:
         try:
             rzp_order = rzp_client.order.create({
-                "amount": sc["per_share"] * 100, "currency": "INR", "payment_capture": 1,
+                "amount": share_amount * 100, "currency": "INR", "payment_capture": 1,
                 "notes": {"booking_id": booking["id"], "type": "split_share", "payer_name": payer_name}
             })
             gw = (await get_platform_settings()).get("payment_gateway", {})
+            # Store this split order ID in booking so webhook can find it
+            await db.bookings.update_one(
+                {"id": booking["id"]},
+                {"$addToSet": {"split_order_ids": rzp_order["id"]}}
+            )
             result["razorpay_order_id"] = rzp_order["id"]
             result["razorpay_key_id"] = gw.get("key_id", "")
             result["payment_gateway"] = "razorpay"
@@ -624,17 +651,21 @@ async def pay_split(token: str, request: Request):
     payment = {
         "id": str(uuid.uuid4()), "booking_id": booking["id"],
         "split_token": token, "payer_id": "",
-        "payer_name": payer_name, "amount": sc["per_share"],
+        "payer_name": payer_name, "amount": share_amount,
         "status": "paid", "paid_at": now_ist().isoformat()
     }
     await db.split_payments.insert_one(payment)
     payment.pop("_id", None)
 
-    new_paid = sc["shares_paid"] + 1
-    updates = {"split_config.shares_paid": new_paid}
-    if new_paid >= sc["total_shares"]:
-        updates["status"] = "confirmed"
-    await db.bookings.update_one({"id": booking["id"]}, {"$set": updates})
+    # Bug fix: use atomic $inc instead of read-then-set to prevent race condition
+    result_doc = await db.bookings.find_one_and_update(
+        {"id": booking["id"]},
+        {"$inc": {"split_config.shares_paid": 1}},
+        return_document=True, projection={"_id": 0, "split_config": 1}
+    )
+    new_paid = result_doc["split_config"]["shares_paid"]
+    if new_paid >= result_doc["split_config"]["total_shares"]:
+        await db.bookings.update_one({"id": booking["id"]}, {"$set": {"status": "confirmed"}})
     result["payment_gateway"] = "test"
     result["message"] = "Payment successful (test mode)"
     result["payment"] = payment
@@ -647,6 +678,8 @@ async def verify_split_payment(token: str, request: Request):
     booking = await db.bookings.find_one({"split_config.split_token": token})
     if not booking:
         raise HTTPException(404, "Booking not found")
+    if booking.get("status") in ("cancelled", "expired"):
+        raise HTTPException(400, "This booking has been cancelled or expired")
 
     # CRITICAL FIX: Verify Razorpay signature for split payments too
     if booking.get("payment_gateway") == "razorpay":
