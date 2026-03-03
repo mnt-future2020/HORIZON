@@ -40,12 +40,12 @@ export default function BrowseByCitySection() {
   const goToCity = (city) => navigate(`/venues?city=${encodeURIComponent(city)}`);
 
   return (
-    <section className="py-12 sm:py-16 md:py-32 px-4 md:px-12 bg-[#0a0c0a]" id="locations">
+    <section className="py-12 sm:py-16 md:py-32 px-4 md:px-12 bg-white" id="locations">
       <div className="max-w-[90rem] mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-16 gap-4 md:gap-8">
           <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
             <h2 className="text-3xl sm:text-4xl md:text-7xl font-black tracking-tighter uppercase leading-[0.85]">
-              <span className="text-white">ACTIVE</span>
+              <span className="text-gray-900">ACTIVE</span>
               <br />
               <span className="text-turf-accent font-brier text-4xl sm:text-5xl md:text-8xl">LOCATIONS</span>
             </h2>
@@ -61,7 +61,7 @@ export default function BrowseByCitySection() {
               viewport={{ once: true }}
               transition={{ delay: idx * 0.1, duration: 0.5 }}
               onClick={() => goToCity(c.city)}
-              className="group relative aspect-[3/4] rounded-[2rem] overflow-hidden cursor-pointer border-2 border-white/5 hover:border-turf-accent/40 transition-all duration-500"
+              className="group relative aspect-[3/4] rounded-[2rem] overflow-hidden cursor-pointer border-2 border-gray-200 hover:border-turf-accent/40 transition-all duration-500"
             >
               <div className="absolute inset-0 bg-turf-dark">
                 <img

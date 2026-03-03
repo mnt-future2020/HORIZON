@@ -109,7 +109,7 @@ export default function HowItWorksSection() {
                     <ChevronDown
                       className={cn(
                         "w-5 h-5 md:w-8 md:h-8 flex-shrink-0 transition-transform duration-300",
-                        isActive ? "rotate-180 text-black" : "text-white -rotate-90"
+                                                                        isActive ? "rotate-180 text-black" : "text-white -rotate-90"
                       )}
                     />
                     <Icon className={cn(
@@ -165,7 +165,7 @@ export default function HowItWorksSection() {
                               </span>
                             </div>
 
-                            <div className="text-xs md:text-sm text-white/50 leading-snug md:col-span-5 pl-9 md:pl-0">
+                            <div className="text-sm md:text-base text-white/80 leading-relaxed md:col-span-5 pl-9 md:pl-0">
                               {step.detail}
                             </div>
 

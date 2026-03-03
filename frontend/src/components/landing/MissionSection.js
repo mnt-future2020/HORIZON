@@ -18,17 +18,17 @@ export default function MissionSection() {
     <section
       id="mission"
       ref={sectionRef}
-      className="relative min-h-screen bg-turf-dark text-turf-text-light py-20 md:py-32 overflow-hidden flex items-center"
+      className="relative min-h-screen bg-white text-gray-900 py-20 md:py-32 overflow-hidden flex items-center"
     >
       {/* Background Decorative Elements */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
         <motion.div 
           style={{ y: y1 }}
-          className="absolute top-[10%] -right-[5%] w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px]" 
+          className="absolute top-[10%] -right-[5%] w-[500px] h-[500px] bg-brand-600/5 rounded-full blur-[120px]" 
         />
         <motion.div 
           style={{ y: y2 }}
-          className="absolute bottom-[10%] -left-[5%] w-[400px] h-[400px] bg-sky-500/10 rounded-full blur-[100px]" 
+          className="absolute bottom-[10%] -left-[5%] w-[400px] h-[400px] bg-sky-500/5 rounded-full blur-[100px]" 
         />
       </div>
 
@@ -51,11 +51,11 @@ export default function MissionSection() {
               <span className="text-turf-accent font-brier">CONNECT.</span> COMPETE. <br />
               <div className="text-3xl md:text-4xl lg:text-5xl font-oswald mt-4 opacity-50 tracking-normal">
                 INDIA'S ALL-IN-ONE <br />
-                <span className="text-white">SPORTS PLATFORM</span>
+                <span className="text-gray-900">SPORTS PLATFORM</span>
               </div>
             </h2>
             
-            <p className="text-lg md:text-xl text-turf-text-light/70 max-w-xl leading-relaxed mb-10 font-medium">
+            <p className="text-lg md:text-xl text-gray-500 max-w-xl leading-relaxed mb-10 font-medium">
               We're building India's premier ecosystem for athletes and professionals. 
               From booking world-class turfs to discovering elite coaching, 
               everything you need to elevate your sport is right here.
@@ -63,18 +63,18 @@ export default function MissionSection() {
 
             <div className="flex flex-wrap gap-6">
               <div className="flex flex-col">
-                <span className="text-4xl font-black text-white font-oswald">500+</span>
-                <span className="text-sm text-turf-text-light/50 uppercase tracking-widest font-bold">Venues</span>
+                <span className="text-4xl font-black text-gray-900 font-oswald">500+</span>
+                <span className="text-sm text-gray-400 uppercase tracking-widest font-bold">Venues</span>
               </div>
-              <div className="w-[1px] h-12 bg-white/10 hidden sm:block" />
+              <div className="w-[1px] h-12 bg-gray-200 hidden sm:block" />
               <div className="flex flex-col">
-                <span className="text-4xl font-black text-white font-oswald">10k+</span>
-                <span className="text-sm text-turf-text-light/50 uppercase tracking-widest font-bold">Players</span>
+                <span className="text-4xl font-black text-gray-900 font-oswald">10k+</span>
+                <span className="text-sm text-gray-400 uppercase tracking-widest font-bold">Players</span>
               </div>
-              <div className="w-[1px] h-12 bg-white/10 hidden sm:block" />
+              <div className="w-[1px] h-12 bg-gray-200 hidden sm:block" />
               <div className="flex flex-col">
-                <span className="text-4xl font-black text-white font-oswald">200+</span>
-                <span className="text-sm text-turf-text-light/50 uppercase tracking-widest font-bold">Coaches</span>
+                <span className="text-4xl font-black text-gray-900 font-oswald">200+</span>
+                <span className="text-sm text-gray-400 uppercase tracking-widest font-bold">Coaches</span>
               </div>
             </div>
           </motion.div>
@@ -87,10 +87,10 @@ export default function MissionSection() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={isInView ? { opacity: 1, scale: 1 } : {}}
               transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] h-[90%] -skew-x-12 -skew-y-3 rounded-[40px] border border-white/10 overflow-hidden z-0"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] h-[90%] -skew-x-12 -skew-y-3 rounded-[40px] border border-gray-200 overflow-hidden z-0"
             >
               {/* Turf Base Layer */}
-              <div className="absolute inset-0 bg-[#059669] opacity-40 backdrop-blur-3xl" />
+              <div className="absolute inset-0 bg-[#059669] opacity-20 backdrop-blur-3xl" />
               
               {/* Turf Texture Layer */}
               <div 
@@ -109,7 +109,7 @@ export default function MissionSection() {
               />
               
               {/* Vignette Overlay */}
-              <div className="absolute inset-0 bg-radial-gradient from-transparent to-black/40" />
+              <div className="absolute inset-0 bg-radial-gradient from-transparent to-white/40" />
             </motion.div>
 
             {/* Main Asset */}

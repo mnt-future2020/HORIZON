@@ -3,7 +3,7 @@ import { InteractiveClean } from "./InteractiveClean";
 
 export default function ArenaCalloutSection() {
   return (
-    <section className="relative bg-turf-dark px-4 md:px-12 overflow-hidden pb-5">
+    <section className="relative bg-white px-4 md:px-12 overflow-hidden pb-5">
       <div className="max-w-[1920px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20 items-center min-h-[80vh] lg:min-h-screen">
           <div className="flex flex-col justify-center items-start lg:items-end lg:pr-12 order-2 lg:order-1">
@@ -18,7 +18,7 @@ export default function ArenaCalloutSection() {
 
               {/* Main quote */}
               <blockquote className="relative z-10 max-w-xl">
-                <p className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black uppercase text-turf-text-light leading-[1.1] tracking-tight mb-4 md:mb-8">
+                <p className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black uppercase text-gray-900 leading-[1.1] tracking-tight mb-4 md:mb-8">
                   <span className="block mb-2">ONE PLATFORM</span>
                   <span className="block mb-2">FOR</span>
                   <span className="block text-turf-accent font-brier normal-case text-3xl sm:text-4xl md:text-6xl -ml-1 lg:text-8xl">

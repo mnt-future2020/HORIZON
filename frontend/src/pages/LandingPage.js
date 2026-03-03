@@ -22,14 +22,18 @@ export default function LandingPage() {
           <HeroSection />
           <div className="relative z-10">
             <MissionSection />
+            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
             <ArenaSplitSection />
+            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
             <BrowseByCitySection />
             <PlatformFeaturesSection />
             <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
             <ArenaShowcase />
             <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
             <ArenaCalloutSection />
+            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
             <HowItWorksSection />
+            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
             <SocialSection />
             <LandingFooter />
           </div>

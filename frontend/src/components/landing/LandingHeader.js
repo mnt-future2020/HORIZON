@@ -43,7 +43,7 @@ export default function LandingHeader() {
       <nav
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
-            ? "bg-[#0a0c0a]/90 backdrop-blur-xl border-b border-white/5"
+            ? "bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm"
             : "bg-transparent"
         }`}
         data-testid="landing-header"
@@ -93,7 +93,7 @@ export default function LandingHeader() {
               {/* Hamburger - Mobile Only */}
               <button
                 onClick={() => setMenuOpen(!menuOpen)}
-                className="lg:hidden p-2.5 md:p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 hover:border-brand-600/40 text-white hover:bg-white/20 transition-all"
+                className="lg:hidden p-2.5 md:p-3 rounded-lg bg-gray-100 backdrop-blur-sm border border-gray-200 hover:border-brand-600/40 text-gray-900 hover:bg-gray-200 transition-all"
                 aria-label="Toggle menu"
                 data-testid="menu-button"
               >
@@ -106,7 +106,7 @@ export default function LandingHeader() {
 
       {/* Full Screen Menu - Mobile Only */}
       <div
-        className={`fixed inset-0 z-40 bg-[#0a0c0a] transition-all duration-500 lg:hidden ${
+        className={`fixed inset-0 z-40 bg-white transition-all duration-500 lg:hidden ${
           menuOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -132,7 +132,7 @@ export default function LandingHeader() {
                     navigate(link.path);
                   }
                 }}
-                className="text-3xl sm:text-4xl md:text-7xl font-black text-white hover:text-brand-600 transition-colors uppercase font-brier"
+                className="text-3xl sm:text-4xl md:text-7xl font-black text-gray-900 hover:text-brand-600 transition-colors uppercase font-brier"
                 style={{
                   transitionDelay: `${index * 50}ms`,
                 }}
@@ -158,7 +158,7 @@ export default function LandingHeader() {
                 <a
                   key={social}
                   href="#"
-                  className="text-sm text-white/50 hover:text-brand-600 transition-colors uppercase font-bold"
+                  className="text-sm text-gray-400 hover:text-brand-600 transition-colors uppercase font-bold"
                   data-testid={`social-${social.toLowerCase()}`}
                 >
                   {social}
