@@ -7,14 +7,14 @@ export function ProfileHeader({ user, playerCard, uploadingAvatar, onAvatarUploa
   const avatarInputRef = useRef(null);
 
   return (
-    <div className="rounded-2xl p-6 sm:p-8 mb-6 bg-background border border-border">
+    <div className="rounded-2xl p-6 sm:p-8 mb-6 bg-gradient-to-br from-background via-background to-brand-50/30 dark:to-brand-950/30 border border-border shadow-lg hover:shadow-xl transition-shadow duration-300">
       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
         {/* Avatar */}
         <div className="relative group shrink-0">
           <button
             onClick={() => avatarInputRef.current?.click()}
             disabled={uploadingAvatar}
-            className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-brand-50 dark:bg-brand-950 flex items-center justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer touch-manipulation transition-all duration-200 hover:ring-2 hover:ring-brand-400 active:scale-95 border-2 border-brand-200 dark:border-brand-800"
+            className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-gradient-to-br from-brand-100 to-brand-200 dark:from-brand-900 dark:to-brand-950 flex items-center justify-center focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer touch-manipulation transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-brand-500/20 active:scale-95 border-4 border-brand-300 dark:border-brand-700"
             title="Change profile photo"
             aria-label="Change profile photo"
           >
@@ -25,11 +25,17 @@ export function ProfileHeader({ user, playerCard, uploadingAvatar, onAvatarUploa
                 {user?.name?.[0]?.toUpperCase()}
               </span>
             )}
-            <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity duration-200 rounded-full">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-center justify-center opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-all duration-300 rounded-full backdrop-blur-sm">
               {uploadingAvatar ? (
-                <Loader2 className="h-7 w-7 text-white animate-spin" aria-hidden="true" />
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-7 w-7 text-white animate-spin" aria-hidden="true" />
+                  <span className="text-xs text-white font-semibold">Uploading…</span>
+                </div>
               ) : (
-                <Camera className="h-7 w-7 text-white" aria-hidden="true" />
+                <div className="flex flex-col items-center gap-2">
+                  <Camera className="h-7 w-7 text-white" aria-hidden="true" />
+                  <span className="text-xs text-white font-semibold">Change Photo</span>
+                </div>
               )}
             </div>
           </button>

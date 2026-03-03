@@ -50,7 +50,7 @@
     --card-foreground: 210 40% 98%;
     --popover: 222 44% 8.5%;
     --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    --primary: 160 84% 39%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 38% 13%;
     --secondary-foreground: 210 40% 98%;
@@ -62,13 +62,13 @@
     --destructive-foreground: 210 40% 98%;
     --border: 222 30% 14%;
     --input: 222 30% 14%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
+    --ring: 160 84% 39%;
+    --chart-1: 160 84% 39%;
     --chart-2: 160 84% 39%;
     --chart-3: 30 80% 55%;
     --chart-4: 263 70% 62%;
     --chart-5: 340 75% 55%;
-    --radius: 0.5rem;
+    --radius: 1rem;
 
     /* ── Brand green — defined in tailwind.config.js brand{} palette ── */
 
@@ -78,17 +78,17 @@
     --shadow-card: 0 4px 24px -4px rgba(0, 0, 0, 0.5);
     --shadow-elevated: 0 8px 32px -8px rgba(0, 0, 0, 0.6);
 
-    /* Electric Blue accent gradients */
-    --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    /* Emerald Green accent gradients */
+    --gradient-primary: linear-gradient(135deg, #10b981 0%, #059669 100%);
     --gradient-accent: linear-gradient(135deg, #10b981 0%, #34d399 100%);
     --gradient-sport: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
     --gradient-rose: linear-gradient(135deg, #f43f5e 0%, #fb7185 100%);
     --gradient-sky: linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%);
 
-    /* Energy glow colors — electric blue */
-    --glow-primary: 0 0 50px rgba(59, 130, 246, 0.45);
+    /* Energy glow colors — brand green */
+    --glow-primary: 0 0 50px rgba(16, 185, 129, 0.45);
     --glow-accent: 0 0 50px rgba(16, 185, 129, 0.4);
-    --glow-hover: 0 0 70px rgba(59, 130, 246, 0.65);
+    --glow-hover: 0 0 70px rgba(16, 185, 129, 0.65);
     --glow-rose: 0 0 40px rgba(244, 63, 94, 0.35);
 
     /* Overlay colors for sports imagery */
@@ -108,7 +108,7 @@
     --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-    --primary: 217 91% 50%;
+    --primary: 160 84% 36%;
     --primary-foreground: 0 0% 100%;
     --secondary: 214 25% 93%;
     --secondary-foreground: 222 47% 15%;
@@ -120,8 +120,8 @@
     --destructive-foreground: 0 0% 100%;
     --border: 214 20% 88%;
     --input: 214 20% 88%;
-    --ring: 217 91% 50%;
-    --chart-1: 217 91% 50%;
+    --ring: 160 84% 36%;
+    --chart-1: 160 84% 36%;
     --chart-2: 160 84% 36%;
     --chart-3: 30 80% 48%;
     --chart-4: 263 70% 55%;
@@ -141,16 +141,16 @@
       0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 40px -8px rgba(0, 0, 0, 0.12);
 
     /* Light theme gradients — same vibrant colors */
-    --gradient-primary: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%);
+    --gradient-primary: linear-gradient(135deg, #059669 0%, #10b981 100%);
     --gradient-accent: linear-gradient(135deg, #059669 0%, #10b981 100%);
     --gradient-sport: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
     --gradient-rose: linear-gradient(135deg, #e11d48 0%, #f43f5e 100%);
     --gradient-sky: linear-gradient(135deg, #7c3aed 0%, #8b5cf6 100%);
 
     /* Light glow — soft colored shadows */
-    --glow-primary: 0 4px 24px rgba(37, 99, 235, 0.18);
+    --glow-primary: 0 4px 24px rgba(5, 150, 105, 0.18);
     --glow-accent: 0 4px 24px rgba(5, 150, 105, 0.15);
-    --glow-hover: 0 8px 32px rgba(37, 99, 235, 0.25);
+    --glow-hover: 0 8px 32px rgba(5, 150, 105, 0.25);
     --glow-rose: 0 4px 20px rgba(225, 29, 72, 0.12);
 
     --overlay-dark: rgba(255, 255, 255, 0.6);
@@ -278,6 +278,9 @@
   padding: 2px;
   background: var(--gradient-primary);
   -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask:
     linear-gradient(#fff 0 0) content-box,
     linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -503,8 +506,12 @@ textarea::placeholder {
 
 /* Landing page infinite slide animation */
 @keyframes infinite-slide {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
 }
 .animate-infinite-slide {
   animation: infinite-slide 40s linear infinite;

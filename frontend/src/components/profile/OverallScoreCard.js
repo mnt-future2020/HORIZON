@@ -30,7 +30,7 @@ export function OverallScoreCard({ playerCard, userId }) {
   };
 
   return (
-    <div className="flex items-center gap-5 mt-6 p-5 sm:p-6 rounded-2xl bg-background border border-border hover:border-brand-400 dark:hover:border-brand-600 transition-colors">
+    <div className="flex items-center gap-5 mt-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-background via-background to-brand-50/30 dark:to-brand-950/20 border border-border hover:border-brand-400 dark:hover:border-brand-600 hover:shadow-lg hover:shadow-brand-500/10 transition-all duration-300">
       <div className="relative w-20 h-20 shrink-0">
         <svg className="w-20 h-20 -rotate-90" viewBox="0 0 100 100">
           <circle
