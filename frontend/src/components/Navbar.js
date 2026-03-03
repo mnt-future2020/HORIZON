@@ -3,21 +3,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { notificationAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Lightbulb, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark, Settings, ClipboardList } from "lucide-react";
-
-function NavLink({ to, icon: Icon, label, active }) {
-  return (
-    <Link to={to} data-testid={`nav-link-${label.toLowerCase().replace(/\s/g, "-")}`}
-      className={`flex items-center gap-2 text-sm font-medium transition-colors ${active ? "text-primary" : "text-muted-foreground hover:text-foreground"}`}>
-      <Icon className="h-4 w-4" />
-      <span className="hidden lg:inline">{label}</span>
-    </Link>
-  );
-}
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { LayoutDashboard, MapPin, Swords, User, LogOut, GraduationCap, Building2, Bell, CheckCheck, Shield, Trophy, Lightbulb, ShoppingCart, MessageSquare, Lock, Medal, Dumbbell, Users, MessageCircle, Search, Bookmark, Settings, ClipboardList, Menu } from "lucide-react";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -27,6 +17,7 @@ export default function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const loadUnreadCount = useCallback(() => {
     notificationAPI.unreadCount().then(res => setUnreadCount(res.data?.count || 0)).catch(() => {});
@@ -63,8 +54,8 @@ export default function Navbar() {
     }
   };
 
-  // Desktop gets full nav, mobile gets Instagram-style bottom 5
-  const desktopLinks = {
+  // All navigation links by role
+  const allLinks = {
     player: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/explore", icon: Search, label: "Explore" },
@@ -77,35 +68,6 @@ export default function Navbar() {
       { to: "/tournaments", icon: Medal, label: "Tournaments" },
       { to: "/coaching", icon: Dumbbell, label: "Coaching" },
     ],
-  };
-  const mobileLinks = {
-    player: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/explore", icon: Search, label: "Explore" },
-      { to: "/communities", icon: Users, label: "Groups" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
-    ],
-    venue_owner: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/owner", icon: Building2, label: "Dashboard" },
-      { to: "/pos", icon: ShoppingCart, label: "POS" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
-    ],
-    coach: [
-      { to: "/feed",        icon: MessageSquare, label: "Feed" },
-      { to: "/coach",       icon: GraduationCap, label: "Dashboard" },
-      { to: "/tournaments", icon: Medal,         label: "Tournaments" },
-      { to: "/chat",        icon: MessageCircle, label: "Chat" },
-    ],
-    super_admin: [
-      { to: "/feed", icon: MessageSquare, label: "Feed" },
-      { to: "/admin", icon: Shield, label: "Admin" },
-      { to: "/iot", icon: Lightbulb, label: "IoT" },
-      { to: "/chat", icon: MessageCircle, label: "Chat" },
-    ],
-  };
-  const links = {
-    player: desktopLinks.player,
     venue_owner: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/owner", icon: Building2, label: "Dashboard" },
@@ -117,72 +79,164 @@ export default function Navbar() {
       { to: "/tournaments", icon: Medal, label: "Tournaments" },
     ],
     coach: [
-      { to: "/feed",        icon: MessageSquare, label: "Feed" },
-      { to: "/explore",     icon: Search,        label: "Explore" },
-      { to: "/coach",       icon: GraduationCap, label: "Dashboard" },
-      { to: "/venues",      icon: MapPin,        label: "Venues" },
-      { to: "/tournaments", icon: Medal,         label: "Tournaments" },
-      { to: "/communities", icon: Users,         label: "Groups" },
-      { to: "/teams",       icon: Shield,        label: "Teams" },
-      { to: "/chat",        icon: MessageCircle, label: "Chat" },
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/explore", icon: Search, label: "Explore" },
+      { to: "/coach", icon: GraduationCap, label: "Dashboard" },
+      { to: "/venues", icon: MapPin, label: "Venues" },
+      { to: "/tournaments", icon: Medal, label: "Tournaments" },
+      { to: "/communities", icon: Users, label: "Groups" },
+      { to: "/teams", icon: Shield, label: "Teams" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
     super_admin: [
       { to: "/feed", icon: MessageSquare, label: "Feed" },
       { to: "/admin", icon: Shield, label: "Admin Console" },
       { to: "/iot", icon: Lightbulb, label: "IoT" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
     ],
   };
 
-  const navLinks = links[user?.role] || links.player;
-  const mobileNavLinks = mobileLinks[user?.role] || mobileLinks.player;
+  // Mobile bottom nav - top 5 most used for quick access
+  const mobileBottomLinks = {
+    player: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/explore", icon: Search, label: "Explore" },
+      { to: "/player", icon: LayoutDashboard, label: "Dashboard" },
+      { to: "/matchmaking", icon: Swords, label: "Matches" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+    venue_owner: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/owner", icon: Building2, label: "Dashboard" },
+      { to: "/pos", icon: ShoppingCart, label: "POS" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+    coach: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/coach", icon: GraduationCap, label: "Dashboard" },
+      { to: "/tournaments", icon: Medal, label: "Tournaments" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+    super_admin: [
+      { to: "/feed", icon: MessageSquare, label: "Feed" },
+      { to: "/admin", icon: Shield, label: "Admin" },
+      { to: "/iot", icon: Lightbulb, label: "IoT" },
+      { to: "/chat", icon: MessageCircle, label: "Chat" },
+    ],
+  };
+
+  const allNavLinks = allLinks[user?.role] || allLinks.player;
+  const mobileBottomNavLinks = mobileBottomLinks[user?.role] || mobileBottomLinks.player;
 
   return (
     <>
-      {/* Desktop Top Header (Logo + Profile) */}
-      <header className="hidden md:flex fixed top-0 left-0 w-full z-50 h-[72px] items-center justify-between px-4 lg:px-8 bg-card/90 backdrop-blur-xl border-b border-border shadow-sm"
-        data-testid="desktop-navbar">
-        <div className="flex items-center flex-1 pr-8">
-          <div className="w-64 mr-6 shrink-0">
-            <Link to="/feed" className="font-display font-black text-3xl tracking-tighter uppercase text-brand-700">
-              Lobbi
-            </Link>
-          </div>
+      {/* Desktop & Tablet Top Header */}
+      <header className="fixed top-0 left-0 w-full z-50 h-16 md:h-[72px] flex items-center justify-between px-4 md:px-6 lg:px-8 bg-card/95 backdrop-blur-xl border-b border-border/50 shadow-sm"
+        data-testid="navbar">
+        {/* Left: Logo + Hamburger Menu (Tablet/Mobile) */}
+        <div className="flex items-center gap-3 md:gap-4">
+          {/* Hamburger Menu for Tablet & Mobile */}
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <button 
+                className="flex lg:hidden items-center justify-center h-10 w-10 rounded-lg hover:bg-secondary/50 active:bg-secondary/70 text-foreground transition-all duration-200 touch-manipulation cursor-pointer focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 outline-none"
+                aria-label="Open menu"
+                data-testid="mobile-menu-trigger">
+                <Menu className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </SheetTrigger>
+            <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
+              <SheetHeader className="px-6 py-5 border-b border-border bg-gradient-to-r from-brand-50/50 to-transparent dark:from-brand-950/30">
+                <SheetTitle className="font-display font-black text-2xl tracking-tighter uppercase text-brand-700 dark:text-brand-400">
+                  Lobbi
+                </SheetTitle>
+              </SheetHeader>
+              <nav className="flex flex-col py-4 overflow-y-auto max-h-[calc(100vh-80px)]">
+                {allNavLinks.map(link => {
+                  const isActive = path === link.to || path.startsWith(link.to + "/");
+                  return (
+                    <Link
+                      key={link.to}
+                      to={link.to}
+                      onClick={() => setMobileMenuOpen(false)}
+                      data-testid={`mobile-menu-${link.label.toLowerCase().replace(/\s/g, "-")}`}
+                      className={`flex items-center gap-3 px-6 py-3.5 text-sm font-medium transition-all duration-200 min-h-[52px] touch-manipulation ${
+                        isActive
+                          ? "bg-brand-600/10 text-brand-600 border-l-4 border-brand-600 font-semibold"
+                          : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground hover:translate-x-1 border-l-4 border-transparent"
+                      }`}>
+                      <link.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <span>{link.label}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </SheetContent>
+          </Sheet>
 
-          {/* Search Bar */}
-          <div className="relative flex-1 max-w-md hidden lg:block">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
-            <input className="w-full bg-secondary/20 border border-border/40 rounded-full py-2 pl-10 pr-4 text-sm focus:border-brand-600 outline-none transition-all placeholder:text-muted-foreground/70" placeholder="Search athletes, teams, or results..." type="text" />
+          {/* Logo */}
+          <Link 
+            to="/feed" 
+            className="font-display font-black text-2xl md:text-3xl tracking-tighter uppercase text-brand-700 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition-colors duration-200 cursor-pointer">
+            Lobbi
+          </Link>
+        </div>
+
+        {/* Center: Search Bar (Desktop & Tablet) */}
+        <div className="hidden sm:flex flex-1 max-w-md mx-4 lg:mx-8">
+          <div className="relative w-full group">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 group-focus-within:text-brand-600 transition-colors duration-200" aria-hidden="true" />
+            <input 
+              className="w-full bg-secondary/20 border border-border/40 rounded-full py-2.5 pl-10 pr-4 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 focus:bg-background outline-none transition-all duration-200 placeholder:text-muted-foreground/70 hover:border-border/60" 
+              placeholder="Search athletes, teams, or results..." 
+              type="text"
+              aria-label="Search" />
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        {/* Right: Notifications + Profile */}
+        <div className="flex items-center gap-2 md:gap-4">
           {/* Notification Bell */}
           <Popover open={notifOpen} onOpenChange={handleNotifOpen} modal={false}>
             <PopoverTrigger asChild>
-              <button className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-secondary/40 text-muted-foreground transition-colors outline-none" data-testid="notification-bell">
-                <Bell className="h-5 w-5" />
+              <button 
+                className="relative h-10 w-10 flex items-center justify-center rounded-full hover:bg-secondary/50 active:bg-secondary/70 text-muted-foreground hover:text-foreground transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 touch-manipulation cursor-pointer" 
+                data-testid="notification-bell"
+                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}>
+                <Bell className="h-5 w-5" aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 border-2 border-background"
-                    data-testid="notification-badge"></span>
+                  <span className="absolute top-2 right-2.5 h-2 w-2 rounded-full bg-red-500 border-2 border-background animate-pulse"
+                    data-testid="notification-badge"
+                    aria-label={`${unreadCount} unread notifications`}></span>
                 )}
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-80 p-0" data-testid="notification-panel">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <PopoverContent align="end" className="w-80 sm:w-96 p-0 shadow-xl border-border/50" data-testid="notification-panel">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-brand-50/30 to-transparent dark:from-brand-950/20">
                 <span className="text-sm font-bold">Notifications</span>
                 {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} className="text-[10px] text-brand-600 hover:underline flex items-center gap-1"
-                    data-testid="mark-all-read-btn"><CheckCheck className="h-3 w-3" /> Mark all read</button>
+                  <button 
+                    onClick={handleMarkAllRead} 
+                    className="text-[10px] text-brand-600 hover:text-brand-700 dark:hover:text-brand-500 hover:underline flex items-center gap-1 cursor-pointer touch-manipulation transition-colors duration-200"
+                    data-testid="mark-all-read-btn">
+                    <CheckCheck className="h-3 w-3" aria-hidden="true" /> Mark all read
+                  </button>
                 )}
               </div>
               <div className="max-h-72 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-muted-foreground text-xs">No notifications yet</div>
+                  <div className="p-8 text-center">
+                    <Bell className="h-12 w-12 mx-auto mb-3 text-muted-foreground/30" aria-hidden="true" />
+                    <p className="text-sm text-muted-foreground font-medium">No notifications yet</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">We'll notify you when something arrives</p>
+                  </div>
                 ) : (
                   notifications.map(n => (
-                    <button key={n.id} onClick={() => handleNotifClick(n)}
+                    <button 
+                      key={n.id} 
+                      onClick={() => handleNotifClick(n)}
                       data-testid={`notification-item-${n.id}`}
-                      className={`w-full text-left px-4 py-3 border-b border-border/40 hover:bg-secondary/30 transition-colors ${!n.is_read ? "bg-brand-600/5" : ""}`}>
+                      className={`w-full text-left px-4 py-3 border-b border-border/40 hover:bg-secondary/30 active:bg-secondary/50 transition-all duration-200 cursor-pointer touch-manipulation ${!n.is_read ? "bg-brand-600/5" : ""}`}>
                       <div className="flex items-start gap-2">
                         {!n.is_read && <div className="h-2 w-2 rounded-full bg-brand-600 mt-1.5 shrink-0" />}
                         <div className={!n.is_read ? "" : "ml-4"}>
@@ -197,23 +251,30 @@ export default function Navbar() {
                   ))
                 )}
               </div>
-              <Link to="/notifications" onClick={() => setNotifOpen(false)}
-                className="block text-center text-xs font-bold text-brand-600 hover:bg-brand-600/5 transition-colors py-2.5 border-t border-border/50">
+              <Link 
+                to="/notifications" 
+                onClick={() => setNotifOpen(false)}
+                className="block text-center text-xs font-bold text-brand-600 hover:text-brand-700 dark:hover:text-brand-500 hover:bg-brand-600/5 transition-all duration-200 py-2.5 border-t border-border/50 cursor-pointer">
                 View All Notifications
               </Link>
             </PopoverContent>
           </Popover>
 
-          <div className="h-6 w-px bg-border mx-2"></div>
+          {/* Divider (Desktop only) */}
+          <div className="hidden md:block h-6 w-px bg-border/50"></div>
 
+          {/* User Profile Dropdown (Desktop & Tablet) */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center gap-3 hover:opacity-80 transition-opacity outline-none" data-testid="user-menu-trigger">
+              <button 
+                className="flex items-center gap-2 md:gap-3 hover:opacity-80 active:opacity-70 transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 rounded-full cursor-pointer touch-manipulation" 
+                data-testid="user-menu-trigger"
+                aria-label="User menu">
                 <div className="text-right hidden lg:block">
                   <p className="text-xs font-bold text-foreground leading-tight">{user?.name}</p>
                   <p className="text-[10px] text-muted-foreground capitalize">{user?.role?.replace("_", " ")}</p>
                 </div>
-                <Avatar className="h-9 w-9 border-2 border-brand-600/20">
+                <Avatar className="h-9 w-9 border-2 border-brand-600/20 hover:border-brand-600/40 transition-all duration-200">
                   {user?.avatar && <AvatarImage src={mediaUrl(user.avatar)} alt={user?.name} className="object-cover" />}
                   <AvatarFallback className="bg-brand-600/10 text-brand-600 text-xs font-bold">
                     {user?.name?.[0]?.toUpperCase()}
@@ -221,86 +282,75 @@ export default function Navbar() {
                 </Avatar>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48 shadow-lg border-border/50 rounded-xl">
-              <DropdownMenuItem onClick={() => navigate("/profile")} data-testid="menu-profile" className="py-2.5">
-                <User className="mr-2 h-4 w-4" /> Profile
+            <DropdownMenuContent align="end" className="w-48 shadow-xl border-border/50 rounded-xl">
+              <DropdownMenuItem 
+                onClick={() => navigate("/profile")} 
+                data-testid="menu-profile" 
+                className="py-2.5 cursor-pointer focus:bg-brand-600/10 focus:text-brand-600">
+                <User className="mr-2 h-4 w-4" aria-hidden="true" /> Profile
               </DropdownMenuItem>
               {user?.role !== "super_admin" && (
-                <DropdownMenuItem onClick={() => navigate("/player-card/me")} className="py-2.5">
-                  <Trophy className="mr-2 h-4 w-4" /> Lobbian Card
+                <DropdownMenuItem 
+                  onClick={() => navigate("/player-card/me")} 
+                  className="py-2.5 cursor-pointer focus:bg-brand-600/10 focus:text-brand-600">
+                  <Trophy className="mr-2 h-4 w-4" aria-hidden="true" /> Lobbian Card
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => navigate("/bookmarks")} className="py-2.5">
-                <Bookmark className="mr-2 h-4 w-4" /> Saved Posts
+              <DropdownMenuItem 
+                onClick={() => navigate("/bookmarks")} 
+                className="py-2.5 cursor-pointer focus:bg-brand-600/10 focus:text-brand-600">
+                <Bookmark className="mr-2 h-4 w-4" aria-hidden="true" /> Saved Posts
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/privacy")} className="py-2.5">
-                <Lock className="mr-2 h-4 w-4" /> Privacy & Data
+              <DropdownMenuItem 
+                onClick={() => navigate("/privacy")} 
+                className="py-2.5 cursor-pointer focus:bg-brand-600/10 focus:text-brand-600">
+                <Lock className="mr-2 h-4 w-4" aria-hidden="true" /> Privacy & Data
               </DropdownMenuItem>
               {user?.role === "coach" && (
-                <DropdownMenuItem onClick={() => navigate("/coach/settings")} className="py-2.5">
-                  <Settings className="mr-2 h-4 w-4" /> Settings
+                <DropdownMenuItem 
+                  onClick={() => navigate("/coach/settings")} 
+                  className="py-2.5 cursor-pointer focus:bg-brand-600/10 focus:text-brand-600">
+                  <Settings className="mr-2 h-4 w-4" aria-hidden="true" /> Settings
                 </DropdownMenuItem>
               )}
               <DropdownMenuSeparator className="bg-border/50" />
-              <DropdownMenuItem onClick={logout} className="text-red-500 py-2.5 hover:text-red-600 hover:bg-red-500/10" data-testid="menu-logout">
-                <LogOut className="mr-2 h-4 w-4" /> Logout
+              <DropdownMenuItem 
+                onClick={logout} 
+                className="text-red-500 py-2.5 hover:text-red-600 hover:bg-red-500/10 focus:bg-red-500/10 focus:text-red-600 cursor-pointer" 
+                data-testid="menu-logout">
+                <LogOut className="mr-2 h-4 w-4" aria-hidden="true" /> Logout
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
       </header>
 
-      {/* Mobile bottom nav — Instagram-style 5 tabs */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-[64px] flex items-center justify-around bg-background/90 backdrop-blur-xl border-t border-border"
+      {/* Mobile Bottom Navigation */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 h-16 flex items-center justify-around bg-background/95 backdrop-blur-xl border-t border-border/50 shadow-lg"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 4px)" }}
         data-testid="mobile-navbar">
-        {mobileNavLinks.map(l => (
-          <Link key={l.to} to={l.to} data-testid={`mobile-nav-${l.label.toLowerCase()}`}
-            className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
-              path === l.to || path.startsWith(l.to + "/")
-                ? "text-brand-600"
-                : "text-muted-foreground active:text-foreground"
-            }`}>
-            <l.icon className={`h-[22px] w-[22px] shrink-0 ${path === l.to || path.startsWith(l.to + "/") ? "stroke-[2.5]" : ""}`} />
-            <span className="text-[10px] font-medium leading-tight">{l.label}</span>
-          </Link>
-        ))}
-        {/* Notification tab */}
-        <Link to="/notifications" data-testid="mobile-nav-alerts"
-          className={`relative flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
-            path === "/notifications" ? "text-brand-600" : "text-muted-foreground active:text-foreground"
-          }`}>
-          <div className="relative">
-            <Bell className={`h-[22px] w-[22px] shrink-0 ${path === "/notifications" ? "stroke-[2.5]" : ""}`} />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1.5 h-4 min-w-[16px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-semibold flex items-center justify-center border-2 border-background">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </div>
-          <span className="text-[10px] font-medium leading-tight">Alerts</span>
-        </Link>
-        {/* Profile tab */}
-        <Link to="/profile" data-testid="mobile-nav-profile"
-          className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
-            path === "/profile" || path.startsWith("/player-card/")
-              ? "text-brand-600"
-              : "text-muted-foreground active:text-foreground"
-          }`}>
-          <div className={`h-6 w-6 rounded-full flex items-center justify-center overflow-hidden ${
-            path === "/profile" ? "ring-2 ring-brand-600 border border-background" : "border border-border"
-          }`}>
-            {user?.avatar
-              ? <img src={mediaUrl(user.avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
-              : <User className="h-4 w-4 text-muted-foreground" />}
-          </div>
-          <span className="text-[10px] font-medium leading-tight">Me</span>
-        </Link>
+        {mobileBottomNavLinks.map(link => {
+          const isActive = path === link.to || path.startsWith(link.to + "/");
+          return (
+            <Link 
+              key={link.to} 
+              to={link.to} 
+              data-testid={`mobile-nav-${link.label.toLowerCase()}`}
+              className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[52px] transition-all duration-200 touch-manipulation cursor-pointer group ${
+                isActive
+                  ? "text-brand-600"
+                  : "text-muted-foreground active:text-foreground active:scale-95"
+              }`}>
+              <link.icon className={`h-[22px] w-[22px] shrink-0 transition-all duration-200 ${isActive ? "stroke-[2.5] scale-110" : "group-active:scale-90"}`} aria-hidden="true" />
+              <span className={`text-[10px] font-medium leading-tight transition-all duration-200 ${isActive ? "font-semibold" : ""}`}>{link.label}</span>
+            </Link>
+          );
+        })}
       </nav>
 
-      {/* Spacers */}
-      <div className="hidden md:block h-[72px]" />
-      <div className="hidden h-[64px]" />
+      {/* Spacers for fixed headers */}
+      <div className="h-16 md:h-[72px]" />
+      <div className="hidden h-16" style={{ paddingBottom: "env(safe-area-inset-bottom, 4px)" }} />
     </>
   );
 }
