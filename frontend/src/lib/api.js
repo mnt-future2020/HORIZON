@@ -141,7 +141,7 @@ export const matchAPI = {
   list: (params) => api.get("/matchmaking", { params }),
   create: (data) => api.post("/matchmaking", data),
   join: (id) => api.post(`/matchmaking/${id}/join`),
-  recommended: () => api.get("/matchmaking/recommended"),
+  recommended: (params) => api.get("/matchmaking/recommended", { params }),
   autoMatch: (data) => api.post("/matchmaking/auto-match", data),
   suggestTeams: (id) => api.get(`/matchmaking/${id}/suggest-teams`),
   submitResult: (id, data) => api.post(`/matchmaking/${id}/submit-result`, data),
@@ -348,13 +348,13 @@ export const reviewSentimentAPI = {
 };
 
 export const socialAPI = {
-  getFeed: (page, tab) => api.get("/feed", { params: { page, tab } }),
+  getFeed: (tab, before = null) => api.get("/feed", { params: before ? { tab, before } : { tab } }),
   getPost: (postId) => api.get(`/feed/${postId}`),
   createPost: (data) => api.post("/feed", data),
   toggleLike: (postId) => api.post(`/feed/${postId}/like`),
   react: (postId, reaction) => api.post(`/feed/${postId}/react`, { reaction }),
   addComment: (postId, data) => api.post(`/feed/${postId}/comment`, data),
-  getComments: (postId) => api.get(`/feed/${postId}/comments`),
+  getComments: (postId, page = 1) => api.get(`/feed/${postId}/comments`, { params: { page } }),
   deletePost: (postId) => api.delete(`/feed/${postId}`),
   trending: () => api.get("/feed/trending"),
   toggleBookmark: (postId) => api.post(`/feed/${postId}/bookmark`),

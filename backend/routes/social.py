@@ -6,14 +6,18 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import Optional, List
 from pydantic import BaseModel as PydanticBaseModel
 from datetime import datetime, timezone, timedelta
-from database import db
+from database import db, redis_client
 from auth import get_current_user
 from tz import now_ist
 from models import SocialPostCreate
 import uuid
 import math
 import logging
+import time
 from services.algorithms import rank_feed_posts, compute_trending_scores
+
+# Module-level trending cache (TTL = 5 minutes)
+_trending_cache: dict = {"posts": [], "expires": 0.0}
 
 router = APIRouter()
 logger = logging.getLogger("horizon")
@@ -152,58 +156,63 @@ async def delete_story(story_id: str, user=Depends(get_current_user)):
 
 @router.get("/feed")
 async def get_feed(
-    page: int = Query(1, ge=1),
+    before: Optional[str] = Query(None),  # cursor: ISO timestamp (following) or int offset (for_you)
     limit: int = Query(20, ge=1, le=50),
     tab: str = Query("for_you"),
     user=Depends(get_current_user)
 ):
-    skip = (page - 1) * limit
-
     if tab == "following":
         following_ids = await _get_following_ids(user["id"])
         query = {"user_id": {"$in": following_ids + [user["id"]]}}
+        # Timestamp cursor works perfectly for chronological feed
+        if before:
+            query["created_at"] = {"$lt": before}
+        posts = await db.social_posts.find(query, {"_id": 0}).sort(
+            "created_at", -1
+        ).limit(limit).to_list(limit)
+        next_cursor = posts[-1]["created_at"] if posts else None
     else:
-        # "for_you" — show public + own posts
+        # "for_you" — ranked feed uses integer offset to avoid duplicate on re-rank
         query = {"$or": [{"visibility": "public"}, {"user_id": user["id"]}]}
-
-    total = await db.social_posts.count_documents(query)
-
-    if tab == "for_you":
-        # EdgeRank-inspired algorithm: fetch larger pool, rank, then paginate
-        pool_size = min(200, total)
+        offset = int(before) if before and before.isdigit() else 0
         raw_posts = await db.social_posts.find(query, {"_id": 0}).sort(
             "created_at", -1
-        ).limit(pool_size).to_list(pool_size)
-
+        ).limit(200).to_list(200)
         try:
             ranked = await rank_feed_posts(raw_posts, user["id"])
         except Exception as e:
             logger.warning(f"Feed ranking fallback to chronological: {e}")
             ranked = raw_posts
+        posts = ranked[offset:offset + limit]
+        next_cursor = str(offset + limit) if offset + limit < len(ranked) else None
 
-        posts = ranked[skip:skip + limit]
-    else:
-        # "following" tab — chronological
-        posts = await db.social_posts.find(query, {"_id": 0}).sort(
-            "created_at", -1
-        ).skip(skip).limit(limit).to_list(limit)
+    # Batch queries — 4 queries total instead of 4×N
+    post_ids = [p["id"] for p in posts]
+    author_ids = list(set(p["user_id"] for p in posts))
+
+    liked_set = {d["post_id"] for d in await db.social_likes.find(
+        {"post_id": {"$in": post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+    ).to_list(len(post_ids))}
+
+    bookmarked_set = {d["post_id"] for d in await db.bookmarks.find(
+        {"post_id": {"$in": post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+    ).to_list(len(post_ids))}
+
+    following_set = {d["following_id"] for d in await db.follows.find(
+        {"follower_id": user["id"], "following_id": {"$in": author_ids}}, {"_id": 0, "following_id": 1}
+    ).to_list(len(author_ids))}
+
+    reaction_map = {d["post_id"]: d["reaction"] for d in await db.social_reactions.find(
+        {"post_id": {"$in": post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1, "reaction": 1}
+    ).to_list(len(post_ids))}
 
     for post in posts:
-        post["liked_by_me"] = await db.social_likes.find_one(
-            {"post_id": post["id"], "user_id": user["id"]}
-        ) is not None
-        my_reaction = await db.social_reactions.find_one(
-            {"post_id": post["id"], "user_id": user["id"]}, {"_id": 0, "reaction": 1}
-        )
-        post["my_reaction"] = my_reaction["reaction"] if my_reaction else None
-        post["is_following"] = await db.follows.find_one(
-            {"follower_id": user["id"], "following_id": post["user_id"]}
-        ) is not None
-        post["bookmarked_by_me"] = await db.bookmarks.find_one(
-            {"post_id": post["id"], "user_id": user["id"]}
-        ) is not None
+        post["liked_by_me"] = post["id"] in liked_set
+        post["bookmarked_by_me"] = post["id"] in bookmarked_set
+        post["is_following"] = post["user_id"] in following_set
+        post["my_reaction"] = reaction_map.get(post["id"])
 
-    return {"posts": posts, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
+    return {"posts": posts, "next_cursor": next_cursor, "has_more": next_cursor is not None}
 
 
 @router.post("/feed")
@@ -235,6 +244,13 @@ async def create_post(inp: SocialPostCreate, user=Depends(get_current_user)):
 
 @router.post("/feed/{post_id}/like")
 async def toggle_like(post_id: str, user=Depends(get_current_user)):
+    if redis_client:
+        rl_key = f"rl:like:{user['id']}"
+        count = await redis_client.incr(rl_key)
+        if count == 1:
+            await redis_client.expire(rl_key, 60)
+        if count > 30:
+            raise HTTPException(429, "Too many requests. Slow down!")
     existing = await db.social_likes.find_one(
         {"post_id": post_id, "user_id": user["id"]}
     )
@@ -312,11 +328,18 @@ async def add_comment(post_id: str, request: Request, user=Depends(get_current_u
 
 
 @router.get("/feed/{post_id}/comments")
-async def get_comments(post_id: str, user=Depends(get_current_user)):
+async def get_comments(
+    post_id: str,
+    user=Depends(get_current_user),
+    page: int = 1,
+    limit: int = Query(30, ge=1, le=50),
+):
+    skip = (page - 1) * limit
+    total = await db.social_comments.count_documents({"post_id": post_id})
     comments = await db.social_comments.find(
         {"post_id": post_id}, {"_id": 0}
-    ).sort("created_at", 1).to_list(100)
-    return comments
+    ).sort("created_at", 1).skip(skip).limit(limit).to_list(limit)
+    return {"comments": comments, "total": total, "page": page, "pages": math.ceil(total / limit) if total else 1}
 
 
 @router.delete("/feed/{post_id}")
@@ -343,27 +366,39 @@ async def trending_posts(
     user=Depends(get_current_user)
 ):
     """Trending posts using Wilson score confidence interval + velocity + recency."""
-    try:
-        posts = await compute_trending_scores(hours=48, limit=limit)
-    except Exception as e:
-        logger.warning(f"Wilson trending fallback to simple sort: {e}")
-        cutoff = (now_ist() - timedelta(hours=48)).isoformat()
-        posts = await db.social_posts.find(
-            {"created_at": {"$gte": cutoff}, "visibility": "public"},
-            {"_id": 0}
-        ).sort("likes_count", -1).limit(limit).to_list(limit)
+    global _trending_cache
+    now_ts = time.time()
+    if _trending_cache["expires"] > now_ts and len(_trending_cache["posts"]) >= limit:
+        posts = _trending_cache["posts"][:limit]
+    else:
+        try:
+            posts = await compute_trending_scores(hours=48, limit=30)
+        except Exception as e:
+            logger.warning(f"Wilson trending fallback to simple sort: {e}")
+            cutoff = (now_ist() - timedelta(hours=48)).isoformat()
+            posts = await db.social_posts.find(
+                {"created_at": {"$gte": cutoff}, "visibility": "public"},
+                {"_id": 0}
+            ).sort("likes_count", -1).limit(30).to_list(30)
+        for p in posts:
+            p.pop("_trending_score", None)
+            p.pop("_engagement_total", None)
+            p.pop("_velocity", None)
+        _trending_cache = {"posts": posts, "expires": now_ts + 300}
+        posts = posts[:limit]
 
-    for post in posts:
-        post.pop("_trending_score", None)
-        post.pop("_engagement_total", None)
-        post.pop("_velocity", None)
-        post["liked_by_me"] = await db.social_likes.find_one(
-            {"post_id": post["id"], "user_id": user["id"]}
-        ) is not None
-        my_reaction = await db.social_reactions.find_one(
-            {"post_id": post["id"], "user_id": user["id"]}, {"_id": 0, "reaction": 1}
-        )
-        post["my_reaction"] = my_reaction["reaction"] if my_reaction else None
+    if posts:
+        t_ids = [p["id"] for p in posts]
+        t_liked = {d["post_id"] for d in await db.social_likes.find(
+            {"post_id": {"$in": t_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+        ).to_list(len(t_ids))}
+        t_rxn_docs = await db.social_reactions.find(
+            {"post_id": {"$in": t_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1, "reaction": 1}
+        ).to_list(len(t_ids))
+        t_rxn_map = {d["post_id"]: d["reaction"] for d in t_rxn_docs}
+        for post in posts:
+            post["liked_by_me"] = post["id"] in t_liked
+            post["my_reaction"] = t_rxn_map.get(post["id"])
 
     return posts
 
@@ -731,14 +766,20 @@ async def get_bookmarks(user=Depends(get_current_user), page: int = 1, limit: in
     posts = await db.social_posts.find(
         {"id": {"$in": post_ids}}, {"_id": 0}
     ).to_list(limit)
-    # Enrich with user info and bookmark status
+    # Batch enrich with author info and like status
+    bm_author_ids = list({p["user_id"] for p in posts})
+    bm_authors = {u["id"]: u for u in await db.users.find(
+        {"id": {"$in": bm_author_ids}}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
+    ).to_list(len(bm_author_ids))}
+    bm_liked_set = {d["post_id"] for d in await db.social_likes.find(
+        {"post_id": {"$in": post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+    ).to_list(len(post_ids))}
     for p in posts:
-        u = await db.users.find_one({"id": p["user_id"]}, {"_id": 0, "name": 1, "avatar": 1})
-        p["user_name"] = u.get("name", "Unknown") if u else "Unknown"
-        p["user_avatar"] = u.get("avatar", "") if u else ""
+        au = bm_authors.get(p["user_id"], {})
+        p["user_name"] = au.get("name", "Unknown")
+        p["user_avatar"] = au.get("avatar", "")
         p["bookmarked_by_me"] = True
-        like = await db.post_likes.find_one({"post_id": p["id"], "user_id": user["id"]})
-        p["liked_by_me"] = like is not None
+        p["liked_by_me"] = p["id"] in bm_liked_set
     total = await db.bookmarks.count_documents({"user_id": user["id"]})
     return {"posts": posts, "total": total}
 
@@ -755,13 +796,20 @@ async def get_user_posts(user_id: str, user=Depends(get_current_user), page: int
         {"user_id": user_id}, {"_id": 0}
     ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
     u = await db.users.find_one({"id": user_id}, {"_id": 0, "name": 1, "avatar": 1})
+    u_name = u.get("name", "Unknown") if u else "Unknown"
+    u_avatar = u.get("avatar", "") if u else ""
+    up_ids = [p["id"] for p in posts]
+    up_liked = {d["post_id"] for d in await db.social_likes.find(
+        {"post_id": {"$in": up_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+    ).to_list(len(up_ids))}
+    up_bm = {d["post_id"] for d in await db.bookmarks.find(
+        {"post_id": {"$in": up_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+    ).to_list(len(up_ids))}
     for p in posts:
-        p["user_name"] = u.get("name", "Unknown") if u else "Unknown"
-        p["user_avatar"] = u.get("avatar", "") if u else ""
-        like = await db.post_likes.find_one({"post_id": p["id"], "user_id": user["id"]})
-        p["liked_by_me"] = like is not None
-        bm = await db.bookmarks.find_one({"post_id": p["id"], "user_id": user["id"]})
-        p["bookmarked_by_me"] = bm is not None
+        p["user_name"] = u_name
+        p["user_avatar"] = u_avatar
+        p["liked_by_me"] = p["id"] in up_liked
+        p["bookmarked_by_me"] = p["id"] in up_bm
     return {"posts": posts, "total": total, "page": page, "pages": math.ceil(total / limit) if total else 1}
 
 
@@ -796,25 +844,45 @@ async def explore(user=Depends(get_current_user), q: str = "", category: str = "
     results = {"users": [], "posts": [], "venues": []}
 
     if q:
-        # Search users
-        user_query = {"name": {"$regex": q, "$options": "i"}, "id": {"$ne": user["id"]}}
+        # Search users — batch follow/post/follower stats
+        user_query = {"$text": {"$search": q}, "id": {"$ne": user["id"]}}
         users = await db.users.find(user_query, {"_id": 0, "password_hash": 0}).limit(10).to_list(10)
-        for u in users:
-            is_following = await db.follows.find_one({"follower_id": user["id"], "following_id": u["id"]}) is not None
-            u["is_following"] = is_following
-            u["post_count"] = await db.social_posts.count_documents({"user_id": u["id"]})
-            u["followers_count"] = await db.follows.count_documents({"following_id": u["id"]})
+        if users:
+            ex_user_ids = [u["id"] for u in users]
+            ex_following = {d["following_id"] for d in await db.follows.find(
+                {"follower_id": user["id"], "following_id": {"$in": ex_user_ids}}, {"_id": 0, "following_id": 1}
+            ).to_list(10)}
+            ex_post_counts = {d["_id"]: d["count"] for d in await db.social_posts.aggregate([
+                {"$match": {"user_id": {"$in": ex_user_ids}}},
+                {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+            ]).to_list(10)}
+            ex_follower_counts = {d["_id"]: d["count"] for d in await db.follows.aggregate([
+                {"$match": {"following_id": {"$in": ex_user_ids}}},
+                {"$group": {"_id": "$following_id", "count": {"$sum": 1}}}
+            ]).to_list(10)}
+            for u in users:
+                u["is_following"] = u["id"] in ex_following
+                u["post_count"] = ex_post_counts.get(u["id"], 0)
+                u["followers_count"] = ex_follower_counts.get(u["id"], 0)
         results["users"] = users
 
-        # Search posts
-        post_query = {"content": {"$regex": q, "$options": "i"}}
+        # Search posts — batch author lookup and like status
+        post_query = {"$text": {"$search": q}}
         posts = await db.social_posts.find(post_query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
-        for p in posts:
-            pu = await db.users.find_one({"id": p["user_id"]}, {"_id": 0, "name": 1, "avatar": 1})
-            p["user_name"] = pu.get("name", "Unknown") if pu else "Unknown"
-            p["user_avatar"] = pu.get("avatar", "") if pu else ""
-            like = await db.post_likes.find_one({"post_id": p["id"], "user_id": user["id"]})
-            p["liked_by_me"] = like is not None
+        if posts:
+            ex_post_ids = [p["id"] for p in posts]
+            ex_author_ids = list({p["user_id"] for p in posts})
+            ex_authors = {u["id"]: u for u in await db.users.find(
+                {"id": {"$in": ex_author_ids}}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
+            ).to_list(len(ex_author_ids))}
+            ex_liked = {d["post_id"] for d in await db.social_likes.find(
+                {"post_id": {"$in": ex_post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+            ).to_list(len(ex_post_ids))}
+            for p in posts:
+                pu = ex_authors.get(p["user_id"], {})
+                p["user_name"] = pu.get("name", "Unknown")
+                p["user_avatar"] = pu.get("avatar", "")
+                p["liked_by_me"] = p["id"] in ex_liked
         results["posts"] = posts
 
         # Search venues
@@ -826,24 +894,48 @@ async def explore(user=Depends(get_current_user), q: str = "", category: str = "
         results["venues"] = venues
     else:
         # No query — show trending/popular content
-        # Popular users (most followers)
-        all_users = await db.users.find({"id": {"$ne": user["id"]}}, {"_id": 0, "password_hash": 0}).limit(50).to_list(50)
-        for u in all_users:
-            u["followers_count"] = await db.follows.count_documents({"following_id": u["id"]})
-            u["post_count"] = await db.social_posts.count_documents({"user_id": u["id"]})
-            is_following = await db.follows.find_one({"follower_id": user["id"], "following_id": u["id"]}) is not None
-            u["is_following"] = is_following
-        all_users.sort(key=lambda x: x.get("followers_count", 0), reverse=True)
-        results["users"] = all_users[:10]
+        # Popular users: use aggregation to get follower counts, avoid 150 per-user queries
+        follower_agg = await db.follows.aggregate([
+            {"$group": {"_id": "$following_id", "count": {"$sum": 1}}},
+            {"$sort": {"count": -1}},
+            {"$limit": 10},
+        ]).to_list(10)
+        pop_user_ids = [d["_id"] for d in follower_agg]
+        follower_count_map = {d["_id"]: d["count"] for d in follower_agg}
+        if pop_user_ids:
+            pop_users = await db.users.find(
+                {"id": {"$in": pop_user_ids}, "id": {"$ne": user["id"]}},
+                {"_id": 0, "password_hash": 0}
+            ).to_list(10)
+            pop_post_counts = {d["_id"]: d["count"] for d in await db.social_posts.aggregate([
+                {"$match": {"user_id": {"$in": pop_user_ids}}},
+                {"$group": {"_id": "$user_id", "count": {"$sum": 1}}}
+            ]).to_list(10)}
+            pop_following = {d["following_id"] for d in await db.follows.find(
+                {"follower_id": user["id"], "following_id": {"$in": pop_user_ids}}, {"_id": 0, "following_id": 1}
+            ).to_list(10)}
+            for u in pop_users:
+                u["followers_count"] = follower_count_map.get(u["id"], 0)
+                u["post_count"] = pop_post_counts.get(u["id"], 0)
+                u["is_following"] = u["id"] in pop_following
+            results["users"] = pop_users
 
-        # Recent popular posts
+        # Recent popular posts — batch author lookup and like status
         posts = await db.social_posts.find({}, {"_id": 0}).sort("likes_count", -1).skip(skip).limit(limit).to_list(limit)
-        for p in posts:
-            pu = await db.users.find_one({"id": p["user_id"]}, {"_id": 0, "name": 1, "avatar": 1})
-            p["user_name"] = pu.get("name", "Unknown") if pu else "Unknown"
-            p["user_avatar"] = pu.get("avatar", "") if pu else ""
-            like = await db.post_likes.find_one({"post_id": p["id"], "user_id": user["id"]})
-            p["liked_by_me"] = like is not None
+        if posts:
+            pop_post_ids = [p["id"] for p in posts]
+            pop_author_ids = list({p["user_id"] for p in posts})
+            pop_authors = {u["id"]: u for u in await db.users.find(
+                {"id": {"$in": pop_author_ids}}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
+            ).to_list(len(pop_author_ids))}
+            pop_liked = {d["post_id"] for d in await db.social_likes.find(
+                {"post_id": {"$in": pop_post_ids}, "user_id": user["id"]}, {"_id": 0, "post_id": 1}
+            ).to_list(len(pop_post_ids))}
+            for p in posts:
+                pu = pop_authors.get(p["user_id"], {})
+                p["user_name"] = pu.get("name", "Unknown")
+                p["user_avatar"] = pu.get("avatar", "")
+                p["liked_by_me"] = p["id"] in pop_liked
         results["posts"] = posts
 
     return results
@@ -874,30 +966,23 @@ async def sync_contacts(req: ContactSyncRequest, user=Depends(get_current_user))
     normalized_phones = [normalize_phone(p) for p in req.phones if p.strip()]
     normalized_phones = [p for p in normalized_phones if len(p) >= 7]
 
-    # Match by phone
+    # Collect matched user docs (no follow queries yet)
+    matched_docs: list = []  # (user_doc, match_type)
+
+    # Match by phone — fetch users with phone, normalize+match in Python
     if normalized_phones:
+        normalized_set = set(normalized_phones)
         all_users = await db.users.find(
             {"id": {"$ne": user["id"]}, "phone": {"$exists": True, "$ne": ""}},
             {"_id": 0, "password_hash": 0}
         ).to_list(1000)
         for u in all_users:
             u_phone = normalize_phone(u.get("phone", ""))
-            if u_phone and u_phone in normalized_phones and u["id"] not in seen_ids:
+            if u_phone and u_phone in normalized_set and u["id"] not in seen_ids:
                 seen_ids.add(u["id"])
-                is_following = await db.follows.find_one(
-                    {"follower_id": user["id"], "following_id": u["id"]}
-                ) is not None
-                matched_users.append({
-                    "id": u["id"],
-                    "name": u.get("name", "Unknown"),
-                    "avatar": u.get("avatar", ""),
-                    "phone": u.get("phone", ""),
-                    "sport": u.get("preferred_sport", ""),
-                    "is_following": is_following,
-                    "match_type": "phone",
-                })
+                matched_docs.append((u, "phone"))
 
-    # Match by email
+    # Match by email — MongoDB handles matching directly
     clean_emails = [e.strip().lower() for e in req.emails if e.strip()]
     if clean_emails:
         email_users = await db.users.find(
@@ -907,18 +992,29 @@ async def sync_contacts(req: ContactSyncRequest, user=Depends(get_current_user))
         for u in email_users:
             if u["id"] not in seen_ids:
                 seen_ids.add(u["id"])
-                is_following = await db.follows.find_one(
-                    {"follower_id": user["id"], "following_id": u["id"]}
-                ) is not None
-                matched_users.append({
-                    "id": u["id"],
-                    "name": u.get("name", "Unknown"),
-                    "avatar": u.get("avatar", ""),
-                    "email": u.get("email", ""),
-                    "sport": u.get("preferred_sport", ""),
-                    "is_following": is_following,
-                    "match_type": "email",
-                })
+                matched_docs.append((u, "email"))
+
+    # Batch follow-status check (1 query instead of N)
+    if matched_docs:
+        all_matched_ids = [u["id"] for u, _ in matched_docs]
+        following_set = {d["following_id"] for d in await db.follows.find(
+            {"follower_id": user["id"], "following_id": {"$in": all_matched_ids}},
+            {"_id": 0, "following_id": 1}
+        ).to_list(len(all_matched_ids))}
+        for u, match_type in matched_docs:
+            entry = {
+                "id": u["id"],
+                "name": u.get("name", "Unknown"),
+                "avatar": u.get("avatar", ""),
+                "sport": u.get("preferred_sport", ""),
+                "is_following": u["id"] in following_set,
+                "match_type": match_type,
+            }
+            if match_type == "phone":
+                entry["phone"] = u.get("phone", "")
+            else:
+                entry["email"] = u.get("email", "")
+            matched_users.append(entry)
 
     # Persist synced contacts for later retrieval (chat, etc.)
     for mu in matched_users:

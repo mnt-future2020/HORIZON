@@ -359,11 +359,16 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
           )}
 
           {u.role === "coach" && u.account_status === "active" && (
-            <button className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-border/30 ${u.is_verified ? "text-brand-600 hover:bg-brand-600/10" : "text-muted-foreground hover:bg-secondary/50"}`}
-              onClick={() => onVerify(u.id)}>
-              <CheckCircle2 className={`h-3.5 w-3.5 ${u.is_verified ? "" : "opacity-50"}`} />
-              {u.is_verified ? "Verified" : "Verify"}
-            </button>
+            <div className="flex items-center gap-2.5 px-3 py-1.5 border-l border-border/30">
+              <span className={`text-xs font-medium ${u.is_verified ? "text-brand-600" : "text-muted-foreground"}`}>
+                {u.is_verified ? "Verified" : "Verify"}
+              </span>
+              <Switch 
+                checked={u.is_verified} 
+                onCheckedChange={() => onVerify(u.id)} 
+                className="scale-75 origin-right data-[state=checked]:bg-brand-600" 
+              />
+            </div>
           )}
 
           {(u.account_status === "suspended" || u.account_status === "rejected") && (

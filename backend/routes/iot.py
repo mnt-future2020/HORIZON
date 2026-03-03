@@ -5,10 +5,11 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query, WebSocket, WebSocketDisconnect
 from tz import now_ist
-from auth import get_current_user
+from auth import get_current_user, JWT_SECRET, JWT_ALGORITHM
 from database import db
 from pydantic import BaseModel
 from typing import Optional
+from jose import jwt, JWTError
 import mqtt_service
 
 router = APIRouter(prefix="/iot", tags=["iot"])
@@ -101,6 +102,19 @@ async def broadcast_ws(message: dict):
 
 @router.websocket("/ws")
 async def iot_websocket(ws: WebSocket):
+    token = ws.query_params.get("token")
+    if not token:
+        await ws.close(code=4001, reason="Missing token")
+        return
+    try:
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user = await db.users.find_one({"id": payload.get("sub")})
+        if not user or user.get("role") not in ("venue_owner", "admin"):
+            await ws.close(code=4003, reason="Forbidden")
+            return
+    except JWTError:
+        await ws.close(code=4001, reason="Invalid token")
+        return
     await ws.accept()
     _ws_clients.append(ws)
     logger.info(f"IoT WebSocket connected ({len(_ws_clients)} clients)")

@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { Toaster } from "@/components/ui/sonner";
@@ -29,6 +29,7 @@ const VenueDiscovery = lazyRetry(() => import("@/pages/VenueDiscovery"));
 const VenueDetail = lazyRetry(() => import("@/pages/VenueDetail"));
 const MatchmakingPage = lazyRetry(() => import("@/pages/MatchmakingPage"));
 const VenueOwnerDashboard = lazyRetry(() => import("@/pages/VenueOwnerDashboard"));
+const VenueFinancePage = lazyRetry(() => import("@/pages/VenueFinancePage"));
 const CoachDashboard = lazyRetry(() => import("@/pages/CoachDashboard"));
 const CoachSettingsPage = lazyRetry(() => import("@/pages/CoachSettingsPage"));
 const SplitPaymentPage = lazyRetry(() => import("@/pages/SplitPaymentPage"));
@@ -92,7 +93,7 @@ function ProtectedRoute({ children, roles }) {
                 : "To access this feature, please upload your verification documents and get your account verified."}
             </p>
             {docStatus !== "pending_review" && (
-              <Button className="font-bold" onClick={() => window.location.href = "/profile"}>
+              <Button className="font-bold" onClick={() => navigate("/profile")}>
                 <Upload className="h-4 w-4 mr-2" /> Upload Documents
               </Button>
             )}
@@ -112,6 +113,7 @@ function DashboardRouter() {
 
 function DocVerificationPopup() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const docStatus = user?.doc_verification_status || "not_uploaded";
   const [open, setOpen] = useState(false);
 
@@ -159,7 +161,7 @@ function DocVerificationPopup() {
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={() => setOpen(false)}>Later</Button>
             {docStatus !== "pending_review" && (
-              <Button className="flex-1 font-bold" onClick={() => { setOpen(false); window.location.href = "/profile"; }}>
+              <Button className="flex-1 font-bold" onClick={() => { setOpen(false); navigate("/profile"); }}>
                 {docStatus === "rejected" ? "Re-upload Docs" : "Upload Docs"}
               </Button>
             )}
@@ -186,6 +188,7 @@ function AppRouteDefinitions() {
           <Route path="/rating-profile/:userId" element={<ProtectedRoute><RatingProfilePage /></ProtectedRoute>} />
           <Route path="/owner" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard /></ProtectedRoute>} />
           <Route path="/owner/manage" element={<ProtectedRoute roles={["venue_owner"]}><VenueOwnerDashboard defaultView="manage" /></ProtectedRoute>} />
+          <Route path="/owner/finance" element={<ProtectedRoute roles={["venue_owner"]}><VenueFinancePage /></ProtectedRoute>} />
           <Route path="/coach" element={<ProtectedRoute roles={["coach"]}><CoachDashboard /></ProtectedRoute>} />
           <Route path="/coach/manage" element={<ProtectedRoute roles={["coach"]}><CoachDashboard defaultView="coach_mgmt" /></ProtectedRoute>} />
           <Route path="/coach/settings" element={<ProtectedRoute roles={["coach"]}><CoachSettingsPage /></ProtectedRoute>} />

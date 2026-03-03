@@ -106,6 +106,7 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     platform = await get_platform_settings()
     commission_pct = platform.get("booking_commission_pct", 0)
     commission_amount = round(price * commission_pct / 100)
+    gw = platform.get("payment_gateway", {})
 
     expires_at = (now_ist() + timedelta(hours=PENDING_BOOKING_EXPIRY_HOURS)).isoformat()
 
@@ -124,7 +125,6 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     }
 
     rzp_client = await get_razorpay_client()
-    gw = (await get_platform_settings()).get("payment_gateway", {})
 
     # ── Payment already completed (Razorpay) → verify and create as confirmed ──
     if input.razorpay_payment_id and input.razorpay_order_id and input.razorpay_signature:
@@ -133,7 +133,7 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             raise HTTPException(500, "Payment gateway not configured properly")
         msg = f"{input.razorpay_order_id}|{input.razorpay_payment_id}"
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
-        if expected != input.razorpay_signature:
+        if not hmac.compare_digest(expected, input.razorpay_signature):
             raise HTTPException(400, "Payment verification failed — signature mismatch")
         checkin_token = str(uuid.uuid4())[:8].upper()
         booking["status"] = "confirmed"
@@ -193,7 +193,6 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
             await redis_client.delete(key)
         logger.info(f"Locks released after booking: {input.start_time}-{input.end_time} turf {input.turf_number}")
 
-    gw = (await get_platform_settings()).get("payment_gateway", {})
     booking["razorpay_key_id"] = gw.get("key_id", "")
     return booking
 
@@ -224,7 +223,7 @@ async def verify_payment(booking_id: str, request: Request, user=Depends(get_cur
         raise HTTPException(500, "Payment gateway not configured properly — contact support")
     msg = f"{razorpay_order_id}|{razorpay_payment_id}"
     expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
-    if expected != razorpay_signature:
+    if not hmac.compare_digest(expected, razorpay_signature):
         raise HTTPException(400, "Payment verification failed — signature mismatch")
 
     if booking.get("split_config"):
@@ -310,6 +309,8 @@ async def test_confirm_payment(booking_id: str, user=Depends(get_current_user)):
 @router.post("/bookings/cleanup-expired")
 async def cleanup_expired_bookings(user=Depends(get_current_user)):
     """Auto-cancel bookings that have been pending beyond the expiry window."""
+    if user.get("role") != "admin":
+        raise HTTPException(403, "Admin only")
     now = now_ist().isoformat()
     # Find expired bookings first to decrement counters
     expired_bookings = await db.bookings.find(
@@ -659,7 +660,7 @@ async def verify_split_payment(token: str, request: Request):
         razorpay_signature = data.get("razorpay_signature", "")
         msg = f"{razorpay_order_id}|{razorpay_payment_id}"
         expected = hmac.new(key_secret.encode(), msg.encode(), hashlib.sha256).hexdigest()
-        if expected != razorpay_signature:
+        if not hmac.compare_digest(expected, razorpay_signature):
             raise HTTPException(400, "Payment verification failed — signature mismatch")
 
     # Sanitize payer_name

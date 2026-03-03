@@ -1,13 +1,17 @@
-import { useEffect, useRef } from "react";
-import * as THREE from "three";
+import { useEffect, useRef, useState } from "react";
 
 export default function InteractivePortrait() {
   const containerRef = useRef(null);
   const rendererRef = useRef(null);
   const animationFrameRef = useRef();
+  const [THREE, setTHREE] = useState(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    import("three").then(mod => setTHREE(mod));
+  }, []);
+
+  useEffect(() => {
+    if (!THREE || !containerRef.current) return;
 
     const container = containerRef.current;
     const width = container.clientWidth;
@@ -315,7 +319,9 @@ export default function InteractivePortrait() {
       helmetTexture.dispose();
       blob.rtOutput.dispose();
     };
-  }, []);
+  }, [THREE]);
+
+  if (!THREE) return <div className="fixed inset-0 w-full h-full bg-[#0a0c0a] animate-pulse" />;
 
   return (
     <div

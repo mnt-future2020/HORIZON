@@ -14,6 +14,14 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const path = location.pathname;
+
+  const handleFeedClick = (e) => {
+    if (path === "/feed") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.dispatchEvent(new CustomEvent("feed:refresh"));
+    }
+  };
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -329,23 +337,50 @@ export default function Navbar() {
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 h-16 flex items-center justify-around bg-background/95 backdrop-blur-xl border-t border-border/50 shadow-lg"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 4px)" }}
         data-testid="mobile-navbar">
-        {mobileBottomNavLinks.map(link => {
-          const isActive = path === link.to || path.startsWith(link.to + "/");
-          return (
-            <Link 
-              key={link.to} 
-              to={link.to} 
-              data-testid={`mobile-nav-${link.label.toLowerCase()}`}
-              className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[52px] transition-all duration-200 touch-manipulation cursor-pointer group ${
-                isActive
-                  ? "text-brand-600"
-                  : "text-muted-foreground active:text-foreground active:scale-95"
-              }`}>
-              <link.icon className={`h-[22px] w-[22px] shrink-0 transition-all duration-200 ${isActive ? "stroke-[2.5] scale-110" : "group-active:scale-90"}`} aria-hidden="true" />
-              <span className={`text-[10px] font-medium leading-tight transition-all duration-200 ${isActive ? "font-semibold" : ""}`}>{link.label}</span>
-            </Link>
-          );
-        })}
+        {mobileNavLinks.map(l => (
+          <Link key={l.to} to={l.to}
+            onClick={l.to === "/feed" ? handleFeedClick : undefined}
+            data-testid={`mobile-nav-${l.label.toLowerCase()}`}
+            className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
+              path === l.to || path.startsWith(l.to + "/")
+                ? "text-brand-600"
+                : "text-muted-foreground active:text-foreground"
+            }`}>
+            <l.icon className={`h-[22px] w-[22px] shrink-0 ${path === l.to || path.startsWith(l.to + "/") ? "stroke-[2.5]" : ""}`} />
+            <span className="text-[10px] font-medium leading-tight">{l.label}</span>
+          </Link>
+        ))}
+        {/* Notification tab */}
+        <Link to="/notifications" data-testid="mobile-nav-alerts"
+          className={`relative flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
+            path === "/notifications" ? "text-brand-600" : "text-muted-foreground active:text-foreground"
+          }`}>
+          <div className="relative">
+            <Bell className={`h-[22px] w-[22px] shrink-0 ${path === "/notifications" ? "stroke-[2.5]" : ""}`} />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1.5 h-4 min-w-[16px] px-0.5 rounded-full bg-red-500 text-white text-[9px] font-semibold flex items-center justify-center border-2 border-background">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
+          </div>
+          <span className="text-[10px] font-medium leading-tight">Alerts</span>
+        </Link>
+        {/* Profile tab */}
+        <Link to="/profile" data-testid="mobile-nav-profile"
+          className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
+            path === "/profile" || path.startsWith("/player-card/")
+              ? "text-brand-600"
+              : "text-muted-foreground active:text-foreground"
+          }`}>
+          <div className={`h-6 w-6 rounded-full flex items-center justify-center overflow-hidden ${
+            path === "/profile" ? "ring-2 ring-brand-600 border border-background" : "border border-border"
+          }`}>
+            {user?.avatar
+              ? <img src={mediaUrl(user.avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
+              : <User className="h-4 w-4 text-muted-foreground" />}
+          </div>
+          <span className="text-[10px] font-medium leading-tight">Me</span>
+        </Link>
       </nav>
 
       {/* Spacers for fixed headers */}
@@ -358,7 +393,16 @@ export default function Navbar() {
 export function Sidebar() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const path = location.pathname;
+
+  const handleFeedClick = (e) => {
+    if (path === "/feed") {
+      e.preventDefault();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      window.dispatchEvent(new CustomEvent("feed:refresh"));
+    }
+  };
 
   const links = {
     player: [
@@ -377,6 +421,7 @@ export function Sidebar() {
       { to: "/feed",           ms: "rss_feed",            label: "Feed" },
       { to: "/owner",          ms: "store",               label: "Dashboard", exact: true },
       { to: "/owner/manage",   ms: "assignment",          label: "Venue Management" },
+      { to: "/owner/finance",  ms: "account_balance",     label: "Finance" },
       { to: "/pos",            ms: "point_of_sale",       label: "POS" },
       { to: "/iot",            ms: "sensors",             label: "IoT" },
       { to: "/communities",    ms: "groups",              label: "Groups" },
@@ -409,7 +454,9 @@ export function Sidebar() {
         {navLinks.map(l => {
            const active = l.exact ? path === l.to : (path === l.to || path.startsWith(l.to + "/"));
            return (
-             <Link key={l.to} to={l.to} data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
+             <Link key={l.to} to={l.to}
+               onClick={l.to === "/feed" ? handleFeedClick : undefined}
+               data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 ${
                  active
                   ? "bg-brand-600/10 text-brand-600 font-bold"

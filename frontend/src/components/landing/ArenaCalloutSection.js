@@ -24,8 +24,8 @@ export default function ArenaCalloutSection() {
                   <span className="block text-turf-accent font-brier normal-case text-3xl sm:text-4xl md:text-6xl -ml-1 lg:text-8xl">
                     EVERYTHING
                   </span>
-                  <span className="block mt-2">IN SPORTS.</span>
-                  <span className="block">YOUR GAME STARTS HERE.</span>
+                  <span className="block mt-2">IN SPORTS AND FITNESS.</span>
+                  <span className="block">YOUR JOURNEY STARTS HERE.</span>
                 </p>
               </blockquote>
 

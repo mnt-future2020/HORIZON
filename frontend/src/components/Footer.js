@@ -4,27 +4,27 @@ import { Mail, Phone, MapPin, Instagram, Twitter, Linkedin } from "lucide-react"
 export default function Footer() {
   const year = new Date().getFullYear();
   return (
-    <footer className="bg-slate-900 border-t border-slate-800 relative">
+    <footer className="bg-[#0a0c0a] border-t border-white/5 relative text-white">
       <div className="max-w-[90rem] mx-auto px-6 md:px-12 py-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link to="/" className="inline-block mb-6">
-              <span className="font-display font-black text-3xl tracking-tighter uppercase text-brand-400">Lobbi</span>
+              <span className="font-brier font-black text-3xl tracking-tighter uppercase text-brand-600">LOBBI</span>
             </Link>
-            <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-2">Sports Facility Operating System</p>
-            <p className="text-xs text-slate-500 font-medium">
-              A product by <span className="text-slate-300 font-black">MnT</span><br />
-              <span className="text-slate-400">Magizh NexGen Technologies</span>
+            <p className="text-sm font-bold text-white/40 uppercase tracking-widest mb-2">Sports Facility Operating System</p>
+            <p className="text-xs text-white/30 font-medium">
+              A product by <span className="text-white/60 font-black">MnT</span><br />
+              <span className="text-white/40">Magizh NexGen Technologies</span>
             </p>
             <div className="flex items-center gap-4 mt-8">
-              <a href="#" aria-label="Twitter" className="w-10 h-10 border-2 border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
+              <a href="#" aria-label="Twitter" className="w-10 h-10 border border-white/10 rounded-lg flex items-center justify-center text-white/40 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
                 <Twitter className="w-4 h-4" />
               </a>
-              <a href="#" aria-label="Instagram" className="w-10 h-10 border-2 border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
+              <a href="#" aria-label="Instagram" className="w-10 h-10 border border-white/10 rounded-lg flex items-center justify-center text-white/40 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
-              <a href="#" aria-label="LinkedIn" className="w-10 h-10 border-2 border-slate-700 rounded-lg flex items-center justify-center text-slate-400 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
+              <a href="#" aria-label="LinkedIn" className="w-10 h-10 border border-white/10 rounded-lg flex items-center justify-center text-white/40 hover:bg-brand-600 hover:text-white hover:border-brand-600 transition-all">
                 <Linkedin className="w-4 h-4" />
               </a>
             </div>
@@ -32,7 +32,7 @@ export default function Footer() {
 
           {/* Product */}
           <div>
-            <h4 className="font-display text-sm font-black uppercase tracking-[0.2em] text-white mb-6">Product</h4>
+            <h4 className="font-sans text-sm font-black uppercase tracking-[0.2em] text-white mb-6">Product</h4>
             <ul className="space-y-4">
               {[
                 { label: "Browse Venues", to: "/venues" },
@@ -41,7 +41,7 @@ export default function Footer() {
                 { label: "List Your Venue", to: "/auth" },
               ].map(l => (
                 <li key={l.label}>
-                  <Link to={l.to} className="text-sm font-bold text-slate-400 hover:text-brand-400 transition-colors">{l.label}</Link>
+                  <Link to={l.to} className="text-sm font-bold text-white/40 hover:text-brand-400 transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
@@ -49,7 +49,7 @@ export default function Footer() {
 
           {/* Company */}
           <div>
-            <h4 className="font-display text-sm font-black uppercase tracking-[0.2em] text-white mb-6">Company</h4>
+            <h4 className="font-sans text-sm font-black uppercase tracking-[0.2em] text-white mb-6">Company</h4>
             <ul className="space-y-4">
               {[
                 { label: "About Us", to: "/about" },
@@ -59,7 +59,7 @@ export default function Footer() {
                 { label: "Refund Policy", to: "/refund-policy" },
               ].map(l => (
                 <li key={l.label}>
-                  <Link to={l.to} className="text-sm font-bold text-slate-400 hover:text-brand-400 transition-colors">{l.label}</Link>
+                  <Link to={l.to} className="text-sm font-bold text-white/40 hover:text-brand-400 transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
@@ -67,18 +67,18 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 className="font-display text-sm font-black uppercase tracking-[0.2em] text-white mb-6">Contact</h4>
+            <h4 className="font-sans text-sm font-black uppercase tracking-[0.2em] text-white mb-6">Contact</h4>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3 text-sm font-bold text-slate-400">
-                <Mail className="w-4 h-4 mt-0.5 shrink-0 text-brand-400" />
+              <li className="flex items-start gap-3 text-sm font-bold text-white/40">
+                <Mail className="w-4 h-4 mt-0.5 shrink-0 text-brand-600" />
                 <a href="mailto:support@magizhnexgen.com" className="hover:text-brand-400 transition-colors break-all">support@magizhnexgen.com</a>
               </li>
-              <li className="flex items-start gap-3 text-sm font-bold text-slate-400">
-                <Phone className="w-4 h-4 mt-0.5 shrink-0 text-brand-400" />
+              <li className="flex items-start gap-3 text-sm font-bold text-white/40">
+                <Phone className="w-4 h-4 mt-0.5 shrink-0 text-brand-600" />
                 <a href="tel:+919999999999" className="hover:text-brand-400 transition-colors">+91 99999 99999</a>
               </li>
-              <li className="flex items-start gap-3 text-sm font-bold text-slate-400">
-                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-brand-400" />
+              <li className="flex items-start gap-3 text-sm font-bold text-white/40">
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0 text-brand-600" />
                 <span>Chennai, Tamil Nadu, India</span>
               </li>
             </ul>
@@ -86,7 +86,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-16 pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="mt-16 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-bold text-white/30 uppercase tracking-wider">
           <span>&copy; {year} Magizh NexGen Technologies. All rights reserved.</span>
           <div className="flex items-center gap-6">
             <Link to="/privacy-policy" className="hover:text-brand-400 transition-colors">Privacy</Link>
