@@ -72,8 +72,8 @@ export default function ArenaShowcase() {
               transition={{ duration: 0.6, delay: index * 0.05, ease: "easeOut" }}
               viewport={{ once: true }}
               onClick={() => handleClick(venue)}
-              className="group cursor-pointer flex flex-col bg-[#111] border border-zinc-800/60 hover:border-turf-accent/50
-                         rounded-2xl overflow-hidden shadow-lg shadow-black/30 hover:shadow-turf-accent/10
+              className="group cursor-pointer flex flex-col bg-white border border-white/10 hover:border-turf-accent/50
+                         rounded-2xl overflow-hidden shadow-2xl shadow-black/50 hover:shadow-turf-accent/20
                          transition-all duration-300"
             >
               {/* Image */}
@@ -100,34 +100,34 @@ export default function ArenaShowcase() {
               {/* Info */}
               <div className="p-4 flex flex-col flex-grow">
                 {/* Name */}
-                <h3 className="text-sm md:text-base font-bold text-white uppercase tracking-tight truncate group-hover:text-turf-accent transition-colors duration-300">
+                <h3 className="text-lg md:text-xl font-bold text-zinc-900 uppercase tracking-tight truncate group-hover:text-turf-accent transition-colors duration-300">
                   {venue.name}
                 </h3>
 
                 {/* Location */}
                 <div className="flex items-center gap-1.5 mt-1.5 mb-3">
-                  <MapPin className="h-3 w-3 text-turf-accent shrink-0" />
-                  <span className="text-[11px] text-white/50 truncate">
+                  <MapPin className="h-4 w-4 text-turf-accent shrink-0" />
+                  <span className="text-sm text-zinc-500 truncate">
                     {venue.area || ""}{venue.area ? ", " : ""}{venue.city || ""}
                   </span>
                 </div>
 
                 {/* Stats row */}
-                <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-800/60">
+                <div className="mt-auto flex items-center justify-between pt-4 border-t border-zinc-100">
                   {/* Rating */}
                   <div className="flex items-center gap-1.5">
-                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-bold text-white">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <span className="text-sm font-bold text-zinc-900">
                       {venue.rating?.toFixed(1) || "0.0"}
                     </span>
                   </div>
                   {/* Price */}
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-[9px] text-white/40 font-normal">from</span>
-                    <span className="text-base md:text-lg font-black text-turf-accent">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xs text-zinc-400 font-normal">from</span>
+                    <span className="text-xl md:text-2xl font-black text-turf-accent">
                       ₹{venue.base_price || venue.price_per_hour || 2000}
                     </span>
-                    <span className="text-[9px] text-white/40 uppercase tracking-widest">/HR</span>
+                    <span className="text-xs text-zinc-400 uppercase tracking-widest">/HR</span>
                   </div>
                 </div>
               </div>

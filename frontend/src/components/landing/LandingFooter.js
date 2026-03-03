@@ -87,7 +87,7 @@ export default function LandingFooter() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/auth")}
-                className="mt-8 md:mt-12 z-20 bg-turf-accent text-turf-dark font-black uppercase px-6 py-3 md:px-8 md:py-4 rounded-[14px] text-xs md:text-sm tracking-wider hover:bg-white transition-colors flex items-center gap-2"
+                className="mt-8 md:mt-12 z-20 bg-turf-accent text-white font-black uppercase px-6 py-3 md:px-8 md:py-4 rounded-[14px] text-xs md:text-sm tracking-wider hover:bg-white hover:text-turf-dark transition-colors flex items-center gap-2"
               >
                 GET STARTED FREE
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -122,7 +122,7 @@ export default function LandingFooter() {
 
       {/* Bottom Bar */}
       <div className="w-full max-w-[1688px] mx-auto px-4 md:px-12 relative z-20 pt-0">
-        <div className="flex flex-col md:flex-row justify-between items-center text-turf-dark text-xs font-bold tracking-wider uppercase">
+        <div className="flex flex-col md:flex-row justify-between items-center text-white text-xs font-bold tracking-wider uppercase">
           <p>&copy; {new Date().getFullYear()} Lobbi. All rights reserved</p>
           <div className="flex gap-6 mt-2 md:mt-0">
             <button onClick={() => navigate("/privacy-policy")} className="hover:opacity-60 transition-opacity">
@@ -136,8 +136,8 @@ export default function LandingFooter() {
       </div>
 
       <div className="w-full max-w-[1688px] mx-auto px-4 md:px-12 relative z-20 pt-0">
-        <div className="flex flex-col md:flex-row justify-between items-center text-turf-dark text-xs font-bold tracking-wider uppercase">
-          <p className="text-xs mt-7 opacity-40 font-medium leading-4 text-left">
+        <div className="flex flex-col md:flex-row justify-between items-center text-white text-xs font-bold tracking-wider uppercase">
+          <p className="text-xs mt-7 opacity-80 font-medium leading-4 text-left">
             Lobbi is India's all-in-one sports platform — connecting players, venues, and coaches. Book. Play. Connect. Compete.
           </p>
         </div>

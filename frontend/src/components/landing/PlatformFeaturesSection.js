@@ -108,7 +108,7 @@ export default function PlatformFeaturesSection() {
       {/* ── Sticky panel ── */}
       <div
         ref={stickyRef}
-        className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden px-4 md:px-12"
+        className="sticky top-0 h-screen flex flex-col justify-center overflow-hidden px-4 md:px-12 pt-16 md:pt-20"
       >
         {/* Progress rail – shows which tab is active via thin accent bar */}
         <div className="absolute left-0 top-0 w-full h-[3px] bg-black/5">

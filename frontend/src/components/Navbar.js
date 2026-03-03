@@ -49,6 +49,7 @@ import {
   ClipboardList,
   Menu,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -208,8 +209,8 @@ export default function Navbar() {
             </SheetTrigger>
             <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
               <SheetHeader className="px-6 py-5 border-b border-border bg-gradient-to-r from-brand-50/50 to-transparent dark:from-brand-950/30">
-                <SheetTitle className="font-display font-black text-2xl tracking-tighter uppercase text-brand-700 dark:text-brand-400">
-                  Lobbi
+                <SheetTitle asChild>
+                  <Logo size="sm" className="text-brand-700 dark:text-brand-400" />
                 </SheetTitle>
               </SheetHeader>
               <nav className="flex flex-col py-4 overflow-y-auto max-h-[calc(100vh-80px)]">
@@ -243,9 +244,9 @@ export default function Navbar() {
           {/* Logo */}
           <Link
             to="/feed"
-            className="font-display font-black text-2xl md:text-3xl tracking-tighter uppercase text-brand-700 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition-colors duration-200 cursor-pointer"
+            className="text-brand-700 dark:text-brand-400 hover:text-brand-600 dark:hover:text-brand-300 transition-colors duration-200"
           >
-            Lobbi
+            <Logo size="md" />
           </Link>
         </div>
 

@@ -90,7 +90,7 @@ export default function MissionSection() {
               className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[130%] h-[90%] -skew-x-12 -skew-y-3 rounded-[40px] border border-gray-200 overflow-hidden z-0"
             >
               {/* Turf Base Layer */}
-              <div className="absolute inset-0 bg-[#059669] opacity-20 backdrop-blur-3xl" />
+              <div className="absolute inset-0 bg-[#059669] opacity-40 backdrop-blur-3xl" />
               
               {/* Turf Texture Layer */}
               <div 
@@ -102,7 +102,7 @@ export default function MissionSection() {
 
               {/* Turf Stripe Layer (Simulating mown grass) */}
               <div 
-                className="absolute inset-0 opacity-10"
+                className="absolute inset-0 opacity-25"
                 style={{
                   backgroundImage: `repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(0,0,0,0.2) 40px, rgba(0,0,0,0.2) 80px)`,
                 }}

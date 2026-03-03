@@ -1,9 +1,37 @@
-import { useRef } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { motion, useScroll, useTransform, useSpring } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 export default function HeroSection() {
   const containerRef = useRef(null);
+  const lobbiRef = useRef(null);
+  const subtitleRef = useRef(null);
+
+  const adjustSubtitleSpacing = useCallback(() => {
+    if (lobbiRef.current && subtitleRef.current) {
+      // Reset spacing and shrink to text width for accurate measurement
+      subtitleRef.current.style.letterSpacing = '0px';
+      subtitleRef.current.style.width = 'max-content';
+
+      const lobbiWidth = lobbiRef.current.getBoundingClientRect().width;
+      const subtitleNaturalWidth = subtitleRef.current.getBoundingClientRect().width;
+      const charCount = subtitleRef.current.textContent.length;
+      const spacing = Math.max(
+        (lobbiWidth - subtitleNaturalWidth) / (charCount - 1),
+        -1 // prevent extreme compression on small screens
+      );
+
+      // Apply calculated spacing and restore block width
+      subtitleRef.current.style.letterSpacing = `${spacing}px`;
+      subtitleRef.current.style.width = '';
+    }
+  }, []);
+
+  useEffect(() => {
+    adjustSubtitleSpacing();
+    window.addEventListener('resize', adjustSubtitleSpacing);
+    return () => window.removeEventListener('resize', adjustSubtitleSpacing);
+  }, [adjustSubtitleSpacing]);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -64,12 +92,14 @@ export default function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
             >
-              <h1 className="font-brier text-[18vw] md:text-[12vw] lg:text-[10vw] leading-[0.8] text-white tracking-tighter drop-shadow-2xl">
-                LOBBI
-              </h1>
-              <h2 className="font-oswald text-3xl md:text-5xl lg:text-6xl font-black text-white uppercase italic tracking-tighter drop-shadow-lg leading-none mt-1 md:mt-2">
-                The Standard <span className="text-brand-600">For Play.</span>
-              </h2>
+              <div className="w-fit">
+                <h1 ref={lobbiRef} className="font-brier text-[18vw] md:text-[12vw] lg:text-[10vw] leading-[0.8] text-white tracking-tighter drop-shadow-2xl">
+                  LOBBI
+                </h1>
+                <h2 ref={subtitleRef} className="font-oswald text-[5.5vw] md:text-[3.6vw] lg:text-[3vw] font-black text-white uppercase drop-shadow-lg leading-none mt-1 md:mt-2 whitespace-nowrap">
+                  <span className="normal-case text-brand-600">for</span> Sports & Fitness.
+                </h2>
+              </div>
             </motion.div>
 
             {/* Bottom Row: Statement + CTA */}

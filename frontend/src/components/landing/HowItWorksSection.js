@@ -165,7 +165,7 @@ export default function HowItWorksSection() {
                               </span>
                             </div>
 
-                            <div className="text-sm md:text-base text-white/80 leading-relaxed md:col-span-5 pl-9 md:pl-0">
+                            <div className="text-sm md:text-base text-white leading-relaxed md:col-span-5 pl-9 md:pl-0">
                               {step.detail}
                             </div>
 

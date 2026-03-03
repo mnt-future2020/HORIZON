@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Menu, X } from "lucide-react";
+import Logo from "@/components/Logo";
 
 export default function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -53,10 +54,9 @@ export default function LandingHeader() {
             {/* Logo - Left */}
             <button
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              className="text-3xl md:text-4xl font-black tracking-tighter text-brand-600 font-brier"
               data-testid="logo-button"
             >
-              LOBBI
+              <Logo size="lg" className="text-brand-600" />
             </button>
 
             {/* Center Nav Links - Desktop Only */}
