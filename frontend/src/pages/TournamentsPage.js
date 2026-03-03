@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { tournamentAPI, venueAPI, liveAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -41,6 +42,7 @@ export default function TournamentsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
+  useScrollRestoration("tournaments", !loading);
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [filterSport, setFilterSport] = useState(searchParams.get("sport") || "");
   const [filterStatus, setFilterStatus] = useState(searchParams.get("status") || "");

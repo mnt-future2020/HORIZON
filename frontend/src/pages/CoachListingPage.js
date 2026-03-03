@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate as useNav, useSearchParams } from "react-router-dom";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { coachingAPI, paymentAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
@@ -89,6 +90,7 @@ export default function CoachListingPage() {
 
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
+  useScrollRestoration("coaching", !loading);
   const [searchQ, setSearchQ] = useState(searchParams.get("q") || "");
   const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "all");
   const [selectedCoach, setSelectedCoach] = useState(null);

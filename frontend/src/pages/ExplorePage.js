@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { socialAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -46,6 +47,7 @@ export default function ExplorePage() {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [results, setResults] = useState({ users: [], posts: [], venues: [] });
   const [loading, setLoading] = useState(true);
+  useScrollRestoration("explore", !loading);
   const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "all");
   const searchTimeout = useRef(null);
 

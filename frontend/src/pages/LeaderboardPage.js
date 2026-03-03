@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { matchAPI } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -37,6 +38,7 @@ export default function LeaderboardPage() {
   const [players, setPlayers] = useState([]);
   const [sport, setSport] = useState(searchParams.get("sport") || "all");
   const [loading, setLoading] = useState(true);
+  useScrollRestoration("leaderboard", !loading);
 
   const loadData = useCallback(async () => {
     setLoading(true);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -128,6 +129,7 @@ export default function VenueDiscovery() {
   const [areas, setAreas] = useState([]);
   const [allAmenities, setAllAmenities] = useState([]);
   const [loading, setLoading] = useState(true);
+  useScrollRestoration("venues", !loading);
 
   const [searchText, setSearchText] = useState(searchParams.get("q") || "");
   const [selectedCity, setSelectedCity] = useState(searchParams.get("city") || "all");
