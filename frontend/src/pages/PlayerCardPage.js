@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // Extracted Components
 import LevelUpGuideModal from "@/components/player-card/LevelUpGuideModal";
@@ -426,10 +427,15 @@ export default function PlayerCardPage() {
           className="text-center px-6 max-w-md"
         >
           <div className="h-24 w-24 mx-auto rounded-2xl bg-gradient-to-br from-secondary/50 to-secondary/30 border border-border/20 flex items-center justify-center mb-6 shadow-lg">
-            <User
-              className="h-12 w-12 text-muted-foreground/40"
-              aria-hidden="true"
-            />
+            <Avatar className="h-12 w-12">
+              {/* placeholder icon inside fallback */}
+              <AvatarFallback>
+                <User
+                  className="h-6 w-6 text-muted-foreground/40"
+                  aria-hidden="true"
+                />
+              </AvatarFallback>
+            </Avatar>
           </div>
           <h3 className="font-display text-xl font-bold text-foreground mb-2">
             Profile Not Found

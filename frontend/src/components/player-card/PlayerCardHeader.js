@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { mediaUrl } from "@/lib/utils";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function PlayerCardHeader({
   card,
@@ -33,17 +34,15 @@ export default function PlayerCardHeader({
               className={`h-20 w-20 sm:h-28 sm:w-28 rounded-full p-[2px] ${card.is_verified ? "bg-gradient-to-br from-brand-400 via-brand-500 to-brand-600" : "border-2 border-border/40"}`}
             >
               <div className="h-full w-full rounded-full overflow-hidden flex items-center justify-center p-[2px] bg-background">
-                <div className="h-full w-full rounded-full overflow-hidden">
-                  {card.avatar ? (
-                    <img
-                      src={mediaUrl(card.avatar)}
-                      alt={card.name}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <User className="h-10 w-10 text-muted-foreground" />
+                {/* Use shared Avatar component for consistent fallbacks */}
+                <Avatar className="h-full w-full">
+                  {card.avatar && (
+                    <AvatarImage src={mediaUrl(card.avatar)} alt={card.name} />
                   )}
-                </div>
+                  <AvatarFallback>
+                    <User className="h-6 w-6 text-muted-foreground" />
+                  </AvatarFallback>
+                </Avatar>
               </div>
             </div>
             {card.is_verified && (

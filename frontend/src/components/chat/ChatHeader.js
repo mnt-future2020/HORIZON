@@ -1,15 +1,14 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   ArrowLeft,
   User,
-  Info,
   Search,
   Pin,
   Image as ImageIcon,
   Bell,
   BellOff,
   Eraser,
-  MoreHorizontal,
+  MoreVertical,
   Flame,
 } from "lucide-react";
 import { mediaUrl } from "@/lib/utils";
@@ -30,126 +29,208 @@ const ChatHeader = ({
   onClearChat,
 }) => {
   const navigate = useNavigate();
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const moreMenuRef = useRef(null);
+
+  useEffect(() => {
+    if (!showMoreMenu) return;
+    const handler = (e) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setShowMoreMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMoreMenu]);
+
+  const getStatus = () => {
+    if (isTyping)
+      return { text: "typing…", cls: "text-brand-600 animate-pulse" };
+    if (onlineStatus?.online)
+      return { text: "online", cls: "text-emerald-500" };
+    if (typeof lastSeenText === "function" && lastSeenText()) {
+      return { text: lastSeenText(), cls: "text-muted-foreground/60" };
+    }
+    return null;
+  };
+
+  const status = getStatus();
+
+  const iconBtn =
+    "h-9 w-9 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 flex-shrink-0";
 
   return (
-    <div className="bg-card/70 backdrop-blur-3xl border-b border-border/40 px-3 py-3 flex-shrink-0 sticky top-0 z-50 overflow-hidden">
-      <div className="max-w-3xl mx-auto flex items-center gap-3">
-        {/* Decorative corner element */}
-        <div className="absolute top-0 right-0 h-[2px] w-24 bg-gradient-to-l from-brand-600/30 to-transparent" />
+    <header className="bg-card/80 backdrop-blur-2xl border-b border-border/30 flex-shrink-0 sticky top-0 z-50 overflow-hidden">
+      {/* Decorative accent */}
+      <div className="absolute top-0 right-0 h-px w-32 bg-gradient-to-l from-brand-600/40 to-transparent pointer-events-none" />
 
+      <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-14 sm:h-16 max-w-5xl mx-auto">
+        {/* Back button — visible on lg and below if chat is active */}
         <button
           onClick={onBack}
-          className="md:hidden text-muted-foreground hover:text-foreground p-2.5 rounded-2xl hover:bg-secondary/40 transition-all flex-shrink-0 cursor-pointer active:scale-95 border border-transparent hover:border-border/40"
           aria-label="Back to conversations"
+          className={`lg:hidden ${iconBtn} text-muted-foreground hover:text-foreground hover:bg-secondary/50`}
         >
-          <ArrowLeft className="h-5 w-5" aria-hidden="true" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div
-          className="relative flex items-center gap-3.5 flex-1 min-w-0 py-1.5 cursor-pointer hover:bg-secondary/30 rounded-[20px] px-2.5 transition-all group"
+        {/* Profile info — tappable */}
+        <button
+          className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 py-1.5 px-1.5 sm:px-2 rounded-2xl hover:bg-secondary/30 active:bg-secondary/50 transition-all text-left group"
           onClick={() => navigate(`/player-card/${activeConvo.other_user?.id}`)}
         >
-          <div className="relative">
-            <div className="h-11 w-11 min-w-[44px] rounded-[20px] bg-brand-600/10 flex items-center justify-center overflow-hidden border border-border/50 group-hover:border-brand-600/40 transition-all">
+          {/* Avatar with online dot */}
+          <div className="relative flex-shrink-0">
+            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-[14px] bg-brand-600/10 overflow-hidden border border-border/40 group-hover:border-brand-600/30 transition-all">
               {activeConvo.other_user?.avatar ? (
                 <img
                   src={mediaUrl(activeConvo.other_user.avatar)}
                   alt=""
-                  className="h-full w-full object-cover transition-transform group-hover:scale-110 duration-500"
+                  className="h-full w-full object-cover"
                 />
               ) : (
-                <User className="h-6 w-6 text-brand-600" />
-              )}
-            </div>
-            {onlineStatus?.online && (
-              <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-card shadow-sm animate-pulse" />
-            )}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <h2 className="font-black text-[15px] truncate text-foreground tracking-tight leading-none group-hover:text-brand-600 transition-colors">
-                {activeConvo.other_user?.name || "Unknown"}
-              </h2>
-              {activeConvo.other_user?.current_streak > 0 && (
-                <div className="flex items-center gap-0.5 text-[#FF6B00] flex-shrink-0 animate-pulse-slow">
-                  <Flame className="h-3.5 w-3.5 fill-[#FF6B00]/20" />
-                  <span className="text-[10px] font-black">
-                    {activeConvo.other_user.current_streak}
-                  </span>
+                <div className="h-full w-full flex items-center justify-center">
+                  <User className="h-5 w-5 text-brand-600/60" />
                 </div>
               )}
             </div>
-            <div className="text-[10px] uppercase font-bold tracking-widest flex items-center gap-1.5 mt-1 opacity-70">
-              {isTyping ? (
-                <span className="text-brand-600 animate-pulse">typing...</span>
-              ) : onlineStatus?.online ? (
-                <span className="text-green-500 flex items-center gap-1.5">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500 shadow-sm" />{" "}
-                  online
-                </span>
-              ) : typeof lastSeenText === "function" && lastSeenText() ? (
-                <span className="text-muted-foreground">{lastSeenText()}</span>
-              ) : (
-                <span className="text-muted-foreground/60 flex items-center gap-1 opacity-50">
-                  <Info className="h-2.5 w-2.5" /> tap for profile
+            {onlineStatus?.online && (
+              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
+            )}
+          </div>
+
+          {/* Name + status */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1 min-w-0">
+              <span className="font-black text-[14px] sm:text-[15px] truncate text-foreground group-hover:text-brand-600 transition-colors leading-none">
+                {activeConvo.other_user?.name || "Unknown"}
+              </span>
+              {(activeConvo.other_user?.current_streak ?? 0) > 0 && (
+                <span className="flex items-center gap-0.5 text-[#FF6B00] flex-shrink-0">
+                  <Flame className="h-3 w-3 fill-[#FF6B00]/20" />
+                  <span className="text-[9px] font-black">
+                    {activeConvo.other_user.current_streak}
+                  </span>
                 </span>
               )}
             </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          {/* Modern Desktop Actions */}
-          <div className="hidden sm:flex items-center gap-1">
-            <button
-              onClick={onOpenPinned}
-              className="p-2.5 rounded-2xl hover:bg-secondary/40 text-foreground/50 hover:text-foreground transition-all flex-shrink-0 cursor-pointer border border-transparent hover:border-border/20"
-              title="Pinned"
+            <p
+              className={`text-[10px] sm:text-[11px] font-bold tracking-wide mt-0.5 truncate ${status ? status.cls : "text-muted-foreground/40 hidden sm:block"}`}
             >
-              <Pin className="h-4 w-4" aria-hidden="true" />
-            </button>
-            <button
-              onClick={onOpenMedia}
-              className="p-2.5 rounded-2xl hover:bg-secondary/40 text-foreground/50 hover:text-foreground transition-all flex-shrink-0 cursor-pointer border border-transparent hover:border-border/20"
-              title="Media"
-            >
-              <ImageIcon className="h-4 w-4" aria-hidden="true" />
-            </button>
+              {status ? status.text : "tap for profile"}
+            </p>
           </div>
+        </button>
 
+        {/* Actions */}
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+          {/* Search — always visible */}
+          <button
+            onClick={onToggleSearch}
+            aria-label={showMsgSearch ? "Close search" : "Search messages"}
+            className={`${iconBtn} ${showMsgSearch ? "bg-brand-600/15 text-brand-600" : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40"}`}
+          >
+            <Search className="h-4 w-4" />
+          </button>
+
+          {/* Mute — always visible */}
           <button
             onClick={onToggleMute}
-            className="p-2.5 rounded-2xl hover:bg-secondary/40 flex-shrink-0 cursor-pointer transition-all border border-transparent hover:border-border/20"
-            title={isMuted ? "Unmute" : "Mute"}
+            aria-label={isMuted ? "Unmute" : "Mute"}
+            className={`${iconBtn} text-muted-foreground/60 hover:bg-secondary/40`}
           >
             {isMuted ? (
-              <BellOff className="h-4 w-4 text-orange-400" aria-hidden="true" />
+              <BellOff className="h-4 w-4 text-orange-400" />
             ) : (
-              <Bell
-                className="h-4 w-4 text-foreground/50 hover:text-foreground"
-                aria-hidden="true"
-              />
+              <Bell className="h-4 w-4 hover:text-foreground" />
             )}
           </button>
 
-          <button
-            onClick={onToggleSearch}
-            className={`p-2.5 rounded-2xl hover:bg-secondary/40 transition-all flex-shrink-0 cursor-pointer border border-transparent ${showMsgSearch ? "bg-secondary/60 text-brand-600 border-brand-600/20" : "text-foreground/50 hover:text-foreground"}`}
-            title="Search"
-          >
-            <Search className="h-4 w-4" aria-hidden="true" />
-          </button>
+          {/* Desktop extra actions */}
+          <div className="hidden sm:flex items-center gap-0.5">
+            <button
+              onClick={onOpenPinned}
+              aria-label="Pinned messages"
+              className={`${iconBtn} text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40`}
+            >
+              <Pin className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onOpenMedia}
+              aria-label="Shared media"
+              className={`${iconBtn} text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40`}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </button>
+            <button
+              onClick={onClearChat}
+              aria-label="Clear chat"
+              className={`${iconBtn} text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10`}
+            >
+              <Eraser className="h-4 w-4" />
+            </button>
+          </div>
 
-          <button
-            onClick={onClearChat}
-            className="p-2.5 rounded-2xl hover:bg-red-500/10 text-foreground/40 hover:text-red-500 transition-all flex-shrink-0 cursor-pointer border border-transparent"
-            title="Clear Chat"
-          >
-            <Eraser className="h-4 w-4" aria-hidden="true" />
-          </button>
+          {/* Mobile overflow menu */}
+          <div className="sm:hidden relative" ref={moreMenuRef}>
+            <button
+              onClick={() => setShowMoreMenu((v) => !v)}
+              aria-label="More options"
+              className={`${iconBtn} text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40`}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </button>
+
+            {showMoreMenu && (
+              <div className="absolute right-0 top-full mt-1 w-52 bg-card border border-border/40 rounded-2xl shadow-2xl z-[60] overflow-hidden py-1.5">
+                {[
+                  {
+                    label: "Pinned messages",
+                    icon: Pin,
+                    action: () => {
+                      onOpenPinned();
+                      setShowMoreMenu(false);
+                    },
+                  },
+                  {
+                    label: "Shared media",
+                    icon: ImageIcon,
+                    action: () => {
+                      onOpenMedia();
+                      setShowMoreMenu(false);
+                    },
+                  },
+                  {
+                    label: "Clear chat",
+                    icon: Eraser,
+                    action: () => {
+                      onClearChat();
+                      setShowMoreMenu(false);
+                    },
+                    danger: true,
+                  },
+                ].map(({ label, icon: Icon, action, danger }) => (
+                  <button
+                    key={label}
+                    onClick={action}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-semibold text-left transition-colors touch-manipulation ${
+                      danger
+                        ? "text-red-500 hover:bg-red-500/10 active:bg-red-500/20"
+                        : "text-foreground/80 hover:bg-secondary/50 active:bg-secondary/70"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-4 w-4 flex-shrink-0 ${danger ? "text-red-400" : "text-muted-foreground"}`}
+                    />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </header>
   );
 };
 

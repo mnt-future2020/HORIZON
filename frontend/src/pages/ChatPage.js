@@ -10,7 +10,6 @@ import { Loader2, MessageCircle, User, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 
 // Refactored Components
-import UserRow from "@/components/chat/UserRow";
 import NewChatModal from "@/components/chat/NewChatModal";
 import MessageRequestsModal from "@/components/chat/MessageRequestsModal";
 import ConversationList from "@/components/chat/ConversationList";
@@ -1068,40 +1067,38 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="fixed inset-x-0 top-16 bottom-[calc(64px+env(safe-area-inset-bottom,4px))] z-[40] flex md:relative md:inset-auto md:z-auto md:w-full md:h-[calc(100vh-120px)] overflow-hidden bg-background md:bg-card/40 md:backdrop-blur-md md:rounded-[32px] md:border border-border/40">
+    <div className="flex-1 flex w-full h-full min-h-0 overflow-hidden bg-background md:bg-card/40 md:backdrop-blur-md md:rounded-[20px] lg:rounded-[28px] md:border border-border/30 pb-16 lg:pb-0">
       {/* Sidebar: Conversation List */}
       <div
-        className={`w-full md:w-[380px] lg:w-[420px] md:border-r border-border/40 flex-shrink-0 flex flex-col bg-card/10 backdrop-blur-sm
-          ${activeConvo ? "hidden md:flex" : "flex"}
+        className={`w-full lg:w-[340px] xl:w-[380px] lg:border-r border-border/30 flex-shrink-0 flex flex-col bg-transparent relative z-20 min-h-0 overflow-hidden
+          ${activeConvo ? "hidden lg:flex" : "flex"}
         `}
       >
-        <div className="flex-1 overflow-y-auto custom-scrollbar pb-16 md:pb-0">
-          <ConversationList
-            conversations={conversations}
-            filteredConvos={filteredConvos}
-            convoSearch={convoSearch}
-            onConvoSearchChange={setConvoSearch}
-            onOpenNewChat={openNewChatModal}
-            onOpenConversation={(convo) => {
-              setActiveConvo(convo);
-              loadMessages(convo.id);
-            }}
-            activeConvoId={activeConvo?.id}
-            requestCount={requestCount}
-            onOpenRequests={() => {
-              setShowRequests(true);
-              loadRequests();
-            }}
-            user={user}
-            timeAgo={timeAgo}
-          />
-        </div>
+        <ConversationList
+          conversations={conversations}
+          filteredConvos={filteredConvos}
+          convoSearch={convoSearch}
+          onConvoSearchChange={setConvoSearch}
+          onOpenNewChat={openNewChatModal}
+          onOpenConversation={(convo) => {
+            setActiveConvo(convo);
+            loadMessages(convo.id);
+          }}
+          activeConvoId={activeConvo?.id}
+          requestCount={requestCount}
+          onOpenRequests={() => {
+            setShowRequests(true);
+            loadRequests();
+          }}
+          user={user}
+          timeAgo={timeAgo}
+        />
       </div>
 
       {/* Main Content Area */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-500 ease-in-out relative
-          ${!activeConvo ? "hidden md:flex" : "flex"}
+        className={`flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden
+          ${!activeConvo ? "hidden lg:flex" : "flex"}
         `}
       >
         {activeConvo ? (
@@ -1187,33 +1184,31 @@ export default function ChatPage() {
             }}
           />
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 text-center bg-dot-pattern relative">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-600/5 rounded-full blur-[120px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-blue-600/5 rounded-full blur-[100px] pointer-events-none" />
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center bg-dot-pattern relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-80 h-80 bg-brand-600/5 rounded-full blur-[100px] pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-600/4 rounded-full blur-[80px] pointer-events-none" />
 
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              initial={{ scale: 0.92, opacity: 0, y: 16 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="relative z-10 max-w-sm"
+              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              className="relative z-10 max-w-xs"
             >
-              <div className="h-24 w-24 sm:h-28 sm:w-28 rounded-[40px] bg-gradient-to-br from-brand-600/20 to-brand-600/5 flex items-center justify-center mx-auto mb-8 transform -rotate-12 hover:rotate-0 transition-transform duration-700 shadow-inner group">
-                <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-[28px] bg-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <MessageCircle className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                </div>
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[32px] bg-brand-600/10 flex items-center justify-center mx-auto mb-6 -rotate-6 border border-brand-600/15 shadow-inner">
+                <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-brand-600" />
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black text-foreground mb-4 tracking-tighter">
+              <h2 className="text-2xl sm:text-3xl font-black text-foreground mb-3 tracking-tight">
                 Select a conversation
               </h2>
-              <p className="text-[13px] text-muted-foreground font-medium leading-relaxed opacity-70 mb-8 sm:mb-10 px-4">
-                Choose a teammate to start discussing strategy, sharing clips,
-                or organizing your next match.
+              <p className="text-[13px] text-muted-foreground/60 font-medium leading-relaxed mb-8 max-w-[220px] mx-auto">
+                Choose a teammate to start chatting.
               </p>
               <Button
                 onClick={openNewChatModal}
-                className="h-12 sm:h-14 px-8 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-[24px] active:scale-[0.98] transition-all flex items-center font-black uppercase text-[11px] tracking-[0.2em] mx-auto"
+                className="h-11 px-8 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all flex items-center font-black uppercase text-[11px] tracking-widest mx-auto"
               >
-                <Plus className="h-5 w-5 mr-3" /> New Message
+                <Plus className="h-4 w-4 mr-2" />
+                New Message
               </Button>
             </motion.div>
           </div>
@@ -1224,24 +1219,8 @@ export default function ChatPage() {
       <NewChatModal
         isOpen={showNewChat}
         onClose={closeNewChatModal}
-        activeTab={activeTab}
-        onTabChange={(tab) => {
-          setActiveTab(tab);
-          setSearchQuery("");
-        }}
-        searchQuery={searchQuery}
-        onSearchChange={handleSearch}
-        searching={searching}
-        tabLoading={tabLoading}
-        searchResults={searchResults}
-        tabFollowers={tabFollowers}
-        tabFollowing={tabFollowing}
-        syncedContacts={syncedContacts}
-        getFilteredTabList={getFilteredTabList}
-        onSelectUser={handleStartConversation}
-        onSyncContacts={handleSyncContactsInModal}
-        onInviteFriends={handleInviteFromModal}
-        contactSyncing={contactSyncing}
+        onStartConvo={handleStartConversation}
+        user={user}
       />
 
       <MessageRequestsModal
