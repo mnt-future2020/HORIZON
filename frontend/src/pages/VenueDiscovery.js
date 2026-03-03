@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock } from "lucide-react";
 import { toast } from "sonner";
+import Logo from "@/components/Logo";
 
 // Athlete action imagery
 const DISCOVERY_BANNER = "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1920&q=80";
@@ -303,7 +304,7 @@ export default function VenueDiscovery() {
       {/* Top bar for non-logged-in users */}
       {!user && (
         <nav className="fixed top-0 w-full z-40 h-16 flex items-center justify-between px-6 md:px-12 bg-card/80 backdrop-blur-xl border-b border-border/20 shadow-sm">
-          <Link to="/" className="font-display font-black text-3xl tracking-tighter uppercase text-brand-600">Lobbi</Link>
+          <Link to="/" className="text-brand-600"><Logo size="md" /></Link>
           <div className="flex items-center gap-6">
             <Button variant="link" size="sm" onClick={() => navigate("/auth")} className="admin-btn text-muted-foreground hover:text-brand-600">Log in</Button>
             <Button size="sm" onClick={() => navigate("/auth")} className="bg-brand-600 text-white rounded-full h-10 px-6 admin-btn hover:bg-brand-500 shadow-lg shadow-brand-600/20">Get Started</Button>
