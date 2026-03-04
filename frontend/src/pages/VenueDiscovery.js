@@ -28,11 +28,11 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
     <motion.div layout initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.95 }} transition={{ delay: idx * 0.05, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       onClick={onClick}
-      className="group cursor-pointer flex flex-col h-full bg-card border border-border/40 hover:border-brand-400 rounded-[28px] shadow-sm hover:shadow-xl transition-all duration-300"
+      className="group cursor-pointer flex flex-col h-full bg-card border border-border/40 hover:border-brand-400 rounded-2xl sm:rounded-[28px] shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.98]"
       data-testid={`venue-card-${venue.id}`}>
 
       {/* Image */}
-      <div className="relative aspect-[4/3] overflow-hidden bg-secondary/20 p-1.5 sm:p-2">
+      <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden bg-secondary/20 p-1 sm:p-2">
         <div className="relative w-full h-full overflow-hidden rounded-lg">
           {venue.images?.[0] ? (
             <img src={mediaUrl(venue.images[0])} alt={venue.name}
@@ -76,9 +76,9 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
       </div>
 
       {/* Info */}
-      <div className="p-3.5 sm:p-5 flex flex-col flex-grow">
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="admin-heading text-sm sm:text-base truncate group-hover:text-brand-600 uppercase tracking-tighter transition-colors duration-300"
+      <div className="p-3 sm:p-5 flex flex-col flex-grow">
+        <div className="flex items-center gap-2 mb-1 sm:mb-2">
+          <h3 className="admin-heading text-xs sm:text-base truncate group-hover:text-brand-600 uppercase tracking-tighter transition-colors duration-300"
             data-testid={`venue-name-${venue.id}`}>
             {venue.name}
           </h3>
@@ -91,13 +91,13 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
         </div>
 
         {/* Location */}
-        <div className="flex items-center gap-2 admin-section-label mb-3">
+        <div className="flex items-center gap-1.5 sm:gap-2 admin-section-label mb-2 sm:mb-3">
           <MapPin className="h-3.5 w-3.5 text-brand-500" />
           <span className="truncate">{venue.area || ""}{venue.area ? ", " : ""}{venue.city}</span>
         </div>
 
         {/* Stats row */}
-        <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/20">
+        <div className="mt-auto flex items-center justify-between pt-2.5 sm:pt-4 border-t border-border/20">
           <div className="flex items-center gap-2">
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
             <span className="admin-name">{venue.rating?.toFixed(1) || "NEW"}</span>
@@ -314,37 +314,37 @@ export default function VenueDiscovery() {
       )}
 
       {/* Spacer between navbar and search header */}
-      <div className="h-3 sm:h-4 bg-secondary/20" />
+      <div className="h-1 sm:h-4 bg-secondary/20" />
 
       {/* Search Hero */}
       <div className="border-b border-border/40 bg-card sticky z-30 shadow-sm top-16">
-        <div className="max-w-[90rem] mx-auto px-4 sm:px-6 pt-5 sm:pt-6 pb-4 sm:pb-5">
+        <div className="max-w-[90rem] mx-auto px-4 sm:px-6 pt-3 sm:pt-5 pb-3 sm:pb-4">
           {/* Title Row */}
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:flex h-10 w-10 rounded-xl bg-brand-600/10 items-center justify-center">
-                <MapPin className="h-5 w-5 text-brand-600" />
+          <div className="flex items-center justify-between mb-2 sm:mb-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="hidden sm:flex h-9 w-9 rounded-xl bg-brand-600/10 items-center justify-center">
+                <MapPin className="h-4 w-4 text-brand-600" />
               </div>
               <div>
-                <h1 className="text-base sm:text-lg font-black text-foreground tracking-tight">Discover Venues</h1>
-                <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">Find & book sports facilities near you</p>
+                <h1 className="text-sm sm:text-lg font-black text-foreground tracking-tight">Discover Venues</h1>
+                <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">Find & book sports facilities near you</p>
               </div>
             </div>
             {!loading && venues.length > 0 && (
-              <span className="text-xs font-bold text-muted-foreground bg-secondary/40 px-3 py-1.5 rounded-full">
+              <span className="text-[11px] sm:text-xs font-bold text-muted-foreground bg-secondary/40 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full">
                 {venues.length} venue{venues.length !== 1 ? "s" : ""}
               </span>
             )}
           </div>
 
           {/* Search Bar */}
-          <div className="flex gap-3 sm:gap-4 items-center" data-testid="search-bar">
+          <div className="flex gap-2 sm:gap-4 items-center" data-testid="search-bar">
             <div className="relative flex-1">
-              <Search className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+              <Search className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
               <Input
                 placeholder="Search venue, area, city..."
                 value={searchText} onChange={(e) => setSearchText(e.target.value)}
-                className="pl-12 sm:pl-16 pr-8 sm:pr-12 bg-secondary/30 border-border/30 rounded-2xl h-12 sm:h-13 text-sm sm:text-base font-medium focus-visible:ring-0 focus-visible:border-brand-500 placeholder:text-muted-foreground/60 transition-all shadow-sm"
+                className="pl-10 sm:pl-16 pr-8 sm:pr-12 bg-secondary/30 border-border/30 rounded-2xl h-10 sm:h-13 text-xs sm:text-base font-medium focus-visible:ring-0 focus-visible:border-brand-500 placeholder:text-muted-foreground/60 transition-all shadow-sm"
                 name="venue-search"
                 autoComplete="off"
                 data-testid="search-input"
@@ -355,7 +355,7 @@ export default function VenueDiscovery() {
                 </button>
               )}
             </div>
-            <Button variant="outline" size="icon" aria-label={filtersOpen ? "Close filters" : "Open filters"} className={`h-12 w-12 sm:h-13 sm:w-13 shrink-0 relative rounded-2xl border transition-all shadow-sm ${filtersOpen ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/30 bg-secondary/30 text-muted-foreground hover:text-brand-600 hover:border-brand-400"}`}
+            <Button variant="outline" size="icon" aria-label={filtersOpen ? "Close filters" : "Open filters"} className={`h-10 w-10 sm:h-13 sm:w-13 shrink-0 relative rounded-xl sm:rounded-2xl border transition-all shadow-sm ${filtersOpen ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/30 bg-secondary/30 text-muted-foreground hover:text-brand-600 hover:border-brand-400"}`}
               onClick={() => setFiltersOpen(!filtersOpen)} data-testid="filters-toggle">
               <SlidersHorizontal className="h-5 w-5" />
               {activeFilterCount > 0 && (
@@ -367,27 +367,27 @@ export default function VenueDiscovery() {
           </div>
 
           {/* Quick City Pills + Near Me */}
-          <div className="flex gap-2 sm:gap-3 mt-3 sm:mt-4 overflow-x-auto pb-2 scrollbar-hide" data-testid="city-pills">
+          <div className="flex gap-1.5 sm:gap-3 mt-2 sm:mt-3 overflow-x-auto pb-1.5 sm:pb-2 scrollbar-hide" data-testid="city-pills">
             <button onClick={handleNearMe} data-testid="near-me-btn"
               disabled={locatingUser}
-              className={`px-3 sm:px-5 py-2.5 min-h-[40px] admin-btn text-[11px] whitespace-nowrap transition-all flex items-center gap-2 border rounded-full ${nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
+              className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all flex items-center gap-1.5 sm:gap-2 border rounded-full ${nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
               {locatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
               {locatingUser ? "Locating..." : "Near Me"}
             </button>
             {nearMeActive && (
               <button onClick={() => setDriveTimeMode(!driveTimeMode)} data-testid="drive-time-toggle"
-                className={`px-3 sm:px-5 py-2.5 min-h-[40px] admin-btn text-[11px] whitespace-nowrap transition-all flex items-center gap-2 border rounded-full ${driveTimeMode ? "bg-brand-600/10 text-brand-600 border-brand-600" : "bg-transparent text-muted-foreground border-transparent hover:text-brand-600"}`}>
+                className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all flex items-center gap-1.5 sm:gap-2 border rounded-full ${driveTimeMode ? "bg-brand-600/10 text-brand-600 border-brand-600" : "bg-transparent text-muted-foreground border-transparent hover:text-brand-600"}`}>
                 <Car className="h-4 w-4" />
                 Drive Time
               </button>
             )}
             <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false); }} data-testid="city-pill-all"
-              className={`px-3 sm:px-5 py-2.5 min-h-[40px] admin-btn text-[11px] whitespace-nowrap transition-all border rounded-full ${selectedCity === "all" && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
+              className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all border rounded-full ${selectedCity === "all" && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
               All Cities
             </button>
             {cities.map(c => (
               <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
-                className={`px-3 sm:px-5 py-2.5 min-h-[40px] admin-btn text-[11px] whitespace-nowrap transition-all border rounded-full ${selectedCity === c.city && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
+                className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all border rounded-full ${selectedCity === c.city && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
                 {c.city} <span className="opacity-50 ml-1">({c.count})</span>
               </button>
             ))}
@@ -398,7 +398,7 @@ export default function VenueDiscovery() {
             {filtersOpen && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden" data-testid="filters-panel">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-4 pt-6 mt-6 border-t border-border/40">
+                <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-4 sm:pt-6 mt-4 sm:mt-6 border-t border-border/40">
                   {/* Area */}
                   <div>
                     <label className="admin-section-label mb-2 block">Area</label>
@@ -484,7 +484,7 @@ export default function VenueDiscovery() {
       </div>
 
       {/* Results */}
-      <div className={`max-w-[90rem] mx-auto px-4 sm:px-6 py-4 sm:py-8 ${!user ? "pt-4 sm:pt-8" : ""}`}>
+      <div className={`max-w-[90rem] mx-auto px-3 sm:px-6 py-3 sm:py-8 ${!user ? "pt-3 sm:pt-8" : ""}`}>
         {!loading && venues.length > 0 && (nearMeActive || selectedCity !== "all" || selectedArea !== "all") && (
           <p className="admin-label mb-4 sm:mb-6" data-testid="results-count">
             Showing results
@@ -497,7 +497,7 @@ export default function VenueDiscovery() {
         {loading ? (
           <VenueDiscoverySkeleton />
         ) : venues.length === 0 ? (
-          <div className="border border-border/40 bg-card overflow-hidden rounded-[28px] shadow-sm" data-testid="no-results">
+          <div className="border border-border/40 bg-card overflow-hidden rounded-2xl sm:rounded-[28px] shadow-sm" data-testid="no-results">
             <div className="grid md:grid-cols-2 gap-0">
               <div className="p-5 sm:p-10 md:p-24 flex flex-col items-center md:items-start justify-center text-center md:text-left">
                 <div className="w-16 h-16 bg-secondary/30 rounded-2xl flex items-center justify-center mb-6">
