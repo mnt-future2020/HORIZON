@@ -254,7 +254,7 @@ function AppRouteDefinitions() {
     <Routes>
       <Route
         path="/"
-        element={user ? <Navigate to="/feed" /> : <LandingPage />}
+        element={<LandingPage />}
       />
       <Route
         path="/auth"
@@ -522,17 +522,21 @@ function AppRouteDefinitions() {
   );
 }
 
+// Pages that should render full-screen without the app shell (Navbar + Sidebar)
+const FULL_PAGE_PATHS = ["/", "/auth", "/about", "/contact", "/privacy-policy", "/terms", "/refund-policy"];
+
 function AppRoutes() {
   const { user } = useAuth();
   const location = useLocation();
   const isChat = location.pathname === "/chat";
+  const isFullPage = FULL_PAGE_PATHS.includes(location.pathname);
 
   return (
     <div className={`bg-background flex flex-col ${isChat ? "h-screen overflow-hidden" : "min-h-screen"}`}>
-      {user && <Navbar />}
-      <DocVerificationPopup />
+      {user && !isFullPage && <Navbar />}
+      {!isFullPage && <DocVerificationPopup />}
       <Suspense fallback={<PageLoader />}>
-        {user ? (
+        {user && !isFullPage ? (
           <div className="flex flex-1 w-full gap-4 lg:gap-8 relative px-3 sm:px-4 md:px-6 max-w-[1600px] mx-auto min-h-0">
             <Sidebar />
             <main

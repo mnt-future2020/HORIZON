@@ -20,8 +20,28 @@ const handIcons = [
   "/images/icon/hand6.png",
 ];
 
+function useCardSpread() {
+  const [spread, setSpread] = useState({ x: 40, y: 15 });
+
+  useEffect(() => {
+    function update() {
+      const w = window.innerWidth;
+      if (w < 480) setSpread({ x: 28, y: 10 });
+      else if (w < 640) setSpread({ x: 40, y: 15 });
+      else if (w < 768) setSpread({ x: 60, y: 25 });
+      else setSpread({ x: 90, y: 35 });
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return spread;
+}
+
 export default function SocialSection() {
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
+  const spread = useCardSpread();
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -31,10 +51,10 @@ export default function SocialSection() {
   }, []);
 
   return (
-    <section id="social-section" className="relative bg-[#F5F1E8] text-black py-12 md:py-24 px-4 md:px-12 overflow-hidden">
+    <section id="social-section" className="relative bg-[#F5F1E8] text-black py-8 sm:py-12 md:py-24 px-3 sm:px-4 md:px-12 overflow-hidden">
       <div className="max-w-7xl mx-auto">
-        <div className="relative h-20 md:h-32 flex items-center justify-center mt-8 md:mt-16">
-          <div className="relative h-full w-auto max-h-[60px] aspect-square">
+        <div className="relative h-14 sm:h-20 md:h-32 flex items-center justify-center mt-4 sm:mt-8 md:mt-16">
+          <div className="relative h-full w-auto max-h-[40px] sm:max-h-[50px] md:max-h-[60px] aspect-square">
             {handIcons.map((icon, index) => (
               <div
                 key={icon}
@@ -59,10 +79,10 @@ export default function SocialSection() {
           viewport={{ once: true }}
           className="text-center mb-2.5"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-7xl lg:text-6xl font-black uppercase leading-none leading-[2.25] text-turf-dark">
+          <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-black uppercase leading-[2] sm:leading-[2.25] text-turf-dark">
             WHAT'S UP
           </h2>
-          <h3 className="text-2xl sm:text-3xl md:text-6xl lg:text-6xl font-brier mt-2 leading-10 text-turf-dark">ON SOCIALS</h3>
+          <h3 className="text-xl sm:text-2xl md:text-5xl lg:text-6xl font-brier mt-1 sm:mt-2 leading-8 sm:leading-10 text-turf-dark">ON SOCIALS</h3>
         </motion.div>
 
         <motion.div
@@ -70,7 +90,7 @@ export default function SocialSection() {
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="relative h-[350px] sm:h-[450px] md:h-[700px] mb-8 md:mb-16 flex items-center justify-center"
+          className="relative h-[250px] sm:h-[350px] md:h-[500px] lg:h-[700px] mb-6 sm:mb-8 md:mb-16 flex items-center justify-center"
         >
           {socialImages.map((image, i) => (
             <motion.div
@@ -80,8 +100,8 @@ export default function SocialSection() {
                 opacity: 1,
                 rotate: (i - 3) * 6,
                 scale: 1 - Math.abs(i - 3) * 0.02,
-                x: (i - 3) * (window.innerWidth < 640 ? 40 : window.innerWidth < 768 ? 60 : 90),
-                y: Math.abs(i - 3) * (window.innerWidth < 640 ? 15 : 35),
+                x: (i - 3) * spread.x,
+                y: Math.abs(i - 3) * spread.y,
               }}
               transition={{
                 duration: 0.8,
@@ -98,7 +118,7 @@ export default function SocialSection() {
                 y: -40,
                 transition: { duration: 0.3 },
               }}
-              className="absolute w-36 sm:w-48 md:w-80 h-48 sm:h-64 md:h-[480px] bg-white rounded-2xl md:rounded-3xl shadow-2xl overflow-hidden cursor-pointer origin-bottom"
+              className="absolute w-24 sm:w-36 md:w-56 lg:w-80 h-32 sm:h-48 md:h-72 lg:h-[480px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden cursor-pointer origin-bottom"
               style={{ zIndex: 10 - Math.abs(i - 3) }}
             >
               <div className="relative w-full h-full">
@@ -113,18 +133,18 @@ export default function SocialSection() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
           viewport={{ once: true }}
-          className="text-center space-y-6"
+          className="text-center space-y-4 sm:space-y-6"
         >
-          <p className="text-lg md:text-xl font-serif text-black/80 font-medium">Follow Lobbi on social media</p>
+          <p className="text-base sm:text-lg md:text-xl font-serif text-black/80 font-medium">Follow Lobbi on social media</p>
 
-          <div className="flex flex-wrap justify-center gap-6">
+          <div className="flex flex-wrap justify-center gap-4 sm:gap-6">
             {["TIKTOK", "INSTAGRAM", "YOUTUBE", "TWITCH"].map((platform) => (
               <motion.a
                 key={platform}
                 href="#"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="font-black uppercase text-sm tracking-wider text-black hover:text-black/60 transition-colors"
+                className="font-black uppercase text-xs sm:text-sm tracking-wider text-black hover:text-black/60 transition-colors"
               >
                 {platform}
               </motion.a>

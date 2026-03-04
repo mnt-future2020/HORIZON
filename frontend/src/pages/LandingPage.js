@@ -1,4 +1,3 @@
-import Preloader from "@/components/landing/Preloader";
 import SmoothScroll from "@/components/landing/SmoothScroll";
 import LandingHeader from "@/components/landing/LandingHeader";
 import HeroSection from "@/components/landing/HeroSection";
@@ -15,25 +14,24 @@ import LandingFooter from "@/components/landing/LandingFooter";
 export default function LandingPage() {
   return (
     <>
-      <Preloader />
       <SmoothScroll>
         <main className="relative">
           <LandingHeader />
           <HeroSection />
           <div className="relative z-10">
             <MissionSection />
-            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
+            <div className="relative w-full h-[30px] sm:h-[40px] md:h-[60px] lg:h-[80px] bg-[#0a0c0a]" />
             <ArenaSplitSection />
-            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
+            <div className="relative w-full h-[30px] sm:h-[40px] md:h-[60px] lg:h-[80px] bg-[#0a0c0a]" />
             <BrowseByCitySection />
             <PlatformFeaturesSection />
-            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
+            <div className="relative w-full h-[30px] sm:h-[40px] md:h-[60px] lg:h-[80px] bg-[#0a0c0a]" />
             <ArenaShowcase />
-            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
+            <div className="relative w-full h-[30px] sm:h-[40px] md:h-[60px] lg:h-[80px] bg-[#0a0c0a]" />
             <ArenaCalloutSection />
-            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
+            <div className="relative w-full h-[30px] sm:h-[40px] md:h-[60px] lg:h-[80px] bg-[#0a0c0a]" />
             <HowItWorksSection />
-            <div className="relative w-full h-[60px] md:h-[80px] bg-[#0a0c0a]" />
+            <div className="relative w-full h-[30px] sm:h-[40px] md:h-[60px] lg:h-[80px] bg-[#0a0c0a]" />
             <SocialSection />
             <LandingFooter />
           </div>
