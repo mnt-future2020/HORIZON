@@ -533,7 +533,8 @@ export default function IoTDashboard() {
           {devices.length === 0 ? (
             <div className="glass-premium rounded-[32px] border border-white/5 py-20 text-center text-muted-foreground">
               <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="admin-label opacity-40">No devices found</p>
+              <p className="admin-heading text-foreground mb-2">Coming Soon</p>
+              <p className="admin-label opacity-60">IoT device management will be available shortly</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
