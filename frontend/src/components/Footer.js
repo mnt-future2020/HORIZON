@@ -68,7 +68,7 @@ export default function Footer() {
                 <li key={l.label}>
                   <Link
                     to={l.to}
-                    className="text-sm lg:text-base font-bold text-gray-600 hover:text-brand-600 transition-colors"
+                    className="text-base font-bold text-gray-600 hover:text-brand-600 transition-colors"
                   >
                     {l.label}
                   </Link>
@@ -93,7 +93,7 @@ export default function Footer() {
                 <li key={l.label}>
                   <Link
                     to={l.to}
-                    className="text-sm lg:text-base font-bold text-gray-600 hover:text-brand-600 transition-colors"
+                    className="text-base font-bold text-gray-600 hover:text-brand-600 transition-colors"
                   >
                     {l.label}
                   </Link>
@@ -121,7 +121,7 @@ export default function Footer() {
                 <Phone className="w-5 h-5 mt-0.5 shrink-0 text-brand-600" />
                 <a
                   href="tel:+919999999999"
-                  className="hover:text-brand-600 transition-colors whitespace-nowrap"
+                  className="hover:text-brand-600 transition-colors"
                 >
                   +91 99999 99999
                 </a>
