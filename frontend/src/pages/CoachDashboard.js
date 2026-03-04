@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { academyAPI, coachingAPI, organizationAPI, performanceAPI, trainingAPI, payoutAPI } from "@/lib/api";
 import { fmt12h } from "@/lib/utils";
@@ -66,6 +67,7 @@ export default function CoachDashboard({ defaultView }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isIndividualCoach = user?.coach_type === "individual";
   const coachSports = user?.coaching_sports?.length ? user.coaching_sports : SPORTS;
 
@@ -82,7 +84,8 @@ export default function CoachDashboard({ defaultView }) {
   useEffect(() => {
     setActiveView(routeView);
   }, [routeView]);
-  const [coachingSubTab, setCoachingSubTab] = useState("sessions");
+
+  const [coachingSubTab, setCoachingSubTab] = useState(searchParams.get("ctab") || "sessions");
   // Academy state
   const [academies, setAcademies] = useState([]);
   const [selectedAcademy, setSelectedAcademy] = useState(null);
@@ -95,7 +98,7 @@ export default function CoachDashboard({ defaultView }) {
   });
   const [studentForm, setStudentForm] = useState({ name: "", email: "", phone: "" });
   // Academy enhanced state
-  const [academyTab, setAcademyTab] = useState("overview");
+  const [academyTab, setAcademyTab] = useState(searchParams.get("atab") || "overview");
   const [enrollments, setEnrollments] = useState([]);
   const [batches, setBatches] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -166,7 +169,7 @@ export default function CoachDashboard({ defaultView }) {
 
   // ─── Individual Coach state ───
   const [clients, setClients] = useState([]);
-  const [clientFilter, setClientFilter] = useState("all");
+  const [clientFilter, setClientFilter] = useState(searchParams.get("cf") || "all");
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [viewClientId, setViewClientId] = useState(null);
   const [viewClientData, setViewClientData] = useState(null);
@@ -185,10 +188,10 @@ export default function CoachDashboard({ defaultView }) {
   const [paymentForm, setPaymentForm] = useState({ client_id: "", amount: "", mode: "cash", reference: "", period: new Date().toISOString().slice(0, 7), notes: "" });
   const [revenueData, setRevenueData] = useState(null);
   const [onboardingData, setOnboardingData] = useState(null);
-  const [mgmtTab, setMgmtTab] = useState("schedule");
-  const [indScheduleTab, setIndScheduleTab] = useState("upcoming");
+  const [mgmtTab, setMgmtTab] = useState(searchParams.get("mtab") || "schedule");
+  const [indScheduleTab, setIndScheduleTab] = useState(searchParams.get("stab") || "upcoming");
   // ─── Schedule filters ───
-  const [sessionStatusFilter, setSessionStatusFilter] = useState("all"); // all | today | upcoming | completed | cancelled
+  const [sessionStatusFilter, setSessionStatusFilter] = useState(searchParams.get("sf") || "all"); // all | today | upcoming | completed | cancelled
   const [sessionSearch, setSessionSearch] = useState("");
   const [offlineLogClientFilter, setOfflineLogClientFilter] = useState("");
   const [offlineLogPaymentFilter, setOfflineLogPaymentFilter] = useState("all");
@@ -196,10 +199,10 @@ export default function CoachDashboard({ defaultView }) {
   const [offlineLogDateTo, setOfflineLogDateTo] = useState("");
   // ─── Client filters ───
   const [clientSearch, setClientSearch] = useState("");
-  const [clientSportFilter, setClientSportFilter] = useState("all");
-  const [clientSortBy, setClientSortBy] = useState("name"); // name | joined | fee
+  const [clientSportFilter, setClientSportFilter] = useState(searchParams.get("csport") || "all");
+  const [clientSortBy, setClientSortBy] = useState(searchParams.get("csort") || "name"); // name | joined | fee
   // ─── Finance enhanced state ───
-  const [financeSubTab, setFinanceSubTab] = useState("overview");
+  const [financeSubTab, setFinanceSubTab] = useState(searchParams.get("ftab") || "overview");
   const [financeSummaryData, setFinanceSummaryData] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [transactionFilters, setTransactionFilters] = useState({ date_from: "", date_to: "", type: "all", category: "", payment_mode: "" });
@@ -208,7 +211,7 @@ export default function CoachDashboard({ defaultView }) {
   const [expenseForm, setExpenseForm] = useState({ category: "venue_rent", amount: "", date: new Date().toISOString().slice(0, 10), description: "", payment_mode: "cash", reference: "" });
   const [editExpenseId, setEditExpenseId] = useState(null);
   const [clientOutstanding, setClientOutstanding] = useState([]);
-  const [outstandingFilter, setOutstandingFilter] = useState("all");
+  const [outstandingFilter, setOutstandingFilter] = useState(searchParams.get("of") || "all");
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7));
   // ─── Invoice state ───
   const [invoices, setInvoices] = useState([]);
@@ -216,8 +219,8 @@ export default function CoachDashboard({ defaultView }) {
   const [invoiceCreating, setInvoiceCreating] = useState(false);
   const [invoiceItems, setInvoiceItems] = useState([{ description: "", qty: "1", rate: "" }]);
   const [invoiceForm, setInvoiceForm] = useState({ client_id: "", client_name: "", client_phone: "", client_email: "", date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
-  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all");
-  const [invoiceMonth, setInvoiceMonth] = useState(new Date().toISOString().slice(0, 7));
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState(searchParams.get("isf") || "all");
+  const [invoiceMonth, setInvoiceMonth] = useState(searchParams.get("imonth") || new Date().toISOString().slice(0, 7));
   const [gstSettings, setGstSettings] = useState({ gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "INV" });
   const [showGSTSettings, setShowGSTSettings] = useState(false);
   const [gstSaving, setGstSaving] = useState(false);
@@ -229,6 +232,32 @@ export default function CoachDashboard({ defaultView }) {
   const [bankForm, setBankForm] = useState({ account_number: "", ifsc_code: "", beneficiary_name: "", bank_name: "", business_type: "individual", phone: "", email: "" });
   const [bankSaving, setBankSaving] = useState(false);
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
+
+  // Sync tab/filter state → URL params
+  useEffect(() => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (coachingSubTab !== "sessions") p.set("ctab", coachingSubTab); else p.delete("ctab");
+      if (academyTab !== "overview") p.set("atab", academyTab); else p.delete("atab");
+      if (mgmtTab !== "schedule") p.set("mtab", mgmtTab); else p.delete("mtab");
+      if (indScheduleTab !== "upcoming") p.set("stab", indScheduleTab); else p.delete("stab");
+      if (financeSubTab !== "overview") p.set("ftab", financeSubTab); else p.delete("ftab");
+      if (clientFilter !== "all") p.set("cf", clientFilter); else p.delete("cf");
+      if (clientSportFilter !== "all") p.set("csport", clientSportFilter); else p.delete("csport");
+      if (clientSortBy !== "name") p.set("csort", clientSortBy); else p.delete("csort");
+      if (sessionStatusFilter !== "all") p.set("sf", sessionStatusFilter); else p.delete("sf");
+      if (outstandingFilter !== "all") p.set("of", outstandingFilter); else p.delete("of");
+      if (invoiceStatusFilter !== "all") p.set("isf", invoiceStatusFilter); else p.delete("isf");
+      const curMonth = new Date().toISOString().slice(0, 7);
+      if (invoiceMonth !== curMonth) p.set("imonth", invoiceMonth); else p.delete("imonth");
+      return p;
+    }, { replace: true });
+  }, [coachingSubTab, academyTab, mgmtTab, indScheduleTab, financeSubTab, clientFilter, clientSportFilter, clientSortBy, sessionStatusFilter, outstandingFilter, invoiceStatusFilter, invoiceMonth, setSearchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useScrollRestoration(
+    location.pathname === "/coach/manage" ? "coach_manage" : "coach_dash",
+    !loading
+  );
 
   const loadAcademyData = useCallback(async () => {
     try {

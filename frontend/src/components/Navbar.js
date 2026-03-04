@@ -61,8 +61,16 @@ export default function Navbar() {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });
       window.dispatchEvent(new CustomEvent("feed:refresh"));
+      return;
     }
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
+
+  const handleNavClick = (to) => {
+    if (to === "/feed") return; // handled by handleFeedClick
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -214,7 +222,7 @@ export default function Navbar() {
                     <Link
                       key={link.to}
                       to={link.to}
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={() => { handleNavClick(link.to); setMobileMenuOpen(false); }}
                       data-testid={`mobile-menu-${link.label.toLowerCase().replace(/\s/g, "-")}`}
                       className={`flex items-center gap-3 px-6 py-3.5 text-sm font-medium transition-all duration-200 min-h-[52px] touch-manipulation ${
                         isActive
@@ -452,7 +460,7 @@ export default function Navbar() {
           <Link
             key={l.to}
             to={l.to}
-            onClick={l.to === "/feed" ? handleFeedClick : undefined}
+            onClick={l.to === "/feed" ? handleFeedClick : () => handleNavClick(l.to)}
             data-testid={`mobile-nav-${l.label.toLowerCase()}`}
             className={`flex flex-col items-center justify-center gap-1 min-w-0 flex-1 min-h-[48px] transition-colors ${
               path === l.to || path.startsWith(l.to + "/")
@@ -542,7 +550,14 @@ export function Sidebar() {
       e.preventDefault();
       window.scrollTo({ top: 0, behavior: "smooth" });
       window.dispatchEvent(new CustomEvent("feed:refresh"));
+      return;
     }
+    window.scrollTo({ top: 0, behavior: "instant" });
+  };
+
+  const handleNavClick = (to) => {
+    if (to === "/feed") return; // handled by handleFeedClick
+    window.scrollTo({ top: 0, behavior: "instant" });
   };
 
   const links = {
@@ -595,7 +610,7 @@ export function Sidebar() {
             <Link
               key={l.to}
               to={l.to}
-              onClick={l.to === "/feed" ? handleFeedClick : undefined}
+              onClick={l.to === "/feed" ? handleFeedClick : () => handleNavClick(l.to)}
               data-testid={`nav-link-${l.label.toLowerCase().replace(/\s/g, "-")}`}
               className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[14px] font-medium transition-all duration-200 ${
                 active

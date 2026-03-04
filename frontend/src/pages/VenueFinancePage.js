@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { venueFinanceAPI, payoutAPI, venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,8 +34,9 @@ function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-bran
 const VENUE_EXPENSE_CATEGORIES = ["maintenance", "staffing", "electricity", "water", "rent", "equipment", "marketing", "insurance", "cleaning", "other"];
 
 export default function VenueFinancePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   // ─── Finance state ───
-  const [financeSubTab, setFinanceSubTab] = useState("overview");
+  const [financeSubTab, setFinanceSubTab] = useState(searchParams.get("subtab") || "overview");
   const [financeSummaryData, setFinanceSummaryData] = useState(null);
   const [venueExpenses, setVenueExpenses] = useState([]);
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
@@ -63,7 +65,7 @@ export default function VenueFinancePage() {
 
   // ─── Venue filter state ───
   const [ownerVenues, setOwnerVenues] = useState([]);
-  const [selectedVenueId, setSelectedVenueId] = useState("all");
+  const [selectedVenueId, setSelectedVenueId] = useState(searchParams.get("venue") || "all");
 
   // Computed
   const invoiceSubtotal = invoiceItems.reduce((s, i) => s + (parseFloat(i.qty) || 0) * (parseFloat(i.rate) || 0), 0);
@@ -133,6 +135,14 @@ export default function VenueFinancePage() {
     loadGstSettings();
     loadPayoutData();
   }, [loadFinanceSummary, loadVenueExpenses, loadVenueInvoices, loadVenueTransactions, loadGstSettings, loadPayoutData, invoiceMonth]);
+
+  // Sync subtab + venue → URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (financeSubTab !== "overview") params.set("subtab", financeSubTab);
+    if (selectedVenueId !== "all") params.set("venue", selectedVenueId);
+    setSearchParams(params, { replace: true });
+  }, [financeSubTab, selectedVenueId, setSearchParams]);
 
   // ─── Handlers ───
   const handleSaveExpense = async () => {

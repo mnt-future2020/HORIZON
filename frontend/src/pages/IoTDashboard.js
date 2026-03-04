@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { iotAPI, venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -212,6 +213,7 @@ function ZoneCard({ zone, onControl, onEdit, onDelete, index }) {
 
 export default function IoTDashboard() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(null);
   const [devices, setDevices] = useState([]);
@@ -219,7 +221,9 @@ export default function IoTDashboard() {
   const [energy, setEnergy] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState("7d");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "devices");
+  const [period, setPeriod] = useState(searchParams.get("period") || "7d");
+  const pendingVenueIdRef = useRef(searchParams.get("venue") || null);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [zoneDialogOpen, setZoneDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
@@ -267,9 +271,14 @@ export default function IoTDashboard() {
         : await venueAPI.getOwnerVenues();
       const v = res.data || [];
       setVenues(v);
-      if (v.length > 0 && !selectedVenue) setSelectedVenue(v[0]);
+      if (v.length > 0) {
+        const pendingId = pendingVenueIdRef.current;
+        pendingVenueIdRef.current = null;
+        const restored = pendingId ? v.find(x => String(x.id) === String(pendingId)) : null;
+        setSelectedVenue(restored || v[0]);
+      }
     } catch { /* ignore */ }
-  }, [user?.role, selectedVenue]);
+  }, [user?.role]);
 
   const loadData = useCallback(async (venueId) => {
     if (!venueId) return;
@@ -290,6 +299,15 @@ export default function IoTDashboard() {
 
   useEffect(() => { loadVenues(); }, [loadVenues]);
   useEffect(() => { if (selectedVenue) loadData(selectedVenue.id); }, [selectedVenue, loadData]);
+
+  // Sync state → URL params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (activeTab !== "devices") params.set("tab", activeTab);
+    if (period !== "7d") params.set("period", period);
+    if (selectedVenue) params.set("venue", String(selectedVenue.id));
+    setSearchParams(params, { replace: true });
+  }, [activeTab, period, selectedVenue, setSearchParams]);
 
   const handleControlDevice = async (deviceId, ctrl) => {
     try {
@@ -497,7 +515,7 @@ export default function IoTDashboard() {
         />
       </div>
 
-      <Tabs defaultValue="devices" data-testid="iot-tabs">
+      <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="iot-tabs">
         <TabsList className="bg-white/5 border border-white/5 p-1 rounded-2xl h-12 mb-8 gap-1">
           <TabsTrigger value="devices" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all">Devices</TabsTrigger>
           <TabsTrigger value="zones" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-zones">Zones</TabsTrigger>

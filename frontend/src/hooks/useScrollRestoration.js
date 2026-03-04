@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useNavigationType } from "react-router-dom";
 
 /**
@@ -13,6 +13,15 @@ export function useScrollRestoration(key, ready = true) {
   const storageKey = `scrollPos_${key}`;
   const targetScrollRef = useRef(null);
 
+  // Save scroll Y in useLayoutEffect cleanup — this fires BEFORE any other
+  // useLayoutEffect (e.g. a global scroll-to-top) can change window.scrollY,
+  // so we always capture the true position the user was at.
+  useLayoutEffect(() => {
+    return () => {
+      sessionStorage.setItem(storageKey, String(Math.round(window.scrollY)));
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // On mount: if this is a back/forward navigation, read the saved position.
   // Always consume the stored value so fresh navigations never pick it up.
   useEffect(() => {
@@ -23,11 +32,6 @@ export function useScrollRestoration(key, ready = true) {
       }
     }
     sessionStorage.removeItem(storageKey);
-
-    // Save exact scroll Y the moment the user leaves (component unmounts)
-    return () => {
-      sessionStorage.setItem(storageKey, String(Math.round(window.scrollY)));
-    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Once the list data is loaded and React has committed the DOM, restore scroll.

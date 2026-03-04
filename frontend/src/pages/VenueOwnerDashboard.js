@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, teamAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -152,14 +152,16 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isManageView = location.pathname === "/owner/manage";
-  const searchParams = new URLSearchParams(location.search);
-  const urlTab = searchParams.get("tab");
+  const [urlParams, setUrlParams] = useSearchParams();
+  const urlTab = urlParams.get("tab");
   const VALID_TABS = ["bookings", "slots", "reviews", "pricing", "checkin", "plan"];
   const activeTab = VALID_TABS.includes(urlTab) ? urlTab : "bookings";
   const setActiveTab = (tab) => {
-    const sp = new URLSearchParams(location.search);
-    sp.set("tab", tab);
-    navigate({ search: sp.toString() }, { replace: true });
+    setUrlParams(prev => {
+      const p = new URLSearchParams(prev);
+      p.set("tab", tab);
+      return p;
+    }, { replace: true });
   };
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -174,10 +176,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [upgrading, setUpgrading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [timeFilter, setTimeFilter] = useState("all");
-  const [sortOrder, setSortOrder] = useState("desc");
-  const [bookingView, setBookingView] = useState("list");
+  const [statusFilter, setStatusFilter] = useState(urlParams.get("status") || "all");
+  const [timeFilter, setTimeFilter] = useState(urlParams.get("time") || "all");
+  const [sortOrder, setSortOrder] = useState(urlParams.get("sort") || "desc");
+  const [bookingView, setBookingView] = useState(urlParams.get("bview") || "list");
   const [pricingView, setPricingView] = useState("rules");
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
@@ -297,6 +299,18 @@ function VenueOwnerDashboardContent({ defaultView }) {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Sync booking filters → URL (preserve tab + other params)
+  useEffect(() => {
+    setUrlParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (statusFilter !== "all") p.set("status", statusFilter); else p.delete("status");
+      if (timeFilter !== "all") p.set("time", timeFilter); else p.delete("time");
+      if (sortOrder !== "desc") p.set("sort", sortOrder); else p.delete("sort");
+      if (bookingView !== "list") p.set("bview", bookingView); else p.delete("bview");
+      return p;
+    }, { replace: true });
+  }, [statusFilter, timeFilter, sortOrder, bookingView, setUrlParams]);
 
   const loadVenueTeams = useCallback(async () => {
     if (!selectedVenue) return;

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI, posAPI } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -120,11 +121,13 @@ export default function POSPage() {
 }
 
 function POSTerminal({ user }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [venues, setVenues] = useState([]);
   const [selectedVenue, setSelectedVenue] = useState(null);
+  const pendingVenueIdRef = useRef(searchParams.get("venue") || null);
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
-  const [activeCategory, setActiveCategory] = useState("all");
+  const [activeCategory, setActiveCategory] = useState(searchParams.get("cat") || "all");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [charging, setCharging] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -132,7 +135,7 @@ function POSTerminal({ user }) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [activeView, setActiveView] = useState("pos");
+  const [activeView, setActiveView] = useState(searchParams.get("view") || "pos");
   const [summary, setSummary] = useState(null);
   const [recentSales, setRecentSales] = useState([]);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -179,14 +182,26 @@ function POSTerminal({ user }) {
     venueAPI.getOwnerVenues().then(r => {
       const v = r.data || [];
       setVenues(v);
-      if (v.length > 0) setSelectedVenue(v[0]);
+      if (v.length > 0) {
+        const pendingId = pendingVenueIdRef.current;
+        pendingVenueIdRef.current = null;
+        const restored = pendingId ? v.find(x => String(x.id) === String(pendingId)) : null;
+        setSelectedVenue(restored || v[0]);
+      }
       try { localStorage.setItem("pos_venues", JSON.stringify(v)); } catch {}
     }).catch((err) => {
       // Offline — load cached venues
       if (!err.response) {
         try {
           const cached = JSON.parse(localStorage.getItem("pos_venues"));
-          if (cached?.length) { setVenues(cached); setSelectedVenue(cached[0]); return; }
+          if (cached?.length) {
+            setVenues(cached);
+            const pendingId = pendingVenueIdRef.current;
+            pendingVenueIdRef.current = null;
+            const restored = pendingId ? cached.find(x => String(x.id) === String(pendingId)) : null;
+            setSelectedVenue(restored || cached[0]);
+            return;
+          }
         } catch {}
       }
       toast.error("Failed to load venues");
@@ -347,6 +362,15 @@ function POSTerminal({ user }) {
     if (activeView === "history") loadRecentSales();
     if (activeView === "summary") loadSummary();
   }, [activeView, loadRecentSales, loadSummary]);
+
+  // Sync view + category + venue → URL
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (activeView !== "pos") params.set("view", activeView);
+    if (activeCategory !== "all") params.set("cat", activeCategory);
+    if (selectedVenue) params.set("venue", String(selectedVenue.id));
+    setSearchParams(params, { replace: true });
+  }, [activeView, activeCategory, selectedVenue, setSearchParams]);
 
   // Charge
   const handleCharge = async () => {

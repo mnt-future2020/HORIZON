@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import { adminAPI, uploadAPI, payoutAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -150,13 +151,15 @@ function OverviewTab() {
 }
 
 function UsersTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(searchParams.get("filter") || "all");
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => parseInt(searchParams.get("page") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const LIMIT = 20;
+  const filterChangedRef = useRef(false);
   // Document viewer state
   const [docViewUserId, setDocViewUserId] = useState(null);
   const [docViewData, setDocViewData] = useState(null);
@@ -178,7 +181,27 @@ function UsersTab() {
     }).catch(() => {}).finally(() => setLoading(false));
   }, [filter]);
 
-  useEffect(() => { load(1); }, [load]);
+  // Mount: load URL-restored page
+  useEffect(() => {
+    load(page);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Filter change: reset to page 1 (skip on initial mount)
+  useEffect(() => {
+    if (!filterChangedRef.current) { filterChangedRef.current = true; return; }
+    setPage(1);
+    load(1);
+  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Sync filter + page → URL (preserve other params)
+  useEffect(() => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (filter !== "all") p.set("filter", filter); else p.delete("filter");
+      if (page > 1) p.set("page", String(page)); else p.delete("page");
+      return p;
+    }, { replace: true });
+  }, [filter, page, setSearchParams]);
 
   const handleAction = async (userId, action) => {
     try {
@@ -387,7 +410,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
     <div className="space-y-4" data-testid="admin-users-tab">
       <div className="flex flex-wrap gap-3 mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
-          <button key={f} onClick={() => setFilter(f)} data-testid={`filter-${f}`}
+          <button key={f} onClick={() => { setFilter(f); setPage(1); }} data-testid={`filter-${f}`}
             className={`px-5 py-2 rounded-full admin-btn transition-all duration-300 active:scale-95 ${
               filter === f 
                 ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" 
@@ -1022,6 +1045,7 @@ function VenuesTab() {
 }
 
 function SettingsTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -1032,11 +1056,20 @@ function SettingsTab() {
   const [changingPw, setChangingPw] = useState(false);
   const [testingS3, setTestingS3] = useState(false);
   const [s3Status, setS3Status] = useState(null); // null | {ok, message}
-  const [activeSubTab, setActiveSubTab] = useState("payments");
+  const [activeSubTab, setActiveSubTab] = useState(searchParams.get("subtab") || "payments");
 
   useEffect(() => {
     adminAPI.getSettings().then(r => setSettings(r.data)).catch(() => toast.error("Failed to load settings"));
   }, []);
+
+  // Sync activeSubTab → URL (preserve other params)
+  useEffect(() => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (activeSubTab !== "payments") p.set("subtab", activeSubTab); else p.delete("subtab");
+      return p;
+    }, { replace: true });
+  }, [activeSubTab, setSearchParams]);
 
   const saveSettings = async () => {
     setSaving(true);
@@ -1558,16 +1591,17 @@ function SettingsTab() {
 }
 
 function PayoutsTab() {
+  const [searchParams, setSearchParams] = useSearchParams();
   // State
   const [loading, setLoading] = useState(true);
   const [pendingPayouts, setPendingPayouts] = useState([]);
   const [settlements, setSettlements] = useState([]);
-  const [subTab, setSubTab] = useState("pending"); // pending | history | accounts
+  const [subTab, setSubTab] = useState(searchParams.get("ptab") || "pending"); // pending | history | accounts
   const [processing, setProcessing] = useState(null); // user_id being processed
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [detailDialog, setDetailDialog] = useState(null); // settlement object or null
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
 
   // Load data
   const load = useCallback(async () => {
@@ -1585,6 +1619,16 @@ function PayoutsTab() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  // Sync subTab + searchQuery → URL (preserve other params)
+  useEffect(() => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (subTab !== "pending") p.set("ptab", subTab); else p.delete("ptab");
+      if (searchQuery) p.set("q", searchQuery); else p.delete("q");
+      return p;
+    }, { replace: true });
+  }, [subTab, searchQuery, setSearchParams]);
 
   // Process single payout
   const handleProcessPayout = async (userId) => {
@@ -1908,18 +1952,30 @@ function PayoutsTab() {
 }
 
 export default function SuperAdminDashboard() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
+
+  // Sync main tab → URL (preserve other params)
+  useEffect(() => {
+    setSearchParams(prev => {
+      const p = new URLSearchParams(prev);
+      if (activeTab !== "overview") p.set("tab", activeTab); else p.delete("tab");
+      return p;
+    }, { replace: true });
+  }, [activeTab, setSearchParams]);
+
   return (
     <div className="min-h-screen bg-transparent pb-20 md:pb-8" data-testid="super-admin-dashboard">
       <div className="w-full py-6 flex flex-col gap-8 items-start">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full">
-          
+
           {/* Page Header */}
           <div className="mb-8">
             <h1 className="admin-page-title mb-1">Admin Console</h1>
             <p className="text-sm text-muted-foreground">Horizon Platform Management</p>
           </div>
 
-          <Tabs defaultValue="overview" className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
             <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-6">
               <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
                 {["overview", "users", "venues", "payouts", "settings"].map((tab) => (
