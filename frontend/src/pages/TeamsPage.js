@@ -21,6 +21,7 @@ import {
   Swords,
 } from "lucide-react";
 import { toast } from "sonner";
+import { TeamsSkeleton } from "@/components/SkeletonLoader";
 
 export default function TeamsPage() {
   const { user } = useAuth();
@@ -130,11 +131,7 @@ export default function TeamsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
-      </div>
-    );
+    return <TeamsSkeleton />;
   }
 
   return (

@@ -47,6 +47,7 @@ import {
   Shield,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MatchmakingSkeleton } from "@/components/SkeletonLoader";
 
 const SPORT_EMOJI = {
   football: "⚽",
@@ -1594,9 +1595,7 @@ export default function MatchmakingPage() {
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-12">
-                  <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-                </div>
+                <MatchmakingSkeleton />
               ) : recommended.length === 0 ? (
                 <EmptyState
                   icon={Sparkles}
@@ -1682,9 +1681,7 @@ export default function MatchmakingPage() {
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-12">
-                  <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-                </div>
+                <MatchmakingSkeleton />
               ) : matches.length === 0 ? (
                 <EmptyState
                   icon={Swords}
@@ -1779,9 +1776,7 @@ export default function MatchmakingPage() {
               exit={{ opacity: 0 }}
             >
               {loading ? (
-                <div className="flex justify-center py-12">
-                  <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-                </div>
+                <MatchmakingSkeleton />
               ) : allMercenaryPosts.length === 0 ? (
                 <EmptyState
                   icon={Users}

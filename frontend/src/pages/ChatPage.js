@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Loader2, MessageCircle, User, Plus, X, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { ChatSkeleton } from "@/components/SkeletonLoader";
 
 // Components
 import NewChatModal from "@/components/chat/NewChatModal";
@@ -167,14 +168,7 @@ export default function ChatPage() {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   if (convo.loading) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-background">
-        <Loader2 className="h-10 w-10 animate-spin text-brand-600 mb-4" aria-label="Loading conversations" />
-        <p className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground animate-pulse">
-          Synchronizing Network
-        </p>
-      </div>
-    );
+    return <ChatSkeleton />;
   }
 
   return (

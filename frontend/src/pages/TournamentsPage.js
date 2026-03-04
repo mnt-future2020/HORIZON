@@ -38,6 +38,7 @@ import {
   Eye,
   Radio,
 } from "lucide-react";
+import { TournamentsSkeleton } from "@/components/SkeletonLoader";
 
 const SPORTS = [
   "football",
@@ -347,9 +348,7 @@ export default function TournamentsPage() {
 
       {/* Tournament Cards */}
       {loading ? (
-        <div className="flex justify-center py-16">
-          <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-        </div>
+        <TournamentsSkeleton />
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
           <Trophy className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />

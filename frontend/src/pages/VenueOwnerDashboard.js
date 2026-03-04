@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Lightbulb } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { VenueOwnerDashboardSkeleton } from "@/components/SkeletonLoader";
 
 // Professional / venue owner imagery
 const OWNER_HERO = "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
@@ -575,9 +576,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
     expired: { color: "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/20", label: "Expired" },
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
-  );
+  if (loading) return <VenueOwnerDashboardSkeleton />;
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6" data-testid="owner-dashboard">

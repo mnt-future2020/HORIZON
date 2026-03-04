@@ -13,6 +13,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Input } from "@/components/ui/input";
 import BookingReceipt from "@/components/BookingReceipt";
+import { PlayerDashboardSkeleton } from "@/components/SkeletonLoader";
 
 const SPORT_HERO_IMAGES = {
   football:    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
@@ -177,11 +178,7 @@ export default function PlayerDashboard() {
   const primarySport = stats?.sport_breakdown ? Object.entries(stats.sport_breakdown).sort((a, b) => b[1] - a[1])[0]?.[0] : null;
   const heroImage = SPORT_HERO_IMAGES[primarySport] || SPORT_HERO_IMAGES.default;
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-    </div>
-  );
+  if (loading) return <PlayerDashboardSkeleton />;
 
   return (
     <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 pb-20 md:pb-6" data-testid="player-dashboard">

@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock } from "lucide-react";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
+import { VenueDiscoverySkeleton } from "@/components/SkeletonLoader";
 
 // Athlete action imagery
 const DISCOVERY_BANNER = "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?auto=format&fit=crop&w=1920&q=80";
@@ -494,11 +495,7 @@ export default function VenueDiscovery() {
         )}
 
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-              <div key={i} className="bg-card rounded-xl h-64 sm:h-72 lg:h-80 animate-pulse border border-border/40 shadow-sm" />
-            ))}
-          </div>
+          <VenueDiscoverySkeleton />
         ) : venues.length === 0 ? (
           <div className="border border-border/40 bg-card overflow-hidden rounded-[28px] shadow-sm" data-testid="no-results">
             <div className="grid md:grid-cols-2 gap-0">

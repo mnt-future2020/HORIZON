@@ -23,6 +23,7 @@ import {
   Upload, AlertTriangle, Info, X, ArrowUpRight, ArrowDownRight, Wallet, Receipt, Filter, Pencil,
   Eye, Download, MessageCircle, Banknote, CheckCircle2
 } from "lucide-react";
+import { CoachDashboardSkeleton } from "@/components/SkeletonLoader";
 
 const COACH_HERO = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=800&q=80";
 const ACADEMY_EMPTY = "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80";
@@ -1210,11 +1211,7 @@ export default function CoachDashboard({ defaultView }) {
   const upcomingSessions = sessions.filter(s => s.status === "confirmed" || s.status === "payment_pending");
   const completedSessions = sessions.filter(s => s.status === "completed");
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) return <CoachDashboardSkeleton />;
 
   const verificationStatus = user?.doc_verification_status || "not_uploaded";
 

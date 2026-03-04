@@ -17,6 +17,7 @@ import {
   Calendar, ChevronRight, Filter, X, QrCode, Loader2, Package,
   CheckCircle, Users
 } from "lucide-react";
+import { CoachListingSkeleton } from "@/components/SkeletonLoader";
 
 const SPORTS = ["all", "football", "cricket", "badminton", "tennis", "basketball", "volleyball", "table_tennis", "swimming"];
 const COACH_PLACEHOLDER = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
@@ -376,11 +377,7 @@ export default function CoachListingPage() {
         ? selectedCoach.coaching_sports
         : SPORTS.slice(1));
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  if (loading) return <CoachListingSkeleton />;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-4 md:px-6 py-5 sm:py-8 pb-16 md:pb-6">
