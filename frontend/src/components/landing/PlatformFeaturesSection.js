@@ -98,7 +98,7 @@ export default function PlatformFeaturesSection() {
       {/* Sticky panel */}
       <div
         ref={stickyRef}
-        className="sticky top-0 h-[100dvh] flex flex-col justify-start sm:justify-center overflow-hidden px-3 sm:px-4 md:px-12 pt-[60px] sm:pt-16 md:pt-20"
+        className="sticky top-0 h-[100dvh] flex flex-col justify-start sm:justify-center overflow-clip px-3 sm:px-4 md:px-12 pt-[60px] sm:pt-16 md:pt-20 touch-pan-y"
       >
         {/* Progress rail */}
         <div className="absolute left-0 top-0 w-full h-[3px] bg-black/5">
