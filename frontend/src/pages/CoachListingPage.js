@@ -29,10 +29,10 @@ function CoachCard({ coach, onBook, delay = 0 }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
       onClick={() => nav(`/player-card/${coach.id}`)}
-      className="rounded-[28px] border border-border/40 bg-card shadow-sm p-6 hover:border-brand-600/40 hover:shadow-md transition-all duration-300 cursor-pointer group"
+      className="rounded-[28px] border border-border/40 bg-card shadow-sm p-4 sm:p-5 hover:border-brand-600/40 hover:shadow-md transition-all duration-300 cursor-pointer group"
     >
-      <div className="flex items-start gap-4">
-        <div className="w-16 h-16 rounded-xl overflow-hidden bg-secondary shrink-0">
+      <div className="flex items-start gap-3 sm:gap-4">
+        <div className="w-14 h-14 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-xl overflow-hidden bg-secondary shrink-0">
           <img
             src={mediaUrl(coach.avatar) || COACH_PLACEHOLDER}
             alt={coach.name}
@@ -41,7 +41,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-lg text-foreground truncate group-hover:text-brand-600 transition-colors">
+            <h3 className="font-medium text-base sm:text-base md:text-lg text-foreground truncate group-hover:text-brand-600 transition-colors">
               {coach.name}
             </h3>
             {coach.avg_rating > 0 && (
@@ -54,7 +54,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
           {coach.coaching_bio && (
             <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{coach.coaching_bio}</p>
           )}
-          <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {coach.coaching_sports?.map(s => (
               <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>
             ))}
@@ -66,7 +66,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
           </div>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1">
-          <div className="font-bold text-lg text-brand-600">
+          <div className="font-bold text-lg sm:text-lg text-brand-600">
             ₹{coach.session_price || 500}
           </div>
           <div className="text-[10px] text-muted-foreground">
@@ -74,7 +74,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
           </div>
           <button
             onClick={e => { e.stopPropagation(); onBook(coach); }}
-            className="mt-1 text-[11px] admin-btn px-3 py-1 rounded-full bg-brand-600/10 border border-brand-600/25 text-brand-600 hover:bg-brand-600 hover:text-white transition-colors"
+            className="mt-1 text-[11px] admin-btn px-4 py-2 h-9 rounded-full bg-brand-600/10 border border-brand-600/25 text-brand-600 hover:bg-brand-600 hover:text-white transition-colors"
           >
             Book
           </button>
@@ -383,18 +383,18 @@ export default function CoachListingPage() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-4 md:px-6 py-5 sm:py-8 pb-16 md:pb-6">
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Coaching</span>
-            <h1 className="admin-page-title text-3xl mt-1">
+            <h1 className="admin-page-title text-xl sm:text-2xl md:text-3xl mt-1 [text-wrap:balance]">
               Find a <span className="text-brand-600">Coach</span>
             </h1>
           </div>
           <Button
-            className={showSessions ? "bg-brand-600 text-white admin-btn rounded-xl shadow-md shadow-brand-600/20 font-medium text-xs" : "border border-brand-600/40 text-brand-600 bg-transparent admin-btn rounded-xl font-medium text-xs hover:bg-brand-600/10"}
+            className={`w-full sm:w-auto h-11 ${showSessions ? "bg-brand-600 text-white admin-btn rounded-xl shadow-md shadow-brand-600/20 font-medium text-xs" : "border border-brand-600/40 text-brand-600 bg-transparent admin-btn rounded-xl font-medium text-xs hover:bg-brand-600/10"}`}
             onClick={() => setShowSessions(!showSessions)}
           >
             <Calendar className="h-3.5 w-3.5 mr-1.5" />
@@ -417,7 +417,7 @@ export default function CoachListingPage() {
               <div className="space-y-2">
                 {mySubscriptions.map(sub => (
                   <motion.div key={sub.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    className="rounded-[28px] border border-border/40 bg-card shadow-sm p-3 flex items-center justify-between">
+                    className="rounded-[28px] border border-border/40 bg-card shadow-sm p-4 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-bold">{sub.package_name}</p>
                       <p className="text-xs text-muted-foreground">
@@ -427,7 +427,7 @@ export default function CoachListingPage() {
                         Expires: {new Date(sub.current_period_end).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     </div>
-                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => handleCancelSub(sub.id)}>
+                    <Button variant="outline" size="sm" className="text-xs h-10 px-3 min-w-[80px]" onClick={() => { if (window.confirm("Cancel this subscription?")) handleCancelSub(sub.id); }}>
                       Cancel
                     </Button>
                   </motion.div>
@@ -441,26 +441,26 @@ export default function CoachListingPage() {
             </div>
           )}
           {upcomingSessions.map(s => (
-            <div key={s.id} className="rounded-[28px] border border-border/40 bg-card shadow-sm p-4 flex items-center justify-between gap-3 border-l-4 border-l-sky-500">
+            <div key={s.id} className="rounded-[28px] border border-border/40 bg-card shadow-sm p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-l-4 border-l-sky-500">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-bold text-sm">{s.coach_name}</span>
                   <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                   <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-3">
+                <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} - {fmt12h(s.end_time)}</span>
                   <span className="font-bold text-brand-600">₹{s.price}</span>
                 </div>
               </div>
               <div className="flex gap-2 shrink-0">
-                <Button size="sm" variant="outline" className="text-[10px] h-7"
+                <Button size="sm" variant="outline" aria-label="Get check-in QR code" className="text-[10px] h-10 px-3 min-w-[80px]"
                   onClick={() => handleGetQR(s.booking_id || s.id)}>
                   <QrCode className="h-3 w-3 mr-1" />QR
                 </Button>
-                <Button size="sm" variant="outline" className="text-[10px] h-7 text-destructive border-destructive/30"
-                  onClick={() => handleCancelSession(s.id)}>
+                <Button size="sm" variant="outline" className="text-[10px] h-10 px-3 min-w-[80px] text-destructive border-destructive/30"
+                  onClick={() => { if (window.confirm("Cancel this session?")) handleCancelSession(s.id); }}>
                   Cancel
                 </Button>
               </div>
@@ -480,11 +480,13 @@ export default function CoachListingPage() {
             placeholder="Search by name or city..."
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
-            className="pl-10 bg-secondary/20 border-border/40 h-10 rounded-xl font-medium text-sm"
+            name="coach-search"
+            autoComplete="off"
+            className="pl-10 bg-secondary/20 border-border/40 h-11 rounded-xl font-medium text-sm"
           />
         </div>
         <Select value={sportFilter} onValueChange={setSportFilter}>
-          <SelectTrigger className="w-40 bg-secondary/20 border-border/40 h-10 rounded-xl text-sm">
+          <SelectTrigger className="w-full sm:w-40 bg-secondary/20 border-border/40 h-11 rounded-xl text-sm">
             <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
             <SelectValue />
           </SelectTrigger>
@@ -504,7 +506,7 @@ export default function CoachListingPage() {
           <p className="text-sm text-muted-foreground">Try adjusting your filters.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((coach, idx) => (
             <CoachCard key={coach.id} coach={coach} onBook={handleSelectCoach} delay={idx * 0.05} />
           ))}
@@ -582,7 +584,7 @@ export default function CoachListingPage() {
                         <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
                           {next14.map(d => (
                             <button key={d.value} onClick={() => handleDateChange(d.value)}
-                              className={`flex flex-col items-center shrink-0 w-[52px] py-2.5 rounded-xl border-2 transition-all ${
+                              className={`flex flex-col items-center shrink-0 w-[56px] sm:w-[60px] py-2.5 rounded-xl border-2 transition-all ${
                                 selectedDate === d.value
                                   ? "border-brand-600 bg-brand-600/10 text-brand-600"
                                   : "border-border/40 bg-background/50 hover:border-brand-600/40 text-foreground"
@@ -610,12 +612,12 @@ export default function CoachListingPage() {
                             <p className="text-xs text-muted-foreground/60 mt-1">Try a different date</p>
                           </div>
                         ) : (
-                          <div className="grid grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {coachSlots.map(slot => (
                               <button key={slot.start_time}
                                 onClick={() => { if (slot.available) setSelectedSlot(slot); }}
                                 disabled={!slot.available}
-                                className={`flex flex-col items-center px-2 py-3 rounded-xl border-2 text-xs font-bold transition-all ${
+                                className={`flex flex-col items-center px-2 py-3.5 rounded-xl border-2 text-xs font-bold transition-all ${
                                   selectedSlot?.start_time === slot.start_time
                                     ? "border-brand-600 bg-brand-600/10 text-brand-600 shadow-sm"
                                     : slot.available
@@ -719,7 +721,7 @@ export default function CoachListingPage() {
                         <span className="font-bold text-brand-600">₹{selectedCoach.session_price || 500}</span>
                       </div>
                     )}
-                    <Button className="w-full h-12 admin-btn text-base bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
+                    <Button className="w-full h-14 admin-btn text-base bg-brand-600 hover:bg-brand-500 text-white rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                       disabled={!selectedSlot || booking} onClick={handleBook}>
                       {booking
                         ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Confirming...</>
@@ -741,7 +743,7 @@ export default function CoachListingPage() {
 
       {/* QR Code Dialog */}
       <Dialog open={!!qrData} onOpenChange={open => { if (!open) setQrData(null); }}>
-        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-xs text-center rounded-[28px]">
+        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-sm text-center rounded-[28px]">
           <DialogHeader>
             <DialogTitle className="admin-heading">Check-in QR Code</DialogTitle>
           </DialogHeader>
@@ -783,8 +785,8 @@ export default function CoachListingPage() {
                    "Complete Payment"}
                 </h2>
                 {payStep !== "processing" && (
-                  <button onClick={closePaymentReview}
-                    className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-muted transition-colors">
+                  <button onClick={closePaymentReview} aria-label="Close payment"
+                    className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-muted transition-colors focus-visible:ring-2 focus-visible:ring-brand-600">
                     <X className="h-4 w-4" />
                   </button>
                 )}
@@ -910,7 +912,7 @@ export default function CoachListingPage() {
                     </div>
                     <button
                       onClick={closePaymentReview}
-                      className="w-full h-12 rounded-xl bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all"
+                      className="w-full h-14 rounded-xl bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all"
                     >
                       Done
                     </button>
@@ -963,7 +965,7 @@ function SessionReviewCard({ session, onReview }) {
         <div className="mt-2 flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-0.5">
             {[1, 2, 3, 4, 5].map(s => (
-              <button key={s} onClick={() => setRating(s)}>
+              <button key={s} aria-label={`Rate ${s} star${s !== 1 ? "s" : ""}`} onClick={() => setRating(s)} className="p-1 focus-visible:ring-2 focus-visible:ring-amber-400 rounded">
                 <Star className={`h-4 w-4 transition-colors ${s <= rating ? "text-amber-400 fill-amber-400" : "text-muted-foreground/50 hover:text-amber-300"}`} />
               </button>
             ))}
@@ -972,9 +974,10 @@ function SessionReviewCard({ session, onReview }) {
             placeholder="Quick review..."
             value={review}
             onChange={e => setReview(e.target.value)}
-            className="h-7 text-xs flex-1 min-w-[120px] bg-secondary/20 border-border/40 rounded-xl"
+            autoComplete="off"
+            className="h-8 text-xs flex-1 min-w-[120px] bg-secondary/20 border-border/40 rounded-xl"
           />
-          <Button size="sm" className="h-7 text-[10px] font-bold" onClick={handleSubmit} disabled={submitting}>
+          <Button size="sm" className="h-9 text-[10px] font-bold" onClick={handleSubmit} disabled={submitting}>
             {submitting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Submit"}
           </Button>
         </div>

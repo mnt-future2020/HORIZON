@@ -380,6 +380,15 @@
   animation: countSlideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* Hide scrollbar utility */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom scrollbar */
 .dark::-webkit-scrollbar,
 .dark ::-webkit-scrollbar {

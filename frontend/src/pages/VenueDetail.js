@@ -973,53 +973,55 @@ export default function VenueDetail() {
       data-testid="venue-detail"
     >
       {/* Compact Booking Page Header */}
-      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {venue.slug ? (
-              <Link
-                to={`/venue/${venue.slug}`}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back
-              </Link>
-            ) : (
-              <button
-                onClick={() => window.history.back()}
-                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Back
-              </button>
-            )}
-            <div className="h-5 w-px bg-border/50" />
-            <div>
-              <h1 className="font-display text-lg md:text-xl admin-heading tracking-tight">
-                {venue.name}
-              </h1>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <MapPin className="h-3 w-3" />
-                  {venue.city || venue.address}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  {venue.opening_hour}:00 - {venue.closing_hour}:00
-                </span>
+      <div className="sticky top-0 z-30 bg-background/95 backdrop-blur-md border-b border-border/50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+              {venue.slug ? (
+                <Link
+                  to={`/venue/${venue.slug}`}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] shrink-0 -ml-1 pl-1 pr-2 rounded-lg hover:bg-secondary/50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </Link>
+              ) : (
+                <button
+                  onClick={() => window.history.back()}
+                  className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] shrink-0 -ml-1 pl-1 pr-2 rounded-lg hover:bg-secondary/50"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">Back</span>
+                </button>
+              )}
+              <div className="h-5 w-px bg-border/50 hidden sm:block" />
+              <div className="min-w-0">
+                <h1 className="font-display text-sm sm:text-lg md:text-xl admin-heading tracking-tight truncate">
+                  {venue.name}
+                </h1>
+                <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1 truncate">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    {venue.city || venue.address}
+                  </span>
+                  <span className="flex items-center gap-1 shrink-0">
+                    <Clock className="h-3 w-3" />
+                    {venue.opening_hour}:00 - {venue.closing_hour}:00
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {venue.sports?.map((s) => (
-              <Badge
-                key={s}
-                variant="athletic"
-                className="uppercase text-[10px]"
-              >
-                {s}
-              </Badge>
-            ))}
+            <div className="hidden sm:flex items-center gap-2 shrink-0">
+              {venue.sports?.map((s) => (
+                <Badge
+                  key={s}
+                  variant="athletic"
+                  className="uppercase text-[10px]"
+                >
+                  {s}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1029,8 +1031,8 @@ export default function VenueDetail() {
         <EnquiryForm venue={venue} />
       ) : (
         /* Booking Section — Form + Cart */
-        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 pt-4 sm:pt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 md:gap-8">
             {/* ─── Booking Form ─── */}
             <div className="lg:col-span-7">
               {/* Booking restriction warning */}
@@ -1047,7 +1049,7 @@ export default function VenueDetail() {
 
               <div className="rounded-2xl border border-border bg-card">
                 {/* Venue header inside card */}
-                <div className="px-6 pt-5 pb-3 border-b border-border/50 rounded-t-2xl">
+                <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-3 border-b border-border/50 rounded-t-2xl">
                   <h2 className="font-display text-lg admin-heading">
                     {venue.name}
                   </h2>
@@ -1059,8 +1061,8 @@ export default function VenueDetail() {
                 {/* Form rows */}
                 <div className="divide-y divide-border/50">
                   {/* Sports Row */}
-                  <div className="flex items-center px-6 py-4">
-                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                  <div className="flex flex-col sm:flex-row sm:items-center px-4 sm:px-6 py-3.5 sm:py-4 gap-2 sm:gap-0">
+                    <span className="sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
                       Sports
                     </span>
                     <div className="flex-1">
@@ -1083,9 +1085,9 @@ export default function VenueDetail() {
                   </div>
 
                   {/* Date Row */}
-                  <div className="relative px-6 py-4" ref={calendarRef}>
-                    <div className="flex items-center">
-                      <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                  <div className="relative px-4 sm:px-6 py-3.5 sm:py-4" ref={calendarRef}>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+                      <span className="sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
                         Date
                       </span>
                       <button
@@ -1097,7 +1099,7 @@ export default function VenueDetail() {
                       </button>
                     </div>
                     {showCalendar && (
-                      <div className="absolute left-6 right-6 mt-2 z-20 rounded-xl border border-border bg-card shadow-lg p-3">
+                      <div className="absolute left-4 right-4 sm:left-6 sm:right-6 mt-2 z-20 rounded-xl border border-border bg-card shadow-lg p-3">
                         <Calendar
                           mode="single"
                           selected={selectedDate}
@@ -1120,9 +1122,9 @@ export default function VenueDetail() {
 
                   {/* Start Time Row */}
                   {selectedCourt && (
-                    <div className="relative px-6 py-4" ref={timePickerRef}>
-                      <div className="flex items-center">
-                        <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                    <div className="relative px-4 sm:px-6 py-3.5 sm:py-4" ref={timePickerRef}>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0">
+                        <span className="sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
                           Start Time
                         </span>
                         <button
@@ -1138,9 +1140,9 @@ export default function VenueDetail() {
                         </button>
                       </div>
                       {showTimePicker && (
-                        <div className="absolute left-6 right-6 mt-2 z-20 rounded-xl border border-border bg-card shadow-lg p-4 max-h-[300px] overflow-y-auto">
+                        <div className="absolute left-4 right-4 sm:left-6 sm:right-6 mt-2 z-20 rounded-xl border border-border bg-card shadow-lg p-4 max-h-[300px] overflow-y-auto">
                           {availableStartTimes.length > 0 ? (
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 sm:grid-cols-2 gap-2">
                               {availableStartTimes.map((t) => (
                                 <button
                                   key={t.time}
@@ -1148,7 +1150,7 @@ export default function VenueDetail() {
                                     handleStartTimeChange(t.time);
                                     setShowTimePicker(false);
                                   }}
-                                  className={`relative py-2.5 px-3 rounded-lg text-sm font-semibold text-center transition-all ${
+                                  className={`relative py-3 sm:py-2.5 px-2 sm:px-3 rounded-lg text-xs sm:text-sm font-semibold text-center transition-all min-h-[44px] ${
                                     selectedStartTime === t.time
                                       ? "bg-brand-600 text-white shadow-md"
                                       : "bg-secondary/50 text-foreground hover:bg-white/5"
@@ -1174,8 +1176,8 @@ export default function VenueDetail() {
                   )}
                   {/* Court Row */}
                   {selectedSport && courtsForSport.length > 0 && (
-                    <div className="flex items-center px-6 py-4">
-                      <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                    <div className="flex flex-col sm:flex-row sm:items-center px-4 sm:px-6 py-3.5 sm:py-4 gap-2 sm:gap-0">
+                      <span className="sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
                         Court
                       </span>
                       <div className="flex-1">
@@ -1205,15 +1207,15 @@ export default function VenueDetail() {
                     </div>
                   )}
                   {/* Duration Row */}
-                  <div className="flex items-center px-6 py-4">
-                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                  <div className="flex items-center px-4 sm:px-6 py-3.5 sm:py-4">
+                    <span className="w-24 sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
                       Duration
                     </span>
                     <div className="flex-1 flex items-center justify-between">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 rounded-full border-border"
+                        className="h-10 w-10 sm:h-9 sm:w-9 rounded-full border-border"
                         onClick={() =>
                           setDurationSlots((d) => Math.max(1, d - 1))
                         }
@@ -1227,7 +1229,7 @@ export default function VenueDetail() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 rounded-full border-brand-600 text-brand-600 bg-brand-600/10"
+                        className="h-10 w-10 sm:h-9 sm:w-9 rounded-full border-brand-600 text-brand-600 bg-brand-600/10"
                         onClick={() =>
                           setDurationSlots((d) =>
                             Math.min(maxDurationSlots, d + 1),
@@ -1244,15 +1246,15 @@ export default function VenueDetail() {
                   </div>
 
                   {/* Lobbians Row */}
-                  <div className="flex items-center px-6 py-4">
-                    <span className="w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                  <div className="flex items-center px-4 sm:px-6 py-3.5 sm:py-4">
+                    <span className="w-24 sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
                       Lobbians
                     </span>
                     <div className="flex-1 flex items-center justify-between">
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 rounded-full border-border"
+                        className="h-10 w-10 sm:h-9 sm:w-9 rounded-full border-border"
                         onClick={() => setNumPlayers((n) => Math.max(1, n - 1))}
                         disabled={numPlayers <= 1}
                       >
@@ -1264,7 +1266,7 @@ export default function VenueDetail() {
                       <Button
                         variant="outline"
                         size="icon"
-                        className="h-9 w-9 rounded-full border-brand-600 text-brand-600 bg-brand-600/10"
+                        className="h-10 w-10 sm:h-9 sm:w-9 rounded-full border-brand-600 text-brand-600 bg-brand-600/10"
                         onClick={() => setNumPlayers((n) => n + 1)}
                       >
                         <Plus className="h-4 w-4" />
@@ -1274,7 +1276,7 @@ export default function VenueDetail() {
                 </div>
 
                 {/* Add to Cart Button */}
-                <div className="px-6 py-4 border-t border-border/50">
+                <div className="px-4 sm:px-6 py-4 border-t border-border/50">
                   {selectedStartTime ? (
                     <div className="flex items-center justify-between mb-3">
                       <div>

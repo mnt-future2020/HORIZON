@@ -6,42 +6,91 @@ import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Swords, Users, Plus, Clock, Trophy, Target, MapPin,
-  IndianRupee, CheckCircle, XCircle, CreditCard, Loader2, Star, UserCheck,
-  Sparkles, Zap, FileCheck, BarChart3, ThumbsUp, ThumbsDown, ChevronDown, Shield
+  Swords,
+  Users,
+  Plus,
+  Clock,
+  Trophy,
+  Target,
+  MapPin,
+  IndianRupee,
+  CheckCircle,
+  XCircle,
+  CreditCard,
+  Loader2,
+  Star,
+  UserCheck,
+  Sparkles,
+  Zap,
+  FileCheck,
+  BarChart3,
+  ThumbsUp,
+  ThumbsDown,
+  ChevronDown,
+  Shield,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const SPORT_EMOJI = { football: "⚽", cricket: "🏏", badminton: "🏸", tennis: "🎾", basketball: "🏀" };
+const SPORT_EMOJI = {
+  football: "⚽",
+  cricket: "🏏",
+  badminton: "🏸",
+  tennis: "🎾",
+  basketball: "🏀",
+};
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball"];
 
 const STATUS_STYLE = {
-  open:           "bg-brand-600/10 text-brand-600",
-  filled:         "bg-amber-500/10 text-amber-500",
-  completed:      "bg-emerald-500/10 text-emerald-500",
+  open: "bg-brand-600/10 text-brand-600",
+  filled: "bg-amber-500/10 text-amber-500",
+  completed: "bg-emerald-500/10 text-emerald-500",
   pending_result: "bg-sky-500/10 text-sky-500",
 };
 
-
 function CompatBadge({ score }) {
-  const cls = score >= 80
-    ? "bg-brand-600/10 text-brand-600 border-brand-600/20"
-    : score >= 50
-    ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
-    : "bg-red-500/10 text-red-500 border-red-500/20";
+  const cls =
+    score >= 80
+      ? "bg-brand-600/10 text-brand-600 border-brand-600/20"
+      : score >= 50
+        ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+        : "bg-red-500/10 text-red-500 border-red-500/20";
   return (
-    <span className={`inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full border font-medium ${cls}`} data-testid="compat-badge">
-      <Zap className="h-2.5 w-2.5" />{score}% match
+    <span
+      className={`inline-flex items-center gap-0.5 text-[10px] px-2 py-0.5 rounded-full border font-medium ${cls}`}
+      data-testid="compat-badge"
+    >
+      <Zap className="h-2.5 w-2.5" />
+      {score}% match
     </span>
   );
 }
 
-function MatchCard({ match, onJoin, userId, showCompat, index = 0, isExpanded, onToggleExpand }) {
+function MatchCard({
+  match,
+  onJoin,
+  userId,
+  showCompat,
+  index = 0,
+  isExpanded,
+  onToggleExpand,
+}) {
   const navigate = useNavigate();
   const expanded = isExpanded;
   const isCreator = match.creator_id === userId;
@@ -49,7 +98,9 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0, isExpanded, o
   const spotsLeft = match.players_needed - (match.players_joined?.length || 0);
   const hasResult = !!match.result;
   const resultConfirmed = match.result?.confirmed;
-  const sportLabel = match.sport?.replace("_", " ").replace(/\b\w/g, c => c.toUpperCase());
+  const sportLabel = match.sport
+    ?.replace("_", " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
   const sportEmoji = SPORT_EMOJI[match.sport] || "🏅";
 
   const players = (match.players_joined || []).map((id, i) => ({
@@ -63,47 +114,73 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0, isExpanded, o
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 hover:shadow-md hover:border-brand-600/20 transition-all duration-300 cursor-pointer"
+      className="rounded-2xl sm:rounded-[28px] bg-card border border-border/40 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-brand-600/20 transition-all duration-300 cursor-pointer"
       onClick={() => onToggleExpand?.(match.id)}
-      data-testid={`match-card-${match.id}`}>
-
+      data-testid={`match-card-${match.id}`}
+    >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="h-10 w-10 rounded-2xl bg-brand-600/10 flex items-center justify-center text-xl shrink-0">
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-brand-600/10 flex items-center justify-center text-lg sm:text-xl shrink-0">
             {sportEmoji}
           </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h3 className="font-medium text-sm text-foreground">{sportLabel}</h3>
-              <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_STYLE[match.status] || "bg-secondary text-muted-foreground"}`}>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <h3 className="font-semibold text-sm text-foreground">
+                {sportLabel}
+              </h3>
+              <span
+                className={`text-[10px] px-2 py-0.5 rounded-full font-medium capitalize ${STATUS_STYLE[match.status] || "bg-secondary text-muted-foreground"}`}
+              >
                 {match.status}
               </span>
               {showCompat && match.compatibility_score != null && (
                 <CompatBadge score={match.compatibility_score} />
               )}
             </div>
-            {match.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{match.description}</p>}
+            {match.description && (
+              <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                {match.description}
+              </p>
+            )}
           </div>
         </div>
-        <span className={`text-xs px-2.5 py-1 rounded-full font-medium shrink-0 ${
-          spotsLeft > 0 ? "bg-brand-600/10 text-brand-600" : "bg-secondary text-muted-foreground"
-        }`}>
+        <span
+          className={`text-[10px] sm:text-xs px-2 sm:px-2.5 py-1 rounded-full font-medium shrink-0 ml-2 ${
+            spotsLeft > 0
+              ? "bg-brand-600/10 text-brand-600"
+              : "bg-secondary text-muted-foreground"
+          }`}
+        >
           {spotsLeft > 0 ? `${spotsLeft} spots` : "Full"}
         </span>
       </div>
 
       {/* Meta info row */}
-      <div className="flex flex-wrap gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground mb-3 pl-[52px]">
-        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{match.date} · {match.time}</span>
-        <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{match.venue_name || match.area || "TBD"}{match.area && match.venue_name ? ` (${match.area})` : ""}</span>
-        <span className="flex items-center gap-1"><Trophy className="h-3 w-3" />{match.min_skill}–{match.max_skill} skill</span>
+      <div className="flex flex-wrap gap-x-3 sm:gap-x-3 gap-y-1.5 text-[11px] text-muted-foreground mb-2.5 sm:mb-3 mt-2 pl-0">
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {match.date} · {match.time}
+        </span>
+        <span className="flex items-center gap-1">
+          <MapPin className="h-3 w-3" />
+          {match.venue_name || match.area || "TBD"}
+          {match.area && match.venue_name ? ` (${match.area})` : ""}
+        </span>
+        <span className="flex items-center gap-1">
+          <Trophy className="h-3 w-3" />
+          {match.min_skill}–{match.max_skill} skill
+        </span>
         <button className="flex items-center gap-1 hover:text-foreground transition-colors">
-          <Users className="h-3 w-3" />{match.players_joined?.length || 0}/{match.players_needed}
-          <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`} />
+          <Users className="h-3 w-3" />
+          {match.players_joined?.length || 0}/{match.players_needed}
+          <ChevronDown
+            className={`h-3 w-3 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+          />
         </button>
       </div>
 
@@ -117,32 +194,45 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0, isExpanded, o
             transition={{ duration: 0.25, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="rounded-2xl bg-secondary/30 border border-border/30 p-3 mb-3 ml-[52px]">
+            <div className="rounded-2xl bg-secondary/30 border border-border/30 p-3 mb-3 ml-0 sm:ml-[52px]">
               <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2 block">
                 Players ({players.length}/{match.players_needed})
               </span>
               <div className="space-y-2">
-                {players.map(p => (
-                  <div key={p.id}
-                    onClick={(e) => { e.stopPropagation(); navigate(`/player-card/${p.id}`); }}
-                    className="flex items-center gap-2.5 cursor-pointer hover:bg-secondary/50 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors">
+                {players.map((p) => (
+                  <div
+                    key={p.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/player-card/${p.id}`);
+                    }}
+                    className="flex items-center gap-2.5 cursor-pointer hover:bg-secondary/50 rounded-lg px-1.5 py-1 -mx-1.5 transition-colors"
+                  >
                     <Avatar className="h-7 w-7 border border-border/40">
-                      {p.avatar && <AvatarImage src={mediaUrl(p.avatar)} alt={p.name} />}
+                      {p.avatar && (
+                        <AvatarImage src={mediaUrl(p.avatar)} alt={p.name} />
+                      )}
                       <AvatarFallback className="text-[10px] font-medium bg-brand-600/10 text-brand-600">
                         {p.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-medium text-foreground flex-1 truncate hover:text-brand-600 transition-colors">{p.name}</span>
+                    <span className="text-xs font-medium text-foreground flex-1 truncate hover:text-brand-600 transition-colors">
+                      {p.name}
+                    </span>
                     <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                      <Star className="h-3 w-3 text-amber-500" />{p.rating}
+                      <Star className="h-3 w-3 text-amber-500" />
+                      {p.rating}
                     </span>
                     {p.isHost && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 font-medium flex items-center gap-0.5">
-                        <Shield className="h-2.5 w-2.5" />Host
+                        <Shield className="h-2.5 w-2.5" />
+                        Host
                       </span>
                     )}
                     {p.isYou && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand-600/10 text-brand-600 font-medium">You</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-brand-600/10 text-brand-600 font-medium">
+                        You
+                      </span>
                     )}
                   </div>
                 ))}
@@ -154,110 +244,178 @@ function MatchCard({ match, onJoin, userId, showCompat, index = 0, isExpanded, o
 
       {/* Result banner */}
       {hasResult && (
-        <div className={`rounded-2xl px-4 py-2.5 mb-3 text-xs flex items-center gap-2 ${
-          resultConfirmed
-            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
-            : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
-        }`}>
+        <div
+          className={`rounded-2xl px-3 py-2.5 mb-3 text-xs flex flex-wrap items-center gap-x-2 gap-y-1 ${
+            resultConfirmed
+              ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-500"
+              : "bg-amber-500/10 border border-amber-500/20 text-amber-500"
+          }`}
+        >
           <FileCheck className="h-3.5 w-3.5 shrink-0" />
           <span className="font-medium">
             {resultConfirmed ? "Result Confirmed" : "Result Pending"}
           </span>
           <span className="text-muted-foreground">
-            · {match.result.winner === "draw" ? "Draw"
-              : match.result.winner === "team_a" ? "Team A won" : "Team B won"}
-            {match.result.score_a != null && ` (${match.result.score_a}–${match.result.score_b})`}
+            ·{" "}
+            {match.result.winner === "draw"
+              ? "Draw"
+              : match.result.winner === "team_a"
+                ? "Team A won"
+                : "Team B won"}
+            {match.result.score_a != null &&
+              ` (${match.result.score_a}–${match.result.score_b})`}
           </span>
         </div>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between pt-3 border-t border-border/20">
+      <div className="flex items-center justify-between pt-2.5 sm:pt-3 mt-0.5 border-t border-border/20">
         <span className="text-xs text-muted-foreground">
-          by <span className="text-foreground font-medium">{match.creator_name}</span>
+          by{" "}
+          <span className="text-foreground font-medium">
+            {match.creator_name}
+          </span>
         </span>
         <div className="flex gap-2 items-center">
           {hasJoined && !hasResult && (
-            <span className="text-[10px] px-2.5 py-1 rounded-full bg-brand-600/10 text-brand-600 font-medium">Joined</span>
+            <span className="text-[10px] px-2.5 py-1 rounded-full bg-brand-600/10 text-brand-600 font-medium">
+              Joined
+            </span>
           )}
-          {!isCreator && !hasJoined && spotsLeft > 0 && match.status === "open" && (
-            <Button size="sm" onClick={(e) => { e.stopPropagation(); onJoin(match.id); }} data-testid={`join-match-${match.id}`}
-              className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-8 px-4 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all">
-              Join
-            </Button>
-          )}
+          {!isCreator &&
+            !hasJoined &&
+            spotsLeft > 0 &&
+            match.status === "open" && (
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onJoin(match.id);
+                }}
+                data-testid={`join-match-${match.id}`}
+                className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-10 px-5 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
+              >
+                Join
+              </Button>
+            )}
         </div>
       </div>
     </motion.div>
   );
 }
 
-function MercenaryCard({ post, userId, onApply, onAccept, onReject, onPay, paying, index = 0 }) {
+function MercenaryCard({
+  post,
+  userId,
+  onApply,
+  onAccept,
+  onReject,
+  onPay,
+  paying,
+  index = 0,
+}) {
   const isHost = post.host_id === userId;
-  const hasApplied = post.applicants?.some(a => a.id === userId);
-  const isAccepted = post.accepted?.some(a => a.id === userId);
-  const hasPaid = post.paid_players?.some(p => p.id === userId);
+  const hasApplied = post.applicants?.some((a) => a.id === userId);
+  const isAccepted = post.accepted?.some((a) => a.id === userId);
+  const hasPaid = post.paid_players?.some((p) => p.id === userId);
   const spotsLeft = post.spots_available - (post.spots_filled || 0);
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3, ease: "easeOut" }}
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 hover:shadow-md hover:border-brand-600/20 transition-all duration-300"
-      data-testid={`mercenary-card-${post.id}`}>
-
+      className="rounded-2xl sm:rounded-[28px] bg-card border border-border/40 shadow-sm p-4 sm:p-5 hover:shadow-md hover:border-brand-600/20 transition-all duration-300"
+      data-testid={`mercenary-card-${post.id}`}
+    >
       {/* Header */}
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2.5">
-          <div className="h-10 w-10 rounded-2xl bg-purple-500/10 flex items-center justify-center shrink-0">
-            <Target className="h-5 w-5 text-purple-500" />
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-purple-500/10 flex items-center justify-center shrink-0">
+            <Target className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-purple-500" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-sm text-foreground truncate">{post.position_needed}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2 flex-wrap">
-              <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{post.venue_name}</span>
-              <span className="capitalize">{SPORT_EMOJI[post.sport]} {post.sport}</span>
+            <h3 className="font-semibold text-sm text-foreground truncate">
+              {post.position_needed}
+            </h3>
+            <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span className="flex items-center gap-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate max-w-[120px] sm:max-w-none">
+                  {post.venue_name}
+                </span>
+              </span>
+              <span className="capitalize">
+                {SPORT_EMOJI[post.sport]} {post.sport}
+              </span>
             </p>
           </div>
         </div>
-        <div className="text-right shrink-0 ml-3">
-          <div className="font-medium text-sm text-brand-600 flex items-center gap-0.5 justify-end">
-            <IndianRupee className="h-3.5 w-3.5" />{post.amount_per_player}
+        <div className="text-right shrink-0 ml-2 sm:ml-3">
+          <div className="font-semibold text-sm text-brand-600 flex items-center gap-0.5 justify-end">
+            <IndianRupee className="h-3.5 w-3.5" />
+            {post.amount_per_player}
           </div>
-          <div className="text-[10px] text-muted-foreground mt-0.5">{spotsLeft}/{post.spots_available} open</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            {spotsLeft}/{post.spots_available} open
+          </div>
         </div>
       </div>
 
       {/* Meta */}
-      <div className="flex gap-3 text-[11px] text-muted-foreground mb-3 pl-[52px]">
-        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.date} · {post.time}</span>
-        <span>by <span className="text-foreground font-medium">{post.host_name}</span></span>
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground mb-2.5 sm:mb-3 mt-2 pl-0">
+        <span className="flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {post.date} · {post.time}
+        </span>
+        <span>
+          by{" "}
+          <span className="text-foreground font-medium">{post.host_name}</span>
+        </span>
       </div>
       {post.description && (
-        <p className="text-xs text-muted-foreground/70 mb-3 pl-[52px] line-clamp-2">{post.description}</p>
+        <p className="text-xs text-muted-foreground/70 mb-3 pl-0 line-clamp-2">
+          {post.description}
+        </p>
       )}
 
       {/* Host: Applicants list */}
       {isHost && post.applicants?.length > 0 && (
         <div className="border-t border-border/30 pt-3 mt-3 space-y-2">
           <span className="admin-section-label">Applicants</span>
-          {post.applicants.map(a => (
-            <div key={a.id} className="flex items-center justify-between bg-secondary/20 rounded-xl p-3" data-testid={`applicant-${a.id}`}>
+          {post.applicants.map((a) => (
+            <div
+              key={a.id}
+              className="flex items-center justify-between bg-secondary/20 rounded-xl p-3"
+              data-testid={`applicant-${a.id}`}
+            >
               <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-xl bg-brand-600/10 flex items-center justify-center text-xs font-medium text-brand-600">{a.name?.[0]}</div>
+                <div className="h-8 w-8 rounded-xl bg-brand-600/10 flex items-center justify-center text-xs font-medium text-brand-600">
+                  {a.name?.[0]}
+                </div>
                 <div>
                   <div className="text-xs font-medium">{a.name}</div>
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1"><Star className="h-2.5 w-2.5" />{a.skill_rating}</div>
+                  <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                    <Star className="h-2.5 w-2.5" />
+                    {a.skill_rating}
+                  </div>
                 </div>
               </div>
               <div className="flex gap-1.5">
-                <button onClick={() => onAccept(post.id, a.id)} data-testid={`accept-${a.id}`}
-                  className="h-7 px-2.5 rounded-lg text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-all flex items-center gap-1">
+                <button
+                  onClick={() => onAccept(post.id, a.id)}
+                  data-testid={`accept-${a.id}`}
+                  className="h-9 px-3 rounded-lg text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1"
+                >
                   <CheckCircle className="h-3.5 w-3.5" /> Accept
                 </button>
-                <button onClick={() => onReject(post.id, a.id)} data-testid={`reject-${a.id}`}
-                  className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
+                <button
+                  onClick={() => onReject(post.id, a.id)}
+                  data-testid={`reject-${a.id}`}
+                  aria-label="Reject applicant"
+                  className="h-9 w-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
+                >
                   <XCircle className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -270,17 +428,24 @@ function MercenaryCard({ post, userId, onApply, onAccept, onReject, onPay, payin
       {isHost && post.accepted?.length > 0 && (
         <div className="border-t border-border/30 pt-3 mt-3 space-y-1.5">
           <span className="admin-section-label">Accepted</span>
-          {post.accepted.map(a => {
-            const paid = post.paid_players?.some(p => p.id === a.id);
+          {post.accepted.map((a) => {
+            const paid = post.paid_players?.some((p) => p.id === a.id);
             return (
-              <div key={a.id} className="flex items-center justify-between bg-secondary/20 rounded-xl p-2.5">
+              <div
+                key={a.id}
+                className="flex items-center justify-between bg-secondary/20 rounded-xl p-2.5"
+              >
                 <div className="flex items-center gap-2">
                   <UserCheck className="h-3.5 w-3.5 text-brand-600" />
                   <span className="text-xs font-medium">{a.name}</span>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
-                  paid ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
-                }`}>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                    paid
+                      ? "bg-emerald-500/10 text-emerald-500"
+                      : "bg-amber-500/10 text-amber-500"
+                  }`}
+                >
                   {paid ? "Paid" : "Awaiting"}
                 </span>
               </div>
@@ -291,20 +456,38 @@ function MercenaryCard({ post, userId, onApply, onAccept, onReject, onPay, payin
 
       {/* Footer actions */}
       <div className="mt-3 pt-3 border-t border-border/20 flex items-center justify-end gap-2">
-        {!isHost && !hasApplied && !isAccepted && !hasPaid && post.status === "open" && (
-          <Button size="sm" onClick={() => onApply(post.id)} data-testid={`apply-mercenary-${post.id}`}
-            className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-8 px-4 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all">
-            <Target className="h-3.5 w-3.5 mr-1" /> Apply
-          </Button>
-        )}
+        {!isHost &&
+          !hasApplied &&
+          !isAccepted &&
+          !hasPaid &&
+          post.status === "open" && (
+            <Button
+              size="sm"
+              onClick={() => onApply(post.id)}
+              data-testid={`apply-mercenary-${post.id}`}
+              className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-10 px-5 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
+            >
+              <Target className="h-3.5 w-3.5 mr-1" /> Apply
+            </Button>
+          )}
         {hasApplied && !isAccepted && (
-          <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 font-medium">Applied · Waiting</span>
+          <span className="text-[10px] px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-500 font-medium">
+            Applied · Waiting
+          </span>
         )}
         {isAccepted && !hasPaid && (
-          <Button size="sm" onClick={() => onPay(post.id)} disabled={paying === post.id}
+          <Button
+            size="sm"
+            onClick={() => onPay(post.id)}
+            disabled={paying === post.id}
             data-testid={`pay-mercenary-${post.id}`}
-            className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-8 px-4 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all">
-            {paying === post.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" /> : <CreditCard className="h-3.5 w-3.5 mr-1" />}
+            className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-10 px-5 text-xs shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
+          >
+            {paying === post.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+            ) : (
+              <CreditCard className="h-3.5 w-3.5 mr-1" />
+            )}
             Pay ₹{post.amount_per_player}
           </Button>
         )}
@@ -329,8 +512,9 @@ function ResultDialog({ match, onSubmit, userId }) {
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   const players = (match.players_joined || []).map((id, i) => ({
-    id, name: match.player_names?.[i] || "Lobbian " + (i + 1),
-    rating: match.player_ratings?.[id] || 1500
+    id,
+    name: match.player_names?.[i] || "Lobbian " + (i + 1),
+    rating: match.player_ratings?.[id] || 1500,
   }));
 
   const loadSuggestion = async () => {
@@ -339,25 +523,45 @@ function ResultDialog({ match, onSubmit, userId }) {
       const res = await matchAPI.suggestTeams(match.id);
       const data = res.data;
       setSuggestedTeams(data);
-      setTeamA(data.team_a.map(p => p.id));
-      setTeamB(data.team_b.map(p => p.id));
-    } catch { toast.error("Failed to get team suggestion"); }
-    finally { setLoadingSuggestion(false); }
+      setTeamA(data.team_a.map((p) => p.id));
+      setTeamB(data.team_b.map((p) => p.id));
+    } catch {
+      toast.error("Failed to get team suggestion");
+    } finally {
+      setLoadingSuggestion(false);
+    }
   };
 
   const togglePlayer = (playerId, team) => {
     if (team === "a") {
-      if (teamA.includes(playerId)) { setTeamA(prev => prev.filter(id => id !== playerId)); }
-      else { setTeamB(prev => prev.filter(id => id !== playerId)); setTeamA(prev => [...prev, playerId]); }
+      if (teamA.includes(playerId)) {
+        setTeamA((prev) => prev.filter((id) => id !== playerId));
+      } else {
+        setTeamB((prev) => prev.filter((id) => id !== playerId));
+        setTeamA((prev) => [...prev, playerId]);
+      }
     } else {
-      if (teamB.includes(playerId)) { setTeamB(prev => prev.filter(id => id !== playerId)); }
-      else { setTeamA(prev => prev.filter(id => id !== playerId)); setTeamB(prev => [...prev, playerId]); }
+      if (teamB.includes(playerId)) {
+        setTeamB((prev) => prev.filter((id) => id !== playerId));
+      } else {
+        setTeamA((prev) => prev.filter((id) => id !== playerId));
+        setTeamB((prev) => [...prev, playerId]);
+      }
     }
   };
 
   const handleSubmit = () => {
-    if (teamA.length === 0 || teamB.length === 0) { toast.error("Both teams need at least 1 Lobbian"); return; }
-    onSubmit(match.id, { team_a: teamA, team_b: teamB, winner, score_a: scoreA ? Number(scoreA) : null, score_b: scoreB ? Number(scoreB) : null });
+    if (teamA.length === 0 || teamB.length === 0) {
+      toast.error("Both teams need at least 1 Lobbian");
+      return;
+    }
+    onSubmit(match.id, {
+      team_a: teamA,
+      team_b: teamB,
+      winner,
+      score_a: scoreA ? Number(scoreA) : null,
+      score_b: scoreB ? Number(scoreB) : null,
+    });
     setOpen(false);
   };
 
@@ -366,45 +570,80 @@ function ResultDialog({ match, onSubmit, userId }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all border border-border/40"
-          data-testid={`submit-result-${match.id}`}>
+        <button
+          className="flex items-center gap-1.5 text-xs px-3 h-9 rounded-xl bg-secondary/30 hover:bg-secondary/60 text-muted-foreground hover:text-foreground transition-all border border-border/40 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1"
+          data-testid={`submit-result-${match.id}`}
+        >
           <FileCheck className="h-3.5 w-3.5" /> Report Result
         </button>
       </DialogTrigger>
-      <DialogContent className="bg-card border border-border/40 rounded-[28px] max-w-[95vw] sm:max-w-lg p-7">
+      <DialogContent className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] max-w-[95vw] sm:max-w-lg p-5 sm:p-7">
         <DialogHeader>
-          <DialogTitle className="admin-heading text-xl mb-1">Report Match Result</DialogTitle>
+          <DialogTitle className="admin-heading text-xl mb-1">
+            Report Match Result
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
-          <Button variant="outline" onClick={loadSuggestion} disabled={loadingSuggestion}
+          <Button
+            variant="outline"
+            onClick={loadSuggestion}
+            disabled={loadingSuggestion}
             className="w-full h-10 rounded-xl border-brand-600/30 text-brand-600 hover:bg-brand-600/5 text-xs admin-btn gap-1.5"
-            data-testid="suggest-teams-btn">
-            {loadingSuggestion ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+            data-testid="suggest-teams-btn"
+          >
+            {loadingSuggestion ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
             AI Suggest Balanced Teams
           </Button>
 
           {suggestedTeams && (
             <div className="text-[10px] text-center text-muted-foreground flex items-center justify-center gap-2 bg-secondary/20 rounded-xl py-2">
               <BarChart3 className="h-3 w-3" />
-              Balance: {suggestedTeams.balance_quality}% · Avg {suggestedTeams.avg_rating_a} vs {suggestedTeams.avg_rating_b}
+              Balance: {suggestedTeams.balance_quality}% · Avg{" "}
+              {suggestedTeams.avg_rating_a} vs {suggestedTeams.avg_rating_b}
             </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">
-            {[{ label: "Team A", team: "a", list: teamA, activeClass: "bg-brand-600/10 border border-brand-600/30 text-brand-600" },
-              { label: "Team B", team: "b", list: teamB, activeClass: "bg-sky-500/10 border border-sky-500/30 text-sky-500" }
+            {[
+              {
+                label: "Team A",
+                team: "a",
+                list: teamA,
+                activeClass:
+                  "bg-brand-600/10 border border-brand-600/30 text-brand-600",
+              },
+              {
+                label: "Team B",
+                team: "b",
+                list: teamB,
+                activeClass:
+                  "bg-sky-500/10 border border-sky-500/30 text-sky-500",
+              },
             ].map(({ label, team, list, activeClass }) => (
               <div key={team}>
-                <Label className="text-xs font-medium text-muted-foreground mb-2 block admin-section-label">{label}</Label>
+                <Label className="text-xs font-medium text-muted-foreground mb-2 block admin-section-label">
+                  {label}
+                </Label>
                 <div className="space-y-1.5">
-                  {players.map(p => (
-                    <button key={p.id} onClick={() => togglePlayer(p.id, team)}
+                  {players.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => togglePlayer(p.id, team)}
                       data-testid={`team-${team}-${p.id}`}
                       className={`w-full text-left rounded-xl p-2.5 text-xs transition-all ${
-                        list.includes(p.id) ? activeClass : "bg-secondary/20 text-muted-foreground hover:bg-secondary/40"
-                      }`}>
+                        list.includes(p.id)
+                          ? activeClass
+                          : "bg-secondary/20 text-muted-foreground hover:bg-secondary/40"
+                      }`}
+                    >
                       <span className="font-medium">{p.name}</span>
-                      <span className="text-[10px] ml-1 opacity-60">({p.rating})</span>
+                      <span className="text-[10px] ml-1 opacity-60">
+                        ({p.rating})
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -415,7 +654,10 @@ function ResultDialog({ match, onSubmit, userId }) {
           <div>
             <Label className="admin-section-label mb-1.5 block">Winner</Label>
             <Select value={winner} onValueChange={setWinner}>
-              <SelectTrigger className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="winner-select">
+              <SelectTrigger
+                className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                data-testid="winner-select"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -428,18 +670,38 @@ function ResultDialog({ match, onSubmit, userId }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="admin-section-label mb-1.5 block">Score A</Label>
-              <Input type="number" value={scoreA} onChange={e => setScoreA(e.target.value)}
-                className="bg-secondary/20 border-border/40 rounded-xl text-sm" placeholder="0" data-testid="score-a-input" />
+              <Label className="admin-section-label mb-1.5 block">
+                Score A
+              </Label>
+              <Input
+                type="number"
+                value={scoreA}
+                onChange={(e) => setScoreA(e.target.value)}
+                className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                placeholder="0"
+                data-testid="score-a-input"
+              />
             </div>
             <div>
-              <Label className="admin-section-label mb-1.5 block">Score B</Label>
-              <Input type="number" value={scoreB} onChange={e => setScoreB(e.target.value)}
-                className="bg-secondary/20 border-border/40 rounded-xl text-sm" placeholder="0" data-testid="score-b-input" />
+              <Label className="admin-section-label mb-1.5 block">
+                Score B
+              </Label>
+              <Input
+                type="number"
+                value={scoreB}
+                onChange={(e) => setScoreB(e.target.value)}
+                className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                placeholder="0"
+                data-testid="score-b-input"
+              />
             </div>
           </div>
 
-          <Button className="w-full h-11 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSubmit} data-testid="submit-result-btn">
+          <Button
+            className="w-full h-11 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
+            onClick={handleSubmit}
+            data-testid="submit-result-btn"
+          >
             <FileCheck className="h-4 w-4 mr-1.5" /> Submit Result
           </Button>
         </div>
@@ -451,25 +713,41 @@ function ResultDialog({ match, onSubmit, userId }) {
 function ConfirmResultBar({ match, userId, onConfirm }) {
   const result = match.result;
   if (!result || result.confirmed) return null;
-  const alreadyResponded = result.confirmations?.some(c => c.user_id === userId);
+  const alreadyResponded = result.confirmations?.some(
+    (c) => c.user_id === userId,
+  );
   const isInMatch = match.players_joined?.includes(userId);
-  if (!isInMatch || alreadyResponded || result.submitted_by === userId) return null;
+  if (!isInMatch || alreadyResponded || result.submitted_by === userId)
+    return null;
 
   return (
-    <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 mt-3 flex items-center justify-between" data-testid="confirm-result-bar">
+    <div
+      className="bg-amber-500/10 border border-amber-500/20 rounded-xl sm:rounded-2xl p-3 mt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+      data-testid="confirm-result-bar"
+    >
       <div className="text-xs">
         <span className="font-medium text-amber-500">Confirm result?</span>
         <span className="text-muted-foreground ml-1.5">
-          {result.winner === "draw" ? "Draw" : result.winner === "team_a" ? "Team A won" : "Team B won"}
+          {result.winner === "draw"
+            ? "Draw"
+            : result.winner === "team_a"
+              ? "Team A won"
+              : "Team B won"}
         </span>
       </div>
       <div className="flex gap-1.5">
-        <button onClick={() => onConfirm(match.id, true)} data-testid={`confirm-yes-${match.id}`}
-          className="h-7 px-2.5 rounded-lg text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-all flex items-center gap-1">
+        <button
+          onClick={() => onConfirm(match.id, true)}
+          data-testid={`confirm-yes-${match.id}`}
+          className="h-9 px-3 rounded-lg text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1"
+        >
           <ThumbsUp className="h-3.5 w-3.5" /> Confirm
         </button>
-        <button onClick={() => onConfirm(match.id, false)} data-testid={`confirm-no-${match.id}`}
-          className="h-7 px-2.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-1">
+        <button
+          onClick={() => onConfirm(match.id, false)}
+          data-testid={`confirm-no-${match.id}`}
+          className="h-9 px-3 rounded-lg text-xs font-medium text-red-500 hover:bg-red-500/10 transition-all flex items-center gap-1 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
+        >
           <ThumbsDown className="h-3.5 w-3.5" /> Dispute
         </button>
       </div>
@@ -479,13 +757,16 @@ function ConfirmResultBar({ match, userId, onConfirm }) {
 
 function EmptyState({ icon: Icon, title, sub }) {
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-      className="bg-card border border-border/40 rounded-[28px] p-16 text-center flex flex-col items-center justify-center min-h-[240px]">
-      <div className="p-5 rounded-3xl bg-secondary/30 mb-4">
-        <Icon className="h-8 w-8 text-muted-foreground/30" />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-8 sm:p-16 text-center flex flex-col items-center justify-center min-h-[180px] sm:min-h-[240px]"
+    >
+      <div className="p-4 sm:p-5 rounded-2xl sm:rounded-3xl bg-secondary/30 mb-3 sm:mb-4">
+        <Icon className="h-7 w-7 sm:h-8 sm:w-8 text-muted-foreground/30" />
       </div>
-      <p className="font-medium text-foreground mb-1">{title}</p>
-      <p className="text-sm text-muted-foreground">{sub}</p>
+      <p className="font-semibold text-sm text-foreground mb-1">{title}</p>
+      <p className="text-xs sm:text-sm text-muted-foreground">{sub}</p>
     </motion.div>
   );
 }
@@ -505,10 +786,18 @@ export default function MatchmakingPage() {
   const [paying, setPaying] = useState(null);
   const [autoMatchResult, setAutoMatchResult] = useState(null);
   const [autoMatching, setAutoMatching] = useState(false);
-  const [autoSport, setAutoSport] = useState(searchParams.get("autoSport") || "football");
-  const [filterSport, setFilterSport] = useState(searchParams.get("sport") || "all");
-  const [filterArea, setFilterArea] = useState(searchParams.get("area") || "all");
-  const [expandedMatchId, setExpandedMatchId] = useState(searchParams.get("expanded") || null);
+  const [autoSport, setAutoSport] = useState(
+    searchParams.get("autoSport") || "football",
+  );
+  const [filterSport, setFilterSport] = useState(
+    searchParams.get("sport") || "all",
+  );
+  const [filterArea, setFilterArea] = useState(
+    searchParams.get("area") || "all",
+  );
+  const [expandedMatchId, setExpandedMatchId] = useState(
+    searchParams.get("expanded") || null,
+  );
   const [areas, setAreas] = useState([]);
 
   // Sync state to URL params so back-navigation preserves filters & expanded card
@@ -520,11 +809,29 @@ export default function MatchmakingPage() {
     if (autoSport !== "football") params.autoSport = autoSport;
     if (expandedMatchId) params.expanded = expandedMatchId;
     setSearchParams(params, { replace: true });
-  }, [tab, filterSport, filterArea, autoSport, expandedMatchId, setSearchParams]);
+  }, [
+    tab,
+    filterSport,
+    filterArea,
+    autoSport,
+    expandedMatchId,
+    setSearchParams,
+  ]);
   const [form, setForm] = useState({
-    sport: "football", date: "", time: "18:00", venue_name: "", area: "", city: "",
-    players_needed: 10, min_skill: 0, max_skill: 3000, description: "",
-    booking_id: "", position_needed: "", amount_per_player: 200, spots_available: 1,
+    sport: "football",
+    date: "",
+    time: "18:00",
+    venue_name: "",
+    area: "",
+    city: "",
+    players_needed: 10,
+    min_skill: 0,
+    max_skill: 3000,
+    description: "",
+    booking_id: "",
+    position_needed: "",
+    amount_per_player: 200,
+    spots_available: 1,
   });
 
   const loadData = useCallback(() => {
@@ -537,73 +844,129 @@ export default function MatchmakingPage() {
     Promise.all([
       matchAPI.list(matchParams).catch(() => ({ data: [] })),
       matchAPI.recommended(recParams).catch(() => ({ data: [] })),
-      mercenaryAPI.list(filterSport !== "all" ? { sport: filterSport } : {}).catch(() => ({ data: [] })),
+      mercenaryAPI
+        .list(filterSport !== "all" ? { sport: filterSport } : {})
+        .catch(() => ({ data: [] })),
       mercenaryAPI.myPosts().catch(() => ({ data: [] })),
       bookingAPI.list().catch(() => ({ data: [] })),
-    ]).then(([m, rec, mer, mp, bk]) => {
-      setMatches(m.data || []);
-      setRecommended(rec.data || []);
-      setMercenaries(mer.data || []);
-      setMyPosts(mp.data || []);
-      setMyBookings((bk.data || []).filter(b => b.status === "confirmed" && b.host_id === user?.id));
-    }).finally(() => setLoading(false));
+    ])
+      .then(([m, rec, mer, mp, bk]) => {
+        setMatches(m.data || []);
+        setRecommended(rec.data || []);
+        setMercenaries(mer.data || []);
+        setMyPosts(mp.data || []);
+        setMyBookings(
+          (bk.data || []).filter(
+            (b) => b.status === "confirmed" && b.host_id === user?.id,
+          ),
+        );
+      })
+      .finally(() => setLoading(false));
   }, [user?.id, filterSport, filterArea, autoSport]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Load areas for filter dropdowns
   useEffect(() => {
-    venueAPI.areas().then(res => setAreas(res.data || [])).catch(() => {});
+    venueAPI
+      .areas()
+      .then((res) => setAreas(res.data || []))
+      .catch(() => {});
   }, []);
 
   const handleJoin = async (id) => {
-    try { await matchAPI.join(id); toast.success("Joined match!"); loadData(); }
-    catch (err) { toast.error(err.response?.data?.detail || "Failed to join"); }
+    try {
+      await matchAPI.join(id);
+      toast.success("Joined match!");
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to join");
+    }
   };
 
   const handleAutoMatch = async () => {
     setAutoMatching(true);
     try {
-      const res = await matchAPI.autoMatch({ sport: autoSport, area: user?.area || user?.city || "" });
+      const res = await matchAPI.autoMatch({
+        sport: autoSport,
+        area: user?.area || user?.city || "",
+      });
       setAutoMatchResult(res.data);
-      if (res.data.found) toast.success(`Found a ${res.data.match.compatibility_score}% compatible match!`);
+      if (res.data.found)
+        toast.success(
+          `Found a ${res.data.match.compatibility_score}% compatible match!`,
+        );
       else toast.info(res.data.message);
-    } catch { toast.error("Auto-match failed"); }
-    finally { setAutoMatching(false); }
+    } catch {
+      toast.error("Auto-match failed");
+    } finally {
+      setAutoMatching(false);
+    }
   };
 
   const handleSubmitResult = async (matchId, data) => {
-    try { const res = await matchAPI.submitResult(matchId, data); toast.success(res.data.message); loadData(); }
-    catch (err) { toast.error(err.response?.data?.detail || "Failed to submit result"); }
+    try {
+      const res = await matchAPI.submitResult(matchId, data);
+      toast.success(res.data.message);
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to submit result");
+    }
   };
 
   const handleConfirmResult = async (matchId, confirmed) => {
-    try { const res = await matchAPI.confirmResult(matchId, { confirmed }); toast.success(res.data.message); loadData(); }
-    catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    try {
+      const res = await matchAPI.confirmResult(matchId, { confirmed });
+      toast.success(res.data.message);
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed");
+    }
   };
 
   const handleApply = async (id) => {
-    try { await mercenaryAPI.apply(id); toast.success("Applied! Host will review."); loadData(); }
-    catch (err) { toast.error(err.response?.data?.detail || "Failed to apply"); }
+    try {
+      await mercenaryAPI.apply(id);
+      toast.success("Applied! Host will review.");
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to apply");
+    }
   };
   const handleAccept = async (postId, applicantId) => {
-    try { await mercenaryAPI.accept(postId, applicantId); toast.success("Lobbian accepted!"); loadData(); }
-    catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    try {
+      await mercenaryAPI.accept(postId, applicantId);
+      toast.success("Lobbian accepted!");
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed");
+    }
   };
   const handleReject = async (postId, applicantId) => {
-    try { await mercenaryAPI.reject(postId, applicantId); toast.success("Applicant removed"); loadData(); }
-    catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    try {
+      await mercenaryAPI.reject(postId, applicantId);
+      toast.success("Applicant removed");
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed");
+    }
   };
 
-  const loadRazorpayScript = () => new Promise((resolve) => {
-    if (document.getElementById("razorpay-script")) { resolve(true); return; }
-    const script = document.createElement("script");
-    script.id = "razorpay-script";
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      if (document.getElementById("razorpay-script")) {
+        resolve(true);
+        return;
+      }
+      const script = document.createElement("script");
+      script.id = "razorpay-script";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
 
   const handlePay = async (postId) => {
     setPaying(postId);
@@ -612,10 +975,18 @@ export default function MatchmakingPage() {
       const result = res.data;
       if (result.payment_gateway === "razorpay" && result.razorpay_order_id) {
         const loaded = await loadRazorpayScript();
-        if (!loaded) { toast.error("Payment gateway failed to load"); setPaying(null); return; }
+        if (!loaded) {
+          toast.error("Payment gateway failed to load");
+          setPaying(null);
+          return;
+        }
         const options = {
-          key: result.razorpay_key_id, amount: result.amount * 100, currency: "INR",
-          order_id: result.razorpay_order_id, name: "Horizon Sports", description: "Mercenary Fee",
+          key: result.razorpay_key_id,
+          amount: result.amount * 100,
+          currency: "INR",
+          order_id: result.razorpay_order_id,
+          name: "Horizon Sports",
+          description: "Mercenary Fee",
           handler: async (response) => {
             try {
               await mercenaryAPI.verifyPayment(postId, {
@@ -623,233 +994,471 @@ export default function MatchmakingPage() {
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_signature: response.razorpay_signature,
               });
-              toast.success("Payment confirmed!"); loadData();
-            } catch { toast.error("Payment verification failed"); }
+              toast.success("Payment confirmed!");
+              loadData();
+            } catch {
+              toast.error("Payment verification failed");
+            }
             setPaying(null);
           },
-          modal: { ondismiss: () => { toast.info("Payment cancelled"); setPaying(null); } },
-          theme: { color: "#7C3AED" }
+          modal: {
+            ondismiss: () => {
+              toast.info("Payment cancelled");
+              setPaying(null);
+            },
+          },
+          theme: { color: "#7C3AED" },
         };
         new window.Razorpay(options).open();
         return;
       }
-      toast.success("Payment confirmed!"); loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || "Payment failed"); }
-    finally { setPaying(null); }
+      toast.success("Payment confirmed!");
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Payment failed");
+    } finally {
+      setPaying(null);
+    }
   };
 
   const handleCreate = async () => {
     try {
       if (formType === "match") {
         await matchAPI.create({
-          sport: form.sport, date: form.date, time: form.time,
-          venue_name: form.venue_name, area: form.area, city: form.city,
+          sport: form.sport,
+          date: form.date,
+          time: form.time,
+          venue_name: form.venue_name,
+          area: form.area,
+          city: form.city,
           players_needed: Number(form.players_needed),
-          min_skill: Number(form.min_skill), max_skill: Number(form.max_skill), description: form.description,
+          min_skill: Number(form.min_skill),
+          max_skill: Number(form.max_skill),
+          description: form.description,
         });
         toast.success("Match created!");
       } else {
-        if (!form.booking_id) { toast.error("Select a booking"); return; }
+        if (!form.booking_id) {
+          toast.error("Select a booking");
+          return;
+        }
         await mercenaryAPI.create({
-          booking_id: form.booking_id, position_needed: form.position_needed,
-          amount_per_player: Number(form.amount_per_player), spots_available: Number(form.spots_available),
+          booking_id: form.booking_id,
+          position_needed: form.position_needed,
+          amount_per_player: Number(form.amount_per_player),
+          spots_available: Number(form.spots_available),
           description: form.description,
         });
         toast.success("Mercenary post created!");
       }
-      setCreateOpen(false); loadData();
-    } catch (err) { toast.error(err.response?.data?.detail || "Creation failed"); }
+      setCreateOpen(false);
+      loadData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Creation failed");
+    }
   };
 
-  const allMercenaryPosts = [...myPosts.filter(p => !mercenaries.some(m => m.id === p.id)), ...mercenaries];
+  const allMercenaryPosts = [
+    ...myPosts.filter((p) => !mercenaries.some((m) => m.id === p.id)),
+    ...mercenaries,
+  ];
 
   const [allMatches, setAllMatches] = useState([]);
   useEffect(() => {
-    matchAPI.list({ status: "filled,pending_result,completed", include_past: true })
-      .then(res => {
+    matchAPI
+      .list({ status: "filled,pending_result,completed", include_past: true })
+      .then((res) => {
         const extra = res.data || [];
-        setAllMatches([...matches, ...extra].filter(
-          (m, i, arr) => arr.findIndex(x => x.id === m.id) === i
-        ));
+        setAllMatches(
+          [...matches, ...extra].filter(
+            (m, i, arr) => arr.findIndex((x) => x.id === m.id) === i,
+          ),
+        );
       })
       .catch(() => setAllMatches(matches));
   }, [matches]);
 
-  const myActiveMatches = allMatches.filter(m =>
-    m.players_joined?.includes(user?.id) &&
-    (m.status === "filled" || m.status === "pending_result" || m.status === "completed")
+  const myActiveMatches = allMatches.filter(
+    (m) =>
+      m.players_joined?.includes(user?.id) &&
+      (m.status === "filled" ||
+        m.status === "pending_result" ||
+        m.status === "completed"),
   );
 
   const TABS = [
     { id: "recommended", label: "For You", icon: Sparkles },
     { id: "matches", label: "All Games", icon: Swords },
-    { id: "my-matches", label: "My Games", icon: Trophy, count: myActiveMatches.length },
+    {
+      id: "my-matches",
+      label: "My Games",
+      icon: Trophy,
+      count: myActiveMatches.length,
+    },
     { id: "mercenary", label: "Mercenary", icon: Target },
   ];
 
   return (
-    <div className="min-h-screen bg-transparent pb-20 md:pb-8" data-testid="matchmaking-page">
-      <div className="max-w-4xl mx-auto px-4 py-6">
-
+    <div
+      className="min-h-screen bg-transparent pb-20 md:pb-8"
+      data-testid="matchmaking-page"
+    >
+      <div className=" mx-auto px-4 sm:px-4 md:px-6 py-5 sm:py-6">
         {/* ── Header ── */}
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between mb-6">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-start justify-between mb-4 sm:mb-6 gap-3"
+        >
           <div>
-            <h1 className="admin-page-title mb-1">Matchmaking</h1>
-            <p className="text-sm text-muted-foreground">Find games, fill spots, report results</p>
+            <h1 className="admin-page-title mb-1 [text-wrap:balance]">
+              Matchmaking
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Find games, fill spots, report results
+            </p>
           </div>
           <Dialog open={createOpen} onOpenChange={setCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-10 px-4 flex items-center gap-1.5 shrink-0"
-                data-testid="create-match-btn">
-                <Plus className="h-4 w-4" /> Create
+              <Button
+                className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-11 w-11 sm:w-auto sm:px-4 flex items-center justify-center gap-1.5 shrink-0"
+                data-testid="create-match-btn"
+              >
+                <Plus className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Create</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="bg-card border border-border/40 rounded-[28px] max-w-[95vw] sm:max-w-md overflow-hidden p-0">
+            <DialogContent className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] max-w-[95vw] sm:max-w-md overflow-hidden p-0">
               {/* Modal Header */}
-              <div className="border-b border-border/40 px-7 pt-7 pb-5 flex items-center justify-between">
+              <div className="border-b border-border/40 px-5 sm:px-7 pt-5 sm:pt-7 pb-4 sm:pb-5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2.5 rounded-2xl bg-brand-600/10">
                     <Swords className="h-5 w-5 text-brand-600" />
                   </div>
                   <div>
-                    <DialogTitle className="admin-heading">Create {formType === "match" ? "Match" : "Mercenary Post"}</DialogTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">{formType === "match" ? "Set up a game" : "Find players for your slot"}</p>
+                    <DialogTitle className="admin-heading">
+                      Create {formType === "match" ? "Match" : "Mercenary Post"}
+                    </DialogTitle>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {formType === "match"
+                        ? "Set up a game"
+                        : "Find players for your slot"}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Type toggle */}
-              <div className="px-7 pt-5 pb-0 flex gap-2">
-                {["match", "mercenary"].map(t => (
-                  <button key={t} onClick={() => setFormType(t)}
+              <div className="px-5 sm:px-7 pt-4 sm:pt-5 pb-0 flex gap-2">
+                {["match", "mercenary"].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setFormType(t)}
                     className={`px-4 py-1.5 rounded-full admin-btn capitalize text-sm transition-all active:scale-95 ${
-                      formType === t ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
+                      formType === t
+                        ? "bg-brand-600 text-white shadow-md shadow-brand-600/20"
+                        : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"
                     }`}
-                    data-testid={`form-type-${t}`}>
+                    data-testid={`form-type-${t}`}
+                  >
                     {t}
                   </button>
                 ))}
               </div>
 
               {/* Modal Body */}
-              <div className="px-7 py-5 space-y-3 max-h-[60vh] overflow-y-auto">
+              <div className="px-5 sm:px-7 py-4 sm:py-5 space-y-3 max-h-[60vh] overflow-y-auto">
                 {formType === "match" ? (
                   <>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="admin-section-label mb-1.5 block">Sport</Label>
-                        <Select value={form.sport} onValueChange={v => setForm(p => ({ ...p, sport: v }))}>
-                          <SelectTrigger className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-sport-select"><SelectValue /></SelectTrigger>
+                        <Label className="admin-section-label mb-1.5 block">
+                          Sport
+                        </Label>
+                        <Select
+                          value={form.sport}
+                          onValueChange={(v) =>
+                            setForm((p) => ({ ...p, sport: v }))
+                          }
+                        >
+                          <SelectTrigger
+                            className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                            data-testid="create-sport-select"
+                          >
+                            <SelectValue />
+                          </SelectTrigger>
                           <SelectContent>
-                            {SPORTS.map(s => <SelectItem key={s} value={s}>{SPORT_EMOJI[s]} {s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                            {SPORTS.map((s) => (
+                              <SelectItem key={s} value={s}>
+                                {SPORT_EMOJI[s]}{" "}
+                                {s.charAt(0).toUpperCase() + s.slice(1)}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div>
-                        <Label className="admin-section-label mb-1.5 block">Time</Label>
-                        <Input value={form.time} onChange={e => setForm(p => ({ ...p, time: e.target.value }))}
-                          className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-time-input" />
+                        <Label className="admin-section-label mb-1.5 block">
+                          Time
+                        </Label>
+                        <Input
+                          value={form.time}
+                          onChange={(e) =>
+                            setForm((p) => ({ ...p, time: e.target.value }))
+                          }
+                          className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                          data-testid="create-time-input"
+                        />
                       </div>
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Date</Label>
-                      <Input type="date" value={form.date} onChange={e => setForm(p => ({ ...p, date: e.target.value }))}
-                        className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-date-input" />
+                      <Label className="admin-section-label mb-1.5 block">
+                        Date
+                      </Label>
+                      <Input
+                        type="date"
+                        value={form.date}
+                        onChange={(e) =>
+                          setForm((p) => ({ ...p, date: e.target.value }))
+                        }
+                        className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                        data-testid="create-date-input"
+                      />
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Venue Name</Label>
-                      <Input value={form.venue_name} onChange={e => setForm(p => ({ ...p, venue_name: e.target.value }))}
-                        className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-venue-input" />
+                      <Label className="admin-section-label mb-1.5 block">
+                        Venue Name
+                      </Label>
+                      <Input
+                        value={form.venue_name}
+                        onChange={(e) =>
+                          setForm((p) => ({ ...p, venue_name: e.target.value }))
+                        }
+                        className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                        data-testid="create-venue-input"
+                      />
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Area</Label>
-                      <Select value={form.area || "none"} onValueChange={v => setForm(p => ({ ...p, area: v === "none" ? "" : v }))}>
+                      <Label className="admin-section-label mb-1.5 block">
+                        Area
+                      </Label>
+                      <Select
+                        value={form.area || "none"}
+                        onValueChange={(v) =>
+                          setForm((p) => ({
+                            ...p,
+                            area: v === "none" ? "" : v,
+                          }))
+                        }
+                      >
                         <SelectTrigger className="bg-secondary/20 border-border/40 rounded-xl text-sm">
                           <SelectValue placeholder="Select area (optional)" />
                         </SelectTrigger>
                         <SelectContent className="rounded-xl border-border/40">
                           <SelectItem value="none">No area selected</SelectItem>
-                          {areas.map(a => (
-                            <SelectItem key={a.area} value={a.area}>{a.area}</SelectItem>
+                          {areas.map((a) => (
+                            <SelectItem key={a.area} value={a.area}>
+                              {a.area}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Lobbians Needed</Label>
-                      <Input type="number" value={form.players_needed} onChange={e => setForm(p => ({ ...p, players_needed: e.target.value }))}
-                        className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-players-input" />
+                      <Label className="admin-section-label mb-1.5 block">
+                        Lobbians Needed
+                      </Label>
+                      <Input
+                        type="number"
+                        value={form.players_needed}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            players_needed: e.target.value,
+                          }))
+                        }
+                        className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                        data-testid="create-players-input"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="admin-section-label mb-1.5 block">Min Skill</Label>
-                        <Input type="number" value={form.min_skill} onChange={e => setForm(p => ({ ...p, min_skill: e.target.value }))}
-                          className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-min-skill" />
+                        <Label className="admin-section-label mb-1.5 block">
+                          Min Skill
+                        </Label>
+                        <Input
+                          type="number"
+                          value={form.min_skill}
+                          onChange={(e) =>
+                            setForm((p) => ({
+                              ...p,
+                              min_skill: e.target.value,
+                            }))
+                          }
+                          className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                          data-testid="create-min-skill"
+                        />
                       </div>
                       <div>
-                        <Label className="admin-section-label mb-1.5 block">Max Skill</Label>
-                        <Input type="number" value={form.max_skill} onChange={e => setForm(p => ({ ...p, max_skill: e.target.value }))}
-                          className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-max-skill" />
+                        <Label className="admin-section-label mb-1.5 block">
+                          Max Skill
+                        </Label>
+                        <Input
+                          type="number"
+                          value={form.max_skill}
+                          onChange={(e) =>
+                            setForm((p) => ({
+                              ...p,
+                              max_skill: e.target.value,
+                            }))
+                          }
+                          className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                          data-testid="create-max-skill"
+                        />
                       </div>
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Description</Label>
-                      <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                        placeholder="Friendly match, bring water..." className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-description-input" />
+                      <Label className="admin-section-label mb-1.5 block">
+                        Description
+                      </Label>
+                      <Input
+                        value={form.description}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="Friendly match, bring water..."
+                        className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                        data-testid="create-description-input"
+                      />
                     </div>
                   </>
                 ) : (
                   <>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Select Your Booking</Label>
+                      <Label className="admin-section-label mb-1.5 block">
+                        Select Your Booking
+                      </Label>
                       {myBookings.length === 0 ? (
                         <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 px-4 py-3 text-xs text-amber-500">
                           You need a confirmed booking first.
                         </div>
                       ) : (
-                        <Select value={form.booking_id} onValueChange={v => setForm(p => ({ ...p, booking_id: v }))}>
-                          <SelectTrigger className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="select-booking">
+                        <Select
+                          value={form.booking_id}
+                          onValueChange={(v) =>
+                            setForm((p) => ({ ...p, booking_id: v }))
+                          }
+                        >
+                          <SelectTrigger
+                            className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                            data-testid="select-booking"
+                          >
                             <SelectValue placeholder="Choose a booking..." />
                           </SelectTrigger>
                           <SelectContent>
-                            {myBookings.map(b => (
-                              <SelectItem key={b.id} value={b.id}>{b.venue_name} — {b.date} at {b.start_time} ({b.sport})</SelectItem>
+                            {myBookings.map((b) => (
+                              <SelectItem key={b.id} value={b.id}>
+                                {b.venue_name} — {b.date} at {b.start_time} (
+                                {b.sport})
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       )}
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Position Needed</Label>
-                      <Input value={form.position_needed} onChange={e => setForm(p => ({ ...p, position_needed: e.target.value }))}
-                        placeholder="Goalkeeper, Defender..." className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-position-input" />
+                      <Label className="admin-section-label mb-1.5 block">
+                        Position Needed
+                      </Label>
+                      <Input
+                        value={form.position_needed}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            position_needed: e.target.value,
+                          }))
+                        }
+                        placeholder="Goalkeeper, Defender..."
+                        className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                        data-testid="create-position-input"
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <Label className="admin-section-label mb-1.5 block">Fee Per Lobbian</Label>
-                        <Input type="number" value={form.amount_per_player} onChange={e => setForm(p => ({ ...p, amount_per_player: e.target.value }))}
-                          className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-amount-input" />
+                        <Label className="admin-section-label mb-1.5 block">
+                          Fee Per Lobbian
+                        </Label>
+                        <Input
+                          type="number"
+                          value={form.amount_per_player}
+                          onChange={(e) =>
+                            setForm((p) => ({
+                              ...p,
+                              amount_per_player: e.target.value,
+                            }))
+                          }
+                          className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                          data-testid="create-amount-input"
+                        />
                       </div>
                       <div>
-                        <Label className="admin-section-label mb-1.5 block">Spots</Label>
-                        <Input type="number" min={1} max={20} value={form.spots_available} onChange={e => setForm(p => ({ ...p, spots_available: e.target.value }))}
-                          className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-spots-input" />
+                        <Label className="admin-section-label mb-1.5 block">
+                          Spots
+                        </Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={20}
+                          value={form.spots_available}
+                          onChange={(e) =>
+                            setForm((p) => ({
+                              ...p,
+                              spots_available: e.target.value,
+                            }))
+                          }
+                          className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                          data-testid="create-spots-input"
+                        />
                       </div>
                     </div>
                     <div>
-                      <Label className="admin-section-label mb-1.5 block">Description (optional)</Label>
-                      <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                        placeholder="Details..." className="bg-secondary/20 border-border/40 rounded-xl text-sm" data-testid="create-merc-description" />
+                      <Label className="admin-section-label mb-1.5 block">
+                        Description (optional)
+                      </Label>
+                      <Input
+                        value={form.description}
+                        onChange={(e) =>
+                          setForm((p) => ({
+                            ...p,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="Details..."
+                        className="bg-secondary/20 border-border/40 rounded-xl text-sm"
+                        data-testid="create-merc-description"
+                      />
                     </div>
                   </>
                 )}
               </div>
 
               {/* Modal Footer */}
-              <div className="border-t border-border/40 px-7 py-4 flex gap-3">
-                <Button variant="outline" className="flex-1 admin-btn rounded-xl h-11 border-border/40" onClick={() => setCreateOpen(false)}>Cancel</Button>
-                <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-11 shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
-                  onClick={handleCreate} data-testid="submit-create-btn">
+              <div className="border-t border-border/40 px-5 sm:px-7 py-4 flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 admin-btn rounded-xl h-12 border-border/40"
+                  onClick={() => setCreateOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-12 shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
+                  onClick={handleCreate}
+                  data-testid="submit-create-btn"
+                >
                   Create
                 </Button>
               </div>
@@ -858,84 +1467,161 @@ export default function MatchmakingPage() {
         </motion.div>
 
         {/* ── Tab Navigation ── */}
-        <div className="flex items-center border-b border-border/40 mb-6 overflow-x-auto hide-scrollbar">
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className={`relative pb-3 px-1 mr-6 admin-btn text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-1.5 ${
-                tab === t.id ? "text-brand-600" : "text-muted-foreground hover:text-foreground"
-              }`}>
-              <t.icon className="h-3.5 w-3.5" />
+        <div className="flex items-center border-b border-border/40 mb-4 sm:mb-6 overflow-x-auto hide-scrollbar">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`relative py-3 px-1.5 sm:px-2 mr-1.5 sm:mr-5 admin-btn text-[11px] sm:text-sm whitespace-nowrap transition-colors flex-shrink-0 flex items-center gap-1 sm:gap-1.5 focus-visible:outline-none focus-visible:text-brand-600 ${
+                tab === t.id
+                  ? "text-brand-600"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <t.icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               {t.label}
               {t.count > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
-                  tab === t.id ? "bg-brand-600/15 text-brand-600" : "bg-secondary text-muted-foreground"
-                }`}>{t.count}</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    tab === t.id
+                      ? "bg-brand-600/15 text-brand-600"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {t.count}
+                </span>
               )}
-              {tab === t.id && <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full" />}
+              {tab === t.id && (
+                <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full" />
+              )}
             </button>
           ))}
         </div>
 
         {/* ── Tab Content ── */}
         <AnimatePresence mode="wait">
-
           {/* FOR YOU */}
           {tab === "recommended" && (
-            <motion.div key="recommended" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <motion.div
+              key="recommended"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
               {/* Auto-Match card */}
-              <div className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 mb-6" data-testid="auto-match-section">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2.5 rounded-2xl bg-brand-600/10">
-                    <Zap className="h-5 w-5 text-brand-600" />
+              <div
+                className="rounded-2xl sm:rounded-[28px] bg-card border border-border/40 shadow-sm p-4 sm:p-5 mb-5 sm:mb-6"
+                data-testid="auto-match-section"
+              >
+                <div className="flex items-center gap-2.5 sm:gap-3 mb-3 sm:mb-4">
+                  <div className="p-2 sm:p-2.5 rounded-xl sm:rounded-2xl bg-brand-600/10 shrink-0">
+                    <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-brand-600" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-sm">Auto-Match</h3>
-                    <p className="text-xs text-muted-foreground">Instantly find the best game for your skill level</p>
+                    <h3 className="font-semibold text-sm">Auto-Match</h3>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground">
+                      Instantly find the best game for your skill level
+                    </p>
                   </div>
                 </div>
-                <div className="flex gap-2 flex-wrap mb-4">
-                  {SPORTS.map(s => (
-                    <button key={s} onClick={() => setAutoSport(s)}
-                      className={`px-3.5 py-1.5 rounded-full admin-btn text-xs transition-all active:scale-95 ${
-                        autoSport === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-secondary/30 border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
-                      }`}>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-3 sm:mb-4">
+                  {SPORTS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => setAutoSport(s)}
+                      className={`flex-1 min-w-[calc(33%-4px)] sm:flex-none sm:min-w-0 px-2.5 sm:px-3.5 py-2 min-h-[40px] rounded-full admin-btn text-[11px] sm:text-xs transition-all active:scale-95 text-center whitespace-nowrap ${
+                        autoSport === s
+                          ? "bg-brand-600 text-white shadow-md shadow-brand-600/20"
+                          : "bg-secondary/30 border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
+                      }`}
+                    >
                       {SPORT_EMOJI[s]} {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
                 </div>
-                <Button onClick={handleAutoMatch} disabled={autoMatching}
-                  className="w-full h-10 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
-                  data-testid="auto-match-btn">
-                  {autoMatching ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Finding...</> : <><Zap className="h-4 w-4 mr-2" />Find Best Match</>}
+                <Button
+                  onClick={handleAutoMatch}
+                  disabled={autoMatching}
+                  className="w-full h-12 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-2xl shadow-md shadow-brand-600/25 active:scale-[0.98] transition-all font-semibold"
+                  data-testid="auto-match-btn"
+                >
+                  {autoMatching ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Finding...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-4 w-4 mr-2" />
+                      Find Best Match
+                    </>
+                  )}
                 </Button>
                 {autoMatchResult && (
                   <div className="mt-4 pt-4 border-t border-border/30">
                     {autoMatchResult.found ? (
                       <div>
                         <div className="flex items-center gap-2 mb-3">
-                          <CompatBadge score={autoMatchResult.match.compatibility_score} />
-                          <span className="text-xs text-muted-foreground">Best match found for you!</span>
+                          <CompatBadge
+                            score={autoMatchResult.match.compatibility_score}
+                          />
+                          <span className="text-xs text-muted-foreground">
+                            Best match found for you!
+                          </span>
                         </div>
-                        <MatchCard match={autoMatchResult.match} onJoin={handleJoin} userId={user?.id} showCompat
-                          isExpanded={expandedMatchId === autoMatchResult.match.id}
-                          onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />
+                        <MatchCard
+                          match={autoMatchResult.match}
+                          onJoin={handleJoin}
+                          userId={user?.id}
+                          showCompat
+                          isExpanded={
+                            expandedMatchId === autoMatchResult.match.id
+                          }
+                          onToggleExpand={(id) =>
+                            setExpandedMatchId((prev) =>
+                              prev === id ? null : id,
+                            )
+                          }
+                        />
                       </div>
                     ) : (
-                      <p className="text-sm text-muted-foreground text-center py-2">{autoMatchResult.message}</p>
+                      <p className="text-sm text-muted-foreground text-center py-2">
+                        {autoMatchResult.message}
+                      </p>
                     )}
                   </div>
                 )}
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
+                <div className="flex justify-center py-12">
+                  <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+                </div>
               ) : recommended.length === 0 ? (
-                <EmptyState icon={Sparkles} title="No recommendations yet" sub="Create a match or check back later!" />
+                <EmptyState
+                  icon={Sparkles}
+                  title="No recommendations yet"
+                  sub="Create a match or check back later!"
+                />
               ) : (
-                <div className="space-y-4">
-                  <span className="admin-section-label">Recommended for you</span>
-                  {recommended.map((m, i) => <MatchCard key={m.id} match={m} onJoin={handleJoin} userId={user?.id} showCompat index={i}
-                    isExpanded={expandedMatchId === m.id} onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />)}
+                <div className="space-y-3 sm:space-y-4">
+                  <span className="admin-section-label">
+                    Recommended for you
+                  </span>
+                  {recommended.map((m, i) => (
+                    <MatchCard
+                      key={m.id}
+                      match={m}
+                      onJoin={handleJoin}
+                      userId={user?.id}
+                      showCompat
+                      index={i}
+                      isExpanded={expandedMatchId === m.id}
+                      onToggleExpand={(id) =>
+                        setExpandedMatchId((prev) => (prev === id ? null : id))
+                      }
+                    />
+                  ))}
                 </div>
               )}
             </motion.div>
@@ -943,53 +1629,90 @@ export default function MatchmakingPage() {
 
           {/* ALL GAMES */}
           {tab === "matches" && (
-            <motion.div key="matches" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <motion.div
+              key="matches"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
               {/* Filter bar */}
-              <div className="flex flex-wrap gap-3 mb-5">
-                <div className="w-40">
+              <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-5">
+                <div className="flex-1 min-w-0 sm:min-w-[120px] sm:max-w-[180px]">
                   <Select value={filterSport} onValueChange={setFilterSport}>
                     <SelectTrigger className="h-10 rounded-xl bg-secondary/20 border-border/40 admin-btn text-sm">
                       <SelectValue placeholder="All Sports" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-border/40">
                       <SelectItem value="all">All Sports</SelectItem>
-                      {SPORTS.map(s => (
-                        <SelectItem key={s} value={s}>{SPORT_EMOJI[s]} {s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
+                      {SPORTS.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {SPORT_EMOJI[s]}{" "}
+                          {s.charAt(0).toUpperCase() + s.slice(1)}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="w-44">
+                <div className="flex-1 min-w-0 sm:min-w-[130px] sm:max-w-[200px]">
                   <Select value={filterArea} onValueChange={setFilterArea}>
                     <SelectTrigger className="h-10 rounded-xl bg-secondary/20 border-border/40 admin-btn text-sm">
                       <SelectValue placeholder="All Areas" />
                     </SelectTrigger>
                     <SelectContent className="rounded-xl border-border/40">
                       <SelectItem value="all">All Areas</SelectItem>
-                      {areas.map(a => (
-                        <SelectItem key={a.area} value={a.area}>{a.area}</SelectItem>
+                      {areas.map((a) => (
+                        <SelectItem key={a.area} value={a.area}>
+                          {a.area}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 {(filterSport !== "all" || filterArea !== "all") && (
                   <button
-                    onClick={() => { setFilterSport("all"); setFilterArea("all"); }}
-                    className="px-3 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground border border-border/40 admin-btn transition-all">
+                    onClick={() => {
+                      setFilterSport("all");
+                      setFilterArea("all");
+                    }}
+                    className="px-3 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground border border-border/40 admin-btn transition-all"
+                  >
                     Clear filters
                   </button>
                 )}
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
+                <div className="flex justify-center py-12">
+                  <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+                </div>
               ) : matches.length === 0 ? (
-                <EmptyState icon={Swords} title="No open games" sub={filterSport !== "all" || filterArea !== "all" ? "Try changing your filters" : "Be the first to create one!"} />
+                <EmptyState
+                  icon={Swords}
+                  title="No open games"
+                  sub={
+                    filterSport !== "all" || filterArea !== "all"
+                      ? "Try changing your filters"
+                      : "Be the first to create one!"
+                  }
+                />
               ) : (
-                <div className="space-y-4">
-                  <span className="admin-section-label">{matches.length} open game{matches.length !== 1 ? "s" : ""}</span>
-                  {matches.map((m, i) => <MatchCard key={m.id} match={m} onJoin={handleJoin} userId={user?.id} index={i}
-                    isExpanded={expandedMatchId === m.id} onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />)}
+                <div className="space-y-3 sm:space-y-4">
+                  <span className="admin-section-label">
+                    {matches.length} open game{matches.length !== 1 ? "s" : ""}
+                  </span>
+                  {matches.map((m, i) => (
+                    <MatchCard
+                      key={m.id}
+                      match={m}
+                      onJoin={handleJoin}
+                      userId={user?.id}
+                      index={i}
+                      isExpanded={expandedMatchId === m.id}
+                      onToggleExpand={(id) =>
+                        setExpandedMatchId((prev) => (prev === id ? null : id))
+                      }
+                    />
+                  ))}
                 </div>
               )}
             </motion.div>
@@ -997,20 +1720,49 @@ export default function MatchmakingPage() {
 
           {/* MY GAMES */}
           {tab === "my-matches" && (
-            <motion.div key="my-matches" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <motion.div
+              key="my-matches"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
               {myActiveMatches.length === 0 ? (
-                <EmptyState icon={Trophy} title="No active games" sub="Join a match and play to submit results!" />
+                <EmptyState
+                  icon={Trophy}
+                  title="No active games"
+                  sub="Join a match and play to submit results!"
+                />
               ) : (
-                <div className="space-y-4">
-                  <span className="admin-section-label">Report & confirm results</span>
+                <div className="space-y-3 sm:space-y-4">
+                  <span className="admin-section-label">
+                    Report & confirm results
+                  </span>
                   {myActiveMatches.map((m, i) => (
                     <div key={m.id}>
-                      <MatchCard match={m} onJoin={handleJoin} userId={user?.id} index={i}
-                        isExpanded={expandedMatchId === m.id} onToggleExpand={(id) => setExpandedMatchId(prev => prev === id ? null : id)} />
+                      <MatchCard
+                        match={m}
+                        onJoin={handleJoin}
+                        userId={user?.id}
+                        index={i}
+                        isExpanded={expandedMatchId === m.id}
+                        onToggleExpand={(id) =>
+                          setExpandedMatchId((prev) =>
+                            prev === id ? null : id,
+                          )
+                        }
+                      />
                       <div className="mt-2 flex gap-2 justify-end">
-                        <ResultDialog match={m} onSubmit={handleSubmitResult} userId={user?.id} />
+                        <ResultDialog
+                          match={m}
+                          onSubmit={handleSubmitResult}
+                          userId={user?.id}
+                        />
                       </div>
-                      <ConfirmResultBar match={m} userId={user?.id} onConfirm={handleConfirmResult} />
+                      <ConfirmResultBar
+                        match={m}
+                        userId={user?.id}
+                        onConfirm={handleConfirmResult}
+                      />
                     </div>
                   ))}
                 </div>
@@ -1020,24 +1772,45 @@ export default function MatchmakingPage() {
 
           {/* MERCENARY */}
           {tab === "mercenary" && (
-            <motion.div key="mercenary" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            <motion.div
+              key="mercenary"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+            >
               {loading ? (
-                <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
+                <div className="flex justify-center py-12">
+                  <div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+                </div>
               ) : allMercenaryPosts.length === 0 ? (
-                <EmptyState icon={Users} title="No mercenary posts" sub="Book a slot and create a post to find Lobbians!" />
+                <EmptyState
+                  icon={Users}
+                  title="No mercenary posts"
+                  sub="Book a slot and create a post to find Lobbians!"
+                />
               ) : (
-                <div className="space-y-4">
-                  <span className="admin-section-label">{allMercenaryPosts.length} open post{allMercenaryPosts.length !== 1 ? "s" : ""}</span>
+                <div className="space-y-3 sm:space-y-4">
+                  <span className="admin-section-label">
+                    {allMercenaryPosts.length} open post
+                    {allMercenaryPosts.length !== 1 ? "s" : ""}
+                  </span>
                   {allMercenaryPosts.map((m, i) => (
-                    <MercenaryCard key={m.id} post={m} userId={user?.id}
-                      onApply={handleApply} onAccept={handleAccept} onReject={handleReject}
-                      onPay={handlePay} paying={paying} index={i} />
+                    <MercenaryCard
+                      key={m.id}
+                      post={m}
+                      userId={user?.id}
+                      onApply={handleApply}
+                      onAccept={handleAccept}
+                      onReject={handleReject}
+                      onPay={handlePay}
+                      paying={paying}
+                      index={i}
+                    />
                   ))}
                 </div>
               )}
             </motion.div>
           )}
-
         </AnimatePresence>
       </div>
     </div>
