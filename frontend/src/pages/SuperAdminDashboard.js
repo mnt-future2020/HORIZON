@@ -158,7 +158,7 @@ function UsersTab() {
   const [page, setPage] = useState(() => parseInt(searchParams.get("page") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const LIMIT = 20;
+  const LIMIT = 10;
   const filterChangedRef = useRef(false);
   // Document viewer state
   const [docViewUserId, setDocViewUserId] = useState(null);

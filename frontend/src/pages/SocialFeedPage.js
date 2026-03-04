@@ -17,7 +17,6 @@ import {
   Heart,
   MessageSquare,
   Send,
-  Trash2,
   Loader2,
   Plus,
   ChevronDown,
@@ -30,7 +29,6 @@ import {
   Users,
   Shield,
   Zap,
-  Eye,
   Bookmark,
   Share2,
   Image,
@@ -41,6 +39,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { FeedSkeleton } from "@/components/SkeletonLoader";
+import StoryViewer from "@/components/StoryViewer";
 
 const REACTION_EMOJI = {
   fire: "\uD83D\uDD25",
@@ -91,8 +90,7 @@ export default function SocialFeedPage() {
 
   // Stories
   const [storyGroups, setStoryGroups] = useState([]);
-  const [activeStory, setActiveStory] = useState(null);
-  const [storyIdx, setStoryIdx] = useState(0);
+  const [storyViewerGroupIdx, setStoryViewerGroupIdx] = useState(null); // null = closed, number = open at group index
   const [showStoryCreate, setShowStoryCreate] = useState(false);
   const [storyText, setStoryText] = useState("");
   const [storyColor, setStoryColor] = useState(STORY_COLORS[0]);
@@ -422,16 +420,6 @@ export default function SocialFeedPage() {
     }
   };
 
-  const handleDelete = async (postId) => {
-    try {
-      await socialAPI.deletePost(postId);
-      setPosts((prev) => prev.filter((p) => p.id !== postId));
-      toast.success("Post deleted");
-    } catch {
-      toast.error("Failed to delete");
-    }
-  };
-
   const handleFollow = async (userId) => {
     try {
       const res = await socialAPI.toggleFollow(userId);
@@ -678,36 +666,8 @@ export default function SocialFeedPage() {
   };
 
   const openStoryGroup = (group) => {
-    setActiveStory(group);
-    setStoryIdx(0);
-    if (group.stories[0])
-      socialAPI.viewStory(group.stories[0].id).catch(() => {});
-  };
-
-  const nextStory = () => {
-    if (!activeStory) return;
-    const next = storyIdx + 1;
-    if (next < activeStory.stories.length) {
-      setStoryIdx(next);
-      socialAPI.viewStory(activeStory.stories[next].id).catch(() => {});
-    } else {
-      const currentIdx = storyGroups.findIndex(
-        (g) => g.user_id === activeStory.user_id,
-      );
-      if (currentIdx >= 0 && currentIdx < storyGroups.length - 1) {
-        const nextGroup = storyGroups[currentIdx + 1];
-        setActiveStory(nextGroup);
-        setStoryIdx(0);
-        if (nextGroup.stories[0])
-          socialAPI.viewStory(nextGroup.stories[0].id).catch(() => {});
-      } else {
-        setActiveStory(null);
-      }
-    }
-  };
-
-  const prevStory = () => {
-    if (storyIdx > 0) setStoryIdx(storyIdx - 1);
+    const idx = storyGroups.findIndex((g) => g.user_id === group.user_id);
+    setStoryViewerGroupIdx(idx >= 0 ? idx : 0);
   };
 
   // ─── Comments ──────────────────────────────────────────────────────────────
@@ -1258,16 +1218,6 @@ export default function SocialFeedPage() {
                             : post.post_type}
                         </Badge>
                       )}
-                    {post.user_id === user?.id && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(post.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
                   </div>
 
                   {/* Content — double tap to like */}
@@ -1718,99 +1668,13 @@ export default function SocialFeedPage() {
 
       {/* ═══ STORY VIEWER (Full screen overlay) ═══ */}
       <AnimatePresence>
-        {activeStory && activeStory.stories[storyIdx] && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
-            style={{
-              paddingTop: "env(safe-area-inset-top)",
-              paddingBottom: "env(safe-area-inset-bottom)",
-            }}
-          >
-            {/* Progress bars */}
-            <div className="absolute top-4 left-4 right-4 flex gap-1 z-10">
-              {activeStory.stories.map((_, i) => (
-                <div
-                  key={i}
-                  className="flex-1 h-0.5 rounded-full bg-white/30 overflow-hidden"
-                >
-                  <div
-                    className={`h-full rounded-full transition-all duration-300 ${
-                      i < storyIdx
-                        ? "w-full bg-white"
-                        : i === storyIdx
-                          ? "w-full bg-white animate-pulse"
-                          : "w-0"
-                    }`}
-                  />
-                </div>
-              ))}
-            </div>
-
-            {/* Story Header */}
-            <div className="absolute top-8 left-4 right-4 flex items-center gap-3 z-10">
-              <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                {activeStory.user_avatar ? (
-                  <img
-                    src={mediaUrl(activeStory.user_avatar)}
-                    alt=""
-                    className="h-8 w-8 rounded-full object-cover"
-                  />
-                ) : (
-                  <User className="h-4 w-4 text-white" />
-                )}
-              </div>
-              <span className="text-white text-sm font-bold">
-                {activeStory.user_name}
-              </span>
-              <span className="text-white/60 text-xs">
-                {timeAgo(activeStory.stories[storyIdx].created_at)}
-              </span>
-              <button
-                onClick={() => setActiveStory(null)}
-                className="ml-auto text-white/80 hover:text-white"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
-
-            {/* Story Content */}
-            <div
-              className={`w-full max-w-md aspect-[9/16] mx-auto rounded-2xl flex items-center justify-center p-8 bg-gradient-to-br ${
-                activeStory.stories[storyIdx].bg_color || STORY_COLORS[0]
-              }`}
-            >
-              {activeStory.stories[storyIdx].media_url ? (
-                <img
-                  src={mediaUrl(activeStory.stories[storyIdx].media_url)}
-                  alt=""
-                  className="max-h-full max-w-full rounded-xl object-contain"
-                />
-              ) : (
-                <p className="text-white text-xl font-bold text-center leading-relaxed drop-shadow-lg">
-                  {activeStory.stories[storyIdx].content}
-                </p>
-              )}
-            </div>
-
-            {/* View count */}
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 text-white/60 text-xs z-10">
-              <Eye className="h-3.5 w-3.5" />{" "}
-              {activeStory.stories[storyIdx].view_count || 0} views
-            </div>
-
-            {/* Tap areas */}
-            <button
-              onClick={prevStory}
-              className="absolute left-0 top-0 bottom-0 w-1/3 z-10"
-            />
-            <button
-              onClick={nextStory}
-              className="absolute right-0 top-0 bottom-0 w-2/3 z-10"
-            />
-          </motion.div>
+        {storyViewerGroupIdx !== null && storyGroups.length > 0 && (
+          <StoryViewer
+            storyGroups={storyGroups}
+            initialGroupIndex={storyViewerGroupIdx}
+            onClose={() => setStoryViewerGroupIdx(null)}
+            onStoriesChanged={loadStories}
+          />
         )}
       </AnimatePresence>
 

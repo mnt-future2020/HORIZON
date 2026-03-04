@@ -157,15 +157,68 @@ const MessageBubble = ({
             </span>
           ) : (
             <div className="flex flex-col gap-2">
-              {/* Text content */}
-              {msg.content && !msg.shared_post && (
+              {/* Text content (skip for story replies — rendered inside story card) */}
+              {msg.content && !msg.shared_post && !(msg.shared_post?.type === "story") && (
                 <p className="text-[14px] sm:text-[14.5px] leading-relaxed font-medium whitespace-pre-wrap break-words">
                   {linkifyText(msg.content)}
                 </p>
               )}
 
+              {/* Story reply card (Instagram-style) */}
+              {msg.shared_post?.type === "story" && (
+                <div className="w-full rounded-2xl overflow-hidden mb-1">
+                  {/* Story preview thumbnail */}
+                  <div className="relative w-full h-36 sm:h-40 rounded-2xl overflow-hidden">
+                    {msg.shared_post.media_url ? (
+                      <img
+                        src={mediaUrl(msg.shared_post.media_url)}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className={`w-full h-full flex items-center justify-center p-4 bg-gradient-to-br ${
+                          msg.shared_post.bg_color || "from-purple-500 to-pink-600"
+                        }`}
+                      >
+                        {msg.shared_post.content && (
+                          <p className="text-white text-xs font-bold text-center line-clamp-3 drop-shadow">
+                            {msg.shared_post.content}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    {/* Gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    {/* Story label */}
+                    <div className="absolute bottom-2 left-2.5 flex items-center gap-1.5">
+                      {msg.shared_post.user_avatar ? (
+                        <img
+                          src={mediaUrl(msg.shared_post.user_avatar)}
+                          alt=""
+                          className="h-5 w-5 rounded-full object-cover ring-1 ring-white/30"
+                        />
+                      ) : (
+                        <div className="h-5 w-5 rounded-full bg-white/20 flex items-center justify-center">
+                          <User className="h-3 w-3 text-white/70" />
+                        </div>
+                      )}
+                      <span className="text-[10px] font-bold text-white/90 drop-shadow">
+                        {isMe ? `${msg.shared_post.user_name}'s story` : "Your story"}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Reply text */}
+                  {msg.content && (
+                    <p className="text-[14px] sm:text-[14.5px] leading-relaxed font-medium whitespace-pre-wrap break-words pt-2">
+                      {linkifyText(msg.content)}
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Shared post card */}
-              {msg.shared_post && (
+              {msg.shared_post && msg.shared_post.type !== "story" && (
                 <button
                   onClick={() => onOpenSharedPost(msg.shared_post.id)}
                   className={`block w-full text-left rounded-2xl overflow-hidden ${isMe ? "bg-black/20 hover:bg-black/30" : "bg-secondary/30 hover:bg-secondary/50"} border border-white/8 active:scale-[0.98] transition-all`}
