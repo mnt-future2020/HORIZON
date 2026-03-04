@@ -41,7 +41,7 @@ async def ensure_indexes(db):
         name="user_text_search", default_language="english"
     )
     await db.venues.create_index(
-        [("name", "text"), ("area", "text"), ("city", "text")],
+        [("name", "text"), ("address", "text"), ("area", "text"), ("city", "text")],
         name="venue_text_search", default_language="english"
     )
 
