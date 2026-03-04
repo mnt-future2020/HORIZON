@@ -29,6 +29,7 @@ function useCardSpread() {
       if (w < 480) setSpread({ x: 28, y: 10 });
       else if (w < 640) setSpread({ x: 40, y: 15 });
       else if (w < 768) setSpread({ x: 60, y: 25 });
+      else if (w < 1280) setSpread({ x: 70, y: 28 });
       else setSpread({ x: 90, y: 35 });
     }
     update();
@@ -90,7 +91,7 @@ export default function SocialSection() {
           whileInView={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: "easeOut" }}
           viewport={{ once: true }}
-          className="relative h-[250px] sm:h-[350px] md:h-[500px] lg:h-[700px] mb-6 sm:mb-8 md:mb-16 flex items-center justify-center"
+          className="relative h-[250px] sm:h-[350px] md:h-[500px] lg:h-[550px] xl:h-[700px] mb-6 sm:mb-8 md:mb-16 flex items-center justify-center"
         >
           {socialImages.map((image, i) => (
             <motion.div
@@ -118,7 +119,7 @@ export default function SocialSection() {
                 y: -40,
                 transition: { duration: 0.3 },
               }}
-              className="absolute w-24 sm:w-36 md:w-56 lg:w-80 h-32 sm:h-48 md:h-72 lg:h-[480px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden cursor-pointer origin-bottom"
+              className="absolute w-24 sm:w-36 md:w-56 lg:w-60 xl:w-80 h-32 sm:h-48 md:h-72 lg:h-[380px] xl:h-[480px] bg-white rounded-xl sm:rounded-2xl md:rounded-3xl shadow-xl sm:shadow-2xl overflow-hidden cursor-pointer origin-bottom"
               style={{ zIndex: 10 - Math.abs(i - 3) }}
             >
               <div className="relative w-full h-full">

@@ -113,11 +113,11 @@ export default function PlatformFeaturesSection() {
           {/* Header row — stacked until lg */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-1.5 sm:gap-3 md:gap-4 lg:gap-6 mb-2 sm:mb-4 md:mb-6 lg:mb-10 shrink-0">
             <div className="max-w-3xl">
-              <h2 className="text-lg sm:text-3xl md:text-4xl lg:text-7xl xl:text-8xl font-black uppercase tracking-tight leading-tight">
+              <h2 className="text-lg sm:text-3xl md:text-4xl lg:text-5xl xl:text-7xl 2xl:text-8xl font-black uppercase tracking-tight leading-tight">
                 <span className="block font-sans leading-[0.85] text-turf-dark">
                   PLATFORM
                 </span>
-                <span className="block font-brier text-turf-accent text-xl sm:text-4xl md:text-5xl lg:text-8xl xl:text-9xl mt-0.5 sm:mt-2">
+                <span className="block font-brier text-turf-accent text-xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-8xl 2xl:text-9xl mt-0.5 sm:mt-2">
                   Features
                 </span>
               </h2>
@@ -158,9 +158,9 @@ export default function PlatformFeaturesSection() {
           </div>
 
           {/* Content grid — side-by-side at lg+ */}
-          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-3 md:gap-5 lg:gap-8 xl:gap-10 lg:items-center flex-1 min-h-0">
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-3 md:gap-5 lg:gap-6 xl:gap-10 lg:items-center flex-1 min-h-0">
             {/* Left: text + step dots */}
-            <div className="lg:col-span-4 space-y-1 sm:space-y-2 md:space-y-3 lg:space-y-5 shrink-0">
+            <div className="lg:col-span-5 xl:col-span-4 space-y-1 sm:space-y-2 md:space-y-3 lg:space-y-5 shrink-0">
               <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-turf-accent/10 border border-turf-accent/20 text-turf-accent text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                 <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-turf-accent animate-pulse" />
                 Ecosystem
@@ -245,7 +245,7 @@ export default function PlatformFeaturesSection() {
             </div>
 
             {/* Right: image */}
-            <div className="lg:col-span-8 relative flex-1 lg:flex-none flex items-center">
+            <div className="lg:col-span-7 xl:col-span-8 relative flex-1 lg:flex-none flex items-center">
               <div className="w-full aspect-[16/10] sm:aspect-[16/9] lg:max-h-[55dvh] xl:max-h-none relative rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] sm:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] bg-white border-2 sm:border-4 border-white">
                 <AnimatePresence>
                   {personas.map((persona) =>
