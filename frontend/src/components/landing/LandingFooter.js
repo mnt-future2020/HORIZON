@@ -41,18 +41,18 @@ export default function LandingFooter() {
           />
         </div>
 
-        <div className="relative z-20 flex flex-col h-full px-4 sm:px-6 md:px-12 lg:px-24 pt-10 pb-10 sm:pt-12 sm:pb-12 md:py-20 md:pb-12 md:pl-0 md:pr-0">
+        <div className="relative z-20 flex flex-col h-full px-5 sm:px-6 md:px-12 lg:px-24 pt-10 pb-14 sm:pt-12 sm:pb-12 md:py-20 md:pb-12 md:pl-0 md:pr-0">
           {/* Main Content Grid */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-stretch mt-0">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 items-stretch mt-0">
             {/* Left Column - Pages */}
             <div className="md:col-span-3 text-center order-2 md:order-1 md:pl-8 flex flex-col justify-center h-full">
-              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-3 sm:mb-4 md:mb-6 text-turf-text-light/40 tracking-[0.2em]">PAGES</h4>
-              <ul className="space-y-1.5 sm:space-y-2">
+              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-2 sm:mb-4 md:mb-6 text-turf-text-light/40 tracking-[0.2em]">PAGES</h4>
+              <ul className="space-y-1 sm:space-y-2">
                 {pageLinks.map((item) => (
                   <li className="leading-5" key={item.label}>
                     <button
                       onClick={item.action}
-                      className="text-turf-text-light font-bold text-base sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
+                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
                     >
                       {item.label}
                     </button>
@@ -97,15 +97,15 @@ export default function LandingFooter() {
 
             {/* Right Column - Follow */}
             <div className="md:col-span-3 text-center order-3 md:order-2 md:pr-8 flex flex-col justify-center h-full">
-              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-4 sm:mb-6 text-turf-text-light/40 tracking-[0.2em]">
+              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-2 sm:mb-6 text-turf-text-light/40 tracking-[0.2em]">
                 FOLLOW ON
               </h4>
-              <ul className="space-y-1.5 sm:space-y-2">
+              <ul className="space-y-1 sm:space-y-2">
                 {["TIKTOK", "INSTAGRAM", "YOUTUBE", "TWITCH"].map((platform) => (
                   <li className="leading-5" key={platform}>
                     <a
                       href="#"
-                      className="text-turf-text-light font-bold text-base sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
+                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
                     >
                       {platform}
                     </a>

@@ -98,7 +98,7 @@ export default function PlatformFeaturesSection() {
       {/* Sticky panel */}
       <div
         ref={stickyRef}
-        className="sticky top-0 h-[100dvh] flex flex-col justify-start sm:justify-center overflow-hidden px-3 sm:px-4 md:px-12 pt-12 sm:pt-16 md:pt-20"
+        className="sticky top-0 h-[100dvh] flex flex-col justify-start sm:justify-center overflow-hidden px-3 sm:px-4 md:px-12 pt-[60px] sm:pt-16 md:pt-20"
       >
         {/* Progress rail */}
         <div className="absolute left-0 top-0 w-full h-[3px] bg-black/5">
@@ -109,27 +109,27 @@ export default function PlatformFeaturesSection() {
           />
         </div>
 
-        <div className="max-w-7xl mx-auto w-full py-2 sm:py-8 md:py-12">
+        <div className="max-w-7xl mx-auto w-full py-1 sm:py-8 md:py-12 flex flex-col h-[calc(100dvh-60px)] sm:h-auto">
           {/* Header row */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-2 sm:gap-6 md:gap-8 mb-3 sm:mb-8 md:mb-16">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-1.5 sm:gap-6 md:gap-8 mb-2 sm:mb-8 md:mb-16">
             <div className="max-w-3xl">
-              <h2 className="text-xl sm:text-3xl md:text-5xl lg:text-8xl font-black uppercase tracking-tight leading-tight">
+              <h2 className="text-lg sm:text-3xl md:text-5xl lg:text-8xl font-black uppercase tracking-tight leading-tight">
                 <span className="block font-sans leading-[0.85] text-turf-dark">
                   PLATFORM
                 </span>
-                <span className="block font-brier text-turf-accent text-2xl sm:text-4xl md:text-6xl lg:text-9xl mt-0.5 sm:mt-2">
+                <span className="block font-brier text-turf-accent text-xl sm:text-4xl md:text-6xl lg:text-9xl mt-0.5 sm:mt-2">
                   Features
                 </span>
               </h2>
             </div>
 
             {/* Persona Switcher Tabs */}
-            <div className="flex p-1 sm:p-1.5 bg-black/5 backdrop-blur-sm rounded-xl sm:rounded-2xl w-full lg:w-auto self-start">
+            <div className="flex p-0.5 sm:p-1.5 bg-black/5 backdrop-blur-sm rounded-lg sm:rounded-2xl w-full lg:w-auto self-start">
               {personas.map((persona, i) => (
                 <button
                   key={persona.id}
                   onClick={() => handleTabClick(i)}
-                  className={`relative flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 md:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-[10px] sm:text-xs md:text-sm font-bold uppercase tracking-wider sm:tracking-widest transition-all duration-300 flex-1 lg:flex-none ${
+                  className={`relative flex items-center justify-center gap-1 sm:gap-2 px-2.5 sm:px-4 md:px-6 py-1.5 sm:py-3 rounded-md sm:rounded-xl text-[9px] sm:text-xs md:text-sm font-bold uppercase tracking-wider sm:tracking-widest transition-all duration-300 flex-1 lg:flex-none ${
                     activeIndex === i
                       ? "text-white shadow-lg"
                       : "text-turf-dark/40 hover:text-turf-dark/70"
@@ -138,7 +138,7 @@ export default function PlatformFeaturesSection() {
                   {activeIndex === i && (
                     <motion.div
                       layoutId="activeTab"
-                      className="absolute inset-0 bg-turf-accent rounded-lg sm:rounded-xl"
+                      className="absolute inset-0 bg-turf-accent rounded-md sm:rounded-xl"
                       transition={{
                         type: "spring",
                         bounce: 0.2,
@@ -147,7 +147,7 @@ export default function PlatformFeaturesSection() {
                     />
                   )}
                   <persona.icon
-                    className={`w-3.5 h-3.5 sm:w-4 sm:h-4 relative z-10 ${
+                    className={`w-3 h-3 sm:w-4 sm:h-4 relative z-10 ${
                       activeIndex === i ? "text-white" : "text-current"
                     }`}
                   />
@@ -158,16 +158,16 @@ export default function PlatformFeaturesSection() {
           </div>
 
           {/* Content grid */}
-          <div className="grid lg:grid-cols-12 gap-3 sm:gap-8 md:gap-12 items-center">
+          <div className="grid lg:grid-cols-12 gap-2 sm:gap-8 md:gap-12 items-center flex-1 min-h-0">
             {/* Left: text + step dots */}
-            <div className="lg:col-span-4 space-y-1.5 sm:space-y-4 md:space-y-6">
-              <div className="inline-flex items-center gap-2 px-2.5 sm:px-3 py-1 rounded-full bg-turf-accent/10 border border-turf-accent/20 text-turf-accent text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">
-                <span className="w-1.5 h-1.5 rounded-full bg-turf-accent animate-pulse" />
+            <div className="lg:col-span-4 space-y-1 sm:space-y-4 md:space-y-6">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-turf-accent/10 border border-turf-accent/20 text-turf-accent text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
+                <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-turf-accent animate-pulse" />
                 Ecosystem
               </div>
 
               {/* Text crossfade */}
-              <div className="relative min-h-[5.5rem] sm:min-h-[8rem]">
+              <div className="relative min-h-[4.5rem] sm:min-h-[8rem]">
                 <AnimatePresence>
                   {personas.map((persona) =>
                     persona.id === activePersona.id ? (
@@ -177,12 +177,12 @@ export default function PlatformFeaturesSection() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5, ease: "easeInOut" }}
-                        className="absolute top-0 left-0 right-0 space-y-2 sm:space-y-4"
+                        className="absolute top-0 left-0 right-0 space-y-1 sm:space-y-4"
                       >
-                        <h3 className="text-lg sm:text-2xl md:text-4xl font-black text-turf-dark uppercase font-brier tracking-tight">
+                        <h3 className="text-base sm:text-2xl md:text-4xl font-black text-turf-dark uppercase font-brier tracking-tight">
                           {persona.title}
                         </h3>
-                        <p className="text-xs sm:text-base md:text-lg text-turf-dark/60 leading-relaxed font-medium">
+                        <p className="text-[11px] sm:text-base md:text-lg text-turf-dark/60 leading-snug sm:leading-relaxed font-medium">
                           {persona.description}
                         </p>
                       </motion.div>
@@ -192,7 +192,7 @@ export default function PlatformFeaturesSection() {
               </div>
 
               {/* Step indicator dots */}
-              <div className="flex items-center gap-2 pt-0 sm:pt-2">
+              <div className="flex items-center gap-2">
                 {personas.map((_, i) => (
                   <button
                     key={i}
@@ -216,8 +216,8 @@ export default function PlatformFeaturesSection() {
                 ))}
               </div>
 
-              {/* Scroll hint */}
-              <div className="h-0 sm:h-6 flex items-center overflow-hidden">
+              {/* Scroll hint - hidden on small screens */}
+              <div className="hidden sm:flex h-6 items-center">
                 <AnimatePresence>
                   {activeIndex === 0 && (
                     <motion.p
@@ -225,7 +225,7 @@ export default function PlatformFeaturesSection() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ delay: 0.4, duration: 0.4 }}
-                      className="text-[10px] sm:text-xs text-turf-dark/30 font-semibold uppercase tracking-widest flex items-center gap-2"
+                      className="text-xs text-turf-dark/30 font-semibold uppercase tracking-widest flex items-center gap-2"
                     >
                       <motion.span
                         animate={{ y: [0, 4, 0] }}
@@ -245,8 +245,8 @@ export default function PlatformFeaturesSection() {
             </div>
 
             {/* Right: image */}
-            <div className="lg:col-span-8 relative">
-              <div className="aspect-[16/9] sm:aspect-[3/2] lg:aspect-[16/10] relative rounded-2xl sm:rounded-3xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] sm:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] bg-white border-2 sm:border-4 border-white">
+            <div className="lg:col-span-8 relative min-h-0 flex-1 sm:flex-none">
+              <div className="aspect-[2/1] sm:aspect-[3/2] lg:aspect-[16/10] max-h-[35dvh] sm:max-h-none relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] sm:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] bg-white border-2 sm:border-4 border-white">
                 <AnimatePresence>
                   {personas.map((persona) =>
                     persona.id === activePersona.id ? (
