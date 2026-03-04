@@ -14,7 +14,7 @@ export default function LandingFooter() {
   ];
 
   return (
-    <footer className="bg-turf-accent pt-0 px-2 sm:px-3 md:px-8 min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-screen flex flex-col justify-end relative pb-4 sm:pb-5">
+    <footer className="bg-turf-accent pt-0 px-2 sm:px-3 md:px-8 min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-[80vh] flex flex-col justify-end relative pb-4 sm:pb-5">
 
       {/* Main Dark Card Container */}
       <div className="relative flex-1 flex flex-col w-full max-w-[1688px] mx-auto mt-8 sm:mt-12 z-10">
@@ -41,18 +41,18 @@ export default function LandingFooter() {
           />
         </div>
 
-        <div className="relative z-20 flex flex-col h-full px-5 sm:px-6 md:px-12 lg:px-24 pt-10 pb-14 sm:pt-12 sm:pb-12 md:py-20 md:pb-12 md:pl-0 md:pr-0">
+        <div className="relative z-20 flex flex-col justify-center h-full px-5 sm:px-6 md:px-12 lg:px-24 2xl:px-32 pt-10 pb-14 sm:pt-12 sm:pb-12 md:py-20 md:pb-12 md:pl-0 md:pr-0 2xl:pt-28 2xl:pb-16">
           {/* Main Content Grid */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 items-stretch mt-0">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 items-center mt-0">
             {/* Left Column - Pages */}
             <div className="md:col-span-3 text-center order-2 md:order-1 md:pl-8 flex flex-col justify-center h-full">
-              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-2 sm:mb-4 md:mb-6 text-turf-text-light/40 tracking-[0.2em]">PAGES</h4>
-              <ul className="space-y-1 sm:space-y-2">
+              <h4 className="font-black text-[10px] sm:text-xs 2xl:text-sm uppercase mb-2 sm:mb-4 md:mb-6 2xl:mb-8 text-turf-text-light/40 tracking-[0.2em]">PAGES</h4>
+              <ul className="space-y-1 sm:space-y-2 2xl:space-y-3">
                 {pageLinks.map((item) => (
                   <li className="leading-5" key={item.label}>
                     <button
                       onClick={item.action}
-                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
+                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl 2xl:text-3xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
                     >
                       {item.label}
                     </button>
@@ -68,7 +68,7 @@ export default function LandingFooter() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
-                  className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-white"
+                  className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black uppercase tracking-tighter leading-[0.9] text-white"
                 >
                   <span className="font-sans block">ALWAYS
                     <span className="font-brier"> BRINGING</span>
@@ -86,7 +86,7 @@ export default function LandingFooter() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/auth")}
-                className="mt-6 sm:mt-8 md:mt-12 z-20 bg-turf-accent text-white font-black uppercase px-5 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-xl sm:rounded-[14px] text-[10px] sm:text-xs md:text-sm tracking-wider hover:bg-white hover:text-turf-dark transition-colors flex items-center gap-2"
+                className="mt-6 sm:mt-8 md:mt-12 2xl:mt-16 z-20 bg-turf-accent text-white font-black uppercase px-5 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 2xl:px-10 2xl:py-5 rounded-xl sm:rounded-[14px] text-[10px] sm:text-xs md:text-sm 2xl:text-base tracking-wider hover:bg-white hover:text-turf-dark transition-colors flex items-center gap-2"
               >
                 GET STARTED FREE
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sm:w-4 sm:h-4">
@@ -97,15 +97,15 @@ export default function LandingFooter() {
 
             {/* Right Column - Follow */}
             <div className="md:col-span-3 text-center order-3 md:order-2 md:pr-8 flex flex-col justify-center h-full">
-              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-2 sm:mb-6 text-turf-text-light/40 tracking-[0.2em]">
+              <h4 className="font-black text-[10px] sm:text-xs 2xl:text-sm uppercase mb-2 sm:mb-6 2xl:mb-8 text-turf-text-light/40 tracking-[0.2em]">
                 FOLLOW ON
               </h4>
-              <ul className="space-y-1 sm:space-y-2">
+              <ul className="space-y-1 sm:space-y-2 2xl:space-y-3">
                 {["TIKTOK", "INSTAGRAM", "YOUTUBE", "TWITCH"].map((platform) => (
                   <li className="leading-5" key={platform}>
                     <a
                       href="#"
-                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
+                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl 2xl:text-3xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
                     >
                       {platform}
                     </a>

@@ -98,7 +98,7 @@ export default function PlatformFeaturesSection() {
       {/* Sticky panel */}
       <div
         ref={stickyRef}
-        className="sticky top-0 h-[100dvh] flex flex-col justify-start sm:justify-center overflow-clip px-3 sm:px-4 md:px-12 pt-[60px] sm:pt-16 md:pt-20 touch-pan-y"
+        className="sticky top-0 h-[100dvh] flex flex-col justify-center overflow-clip px-3 sm:px-4 md:px-6 lg:px-12 pt-[60px] sm:pt-14 md:pt-16 lg:pt-20 pb-4 sm:pb-6 lg:pb-0 touch-pan-y"
       >
         {/* Progress rail */}
         <div className="absolute left-0 top-0 w-full h-[3px] bg-black/5">
@@ -109,27 +109,27 @@ export default function PlatformFeaturesSection() {
           />
         </div>
 
-        <div className="max-w-7xl mx-auto w-full py-1 sm:py-8 md:py-12 flex flex-col h-[calc(100dvh-60px)] sm:h-auto">
-          {/* Header row */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-1.5 sm:gap-6 md:gap-8 mb-2 sm:mb-8 md:mb-16">
+        <div className="max-w-7xl mx-auto w-full py-1 sm:py-4 md:py-6 lg:py-10 flex flex-col">
+          {/* Header row — stacked until lg */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-1.5 sm:gap-3 md:gap-4 lg:gap-6 mb-2 sm:mb-4 md:mb-6 lg:mb-10 shrink-0">
             <div className="max-w-3xl">
-              <h2 className="text-lg sm:text-3xl md:text-5xl lg:text-8xl font-black uppercase tracking-tight leading-tight">
+              <h2 className="text-lg sm:text-3xl md:text-4xl lg:text-7xl xl:text-8xl font-black uppercase tracking-tight leading-tight">
                 <span className="block font-sans leading-[0.85] text-turf-dark">
                   PLATFORM
                 </span>
-                <span className="block font-brier text-turf-accent text-xl sm:text-4xl md:text-6xl lg:text-9xl mt-0.5 sm:mt-2">
+                <span className="block font-brier text-turf-accent text-xl sm:text-4xl md:text-5xl lg:text-8xl xl:text-9xl mt-0.5 sm:mt-2">
                   Features
                 </span>
               </h2>
             </div>
 
             {/* Persona Switcher Tabs */}
-            <div className="flex p-0.5 sm:p-1.5 bg-black/5 backdrop-blur-sm rounded-lg sm:rounded-2xl w-full lg:w-auto self-start">
+            <div className="flex p-0.5 sm:p-1.5 bg-black/5 backdrop-blur-sm rounded-lg sm:rounded-2xl w-full sm:w-auto self-start md:self-auto shrink-0">
               {personas.map((persona, i) => (
                 <button
                   key={persona.id}
                   onClick={() => handleTabClick(i)}
-                  className={`relative flex items-center justify-center gap-1 sm:gap-2 px-2.5 sm:px-4 md:px-6 py-1.5 sm:py-3 rounded-md sm:rounded-xl text-[9px] sm:text-xs md:text-sm font-bold uppercase tracking-wider sm:tracking-widest transition-all duration-300 flex-1 lg:flex-none ${
+                  className={`relative flex items-center justify-center gap-1 sm:gap-2 px-2.5 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2.5 md:py-3 rounded-md sm:rounded-xl text-[9px] sm:text-xs md:text-sm font-bold uppercase tracking-wider sm:tracking-widest transition-all duration-300 flex-1 sm:flex-none ${
                     activeIndex === i
                       ? "text-white shadow-lg"
                       : "text-turf-dark/40 hover:text-turf-dark/70"
@@ -157,17 +157,17 @@ export default function PlatformFeaturesSection() {
             </div>
           </div>
 
-          {/* Content grid */}
-          <div className="grid lg:grid-cols-12 gap-2 sm:gap-8 md:gap-12 items-center flex-1 min-h-0">
+          {/* Content grid — side-by-side at lg+ */}
+          <div className="flex flex-col lg:grid lg:grid-cols-12 gap-1 sm:gap-3 md:gap-5 lg:gap-8 xl:gap-10 lg:items-center flex-1 min-h-0">
             {/* Left: text + step dots */}
-            <div className="lg:col-span-4 space-y-1 sm:space-y-4 md:space-y-6">
+            <div className="lg:col-span-4 space-y-1 sm:space-y-2 md:space-y-3 lg:space-y-5 shrink-0">
               <div className="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full bg-turf-accent/10 border border-turf-accent/20 text-turf-accent text-[8px] sm:text-[10px] font-bold uppercase tracking-widest">
                 <span className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-turf-accent animate-pulse" />
                 Ecosystem
               </div>
 
               {/* Text crossfade */}
-              <div className="relative min-h-[4.5rem] sm:min-h-[8rem]">
+              <div className="relative min-h-[5.5rem] sm:min-h-[6.5rem] md:min-h-[7rem] lg:min-h-[10rem]">
                 <AnimatePresence>
                   {personas.map((persona) =>
                     persona.id === activePersona.id ? (
@@ -177,12 +177,12 @@ export default function PlatformFeaturesSection() {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5, ease: "easeInOut" }}
-                        className="absolute top-0 left-0 right-0 space-y-1 sm:space-y-4"
+                        className="absolute top-0 left-0 right-0 space-y-1 sm:space-y-2 md:space-y-3 lg:space-y-4"
                       >
-                        <h3 className="text-base sm:text-2xl md:text-4xl font-black text-turf-dark uppercase font-brier tracking-tight">
+                        <h3 className="text-base sm:text-xl md:text-2xl lg:text-4xl font-black text-turf-dark uppercase font-brier tracking-tight">
                           {persona.title}
                         </h3>
-                        <p className="text-[11px] sm:text-base md:text-lg text-turf-dark/60 leading-snug sm:leading-relaxed font-medium">
+                        <p className="text-[11px] sm:text-sm md:text-sm lg:text-lg text-turf-dark/60 leading-snug sm:leading-relaxed font-medium max-w-lg">
                           {persona.description}
                         </p>
                       </motion.div>
@@ -217,7 +217,7 @@ export default function PlatformFeaturesSection() {
               </div>
 
               {/* Scroll hint - hidden on small screens */}
-              <div className="hidden sm:flex h-6 items-center">
+              <div className="hidden lg:flex h-6 items-center">
                 <AnimatePresence>
                   {activeIndex === 0 && (
                     <motion.p
@@ -245,8 +245,8 @@ export default function PlatformFeaturesSection() {
             </div>
 
             {/* Right: image */}
-            <div className="lg:col-span-8 relative min-h-0 flex-1 sm:flex-none">
-              <div className="aspect-[2/1] sm:aspect-[3/2] lg:aspect-[16/10] max-h-[35dvh] sm:max-h-none relative rounded-xl sm:rounded-3xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] sm:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] bg-white border-2 sm:border-4 border-white">
+            <div className="lg:col-span-8 relative flex-1 lg:flex-none flex items-center">
+              <div className="w-full aspect-[16/10] sm:aspect-[16/9] lg:max-h-[55dvh] xl:max-h-none relative rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] sm:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.2)] bg-white border-2 sm:border-4 border-white">
                 <AnimatePresence>
                   {personas.map((persona) =>
                     persona.id === activePersona.id ? (
