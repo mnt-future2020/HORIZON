@@ -34,7 +34,7 @@ export default function AuthPage() {
     try {
       await devLogin(account.email);
       toast.success(`Logged in as ${account.label}`);
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Dev login failed");
     } finally {
@@ -59,7 +59,7 @@ export default function AuthPage() {
         return;
       }
       toast.success("Welcome back!");
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Login failed");
     } finally {
@@ -79,7 +79,7 @@ export default function AuthPage() {
       } else {
         toast.success("Account created!");
       }
-      navigate("/dashboard");
+      navigate("/");
     } catch (err) {
       toast.error(err.response?.data?.detail || "Registration failed");
     } finally {

@@ -14,11 +14,10 @@ export default function LandingFooter() {
   ];
 
   return (
-    <footer className="bg-turf-accent pt-0 px-3 md:px-8 min-h-[70vh] md:min-h-screen flex flex-col justify-end relative pb-5">
-
+    <footer className="bg-turf-accent pt-0 px-2 sm:px-3 md:px-8 min-h-[50vh] sm:min-h-[60vh] md:min-h-[70vh] lg:min-h-screen flex flex-col justify-end relative pb-4 sm:pb-5">
 
       {/* Main Dark Card Container */}
-      <div className="relative flex-1 flex flex-col w-full max-w-[1688px] mx-auto mt-12 z-10">
+      <div className="relative flex-1 flex flex-col w-full max-w-[1688px] mx-auto mt-8 sm:mt-12 z-10">
         {/* SVG Background Mask */}
         <div
           className="absolute inset-0 w-full h-full z-0 bg-[#282c20] overflow-hidden"
@@ -42,18 +41,18 @@ export default function LandingFooter() {
           />
         </div>
 
-        <div className="relative z-20 flex flex-col h-full px-4 md:px-24 py-8 md:py-20 md:pb-12 md:pl-0 md:pr-0">
+        <div className="relative z-20 flex flex-col h-full px-5 sm:px-6 md:px-12 lg:px-24 pt-10 pb-14 sm:pt-12 sm:pb-12 md:py-20 md:pb-12 md:pl-0 md:pr-0">
           {/* Main Content Grid */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-8 items-stretch mt-0">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-8 items-stretch mt-0">
             {/* Left Column - Pages */}
             <div className="md:col-span-3 text-center order-2 md:order-1 md:pl-8 flex flex-col justify-center h-full">
-              <h4 className="font-black text-xs uppercase mb-6 text-turf-text-light/40 tracking-[0.2em]">PAGES</h4>
-              <ul className="space-y-2">
+              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-2 sm:mb-4 md:mb-6 text-turf-text-light/40 tracking-[0.2em]">PAGES</h4>
+              <ul className="space-y-1 sm:space-y-2">
                 {pageLinks.map((item) => (
                   <li className="leading-5" key={item.label}>
                     <button
                       onClick={item.action}
-                      className="text-turf-text-light font-bold text-xl md:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
+                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
                     >
                       {item.label}
                     </button>
@@ -69,13 +68,13 @@ export default function LandingFooter() {
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
-                  className="text-3xl sm:text-4xl md:text-7xl lg:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-turf-text-light mix-blend-overlay opacity-90"
+                  className="text-2xl sm:text-3xl md:text-5xl lg:text-7xl xl:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-white"
                 >
                   <span className="font-sans block">ALWAYS
-                    <span className="font-brier text-turf-accent"> BRINGING</span>
+                    <span className="font-brier"> BRINGING</span>
                   </span>
                   <span className="font-sans block">
-                    THE <span className="font-brier text-turf-accent">GAME.</span>
+                    THE <span className="font-brier">GAME.</span>
                   </span>
                 </motion.h2>
               </div>
@@ -87,10 +86,10 @@ export default function LandingFooter() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => navigate("/auth")}
-                className="mt-8 md:mt-12 z-20 bg-turf-accent text-white font-black uppercase px-6 py-3 md:px-8 md:py-4 rounded-[14px] text-xs md:text-sm tracking-wider hover:bg-white hover:text-turf-dark transition-colors flex items-center gap-2"
+                className="mt-6 sm:mt-8 md:mt-12 z-20 bg-turf-accent text-white font-black uppercase px-5 py-2.5 sm:px-6 sm:py-3 md:px-8 md:py-4 rounded-xl sm:rounded-[14px] text-[10px] sm:text-xs md:text-sm tracking-wider hover:bg-white hover:text-turf-dark transition-colors flex items-center gap-2"
               >
                 GET STARTED FREE
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="sm:w-4 sm:h-4">
                   <path d="M7 17L17 7M17 7H7M17 7V17" />
                 </svg>
               </motion.button>
@@ -98,15 +97,15 @@ export default function LandingFooter() {
 
             {/* Right Column - Follow */}
             <div className="md:col-span-3 text-center order-3 md:order-2 md:pr-8 flex flex-col justify-center h-full">
-              <h4 className="font-black text-xs uppercase mb-6 text-turf-text-light/40 tracking-[0.2em]">
+              <h4 className="font-black text-[10px] sm:text-xs uppercase mb-2 sm:mb-6 text-turf-text-light/40 tracking-[0.2em]">
                 FOLLOW ON
               </h4>
-              <ul className="space-y-2">
+              <ul className="space-y-1 sm:space-y-2">
                 {["TIKTOK", "INSTAGRAM", "YOUTUBE", "TWITCH"].map((platform) => (
                   <li className="leading-5" key={platform}>
                     <a
                       href="#"
-                      className="text-turf-text-light font-bold text-xl md:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
+                      className="text-turf-text-light font-bold text-sm sm:text-lg md:text-xl lg:text-2xl uppercase hover:text-turf-accent transition-colors inline-block leading-4"
                     >
                       {platform}
                     </a>
@@ -115,16 +114,14 @@ export default function LandingFooter() {
               </ul>
             </div>
           </div>
-
-
         </div>
       </div>
 
       {/* Bottom Bar */}
-      <div className="w-full max-w-[1688px] mx-auto px-4 md:px-12 relative z-20 pt-0">
-        <div className="flex flex-col md:flex-row justify-between items-center text-white text-xs font-bold tracking-wider uppercase">
+      <div className="w-full max-w-[1688px] mx-auto px-3 sm:px-4 md:px-12 relative z-20 pt-0">
+        <div className="flex flex-col sm:flex-row justify-between items-center text-white text-[10px] sm:text-xs font-bold tracking-wider uppercase gap-1 sm:gap-0">
           <p>&copy; {new Date().getFullYear()} Lobbi. All rights reserved</p>
-          <div className="flex gap-6 mt-2 md:mt-0">
+          <div className="flex gap-4 sm:gap-6 mt-1 sm:mt-0">
             <button onClick={() => navigate("/privacy-policy")} className="hover:opacity-60 transition-opacity">
               PRIVACY POLICY
             </button>
@@ -135,9 +132,9 @@ export default function LandingFooter() {
         </div>
       </div>
 
-      <div className="w-full max-w-[1688px] mx-auto px-4 md:px-12 relative z-20 pt-0">
-        <div className="flex flex-col md:flex-row justify-between items-center text-white text-xs font-bold tracking-wider uppercase">
-          <p className="text-xs mt-7 opacity-80 font-medium leading-4 text-left">
+      <div className="w-full max-w-[1688px] mx-auto px-3 sm:px-4 md:px-12 relative z-20 pt-0">
+        <div className="flex flex-col md:flex-row justify-between items-center text-white text-[10px] sm:text-xs font-bold tracking-wider uppercase">
+          <p className="text-[10px] sm:text-xs mt-4 sm:mt-7 opacity-80 font-medium leading-4 text-left">
             Lobbi is India's all-in-one sports platform — connecting players, venues, and coaches. Book. Play. Connect. Compete.
           </p>
         </div>

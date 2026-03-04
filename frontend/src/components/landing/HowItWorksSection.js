@@ -75,21 +75,21 @@ export default function HowItWorksSection() {
   const [activeJourney, setActiveJourney] = useState("players");
 
   return (
-    <div id="how-it-works" className="w-full bg-[#111111] py-12 md:py-20 px-4">
+    <div id="how-it-works" className="w-full bg-[#111111] py-8 sm:py-12 md:py-20 px-3 sm:px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 md:mb-16 gap-4 md:gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 sm:mb-8 md:mb-16 gap-3 sm:gap-4 md:gap-6">
           <div className="flex flex-col">
-            <h2 className="font-oswald text-2xl sm:text-3xl md:text-6xl font-bold uppercase leading-none text-white tracking-tighter">
+            <h2 className="font-oswald text-xl sm:text-2xl md:text-4xl lg:text-6xl font-bold uppercase leading-none text-white tracking-tighter">
               HOW IT
             </h2>
-            <h1 className="font-brier text-3xl sm:text-4xl md:text-7xl text-zinc-400 leading-none md:-mt-2 mt-1.5 md:mt-2.5">Works</h1>
+            <h1 className="font-brier text-2xl sm:text-3xl md:text-5xl lg:text-7xl text-zinc-400 leading-none mt-1 sm:mt-1.5 md:mt-2.5">Works</h1>
           </div>
-          <p className="text-zinc-500 text-sm md:text-base max-w-xs md:text-right font-medium">
+          <p className="text-zinc-500 text-xs sm:text-sm md:text-base max-w-xs md:text-right font-medium">
             Five ways to use Lobbi — whether you're a player, coach, venue owner, or competitor.
           </p>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-2 sm:gap-4">
           {journeys.map((journey) => {
             const Icon = journey.icon;
             const isActive = activeJourney === journey.id;
@@ -99,30 +99,30 @@ export default function HowItWorksSection() {
                 <button
                   onClick={() => setActiveJourney(isActive ? null : journey.id)}
                   className={cn(
-                    "w-full flex items-center justify-between p-4 md:p-6 transition-all duration-300 ease-out group",
+                    "w-full flex items-center justify-between p-3 sm:p-4 md:p-6 transition-all duration-300 ease-out group rounded-lg sm:rounded-none",
                     isActive
                       ? "bg-turf-accent text-black"
                       : "bg-transparent text-white hover:bg-white/5"
                   )}
                 >
-                  <div className="flex items-center gap-3 md:gap-6">
+                  <div className="flex items-center gap-2 sm:gap-3 md:gap-6">
                     <ChevronDown
                       className={cn(
-                        "w-5 h-5 md:w-8 md:h-8 flex-shrink-0 transition-transform duration-300",
-                                                                        isActive ? "rotate-180 text-black" : "text-white -rotate-90"
+                        "w-4 h-4 sm:w-5 sm:h-5 md:w-8 md:h-8 flex-shrink-0 transition-transform duration-300",
+                        isActive ? "rotate-180 text-black" : "text-white -rotate-90"
                       )}
                     />
                     <Icon className={cn(
-                      "w-5 h-5 md:w-8 md:h-8 flex-shrink-0 transition-colors",
+                      "w-4 h-4 sm:w-5 sm:h-5 md:w-8 md:h-8 flex-shrink-0 transition-colors",
                       isActive ? "text-black" : "text-turf-accent"
                     )} />
                     <div className="text-left">
-                      <span className="font-oswald font-bold text-xl sm:text-2xl md:text-5xl tracking-tighter leading-none block">
+                      <span className="font-oswald font-bold text-base sm:text-xl md:text-3xl lg:text-5xl tracking-tighter leading-none block">
                         {journey.title}
                       </span>
                       <span className={cn(
-                        "text-xs md:text-sm font-medium mt-1 block",
-                        isActive ? "text-black/60" : "text-white/40"
+                        "text-[10px] sm:text-xs md:text-sm font-medium mt-0.5 sm:mt-1 block",
+                        isActive ? "text-black/90" : "text-white/40"
                       )}>
                         {journey.subtitle}
                       </span>
@@ -151,21 +151,21 @@ export default function HowItWorksSection() {
                         {journey.steps.map((step, index) => (
                           <div
                             key={index}
-                            className="flex flex-col gap-2 md:grid md:grid-cols-12 md:gap-4 py-3 md:py-4 px-4 md:px-6 border-b border-white/5 text-white hover:bg-white/5 transition-colors md:items-center group"
+                            className="flex flex-col gap-1.5 sm:gap-2 md:grid md:grid-cols-12 md:gap-4 py-2.5 sm:py-3 md:py-4 px-3 sm:px-4 md:px-6 border-b border-white/5 text-white hover:bg-white/5 transition-colors md:items-center group"
                           >
-                            <div className="flex items-center gap-3 md:contents">
-                              <span className="font-oswald font-bold text-lg md:text-2xl text-zinc-600 md:col-span-1">
+                            <div className="flex items-center gap-2 sm:gap-3 md:contents">
+                              <span className="font-oswald font-bold text-sm sm:text-lg md:text-2xl text-zinc-600 md:col-span-1">
                                 {step.step}
                               </span>
-                              <span className="font-oswald font-bold text-base sm:text-lg md:text-3xl uppercase tracking-tighter leading-none text-white/90 md:col-span-4">
+                              <span className="font-oswald font-bold text-sm sm:text-base md:text-xl lg:text-3xl uppercase tracking-tighter leading-none text-white/90 md:col-span-4">
                                 {step.title}
                               </span>
-                              <span className="ml-auto font-oswald font-bold text-sm text-turf-accent md:hidden">
+                              <span className="ml-auto font-oswald font-bold text-xs sm:text-sm text-turf-accent md:hidden">
                                 {step.time}
                               </span>
                             </div>
 
-                            <div className="text-sm md:text-base text-white leading-relaxed md:col-span-5 pl-9 md:pl-0">
+                            <div className="text-xs sm:text-sm md:text-base text-white leading-relaxed md:col-span-5 pl-7 sm:pl-9 md:pl-0">
                               {step.detail}
                             </div>
 
