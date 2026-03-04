@@ -47,22 +47,22 @@ export default function ContactPage() {
     <div className="min-h-screen bg-white text-gray-900">
       {/* Navbar — same style as LandingHeader scrolled state */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm">
-        <div className="px-6 md:px-12 py-4">
+        <div className="px-4 sm:px-6 md:px-12 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="text-brand-600">
               <Logo size="lg" />
             </Link>
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <button
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-black hover:text-brand-600 uppercase tracking-wide transition-colors font-brier"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-sm font-bold text-black hover:text-brand-600 uppercase tracking-wide transition-colors font-brier"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </button>
               <Link
                 to={user ? "/feed" : "/auth"}
-                className="inline-flex items-center px-5 md:px-6 py-2 md:py-2.5 bg-brand-600 text-white font-bold text-sm rounded-full hover:bg-brand-700 transition-all hover:scale-105"
+                className="inline-flex items-center px-4 sm:px-5 md:px-6 py-2 md:py-2.5 bg-brand-600 text-white font-bold text-xs sm:text-sm rounded-full hover:bg-brand-700 transition-all hover:scale-105"
               >
                 {user ? "Dashboard" : "Get Started"}
               </Link>
@@ -72,22 +72,22 @@ export default function ContactPage() {
       </nav>
 
       {/* Hero */}
-      <div className="pt-36 pb-20 px-6 md:px-12">
+      <div className="pt-24 sm:pt-28 md:pt-36 pb-12 sm:pb-16 md:pb-20 px-4 sm:px-6 md:px-12">
         <div className="max-w-7xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-600/10 border border-brand-600/20 text-brand-600 text-xs font-bold tracking-widest uppercase mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-600/10 border border-brand-600/20 text-brand-600 text-xs font-bold tracking-widest uppercase mb-5 sm:mb-8">
               <MessageSquare className="w-3.5 h-3.5" />
               Contact Us
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.9] mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.9] mb-5 sm:mb-8">
               <span className="block text-gray-900 font-sans">GET IN</span>
               <span className="block text-brand-600 font-brier">Touch</span>
             </h1>
-            <p className="text-gray-500 text-lg md:text-xl max-w-2xl mx-auto font-medium">
+            <p className="text-gray-500 text-base sm:text-lg md:text-xl max-w-2xl mx-auto font-medium">
               Questions about bookings, venue listings, coaching, or tournaments? We're here to help.
             </p>
           </motion.div>
@@ -95,8 +95,8 @@ export default function ContactPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 pb-32">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 sm:pb-24 md:pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 sm:gap-8 lg:gap-10">
 
           {/* Contact Info Cards */}
           <motion.div
@@ -148,11 +148,11 @@ export default function ContactPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
           >
             {submitted ? (
-              <div className="rounded-2xl p-12 flex flex-col items-center justify-center text-center gap-5 bg-gray-50 border border-gray-200 min-h-[500px]">
-                <div className="w-20 h-20 rounded-full bg-brand-600/10 flex items-center justify-center">
-                  <CheckCircle2 className="w-10 h-10 text-brand-600" />
+              <div className="rounded-2xl p-8 sm:p-12 flex flex-col items-center justify-center text-center gap-4 sm:gap-5 bg-gray-50 border border-gray-200 min-h-[350px] sm:min-h-[500px]">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-brand-600/10 flex items-center justify-center">
+                  <CheckCircle2 className="w-8 h-8 sm:w-10 sm:h-10 text-brand-600" />
                 </div>
-                <h3 className="font-black text-3xl uppercase text-gray-900">Message Received!</h3>
+                <h3 className="font-black text-2xl sm:text-3xl uppercase text-gray-900">Message Received!</h3>
                 <p className="text-gray-500 text-base font-medium">Our team will respond within 24 business hours.</p>
                 <button
                   onClick={() => { setSubmitted(false); setForm({ name: "", email: "", subject: "", message: "" }); }}
@@ -162,12 +162,12 @@ export default function ContactPage() {
                 </button>
               </div>
             ) : (
-              <div className="rounded-2xl p-8 sm:p-10 bg-gray-50 border border-gray-200">
-                <h2 className="font-black text-2xl uppercase tracking-wide mb-8 flex items-center gap-3 text-gray-900">
+              <div className="rounded-2xl p-5 sm:p-8 md:p-10 bg-gray-50 border border-gray-200">
+                <h2 className="font-black text-xl sm:text-2xl uppercase tracking-wide mb-6 sm:mb-8 flex items-center gap-3 text-gray-900">
                   <span className="w-10 h-0.5 bg-brand-600" />
                   Send us a message
                 </h2>
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
                       <label className="text-xs text-gray-500 font-black uppercase tracking-[0.15em]">Name *</label>

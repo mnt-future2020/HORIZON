@@ -35,22 +35,22 @@ export default function TermsPage() {
     <div className="min-h-screen bg-white text-gray-900">
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-xl border-b border-gray-200 shadow-sm">
-        <div className="px-6 md:px-12 py-4">
+        <div className="px-4 sm:px-6 md:px-12 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="text-brand-600">
               <Logo size="lg" />
             </Link>
-            <div className="flex items-center gap-3 md:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <button
                 onClick={() => navigate(-1)}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-black hover:text-brand-600 uppercase tracking-wide transition-colors font-brier"
+                className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 text-sm font-bold text-black hover:text-brand-600 uppercase tracking-wide transition-colors font-brier"
               >
                 <ArrowLeft className="w-4 h-4" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </button>
               <Link
                 to={user ? "/feed" : "/auth"}
-                className="inline-flex items-center px-5 md:px-6 py-2 md:py-2.5 bg-brand-600 text-white font-bold text-sm rounded-full hover:bg-brand-700 transition-all hover:scale-105"
+                className="inline-flex items-center px-4 sm:px-5 md:px-6 py-2 md:py-2.5 bg-brand-600 text-white font-bold text-xs sm:text-sm rounded-full hover:bg-brand-700 transition-all hover:scale-105"
               >
                 {user ? "Dashboard" : "Get Started"}
               </Link>
@@ -60,18 +60,18 @@ export default function TermsPage() {
       </nav>
 
       {/* Hero */}
-      <div className="pt-36 pb-16 px-6 md:px-12">
+      <div className="pt-24 sm:pt-28 md:pt-36 pb-10 sm:pb-14 md:pb-16 px-4 sm:px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
             animate={prefersReducedMotion ? {} : { opacity: 1, y: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.6 }}
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-600/10 border border-brand-600/20 text-brand-600 text-xs font-bold tracking-widest uppercase mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-brand-600/10 border border-brand-600/20 text-brand-600 text-xs font-bold tracking-widest uppercase mb-5 sm:mb-8">
               <FileText className="w-3.5 h-3.5" />
               Legal & Compliance
             </div>
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.9] mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black uppercase tracking-tight leading-[0.9] mb-5 sm:mb-8">
               <span className="block text-gray-900 font-sans">Terms of</span>
               <span className="block text-brand-600 font-brier mt-2">Service</span>
             </h1>
@@ -83,7 +83,7 @@ export default function TermsPage() {
       </div>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-6 md:px-12 pb-32">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 md:px-12 pb-16 sm:pb-24 md:pb-32">
         <motion.article
           initial={prefersReducedMotion ? {} : { opacity: 0, scale: 0.98 }}
           animate={prefersReducedMotion ? {} : { opacity: 1, scale: 1 }}
@@ -156,11 +156,11 @@ export default function TermsPage() {
             <div className="bg-brand-600/5 rounded-xl p-6 md:p-8 border border-brand-600/20 mt-4">
               <p className="font-bold text-lg uppercase tracking-widest text-gray-900 mb-4">Magizh NexGen Technologies</p>
               <div className="space-y-3 text-base">
-                <p className="flex items-center gap-3">
+                <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                   <span className="text-gray-400 font-black uppercase tracking-[0.2em] text-xs">Email</span>
                   <a href="mailto:legal@magizhnexgen.com" className="text-brand-600 font-bold hover:text-brand-700 transition-colors break-all">legal@magizhnexgen.com</a>
                 </p>
-                <p className="flex items-center gap-3">
+                <p className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
                   <span className="text-gray-400 font-black uppercase tracking-[0.2em] text-xs">Location</span>
                   <span className="font-medium text-gray-700">Chennai, Tamil Nadu, India</span>
                 </p>
