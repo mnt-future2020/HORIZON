@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building } from "lucide-react";
@@ -16,17 +16,17 @@ function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-bran
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-card rounded-[28px] p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
+      transition={{ delay: index * 0.08, type: "spring", stiffness: 300, damping: 25 }}
+      whileHover={{ y: -4, boxShadow: "0 8px 30px -8px rgba(0,0,0,0.12)", transition: { duration: 0.2 } }}
+      className="bg-card rounded-2xl sm:rounded-[28px] p-3 sm:p-5 border border-border/40 shadow-sm hover:shadow-md flex flex-col justify-between transition-all duration-300 group"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="admin-label">{label}</div>
-        <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
-          <Icon className={`h-5 w-5 ${colorClass}`} />
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
+        <div className="admin-label text-[11px] sm:text-xs leading-tight">{label}</div>
+        <div className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl ${bgClass} flex items-center justify-center border border-border/40 transition-transform group-hover:scale-110`}>
+          <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${colorClass}`} />
         </div>
       </div>
-      <div className="admin-value">{value}</div>
+      <div className="text-lg sm:text-2xl font-black tracking-tight">{value}</div>
     </motion.div>
   );
 }
@@ -202,16 +202,16 @@ export default function VenueFinancePage() {
   };
 
   return (
-    <div className="space-y-6 pt-4">
+    <div className="space-y-4 sm:space-y-6 pt-4" style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 16px)", paddingBottom: "max(env(safe-area-inset-bottom, 0px), 16px)" }}>
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="p-3 rounded-2xl bg-brand-600/10 border border-border/40">
-            <IndianRupee className="h-6 w-6 text-brand-600" />
+          <div className="p-2.5 sm:p-3 rounded-2xl bg-brand-600/10 border border-border/40">
+            <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
           </div>
           <div>
-            <h1 className="admin-page-title">Finance</h1>
-            <p className="text-sm text-muted-foreground">Revenue, expenses, invoices & payouts</p>
+            <h1 className="admin-page-title text-lg sm:text-2xl">Finance</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Revenue, expenses, invoices & payouts</p>
           </div>
         </div>
         {ownerVenues.length > 0 && (
@@ -234,7 +234,7 @@ export default function VenueFinancePage() {
 
       {/* P&L Summary Cards */}
       {financeSummaryData && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${(financeSummaryData.total_income || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
           <StatCard icon={TrendingUp} label="Net Profit" value={`₹${(financeSummaryData.net_profit || 0).toLocaleString()}`} colorClass={financeSummaryData.net_profit >= 0 ? "text-emerald-500" : "text-red-500"} bgClass={financeSummaryData.net_profit >= 0 ? "bg-emerald-500/10" : "bg-red-500/10"} index={1} />
           <StatCard icon={Wallet} label="Expenses" value={`₹${(financeSummaryData.total_expenses || 0).toLocaleString()}`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
@@ -244,30 +244,32 @@ export default function VenueFinancePage() {
 
       {/* Commission banner */}
       {financeSummaryData?.commission_pct > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-[28px] px-4 py-2 flex items-center gap-2 text-xs text-amber-500">
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl sm:rounded-[28px] px-4 py-3 flex items-center gap-2.5 text-xs font-medium text-amber-600 dark:text-amber-400">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
           Platform commission: {financeSummaryData.commission_pct}% on booking revenue (₹{(financeSummaryData.commission_total || 0).toLocaleString()})
         </div>
       )}
 
-      {/* Sub-tab switcher */}
-      <div className="flex gap-2 w-full sm:w-auto overflow-x-auto flex-wrap">
-        {[
-          { id: "overview", label: "Overview" },
-          { id: "transactions", label: "Ledger" },
-          { id: "expenses", label: "Expenses" },
-          { id: "invoices", label: `Invoices${venueInvoices.length ? ` (${venueInvoices.length})` : ""}` },
-          { id: "payouts", label: "Payouts" },
-        ].map(({ id, label }) => (
-          <button key={id} onClick={() => setFinanceSubTab(id)}
-            className={`flex-shrink-0 transition-all ${
-              financeSubTab === id
-                ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn"
-                : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"
-            }`}>
-            {label}
-          </button>
-        ))}
+      {/* Sub-tab switcher — sticky + iOS segmented control */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-md -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 py-2">
+        <div className="bg-muted/70 border border-border/40 p-1 rounded-2xl flex w-full overflow-x-auto">
+          {[
+            { id: "overview", label: "Overview" },
+            { id: "transactions", label: "Ledger" },
+            { id: "expenses", label: "Expenses" },
+            { id: "invoices", label: `Invoices${venueInvoices.length ? ` (${venueInvoices.length})` : ""}` },
+            { id: "payouts", label: "Payouts" },
+          ].map(({ id, label }) => (
+            <button key={id} onClick={() => setFinanceSubTab(id)}
+              className={`flex-1 min-h-[44px] text-xs sm:text-sm font-semibold transition-all rounded-xl px-2 sm:px-4 py-2 admin-btn whitespace-nowrap active:scale-[0.97] ${
+                financeSubTab === id
+                  ? "bg-background text-foreground shadow-md border border-border/50"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* -- Overview sub-tab -- */}
@@ -275,8 +277,8 @@ export default function VenueFinancePage() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Income by Sport */}
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6 space-y-3">
-              <p className="admin-section-label text-muted-foreground">Income by Sport</p>
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm hover:shadow-md p-4 sm:p-6 space-y-3 transition-shadow">
+              <p className="admin-section-label text-muted-foreground font-semibold tracking-wide">Income by Sport</p>
               {Object.keys(financeSummaryData?.income_by_sport || {}).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(financeSummaryData.income_by_sport).map(([sport, amt]) => (
@@ -294,8 +296,8 @@ export default function VenueFinancePage() {
             </div>
 
             {/* Expense Breakdown */}
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6 space-y-3">
-              <p className="admin-section-label text-muted-foreground">Expense Breakdown</p>
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm hover:shadow-md p-4 sm:p-6 space-y-3 transition-shadow">
+              <p className="admin-section-label text-muted-foreground font-semibold tracking-wide">Expense Breakdown</p>
               {Object.keys(financeSummaryData?.expenses_by_category || {}).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(financeSummaryData.expenses_by_category).map(([cat, amt]) => (
@@ -315,11 +317,11 @@ export default function VenueFinancePage() {
 
           {/* Income by Venue (if multiple venues) */}
           {Object.keys(financeSummaryData?.income_by_venue || {}).length > 1 && (
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
-              <p className="admin-section-label text-muted-foreground mb-3">Income by Venue</p>
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm hover:shadow-md p-4 sm:p-6 transition-shadow">
+              <p className="admin-section-label text-muted-foreground font-semibold tracking-wide mb-3">Income by Venue</p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {Object.entries(financeSummaryData.income_by_venue).map(([vname, amt]) => (
-                  <div key={vname} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
+                  <div key={vname} className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
                     <p className="font-black text-sm text-foreground">₹{amt.toLocaleString()}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{vname}</p>
                   </div>
@@ -330,8 +332,8 @@ export default function VenueFinancePage() {
 
           {/* Monthly Trend Chart */}
           {(financeSummaryData?.monthly_trend || []).length > 0 && (
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
-              <p className="admin-section-label text-muted-foreground mb-4">6-Month Trend</p>
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm hover:shadow-md p-4 sm:p-6 transition-shadow">
+              <p className="admin-section-label text-muted-foreground font-semibold tracking-wide mb-4">6-Month Trend</p>
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={financeSummaryData.monthly_trend} barSize={18} barGap={4}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -353,7 +355,7 @@ export default function VenueFinancePage() {
       {/* -- Ledger sub-tab -- */}
       {financeSubTab === "transactions" && (
         <div className="space-y-4">
-          <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm hover:shadow-md p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-4 gap-3 transition-shadow">
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wide admin-label">From</Label>
               <Input type="date" value={transactionFilters.date_from} onChange={e => setTransactionFilters(f => ({ ...f, date_from: e.target.value }))} className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs h-8" />
@@ -381,9 +383,9 @@ export default function VenueFinancePage() {
           </div>
 
           {venueTransactions.length > 0 ? (
-            <div className="space-y-2">
+            <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
               {venueTransactions.map(txn => (
-                <div key={txn.id} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 flex items-center gap-3">
+                <div key={txn.id} className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 shadow-none sm:shadow-sm p-4 flex items-center gap-3 active:scale-[0.97] transition-transform">
                   <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${txn.type === "income" ? "bg-brand-600/10" : "bg-destructive/10"}`}>
                     {txn.type === "income" ? <ArrowUpRight className="h-4 w-4 text-brand-600" /> : <ArrowDownRight className="h-4 w-4 text-destructive" />}
                   </div>
@@ -421,9 +423,9 @@ export default function VenueFinancePage() {
           </div>
 
           {venueExpenses.length > 0 ? (
-            <div className="space-y-2">
+            <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
               {venueExpenses.map(exp => (
-                <div key={exp.id} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 flex items-center gap-3">
+                <div key={exp.id} className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 shadow-none sm:shadow-sm p-4 flex items-center gap-3 active:scale-[0.97] transition-transform">
                   <div className="bg-amber-500/10 h-8 w-8 rounded-full flex items-center justify-center shrink-0">
                     <ArrowDownRight className="h-4 w-4 text-amber-400" />
                   </div>
@@ -437,10 +439,10 @@ export default function VenueFinancePage() {
                   </div>
                   <span className="font-black text-sm text-amber-400 shrink-0">₹{(exp.amount || 0).toLocaleString()}</span>
                   <div className="flex gap-1 shrink-0">
-                    <button onClick={() => openEditExpense(exp)} className="h-7 w-7 rounded-xl bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors">
+                    <button onClick={() => openEditExpense(exp)} className="h-9 w-9 sm:h-7 sm:w-7 rounded-xl bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors active:scale-[0.93]">
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors">
+                    <button onClick={() => handleDeleteExpense(exp.id)} className="h-9 w-9 sm:h-7 sm:w-7 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors active:scale-[0.93]">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </button>
                   </div>
@@ -455,12 +457,12 @@ export default function VenueFinancePage() {
           )}
 
           {/* Add/Edit Expense Dialog */}
-          <Dialog open={addExpenseOpen} onOpenChange={(o) => { setAddExpenseOpen(o); if (!o) setEditExpenseId(null); }}>
-            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
-              <DialogHeader>
-                <DialogTitle className="font-display admin-heading">{editExpenseId ? "Edit Expense" : "Add Expense"}</DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground admin-label">Track your venue operating expenses</DialogDescription>
-              </DialogHeader>
+          <ResponsiveDialog open={addExpenseOpen} onOpenChange={(o) => { setAddExpenseOpen(o); if (!o) setEditExpenseId(null); }}>
+            <ResponsiveDialogContent className="sm:max-w-md">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>{editExpenseId ? "Edit Expense" : "Add Expense"}</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription className="text-xs text-muted-foreground admin-label">Track your venue operating expenses</ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -510,8 +512,8 @@ export default function VenueFinancePage() {
                   {editExpenseId ? "Update Expense" : "Add Expense"}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
         </div>
       )}
 
@@ -520,18 +522,20 @@ export default function VenueFinancePage() {
         <div className="space-y-4">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              {["all", "sent", "paid", "draft"].map(s => (
-                <button key={s} onClick={() => { setInvoiceStatusFilter(s); loadVenueInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined }); }}
-                  className={`transition-all ${invoiceStatusFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"}`}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
+              <div className="bg-muted/70 border border-border/40 p-1 rounded-2xl flex">
+                {["all", "sent", "paid", "draft"].map(s => (
+                  <button key={s} onClick={() => { setInvoiceStatusFilter(s); loadVenueInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined }); }}
+                    className={`min-h-[44px] px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all admin-btn active:scale-[0.97] ${invoiceStatusFilter === s ? "bg-background text-foreground shadow-md border border-border/50" : "text-muted-foreground hover:text-foreground"}`}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
               <input type="month" value={invoiceMonth} onChange={e => { setInvoiceMonth(e.target.value); loadVenueInvoices({ month: e.target.value, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }); }}
                 className="bg-secondary/20 border border-border/40 rounded-xl px-2 py-1 text-xs text-foreground" />
             </div>
             <div className="flex items-center gap-2">
               <button onClick={() => { loadGstSettings(); setShowGSTSettings(true); }}
-                className="px-3 py-1.5 rounded-xl text-xs admin-btn border border-border bg-muted/40 hover:bg-muted text-muted-foreground transition-all flex items-center gap-1.5">
+                className="px-3 py-1.5 min-h-[44px] rounded-xl text-xs admin-btn border border-border bg-muted/40 hover:bg-muted text-muted-foreground transition-all flex items-center gap-1.5 active:scale-[0.97]">
                 GST Settings {gstSettings.gst_enabled && <span className="text-[10px] text-brand-600">ON</span>}
               </button>
               <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8" onClick={() => setShowCreateInvoice(true)}>
@@ -541,12 +545,12 @@ export default function VenueFinancePage() {
           </div>
 
           {/* GST Settings Dialog */}
-          <Dialog open={showGSTSettings} onOpenChange={setShowGSTSettings}>
-            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-sm rounded-[28px]">
-              <DialogHeader>
-                <DialogTitle className="font-display admin-heading">GST & Invoice Settings</DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground admin-label">Configure GST for your venue invoices</DialogDescription>
-              </DialogHeader>
+          <ResponsiveDialog open={showGSTSettings} onOpenChange={setShowGSTSettings}>
+            <ResponsiveDialogContent className="sm:max-w-sm">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>GST & Invoice Settings</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription className="text-xs text-muted-foreground admin-label">Configure GST for your venue invoices</ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -566,10 +570,10 @@ export default function VenueFinancePage() {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground mb-1.5 block">GST Rate</Label>
-                      <div className="flex gap-2">
+                      <div className="bg-muted/70 border border-border/40 p-1 rounded-2xl flex">
                         {[5, 12, 18].map(r => (
                           <button key={r} type="button" onClick={() => setGstSettings(g => ({ ...g, gst_rate: r }))}
-                            className={`flex-1 transition-all ${gstSettings.gst_rate === r ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn"}`}>
+                            className={`flex-1 min-h-[44px] px-4 py-1.5 rounded-xl text-sm font-semibold transition-all admin-btn active:scale-[0.97] ${gstSettings.gst_rate === r ? "bg-background text-foreground shadow-md border border-border/50" : "text-muted-foreground hover:text-foreground"}`}>
                             {r}%
                           </button>
                         ))}
@@ -590,16 +594,16 @@ export default function VenueFinancePage() {
                   <Button variant="outline" onClick={() => setShowGSTSettings(false)}>Cancel</Button>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
 
           {/* Create Invoice Dialog */}
-          <Dialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
-            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-2xl max-h-[92vh] overflow-y-auto rounded-[28px]">
-              <DialogHeader>
-                <DialogTitle className="font-display admin-heading">Create Invoice</DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground admin-label">Create a manual invoice for your venue</DialogDescription>
-              </DialogHeader>
+          <ResponsiveDialog open={showCreateInvoice} onOpenChange={setShowCreateInvoice}>
+            <ResponsiveDialogContent className="sm:max-w-2xl">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Create Invoice</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription className="text-xs text-muted-foreground admin-label">Create a manual invoice for your venue</ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2 sm:col-span-1">
@@ -628,7 +632,7 @@ export default function VenueFinancePage() {
                       <Plus className="h-3 w-3" /> Add Row
                     </button>
                   </div>
-                  <div className="rounded-[28px] border border-border overflow-hidden">
+                  <div className="rounded-2xl sm:rounded-[28px] border border-border overflow-hidden">
                     <div className="grid grid-cols-12 bg-muted/50 px-3 py-2 text-[10px] admin-section-label text-muted-foreground admin-th">
                       <span className="col-span-6">Description</span>
                       <span className="col-span-2 text-center">Qty</span>
@@ -700,25 +704,25 @@ export default function VenueFinancePage() {
                   <Button variant="outline" className="admin-btn rounded-xl" onClick={() => setShowCreateInvoice(false)}>Cancel</Button>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
 
           {/* Invoice list */}
           {venueInvoices.length === 0 ? (
-            <div className="text-center py-16 bg-card rounded-[28px] border border-border/40 shadow-sm text-muted-foreground">
+            <div className="text-center py-16 bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm text-muted-foreground">
               <Receipt className="h-10 w-10 mx-auto mb-3 opacity-40" />
               <p className="admin-name mb-1">No Invoices Yet</p>
               <p className="text-sm">Create your first invoice or invoices will auto-generate on booking payments.</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <div className="grid grid-cols-3 gap-3 mb-2">
+            <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
+              <div className="grid grid-cols-3 gap-3 mb-2 px-3 sm:px-0">
                 {[
                   { label: "Total", value: `₹${venueInvoices.reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-foreground" },
                   { label: "Collected", value: `₹${venueInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-brand-600" },
                   { label: "Pending", value: `₹${venueInvoices.filter(i => i.status !== "paid").reduce((s, i) => s + (i.total || 0), 0).toLocaleString()}`, color: "text-amber-400" },
                 ].map(({ label, value, color }) => (
-                  <div key={label} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
+                  <div key={label} className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
                     <p className={`font-black text-sm ${color}`}>{value}</p>
                     <p className="text-[10px] text-muted-foreground">{label}</p>
                   </div>
@@ -726,7 +730,7 @@ export default function VenueFinancePage() {
               </div>
 
               {venueInvoices.map(inv => (
-                <motion.div key={inv.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+                <motion.div key={inv.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 shadow-none sm:shadow-sm p-4 sm:p-6 active:scale-[0.98] transition-transform">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -747,22 +751,22 @@ export default function VenueFinancePage() {
                     </div>
                   </div>
                   <div className="flex gap-1.5 mt-3 flex-wrap">
-                    <button onClick={() => handleViewInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs admin-btn text-muted-foreground hover:text-foreground transition-colors">
+                    <button onClick={() => handleViewInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs admin-btn text-muted-foreground hover:text-foreground transition-colors active:scale-[0.95]">
                       <Eye className="h-3 w-3" /> View PDF
                     </button>
-                    <button onClick={() => handleDownloadInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs admin-btn text-muted-foreground hover:text-foreground transition-colors">
+                    <button onClick={() => handleDownloadInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs admin-btn text-muted-foreground hover:text-foreground transition-colors active:scale-[0.95]">
                       <Download className="h-3 w-3" /> Download
                     </button>
-                    <button onClick={() => handleSendInvoiceWhatsapp(inv)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-xs admin-btn text-green-600 transition-colors">
+                    <button onClick={() => handleSendInvoiceWhatsapp(inv)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-xs admin-btn text-green-600 transition-colors active:scale-[0.95]">
                       <MessageSquare className="h-3 w-3" /> WhatsApp
                     </button>
                     {inv.status !== "paid" && (
-                      <button onClick={() => handleMarkInvoicePaid(inv.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-brand-600/10 hover:bg-brand-600/20 text-xs admin-btn text-brand-600 transition-colors">
+                      <button onClick={() => handleMarkInvoicePaid(inv.id)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-brand-600/10 hover:bg-brand-600/20 text-xs admin-btn text-brand-600 transition-colors active:scale-[0.95]">
                         <CheckCircle className="h-3 w-3" /> Mark Paid
                       </button>
                     )}
                     {!inv.auto_generated && (
-                      <button onClick={() => handleDeleteInvoice(inv.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs admin-btn text-destructive transition-colors ml-auto">
+                      <button onClick={() => handleDeleteInvoice(inv.id)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs admin-btn text-destructive transition-colors active:scale-[0.95] ml-auto">
                         <Trash2 className="h-3 w-3" /> Delete
                       </button>
                     )}
@@ -778,7 +782,7 @@ export default function VenueFinancePage() {
       {financeSubTab === "payouts" && (
         <div className="space-y-6">
           {/* Bank Account Section */}
-          <div className="bg-card rounded-xl border border-border p-5 space-y-4">
+          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm hover:shadow-md p-4 sm:p-5 space-y-4 transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm admin-name text-foreground">Bank Account</p>
@@ -860,7 +864,7 @@ export default function VenueFinancePage() {
 
           {/* Payout Summary Cards */}
           {payoutSummary && (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
               <StatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
               <StatCard icon={CheckCircle} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} colorClass="text-emerald-500" bgClass="bg-emerald-500/10" index={1} />
               <StatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
@@ -877,13 +881,13 @@ export default function VenueFinancePage() {
                 <p className="text-sm">No payouts yet. Payouts are processed by the platform admin.</p>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
                 {myPayouts.map(p => (
                   <motion.div
                     key={p.id}
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="bg-card rounded-xl border border-border p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                    className="bg-card rounded-none sm:rounded-xl border-0 sm:border border-border p-4 flex items-center justify-between cursor-pointer hover:bg-white/5 transition-all active:scale-[0.97]"
                     onClick={() => setPayoutDetailDialog(p)}
                   >
                     <div>
@@ -912,11 +916,11 @@ export default function VenueFinancePage() {
 
           {/* Payout Detail Dialog */}
           {payoutDetailDialog && (
-            <Dialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
-              <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md rounded-[28px]">
-                <DialogHeader>
-                  <DialogTitle className="admin-heading">Payout Details</DialogTitle>
-                </DialogHeader>
+            <ResponsiveDialog open={!!payoutDetailDialog} onOpenChange={() => setPayoutDetailDialog(null)}>
+              <ResponsiveDialogContent className="sm:max-w-md">
+                <ResponsiveDialogHeader>
+                  <ResponsiveDialogTitle>Payout Details</ResponsiveDialogTitle>
+                </ResponsiveDialogHeader>
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div><p className="text-xs text-muted-foreground">Period</p><p className="font-semibold">{payoutDetailDialog.period_start} → {payoutDetailDialog.period_end}</p></div>
@@ -947,8 +951,8 @@ export default function VenueFinancePage() {
                     </div>
                   )}
                 </div>
-              </DialogContent>
-            </Dialog>
+              </ResponsiveDialogContent>
+            </ResponsiveDialog>
           )}
         </div>
       )}

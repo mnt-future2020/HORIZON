@@ -8,147 +8,239 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { motion } from "framer-motion";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import {
-  Lightbulb, Power, Zap, Wifi, WifiOff, Plus, Trash2, Pencil,
-  BarChart3, Clock, Calendar, RefreshCw, Layers, Sun, Moon,
-  Activity, DollarSign, TrendingDown, Loader2, Radio, IndianRupee
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Lightbulb,
+  Power,
+  Zap,
+  Wifi,
+  Plus,
+  Trash2,
+  Pencil,
+  BarChart3,
+  Clock,
+  Calendar,
+  RefreshCw,
+  Layers,
+  Sun,
+  Moon,
+  IndianRupee,
+  ChevronRight,
+  X,
 } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from "recharts";
 import { IoTSkeleton } from "@/components/SkeletonLoader";
 
-const TYPE_LABELS = { floodlight: "Floodlight", led_panel: "LED Panel", ambient: "Ambient", emergency: "Emergency" };
+/* ─── Constants ─────────────────────────────────────────────────────── */
+const TYPE_LABELS = {
+  floodlight: "Floodlight",
+  led_panel: "LED Panel",
+  ambient: "Ambient",
+  emergency: "Emergency",
+};
 const TYPE_COLORS = {
-  floodlight: "text-amber-400 bg-amber-500/15 hover:bg-amber-500/25",
-  led_panel: "text-sky-400 bg-sky-500/15 hover:bg-sky-500/25",
-  ambient: "text-violet-400 bg-violet-500/15 hover:bg-violet-500/25",
-  emergency: "text-red-400 bg-red-500/15 hover:bg-red-500/25",
+  floodlight: "text-amber-600 bg-amber-500/10",
+  led_panel: "text-sky-600 bg-sky-500/10",
+  ambient: "text-violet-600 bg-violet-500/10",
+  emergency: "text-red-600 bg-red-500/10",
 };
 
-const IoTStatCard = ({ icon: Icon, label, value, sub, index, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay: index * 0.1 }}
-    whileHover={{ y: -5 }}
-    className="bg-card rounded-[32px] p-7 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
-  >
-    <div className="flex items-center justify-between mb-6 relative z-10">
-      <div className="admin-label">{label}</div>
-      <div className={`p-3.5 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
-        <Icon className={`h-5 w-5 ${colorClass}`} />
+/* ─── Stat Tile (native app style) ──────────────────────────────────── */
+function StatTile({ icon: Icon, label, value, sub, index, accent = "brand" }) {
+  const colors = {
+    brand: { icon: "text-brand-600 bg-brand-600/10", dot: "bg-brand-600" },
+    green: { icon: "text-green-600 bg-green-500/10", dot: "bg-green-500" },
+    amber: { icon: "text-amber-600 bg-amber-500/10", dot: "bg-amber-500" },
+    rupee: {
+      icon: "text-emerald-600 bg-emerald-500/10",
+      dot: "bg-emerald-500",
+    },
+  };
+  const c = colors[accent] || colors.brand;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, delay: index * 0.07 }}
+      className="bg-card rounded-2xl p-4 border border-border/40 shadow-sm flex flex-col gap-3"
+    >
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+          {label}
+        </span>
+        <div
+          className={`w-8 h-8 rounded-xl flex items-center justify-center ${c.icon}`}
+        >
+          <Icon className="w-4 h-4" />
+        </div>
       </div>
-    </div>
+      <div>
+        <p className="text-2xl font-bold text-foreground leading-none">
+          {value}
+        </p>
+        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+      </div>
+    </motion.div>
+  );
+}
 
-    <div className="relative z-10">
-      <div className="admin-value mb-1.5">{value}</div>
-      {sub && <div className="admin-label">{sub}</div>}
-    </div>
-
-    <div className={`absolute bottom-0 left-0 right-0 h-[3px] bg-brand-600 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 ease-out`} />
-  </motion.div>
-);
-
-
-
+/* ─── Device Card (native list-row style on mobile) ─────────────────── */
 function DeviceCard({ device, onControl, onEdit, onDelete, index }) {
   const [brightness, setBrightness] = useState(device.brightness || 0);
   const isOn = device.status === "on";
   const isOnline = device.is_online;
   const typeColor = TYPE_COLORS[device.device_type] || TYPE_COLORS.ambient;
 
-  const handleToggle = () => {
+  const handleToggle = () =>
     onControl(device.id, { action: isOn ? "off" : "on" });
-  };
-
   const handleBrightness = (val) => {
     setBrightness(val[0]);
     onControl(device.id, { action: "brightness", brightness: val[0] });
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05 }}
-      whileHover={{ y: -4 }}
-      className={`bg-card rounded-[28px] p-6 shadow-sm transition-all duration-300 relative overflow-hidden group ${
-        !isOnline ? "opacity-50 grayscale" : ""
-      }`} data-testid={`device-card-${device.id}`}>
-      
-      <div className="flex items-start justify-between gap-4 mb-6 relative z-10">
-        <div className="flex items-center gap-4 min-w-0">
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 ${
-            isOn ? "bg-brand-500/10 shadow-sm" : "bg-secondary/20"
-          }`}>
-            <Lightbulb className={`h-7 w-7 transition-colors duration-500 ${isOn ? "text-brand-500" : "text-muted-foreground/30"}`} />
-          </div>
-          <div className="min-w-0">
-            <h4 className="admin-name truncate">{device.name}</h4>
-            <div className="flex items-center gap-2.5 mt-1.5 font-display">
-              <Badge className={`admin-badge ${typeColor} border-0 px-2.5 py-1 rounded-lg`}>
-                {TYPE_LABELS[device.device_type]}
-              </Badge>
-              {isOnline ? (
-                <span className="flex items-center gap-1.5 admin-badge text-brand-600">
-                  <div className="h-1.5 w-1.5 rounded-full bg-brand-600" /> ONLINE
-                </span>
-              ) : (
-                <span className="flex items-center gap-1.5 admin-badge text-muted-foreground/60">
-                   OFFLINE
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full text-muted-foreground/60 hover:text-foreground hover:bg-secondary/20"
-            onClick={() => onEdit(device)} data-testid={`edit-device-${device.id}`}>
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="ghost" className="h-9 w-9 rounded-full text-muted-foreground/60 hover:text-destructive hover:bg-destructive/5"
-            onClick={() => onDelete(device.id)} data-testid={`delete-device-${device.id}`}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-between gap-5 relative z-10">
-        <div className="flex items-center gap-4 flex-1 min-w-0">
-          <Switch 
-            checked={isOn} 
-            onCheckedChange={handleToggle} 
-            disabled={!isOnline}
-            className="data-[state=checked]:bg-brand-600 h-6 w-11 transition-all"
-            data-testid={`toggle-device-${device.id}`} 
+      transition={{ delay: index * 0.04 }}
+      className={`bg-card rounded-2xl border border-border/40 overflow-hidden shadow-sm transition-colors ${
+        !isOnline ? "opacity-50" : ""
+      }`}
+      data-testid={`device-card-${device.id}`}
+    >
+      {/* Main row */}
+      <div className="flex items-center gap-3 px-4 py-4">
+        {/* Bulb icon */}
+        <div
+          className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center transition-colors ${
+            isOn ? "bg-brand-600/10" : "bg-secondary/30"
+          }`}
+        >
+          <Lightbulb
+            className={`w-5 h-5 transition-colors ${
+              isOn ? "text-brand-600" : "text-muted-foreground/30"
+            }`}
           />
-          <div className="flex flex-col">
-            <span className="admin-section-label mb-0.5">Energy</span>
-            <span className="admin-name">{device.power_watts}W</span>
+        </div>
+
+        {/* Name + type */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">
+            {device.name}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span
+              className={`text-[11px] font-medium px-1.5 py-0.5 rounded-md ${typeColor}`}
+            >
+              {TYPE_LABELS[device.device_type]}
+            </span>
+            <span
+              className={`flex items-center gap-1 text-[11px] font-medium ${
+                isOnline ? "text-green-600" : "text-muted-foreground/50"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full inline-block ${
+                  isOnline ? "bg-green-500" : "bg-muted-foreground/40"
+                }`}
+              />
+              {isOnline ? "Online" : "Offline"}
+            </span>
           </div>
         </div>
-        {isOn && isOnline && (
-          <div className="flex items-center gap-4 w-36 bg-secondary/20 px-4 py-2.5 rounded-[20px] border border-border/40 transition-all duration-300">
-            <Sun className="h-3.5 w-3.5 text-brand-500 shrink-0" />
-            <Slider value={[brightness]} min={1} max={100} step={5}
-              onValueCommit={handleBrightness} 
-              className="flex-1"
-              data-testid={`brightness-${device.id}`} />
-            <span className="text-xs font-medium font-mono text-brand-500 w-8 text-right">{brightness}%</span>
-          </div>
-        )}
+
+        {/* Power toggle */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Switch
+            checked={isOn}
+            onCheckedChange={handleToggle}
+            disabled={!isOnline}
+            className="data-[state=checked]:bg-brand-600 h-6 w-11"
+            data-testid={`toggle-device-${device.id}`}
+          />
+        </div>
+
+        {/* Actions (edit / delete) */}
+        <div className="flex items-center shrink-0">
+          <button
+            aria-label="Edit device"
+            onClick={() => onEdit(device)}
+            className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-foreground hover:bg-secondary/40 active:bg-secondary/60 transition-colors"
+            data-testid={`edit-device-${device.id}`}
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+          <button
+            aria-label="Delete device"
+            onClick={() => onDelete(device.id)}
+            className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-destructive hover:bg-destructive/5 active:bg-destructive/10 transition-colors"
+            data-testid={`delete-device-${device.id}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center gap-4 mt-6 pt-5 border-t border-border/40 admin-badge text-muted-foreground/50 relative z-10">
-        <span className="px-2.5 py-1 rounded-lg bg-secondary/10 border border-border/40">{device.protocol}</span>
-        {device.ip_address && <span className="opacity-80 font-mono tracking-normal">{device.ip_address}</span>}
+      {/* Brightness row (expanded when on) */}
+      <AnimatePresence>
+        {isOn && isOnline && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-t border-border/40"
+          >
+            <div className="flex items-center gap-3 px-4 py-3 bg-secondary/10">
+              <Sun className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <Slider
+                value={[brightness]}
+                min={1}
+                max={100}
+                step={5}
+                onValueCommit={handleBrightness}
+                className="flex-1"
+                data-testid={`brightness-${device.id}`}
+              />
+              <span className="text-xs font-mono font-bold text-brand-600 w-9 text-right shrink-0">
+                {brightness}%
+              </span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Footer: protocol + energy + auto */}
+      <div className="flex items-center gap-3 px-4 py-2.5 border-t border-border/30 bg-secondary/5 text-[11px] text-muted-foreground/60 font-medium">
+        <span className="uppercase tracking-wider">{device.protocol}</span>
+        {device.ip_address && (
+          <span className="font-mono">{device.ip_address}</span>
+        )}
+        <span className="ml-auto font-semibold">{device.power_watts}W</span>
         {device.auto_schedule && (
-          <span className="admin-badge text-brand-600 flex items-center gap-1.5 ml-auto">
-            <Clock className="h-3 w-3" /> AUTO ACTIVE
+          <span className="flex items-center gap-1 text-brand-600">
+            <Clock className="w-3 h-3" /> Auto
           </span>
         )}
       </div>
@@ -156,61 +248,128 @@ function DeviceCard({ device, onControl, onEdit, onDelete, index }) {
   );
 }
 
-function ZoneCard({ zone, onControl, onEdit, onDelete, index }) {
+/* ─── Zone Card (native section card) ───────────────────────────────── */
+function ZoneCard({ zone, onControl, onDelete, index }) {
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: -20 }} 
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1 }}
-      whileHover={{ x: 5 }}
-      className="bg-card rounded-[24px] p-6 flex items-center justify-between gap-6 group shadow-sm transition-all duration-300" 
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.06 }}
+      className="bg-card rounded-2xl border border-border/40 shadow-sm overflow-hidden"
       data-testid={`zone-card-${zone.id}`}
     >
-      <div className="flex items-center gap-6 min-w-0">
-        <div className="h-16 w-16 rounded-[20px] bg-brand-600/10 flex items-center justify-center shrink-0 transition-all duration-500">
-          <Layers className="h-8 w-8 text-brand-600" />
+      <div className="flex items-center gap-3 px-4 py-4">
+        <div className="w-11 h-11 rounded-xl bg-brand-600/10 flex items-center justify-center shrink-0">
+          <Layers className="w-5 h-5 text-brand-600" />
         </div>
-        <div className="min-w-0">
-          <h4 className="admin-heading">{zone.name}</h4>
-          <div className="flex items-center gap-3 mt-2 font-display">
-            <Badge className="bg-secondary/20 admin-badge text-muted-foreground/80 px-3 py-1 border border-border/40 rounded-lg">
-              {zone.turf_number ? `TURF ${zone.turf_number}` : "COMMON AREA"}
-            </Badge>
-            <span className="admin-badge text-brand-600">
-              {zone.device_count || 0} DEVICES
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground">{zone.name}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-[11px] text-muted-foreground">
+              {zone.turf_number ? `Turf ${zone.turf_number}` : "Common Area"}
+            </span>
+            <span className="text-muted-foreground/30">·</span>
+            <span className="text-[11px] text-brand-600 font-medium">
+              {zone.device_count || 0} devices
             </span>
           </div>
-          {zone.description && <p className="text-sm text-muted-foreground/60 mt-2.5 italic truncate font-medium">{zone.description}</p>}
+          {zone.description && (
+            <p className="text-[11px] text-muted-foreground/60 italic mt-0.5 truncate">
+              {zone.description}
+            </p>
+          )}
         </div>
+        <button
+          aria-label="Delete zone"
+          onClick={() => onDelete(zone.id)}
+          className="w-9 h-9 flex items-center justify-center rounded-full text-muted-foreground/50 hover:text-destructive hover:bg-destructive/5 transition-colors shrink-0"
+          data-testid={`delete-zone-${zone.id}`}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
-      
-      <div className="flex items-center gap-3 shrink-0">
-        <Button 
-          size="sm" 
-          onClick={() => onControl(zone.id, { action: "on" })} 
-          className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-11 px-7 rounded-2xl shadow-md shadow-brand-600/10 active:scale-95 transition-all outline-none border-0"
+
+      {/* Action row */}
+      <div className="grid grid-cols-2 gap-px bg-border/30">
+        <button
+          onClick={() => onControl(zone.id, { action: "on" })}
+          className="flex items-center justify-center gap-2 py-3.5 bg-brand-600 text-white text-sm font-semibold active:bg-brand-700 transition-colors"
           data-testid={`zone-on-${zone.id}`}
         >
-          <Power className="h-4 w-4 mr-2.5" /> ALL ON
-        </Button>
-        <Button 
-          size="sm" 
-          variant="outline"
-          onClick={() => onControl(zone.id, { action: "off" })} 
-          className="bg-background border-border/60 hover:border-brand-600 text-foreground admin-btn h-11 px-7 rounded-2xl active:scale-95 transition-all outline-none"
+          <Power className="w-4 h-4" /> All On
+        </button>
+        <button
+          onClick={() => onControl(zone.id, { action: "off" })}
+          className="flex items-center justify-center gap-2 py-3.5 bg-card text-foreground text-sm font-medium active:bg-secondary/50 transition-colors"
           data-testid={`zone-off-${zone.id}`}
         >
-          <Moon className="h-4 w-4 mr-2.5" /> ALL OFF
-        </Button>
-        <Button size="icon" variant="ghost" className="h-11 w-11 text-muted-foreground/60 hover:text-destructive hover:bg-destructive/5 rounded-full transition-colors"
-          onClick={() => onDelete(zone.id)} data-testid={`delete-zone-${zone.id}`}>
-          <Trash2 className="h-5 w-5" />
-        </Button>
+          <Moon className="w-4 h-4" /> All Off
+        </button>
       </div>
     </motion.div>
   );
 }
 
+/* ─── Native bottom-sheet / dialog wrapper ───────────────────────────── */
+function AppSheet({ open, onClose, title, children }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent
+        hideClose
+        className="
+          !fixed !bottom-0 !top-auto !translate-y-0 !translate-x-0 !left-0 !right-0
+          w-full max-w-full rounded-t-[24px] rounded-b-none bg-card p-0 shadow-2xl border-border/40
+          max-h-[92vh] overflow-y-auto data-[state=open]:animate-none
+          sm:!top-[50%] sm:!bottom-auto sm:!left-[50%] sm:!right-auto sm:!translate-x-[-50%] sm:!translate-y-[-50%]
+          sm:!w-full sm:!max-w-[480px] sm:!rounded-[24px]
+        "
+      >
+        {/* Handle bar (mobile sheet indicator) */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-border/60" />
+        </div>
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <DialogTitle className="text-base font-bold text-foreground">
+            {title}
+          </DialogTitle>
+          <button
+            onClick={() => onClose(false)}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary/50 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-5 py-5">{children}</div>
+        {/* Safe area bottom padding for iOS */}
+        <div
+          className="pb-safe sm:pb-0"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ─── Form Fields ────────────────────────────────────────────────────── */
+function FormField({ label, children }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+const inputCls =
+  "h-12 rounded-xl bg-secondary/20 border-border/40 px-4 text-sm font-medium focus-visible:ring-brand-600/30";
+const selectTriggerCls =
+  "h-12 rounded-xl bg-secondary/20 border-border/40 px-4 text-sm font-medium";
+
+/* ─── Main Dashboard ─────────────────────────────────────────────────── */
 export default function IoTDashboard() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -221,7 +380,9 @@ export default function IoTDashboard() {
   const [energy, setEnergy] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "devices");
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get("tab") || "devices",
+  );
   const [period, setPeriod] = useState(searchParams.get("period") || "7d");
   const pendingVenueIdRef = useRef(searchParams.get("venue") || null);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
@@ -230,17 +391,27 @@ export default function IoTDashboard() {
   const [mqttStatus, setMqttStatus] = useState(null);
   const wsRef = useRef(null);
   const [deviceForm, setDeviceForm] = useState({
-    name: "", device_type: "floodlight", protocol: "mqtt", ip_address: "",
-    power_watts: 500, turf_number: 1, zone_id: "",
+    name: "",
+    device_type: "floodlight",
+    protocol: "mqtt",
+    ip_address: "",
+    power_watts: 500,
+    turf_number: 1,
+    zone_id: "",
   });
-  const [zoneForm, setZoneForm] = useState({ name: "", turf_number: 1, description: "" });
+  const [zoneForm, setZoneForm] = useState({
+    name: "",
+    turf_number: 1,
+    description: "",
+  });
 
-  // Fetch MQTT status
   useEffect(() => {
-    iotAPI.mqttStatus().then(r => setMqttStatus(r.data)).catch(() => {});
+    iotAPI
+      .mqttStatus()
+      .then((r) => setMqttStatus(r.data))
+      .catch(() => {});
   }, []);
 
-  // WebSocket for real-time updates
   useEffect(() => {
     const backendUrl = process.env.REACT_APP_BACKEND_URL || "";
     const wsUrl = backendUrl.replace(/^http/, "ws") + "/api/iot/ws";
@@ -251,96 +422,145 @@ export default function IoTDashboard() {
         try {
           const msg = JSON.parse(e.data);
           if (msg.type === "device_control" || msg.type === "device_status") {
-            setDevices(prev => prev.map(d =>
-              d.id === msg.device_id || d.id === msg.data?.device_id
-                ? { ...d, ...msg.data, status: msg.status || msg.data?.status || d.status, brightness: msg.brightness ?? msg.data?.brightness ?? d.brightness }
-                : d
-            ));
+            setDevices((prev) =>
+              prev.map((d) =>
+                d.id === msg.device_id || d.id === msg.data?.device_id
+                  ? {
+                      ...d,
+                      ...msg.data,
+                      status: msg.status || msg.data?.status || d.status,
+                      brightness:
+                        msg.brightness ?? msg.data?.brightness ?? d.brightness,
+                    }
+                  : d,
+              ),
+            );
           }
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       };
       wsRef.current = ws;
-    } catch { /* ignore */ }
-    return () => { if (ws) ws.close(); };
+    } catch {
+      /* ignore */
+    }
+    return () => {
+      if (ws) ws.close();
+    };
   }, []);
 
   const loadVenues = useCallback(async () => {
     try {
-      const res = user?.role === "super_admin"
-        ? await venueAPI.list()
-        : await venueAPI.getOwnerVenues();
+      const res =
+        user?.role === "super_admin"
+          ? await venueAPI.list()
+          : await venueAPI.getOwnerVenues();
       const v = res.data || [];
       setVenues(v);
       if (v.length > 0) {
         const pendingId = pendingVenueIdRef.current;
         pendingVenueIdRef.current = null;
-        const restored = pendingId ? v.find(x => String(x.id) === String(pendingId)) : null;
-        setSelectedVenue(restored || v[0]);
+        setSelectedVenue(
+          v.find((x) => String(x.id) === String(pendingId)) || v[0],
+        );
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [user?.role]);
 
-  const loadData = useCallback(async (venueId) => {
-    if (!venueId) return;
-    setLoading(true);
-    try {
-      const [dRes, zRes, eRes, sRes] = await Promise.all([
-        iotAPI.listDevices(venueId).catch(() => ({ data: [] })),
-        iotAPI.listZones(venueId).catch(() => ({ data: [] })),
-        iotAPI.energy(venueId, period).catch(() => ({ data: null })),
-        iotAPI.schedules(venueId).catch(() => ({ data: { schedules: [] } })),
-      ]);
-      setDevices(dRes.data || []);
-      setZones(zRes.data || []);
-      setEnergy(eRes.data);
-      setSchedules(sRes.data?.schedules || []);
-    } finally { setLoading(false); }
-  }, [period]);
+  const loadData = useCallback(
+    async (venueId) => {
+      if (!venueId) return;
+      setLoading(true);
+      try {
+        const [dRes, zRes, eRes, sRes] = await Promise.all([
+          iotAPI.listDevices(venueId).catch(() => ({ data: [] })),
+          iotAPI.listZones(venueId).catch(() => ({ data: [] })),
+          iotAPI.energy(venueId, period).catch(() => ({ data: null })),
+          iotAPI.schedules(venueId).catch(() => ({ data: { schedules: [] } })),
+        ]);
+        setDevices(dRes.data || []);
+        setZones(zRes.data || []);
+        setEnergy(eRes.data);
+        setSchedules(sRes.data?.schedules || []);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [period],
+  );
 
-  useEffect(() => { loadVenues(); }, [loadVenues]);
-  useEffect(() => { if (selectedVenue) loadData(selectedVenue.id); }, [selectedVenue, loadData]);
-
-  // Sync state → URL params
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (activeTab !== "devices") params.set("tab", activeTab);
-    if (period !== "7d") params.set("period", period);
-    if (selectedVenue) params.set("venue", String(selectedVenue.id));
-    setSearchParams(params, { replace: true });
+    loadVenues();
+  }, [loadVenues]);
+  useEffect(() => {
+    if (selectedVenue) loadData(selectedVenue.id);
+  }, [selectedVenue, loadData]);
+
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (activeTab !== "devices") p.set("tab", activeTab);
+    if (period !== "7d") p.set("period", period);
+    if (selectedVenue) p.set("venue", String(selectedVenue.id));
+    setSearchParams(p, { replace: true });
   }, [activeTab, period, selectedVenue, setSearchParams]);
 
+  /* Handlers */
   const handleControlDevice = async (deviceId, ctrl) => {
     try {
       const res = await iotAPI.controlDevice(deviceId, ctrl);
-      setDevices(prev => prev.map(d => d.id === deviceId ? res.data : d));
-    } catch (err) { toast.error(err.response?.data?.detail || "Control failed"); }
+      setDevices((prev) => prev.map((d) => (d.id === deviceId ? res.data : d)));
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Control failed");
+    }
   };
 
   const handleControlZone = async (zoneId, ctrl) => {
     try {
       await iotAPI.controlZone(zoneId, ctrl);
-      toast.success(`Zone ${ctrl.action === "on" ? "activated" : "deactivated"}`);
+      toast.success(
+        `Zone ${ctrl.action === "on" ? "activated" : "deactivated"}`,
+      );
       if (selectedVenue) loadData(selectedVenue.id);
-    } catch (err) { toast.error("Zone control failed"); }
+    } catch {
+      toast.error("Zone control failed");
+    }
   };
 
   const openDeviceDialog = (device = null) => {
     setEditingDevice(device);
-    if (device) {
-      setDeviceForm({
-        name: device.name, device_type: device.device_type, protocol: device.protocol,
-        ip_address: device.ip_address || "", power_watts: device.power_watts,
-        turf_number: device.turf_number || 1, zone_id: device.zone_id || "",
-      });
-    } else {
-      setDeviceForm({ name: "", device_type: "floodlight", protocol: "mqtt", ip_address: "", power_watts: 500, turf_number: 1, zone_id: "" });
-    }
+    setDeviceForm(
+      device
+        ? {
+            name: device.name,
+            device_type: device.device_type,
+            protocol: device.protocol,
+            ip_address: device.ip_address || "",
+            power_watts: device.power_watts,
+            turf_number: device.turf_number || 1,
+            zone_id: device.zone_id || "",
+          }
+        : {
+            name: "",
+            device_type: "floodlight",
+            protocol: "mqtt",
+            ip_address: "",
+            power_watts: 500,
+            turf_number: 1,
+            zone_id: "",
+          },
+    );
     setDeviceDialogOpen(true);
   };
 
   const handleSaveDevice = async () => {
     if (!selectedVenue) return;
-    const data = { ...deviceForm, venue_id: selectedVenue.id, zone_id: deviceForm.zone_id || null };
+    const data = {
+      ...deviceForm,
+      venue_id: selectedVenue.id,
+      zone_id: deviceForm.zone_id || null,
+    };
     try {
       if (editingDevice) {
         await iotAPI.updateDevice(editingDevice.id, data);
@@ -351,15 +571,19 @@ export default function IoTDashboard() {
       }
       setDeviceDialogOpen(false);
       loadData(selectedVenue.id);
-    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed");
+    }
   };
 
   const handleDeleteDevice = async (id) => {
     try {
       await iotAPI.deleteDevice(id);
-      setDevices(prev => prev.filter(d => d.id !== id));
+      setDevices((prev) => prev.filter((d) => d.id !== id));
       toast.success("Device removed");
-    } catch { toast.error("Delete failed"); }
+    } catch {
+      toast.error("Delete failed");
+    }
   };
 
   const handleSaveZone = async () => {
@@ -369,15 +593,19 @@ export default function IoTDashboard() {
       toast.success("Zone created");
       setZoneDialogOpen(false);
       loadData(selectedVenue.id);
-    } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed");
+    }
   };
 
   const handleDeleteZone = async (id) => {
     try {
       await iotAPI.deleteZone(id);
-      setZones(prev => prev.filter(z => z.id !== id));
+      setZones((prev) => prev.filter((z) => z.id !== id));
       toast.success("Zone deleted");
-    } catch { toast.error("Delete failed"); }
+    } catch {
+      toast.error("Delete failed");
+    }
   };
 
   const handleSync = async () => {
@@ -385,151 +613,199 @@ export default function IoTDashboard() {
     try {
       const res = await iotAPI.syncBookings(selectedVenue.id);
       toast.success(res.data.message);
-    } catch { toast.error("Sync failed"); }
+    } catch {
+      toast.error("Sync failed");
+    }
   };
 
   const s = energy?.summary || {};
-  const onlineCount = devices.filter(d => d.is_online).length;
-  const activeCount = devices.filter(d => d.status === "on").length;
-  const totalPower = devices.filter(d => d.status === "on").reduce((acc, d) => acc + d.power_watts, 0);
+  const onlineCount = devices.filter((d) => d.is_online).length;
+  const activeCount = devices.filter((d) => d.status === "on").length;
+  const totalPower = devices
+    .filter((d) => d.status === "on")
+    .reduce((a, d) => a + d.power_watts, 0);
 
-  // Show skeleton during initial load
-  if (loading && devices.length === 0) {
-    return <IoTSkeleton />;
-  }
+  if (loading && devices.length === 0) return <IoTSkeleton />;
 
-  if (!selectedVenue && !loading) {
+  if (!selectedVenue && !loading)
     return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-        <Lightbulb className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm text-muted-foreground">No venues found. Create a venue first.</p>
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center">
+        <div className="w-16 h-16 rounded-2xl bg-secondary/30 flex items-center justify-center mb-4">
+          <Lightbulb className="w-8 h-8 text-muted-foreground/30" />
+        </div>
+        <p className="text-sm font-medium text-muted-foreground">
+          No venues found. Create a venue first.
+        </p>
       </div>
     );
-  }
+
+  const tooltipStyle = {
+    contentStyle: {
+      background: "hsl(var(--card))",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: 14,
+      fontSize: 12,
+      padding: "8px 12px",
+    },
+    itemStyle: { fontWeight: 700 },
+    labelStyle: {
+      color: "hsl(var(--muted-foreground))",
+      marginBottom: 4,
+      fontWeight: 600,
+      fontSize: 11,
+    },
+  };
+
+  const TABS = [
+    { value: "devices", label: "Devices" },
+    { value: "zones", label: "Zones", testId: "tab-zones" },
+    { value: "energy", label: "Energy", testId: "tab-energy" },
+    { value: "schedule", label: "Schedule", testId: "tab-schedule" },
+  ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-6 pb-20 md:pb-6" data-testid="iot-dashboard">
-      <div className="flex items-start justify-between gap-3 mb-10">
-        <div className="min-w-0">
-          <motion.span 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="admin-section-label"
-          >
+    <div className="w-full max-w-7xl mx-auto" data-testid="iot-dashboard">
+      {/* ── Page Header (app-like) ── */}
+      <div className="flex items-center justify-between px-0 pt-8 pb-6">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
             IoT Control Center
-          </motion.span>
-          <motion.h1 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="font-display text-3xl md:text-4xl font-medium tracking-tight mt-2 text-foreground"
-          >
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
             Smart <span className="text-brand-600">Lighting</span>
-          </motion.h1>
+          </h1>
           {mqttStatus && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-2 mt-4 bg-brand-600/5 w-fit px-4 py-2 rounded-full border border-brand-600/20" 
-              data-testid="mqtt-status"
-            >
-              <div className={`h-2 w-2 rounded-full ${mqttStatus.connected ? "bg-brand-600" : "bg-muted-foreground"}`} />
-              <span className={`admin-badge ${mqttStatus.connected ? "text-brand-600" : "text-muted-foreground"}`}>
-                {mqttStatus.connected ? "MQTT Connected" : "Connection Lost"}
+            <div className="flex items-center gap-1.5 mt-2">
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${mqttStatus.connected ? "bg-green-500" : "bg-muted-foreground"}`}
+              />
+              <span
+                className={`text-xs font-semibold ${mqttStatus.connected ? "text-green-600 dark:text-green-400" : "text-muted-foreground"}`}
+              >
+                {mqttStatus.connected ? "MQTT Connected" : "Disconnected"}
               </span>
-              <span className="admin-label ml-1 border-l border-border/40 pl-2">
-                {mqttStatus.broker}
-              </span>
-            </motion.div>
+              {mqttStatus.broker && (
+                <span className="text-xs text-muted-foreground/50 hidden sm:inline">
+                  · {mqttStatus.broker}
+                </span>
+              )}
+            </div>
           )}
         </div>
-        <motion.div
-           initial={{ opacity: 0, scale: 0.9 }}
-           animate={{ opacity: 1, scale: 1 }}
-           transition={{ delay: 0.2 }}
+        <button
+          onClick={handleSync}
+          data-testid="sync-btn"
+          className="flex items-center gap-2 h-10 px-4 rounded-xl bg-card border border-border/40 text-sm font-semibold text-foreground hover:bg-secondary/40 active:scale-95 transition-all shadow-sm"
         >
-          <Button size="lg" variant="outline" className="bg-card border-border/40 admin-btn h-12 px-6 rounded-2xl hover:bg-brand-600/5 hover:text-brand-600 hover:border-brand-600/30 transition-all active:scale-95 shadow-sm"
-            onClick={handleSync} data-testid="sync-btn">
-            <RefreshCw className="h-4 w-4 mr-2" /> SYNC BOOKINGS
-          </Button>
-        </motion.div>
+          <RefreshCw className="w-4 h-4" />
+          <span className="hidden sm:inline">Sync</span>
+        </button>
       </div>
 
-      {/* Venue selector */}
+      {/* ── Venue chips ── */}
       {venues.length > 1 && (
-        <div className="flex gap-2 mb-8 overflow-x-auto pb-2 -mx-1 px-1 no-scrollbar">
-          {venues.map(v => (
-            <Button key={v.id} size="sm" 
-              variant={selectedVenue?.id === v.id ? "default" : "outline"}
-              onClick={() => setSelectedVenue(v)} 
-              className={`shrink-0 admin-btn px-5 h-9 rounded-xl transition-all ${
-                selectedVenue?.id === v.id 
-                  ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" 
-                  : "bg-card border-border/40 hover:border-brand-600/40 shadow-sm"
+        <div
+          className="flex gap-2 overflow-x-auto no-scrollbar mb-6"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {venues.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => setSelectedVenue(v)}
+              className={`shrink-0 h-9 px-4 rounded-full text-sm font-semibold border transition-all ${
+                selectedVenue?.id === v.id
+                  ? "bg-brand-600 text-white border-brand-600"
+                  : "bg-card border-border/40 text-muted-foreground hover:text-foreground"
               }`}
             >
               {v.name}
-            </Button>
+            </button>
           ))}
         </div>
       )}
 
-      {/* Live stats bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-10">
-        <IoTStatCard 
-          icon={Wifi} 
-          label="Network Status" 
-          value={`${onlineCount}/${devices.length}`} 
-          sub="DEVICES ONLINE"
+      {/* ── Stat tiles 2×2 on mobile, 4-col on lg ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatTile
+          icon={Wifi}
+          label="Online"
+          value={`${onlineCount}/${devices.length}`}
+          sub="Devices online"
           index={0}
-          colorClass="text-brand-600"
-          bgClass="bg-brand-600/10"
+          accent="brand"
         />
-        <IoTStatCard 
-          icon={Lightbulb} 
-          label="Active Control" 
-          value={activeCount} 
-          sub="LIGHTS POWERED"
+        <StatTile
+          icon={Lightbulb}
+          label="Active"
+          value={activeCount}
+          sub="Lights on"
           index={1}
-          colorClass="text-brand-600"
-          bgClass="bg-brand-600/10"
+          accent="green"
         />
-        <IoTStatCard 
-          icon={Zap} 
-          label="Energy Draw" 
-          value={(totalPower / 1000).toFixed(1)} 
-          sub="KW CURRENT DEMAND"
+        <StatTile
+          icon={Zap}
+          label="Power"
+          value={`${(totalPower / 1000).toFixed(1)} kW`}
+          sub="Live demand"
           index={2}
-          colorClass="text-brand-600"
-          bgClass="bg-brand-600/10"
+          accent="amber"
         />
-        <IoTStatCard 
-          icon={IndianRupee} 
-          label="Estimated Cost" 
-          value={`₹${s.avg_daily_cost || 0}`} 
-          sub="AVG DAILY SPEND"
+        <StatTile
+          icon={IndianRupee}
+          label="Daily Cost"
+          value={`₹${s.avg_daily_cost || 0}`}
+          sub="Est. avg spend"
           index={3}
-          colorClass="text-brand-600"
-          bgClass="bg-brand-600/10"
+          accent="rupee"
         />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="iot-tabs">
-        <TabsList className="bg-white/5 border border-white/5 p-1 rounded-2xl h-12 mb-8 gap-1">
-          <TabsTrigger value="devices" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all">Devices</TabsTrigger>
-          <TabsTrigger value="zones" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-zones">Zones</TabsTrigger>
-          <TabsTrigger value="energy" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-energy">Energy</TabsTrigger>
-          <TabsTrigger value="schedule" className="data-[state=active]:bg-brand-600 data-[state=active]:text-white admin-btn rounded-xl h-full px-6 transition-all" data-testid="tab-schedule">Schedule</TabsTrigger>
-        </TabsList>
-
-        {/* Devices Tab */}
-        <TabsContent value="devices">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="admin-heading">Registered Devices</h3>
-            <Button size="sm" onClick={() => openDeviceDialog()} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-10 px-6 rounded-xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all"
-              data-testid="add-device-btn"><Plus className="h-4 w-4 mr-2" /> ADD DEVICE</Button>
+      {/* ── Scrollable tab bar ── */}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        data-testid="iot-tabs"
+      >
+        <div
+          className="overflow-x-auto no-scrollbar mb-5"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          <div className="flex bg-secondary/30 border border-border/40 rounded-xl p-1 w-max min-w-full sm:min-w-0">
+            {TABS.map((tab) => (
+              <button
+                key={tab.value}
+                role="tab"
+                aria-selected={activeTab === tab.value}
+                data-testid={tab.testId}
+                onClick={() => setActiveTab(tab.value)}
+                className={`shrink-0 flex-1 sm:flex-none h-9 px-4 sm:px-6 rounded-lg text-sm font-semibold whitespace-nowrap transition-all duration-200 cursor-pointer ${
+                  activeTab === tab.value
+                    ? "bg-brand-600 text-white shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* ── Devices ── */}
+        <TabsContent value="devices">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-base font-bold text-foreground">
+              Registered Devices
+            </p>
+            <button
+              onClick={() => openDeviceDialog()}
+              data-testid="add-device-btn"
+              className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-brand-600 text-white text-sm font-semibold shadow-sm shadow-brand-600/20 active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add</span>
+            </button>
+          </div>
+
           {devices.length === 0 ? (
             <div className="glass-premium rounded-[32px] border border-white/5 py-20 text-center text-muted-foreground">
               <Lightbulb className="h-12 w-12 mx-auto mb-4 opacity-20" />
@@ -537,183 +813,337 @@ export default function IoTDashboard() {
               <p className="admin-label opacity-60">IoT device management will be available shortly</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
               {devices.map((d, idx) => (
-                <DeviceCard key={d.id} device={d} onControl={handleControlDevice}
-                  onEdit={openDeviceDialog} onDelete={handleDeleteDevice} index={idx} />
+                <DeviceCard
+                  key={d.id}
+                  device={d}
+                  onControl={handleControlDevice}
+                  onEdit={openDeviceDialog}
+                  onDelete={handleDeleteDevice}
+                  index={idx}
+                />
               ))}
             </div>
           )}
         </TabsContent>
 
-        {/* Zones Tab */}
+        {/* ── Zones ── */}
         <TabsContent value="zones">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="admin-heading">Control Zones</h3>
-            <Button size="sm" onClick={() => setZoneDialogOpen(true)} className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-10 px-6 rounded-xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all"
-              data-testid="add-zone-btn"><Plus className="h-4 w-4 mr-2" /> ADD ZONE</Button>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-base font-bold text-foreground">Control Zones</p>
+            <button
+              onClick={() => setZoneDialogOpen(true)}
+              data-testid="add-zone-btn"
+              className="flex items-center gap-1.5 h-9 px-4 rounded-xl bg-brand-600 text-white text-sm font-semibold shadow-sm shadow-brand-600/20 active:scale-95 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add</span>
+            </button>
           </div>
+
           {zones.length === 0 ? (
-            <div className="glass-premium rounded-[32px] border border-white/5 py-20 text-center text-muted-foreground">
-              <Layers className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="admin-label opacity-40">No zones configured</p>
+            <div className="flex flex-col items-center justify-center py-16 bg-card rounded-2xl border border-border/40">
+              <div className="w-14 h-14 rounded-2xl bg-secondary/30 flex items-center justify-center mb-4">
+                <Layers className="w-7 h-7 text-muted-foreground/20" />
+              </div>
+              <p className="text-sm font-medium text-muted-foreground/60">
+                No zones configured
+              </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {zones.map((z, idx) => (
-                <ZoneCard key={z.id} zone={z} onControl={handleControlZone}
-                  onEdit={() => {}} onDelete={handleDeleteZone} index={idx} />
+                <ZoneCard
+                  key={z.id}
+                  zone={z}
+                  onControl={handleControlZone}
+                  onEdit={() => {}}
+                  onDelete={handleDeleteZone}
+                  index={idx}
+                />
               ))}
             </div>
           )}
         </TabsContent>
 
-        {/* Energy Tab */}
+        {/* ── Energy ── */}
         <TabsContent value="energy">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="admin-heading">Energy Analytics</h3>
-            <div className="bg-white/5 border border-white/5 p-1 rounded-xl flex items-center gap-1">
-              {["7d", "30d"].map(p => (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <p className="text-base font-bold text-foreground">
+              Energy Analytics
+            </p>
+            <div className="flex bg-secondary/30 border border-border/40 rounded-xl p-1 w-fit">
+              {["7d", "30d"].map((p) => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-4 py-1.5 rounded-lg admin-btn transition-all ${
-                    period === p ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20" : "text-muted-foreground hover:bg-white/5"
+                  className={`h-8 px-4 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                    period === p
+                      ? "bg-brand-600 text-white shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {p === "7d" ? "LAST 7 DAYS" : "LAST 30 DAYS"}
+                  {p === "7d" ? "7 Days" : "30 Days"}
                 </button>
               ))}
             </div>
           </div>
 
           {energy ? (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-4">
+              {/* Summary tiles */}
+              <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: "Total kWh", val: s.period_kwh, color: "text-brand-600" },
-                  { label: "Total Cost", val: `₹${s.period_cost}`, color: "text-brand-600" },
-                  { label: "Avg Daily kWh", val: s.avg_daily_kwh, color: "text-brand-600" },
-                  { label: "Avg Daily Cost", val: `₹${s.avg_daily_cost}`, color: "text-brand-600" }
-                ].map((stat, i) => (
-                  <motion.div 
-                    key={stat.label}
+                  { label: "Total kWh", val: s.period_kwh },
+                  { label: "Total Cost", val: `₹${s.period_cost}` },
+                  { label: "Avg Daily kWh", val: s.avg_daily_kwh },
+                  { label: "Avg Daily Cost", val: `₹${s.avg_daily_cost}` },
+                ].map((st, i) => (
+                  <motion.div
+                    key={st.label}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className="bg-card rounded-3xl p-7 border border-border/40 shadow-sm flex flex-col justify-between group h-full transition-all duration-300 hover:y-[-4px] hover:border-brand-600/20"
+                    className="bg-card rounded-2xl p-4 border border-border/40 shadow-sm"
                   >
-                    <div className="admin-label mb-4 group-hover:text-foreground/70 transition-colors">{stat.label}</div>
-                    <div className={`admin-value ${stat.color}`}>{stat.val}</div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                      {st.label}
+                    </p>
+                    <p className="text-xl font-bold text-brand-600">{st.val}</p>
                   </motion.div>
                 ))}
               </div>
 
+              {/* Charts */}
               {energy.daily?.length > 0 && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <motion.div 
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-card rounded-[32px] p-8 border border-border/40 shadow-sm"
-                  >
-                    <h4 className="admin-section-label mb-8 border-l-2 border-brand-500 pl-4">Energy Consumption (kWh)</h4>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <AreaChart data={energy.daily}>
-                        <defs>
-                          <linearGradient id="colorKwh" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.4}/>
-                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                          </linearGradient>
-                        </defs>
-                        <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 800 }} tickFormatter={d => d.slice(5)} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 800 }} width={40} axisLine={false} tickLine={false} />
-                        <Tooltip 
-                          contentStyle={{ background: "rgba(15, 20, 25, 0.98)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, fontSize: 12, backdropFilter: "blur(20px)", padding: "12px 16px", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }} 
-                          itemStyle={{ color: "#10b981", fontWeight: 900, textTransform: "uppercase" }}
-                          labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: 4, fontWeight: 700 }}
-                        />
-                        <Area type="monotone" dataKey="kwh" stroke="#10b981" strokeWidth={4} fillOpacity={1} fill="url(#colorKwh)" animationDuration={1500} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </motion.div>
-                  
-                  <motion.div 
-                    initial={{ opacity: 0, y: 15 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl"
-                  >
-                    <h4 className="admin-section-label mb-8 border-l-2 border-amber-500 pl-4">Daily Cost ({"\u20B9"})</h4>
-                    <ResponsiveContainer width="100%" height={240}>
-                      <BarChart data={energy.daily}>
-                        <CartesianGrid strokeDasharray="4 4" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 800 }} tickFormatter={d => d.slice(5)} axisLine={false} tickLine={false} dy={10} />
-                        <YAxis tick={{ fill: "rgba(255,255,255,0.6)", fontSize: 11, fontWeight: 800 }} width={40} axisLine={false} tickLine={false} />
-                        <Tooltip 
-                          contentStyle={{ background: "rgba(15, 20, 25, 0.98)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 20, fontSize: 12, backdropFilter: "blur(20px)", padding: "12px 16px", boxShadow: "0 20px 40px rgba(0,0,0,0.4)" }}
-                          cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                          itemStyle={{ color: "#f59e0b", fontWeight: 900, textTransform: "uppercase" }}
-                          labelStyle={{ color: "rgba(255,255,255,0.5)", marginBottom: 4, fontWeight: 700 }}
-                        />
-                        <Bar dataKey="cost" fill="#f59e0b" radius={[8, 8, 0, 0]} barSize={28} animationDuration={1500} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </motion.div>
+                  {[
+                    {
+                      title: "Consumption (kWh)",
+                      dataKey: "kwh",
+                      stroke: "#10b981",
+                      accent: "brand",
+                    },
+                    {
+                      title: "Daily Cost (₹)",
+                      dataKey: "cost",
+                      stroke: "#f59e0b",
+                      accent: "amber",
+                    },
+                  ].map(({ title, dataKey, stroke }) => (
+                    <div
+                      key={dataKey}
+                      className="bg-card rounded-2xl p-5 border border-border/40 shadow-sm"
+                    >
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4 pl-1 border-l-2 border-brand-500">
+                        {title}
+                      </p>
+                      <ResponsiveContainer width="100%" height={200}>
+                        {dataKey === "kwh" ? (
+                          <AreaChart data={energy.daily}>
+                            <defs>
+                              <linearGradient
+                                id="cKwh"
+                                x1="0"
+                                y1="0"
+                                x2="0"
+                                y2="1"
+                              >
+                                <stop
+                                  offset="5%"
+                                  stopColor={stroke}
+                                  stopOpacity={0.3}
+                                />
+                                <stop
+                                  offset="95%"
+                                  stopColor={stroke}
+                                  stopOpacity={0}
+                                />
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="hsl(var(--border))"
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="date"
+                              tick={{
+                                fill: "hsl(var(--muted-foreground))",
+                                fontSize: 10,
+                                fontWeight: 600,
+                              }}
+                              tickFormatter={(d) => d.slice(5)}
+                              axisLine={false}
+                              tickLine={false}
+                              dy={6}
+                            />
+                            <YAxis
+                              tick={{
+                                fill: "hsl(var(--muted-foreground))",
+                                fontSize: 10,
+                                fontWeight: 600,
+                              }}
+                              width={32}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <Tooltip
+                              contentStyle={tooltipStyle.contentStyle}
+                              itemStyle={{
+                                ...tooltipStyle.itemStyle,
+                                color: stroke,
+                              }}
+                              labelStyle={tooltipStyle.labelStyle}
+                            />
+                            <Area
+                              type="monotone"
+                              dataKey={dataKey}
+                              stroke={stroke}
+                              strokeWidth={2.5}
+                              fillOpacity={1}
+                              fill="url(#cKwh)"
+                              animationDuration={1000}
+                            />
+                          </AreaChart>
+                        ) : (
+                          <BarChart data={energy.daily}>
+                            <CartesianGrid
+                              strokeDasharray="3 3"
+                              stroke="hsl(var(--border))"
+                              vertical={false}
+                            />
+                            <XAxis
+                              dataKey="date"
+                              tick={{
+                                fill: "hsl(var(--muted-foreground))",
+                                fontSize: 10,
+                                fontWeight: 600,
+                              }}
+                              tickFormatter={(d) => d.slice(5)}
+                              axisLine={false}
+                              tickLine={false}
+                              dy={6}
+                            />
+                            <YAxis
+                              tick={{
+                                fill: "hsl(var(--muted-foreground))",
+                                fontSize: 10,
+                                fontWeight: 600,
+                              }}
+                              width={32}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <Tooltip
+                              contentStyle={tooltipStyle.contentStyle}
+                              itemStyle={{
+                                ...tooltipStyle.itemStyle,
+                                color: stroke,
+                              }}
+                              labelStyle={tooltipStyle.labelStyle}
+                              cursor={{ fill: "hsl(var(--secondary) / 0.4)" }}
+                            />
+                            <Bar
+                              dataKey={dataKey}
+                              fill={stroke}
+                              radius={[5, 5, 0, 0]}
+                              barSize={20}
+                              animationDuration={1000}
+                            />
+                          </BarChart>
+                        )}
+                      </ResponsiveContainer>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
           ) : (
-            <div className="bg-card rounded-[32px] border border-border/40 py-20 text-center text-muted-foreground/60 shadow-sm">
-              <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-10" />
-              <p className="admin-label opacity-40">No energy data collected</p>
+            <div className="flex flex-col items-center justify-center py-16 bg-card rounded-2xl border border-border/40">
+              <BarChart3 className="w-10 h-10 text-muted-foreground/20 mb-3" />
+              <p className="text-sm text-muted-foreground/60">
+                No energy data yet
+              </p>
             </div>
           )}
         </TabsContent>
 
-        {/* Schedule Tab */}
+        {/* ── Schedule ── */}
         <TabsContent value="schedule">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="admin-heading">Lighting Schedule</h3>
-            <Button size="sm" variant="outline" className="bg-card border-border/40 admin-btn h-10 px-6 rounded-xl transition-all hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 shadow-sm" onClick={handleSync} data-testid="sync-schedule-btn">
-              <RefreshCw className="h-3.5 w-3.5 mr-2" /> RE-SYNC
-            </Button>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-base font-bold text-foreground">
+              Lighting Schedule
+            </p>
+            <button
+              onClick={handleSync}
+              data-testid="sync-schedule-btn"
+              className="flex items-center gap-1.5 h-9 px-3 rounded-xl bg-card border border-border/40 text-sm font-medium active:scale-95 transition-all shadow-sm"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Sync</span>
+            </button>
           </div>
+
           {schedules.length === 0 ? (
-            <div className="bg-card rounded-[32px] border border-border/40 py-24 text-center group shadow-sm">
-              <div className="relative w-max mx-auto mb-8 text-muted-foreground/10 group-hover:text-brand-600/20 transition-colors duration-700">
-                <Calendar className="h-20 w-20" />
+            <div className="flex flex-col items-center justify-center py-16 bg-card rounded-2xl border border-border/40 text-center">
+              <div className="w-14 h-14 rounded-2xl bg-secondary/30 flex items-center justify-center mb-4">
+                <Calendar className="w-7 h-7 text-muted-foreground/20" />
               </div>
-              <p className="admin-name text-foreground/60">No bookings scheduled today</p>
-              <p className="admin-section-label text-brand-600/60 mt-4 max-w-[280px] mx-auto leading-relaxed">Lights auto-activate based on real-time booking confirmation</p>
+              <p className="text-sm font-medium text-muted-foreground/70">
+                No bookings today
+              </p>
+              <p className="text-xs text-muted-foreground/40 mt-1 max-w-[220px] leading-relaxed">
+                Lights auto-activate from booking confirmations
+              </p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {schedules.map((s, i) => (
-                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+            <div className="space-y-2">
+              {schedules.map((sch, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04 }}
-                  whileHover={{ y: -2, borderColor: "rgba(var(--brand-600), 0.15)" }}
-                  className="bg-card rounded-[22px] p-5 border border-border/40 flex items-center gap-8 shadow-sm transition-all duration-300 group" data-testid={`schedule-${i}`}>
-                  <div className="shrink-0 w-28 flex flex-col items-center border-r border-border/40 pr-4">
-                    <div className="text-[15px] font-medium text-brand-600 font-display tracking-tight leading-none mb-1.5">{s.slot_start}</div>
-                    <div className="admin-section-label text-muted-foreground/50 leading-none">{s.slot_end}</div>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="admin-name text-foreground/90 truncate mb-1">{s.zone_name}</div>
-                    <div className="flex items-center gap-3">
-                      <span className="admin-section-label text-muted-foreground/70">{s.host_name}</span>
-                      <div className="h-1.5 w-1.5 rounded-full bg-border" />
-                      <span className="admin-badge text-brand-600/90">{s.sport}</span>
+                  className="bg-card rounded-xl border border-border/40 shadow-sm overflow-hidden"
+                  data-testid={`schedule-${i}`}
+                >
+                  {/* Mobile: stacked rows */}
+                  <div className="flex items-stretch">
+                    {/* Time column */}
+                    <div className="flex flex-col items-center justify-center px-4 py-4 bg-brand-600/5 border-r border-brand-600/10 w-20 shrink-0">
+                      <span className="text-sm font-bold text-brand-600 leading-none">
+                        {sch.slot_start}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground/60 mt-1 leading-none">
+                        {sch.slot_end}
+                      </span>
                     </div>
-                  </div>
-                  <div className="shrink-0 flex items-center gap-6">
-                    <div className="flex flex-col items-end">
-                      <div className="admin-section-label text-muted-foreground/40 mb-2">Power Status</div>
-                      <div className="flex items-center gap-5">
-                        <div className="admin-badge text-brand-600 flex items-center gap-2 transition-all group-hover:scale-110"><Sun className="h-4 w-4" /> ON: {s.lights_on}</div>
-                        <div className="admin-badge text-muted-foreground/40 flex items-center gap-2"><Moon className="h-4 w-4" /> OFF: {s.lights_off}</div>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 px-3 py-3">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {sch.zone_name}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                        <span className="text-[11px] text-muted-foreground/70">
+                          {sch.host_name}
+                        </span>
+                        <span className="text-[11px] font-medium text-brand-600 bg-brand-600/8 px-1.5 py-0.5 rounded-md">
+                          {sch.sport}
+                        </span>
                       </div>
+                    </div>
+                    {/* Power indicators */}
+                    <div className="flex flex-col justify-center gap-1.5 px-3 py-3 shrink-0 text-right">
+                      <span className="flex items-center gap-1 text-[11px] font-semibold text-brand-600 justify-end">
+                        <Sun className="w-3 h-3" />
+                        {sch.lights_on}
+                      </span>
+                      <span className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground/50 justify-end">
+                        <Moon className="w-3 h-3" />
+                        {sch.lights_off}
+                      </span>
                     </div>
                   </div>
                 </motion.div>
@@ -723,114 +1153,195 @@ export default function IoTDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Add/Edit Device Dialog */}
-      <Dialog open={deviceDialogOpen} onOpenChange={setDeviceDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[500px] bg-card border-border/40 p-0 rounded-[28px] overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto">
-          <div className="p-6 sm:p-8 pb-4">
-            <DialogTitle className="text-2xl font-medium tracking-tight font-display mb-1 flex items-center gap-2">
-              <span className="text-foreground">{editingDevice ? "Edit" : "Register"}</span> <span className="text-brand-600">Device</span>
-            </DialogTitle>
+      {/* ── Add/Edit Device Sheet ── */}
+      <AppSheet
+        open={deviceDialogOpen}
+        onClose={setDeviceDialogOpen}
+        title={editingDevice ? "Edit Device" : "Register Device"}
+      >
+        <div className="space-y-4">
+          <FormField label="Device Name">
+            <Input
+              value={deviceForm.name}
+              onChange={(e) =>
+                setDeviceForm((p) => ({ ...p, name: e.target.value }))
+              }
+              placeholder="e.g. North Floodlight 01"
+              className={inputCls}
+              data-testid="device-name-input"
+            />
+          </FormField>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Type">
+              <Select
+                value={deviceForm.device_type}
+                onValueChange={(v) =>
+                  setDeviceForm((p) => ({ ...p, device_type: v }))
+                }
+              >
+                <SelectTrigger
+                  className={selectTriggerCls}
+                  data-testid="device-type-select"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/40 bg-card">
+                  <SelectItem value="floodlight">Floodlight</SelectItem>
+                  <SelectItem value="led_panel">LED Panel</SelectItem>
+                  <SelectItem value="ambient">Ambient</SelectItem>
+                  <SelectItem value="emergency">Emergency</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField label="Protocol">
+              <Select
+                value={deviceForm.protocol}
+                onValueChange={(v) =>
+                  setDeviceForm((p) => ({ ...p, protocol: v }))
+                }
+              >
+                <SelectTrigger
+                  className={selectTriggerCls}
+                  data-testid="device-protocol-select"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/40 bg-card">
+                  <SelectItem value="mqtt">MQTT</SelectItem>
+                  <SelectItem value="http">HTTP</SelectItem>
+                  <SelectItem value="zigbee">Zigbee</SelectItem>
+                </SelectContent>
+              </Select>
+            </FormField>
           </div>
-          <div className="p-8 pt-2 space-y-6">
-            <div className="space-y-2">
-              <Label className="admin-section-label ml-1">Device Name</Label>
-              <Input value={deviceForm.name} onChange={e => setDeviceForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. North Floodlight 01" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base focus-visible:ring-brand-600/30" data-testid="device-name-input" />
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="admin-section-label ml-1">Type</Label>
-                <Select value={deviceForm.device_type} onValueChange={v => setDeviceForm(p => ({ ...p, device_type: v }))}>
-                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-type-select"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/40 bg-card">
-                    <SelectItem value="floodlight" className="font-medium">Floodlight</SelectItem>
-                    <SelectItem value="led_panel" className="font-medium">LED Panel</SelectItem>
-                    <SelectItem value="ambient" className="font-medium">Ambient</SelectItem>
-                    <SelectItem value="emergency" className="font-medium">Emergency</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="admin-section-label ml-1">Protocol</Label>
-                <Select value={deviceForm.protocol} onValueChange={v => setDeviceForm(p => ({ ...p, protocol: v }))}>
-                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-protocol-select"><SelectValue /></SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/40 bg-card">
-                    <SelectItem value="mqtt" className="font-medium">MQTT</SelectItem>
-                    <SelectItem value="http" className="font-medium">HTTP</SelectItem>
-                    <SelectItem value="zigbee" className="font-medium">Zigbee</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="admin-section-label ml-1">IP Address</Label>
-                <Input value={deviceForm.ip_address} onChange={e => setDeviceForm(p => ({ ...p, ip_address: e.target.value }))}
-                  placeholder="192.168.1.1" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base font-mono" data-testid="device-ip-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="admin-section-label ml-1">Power (Watts)</Label>
-                <div className="relative">
-                  <Input type="number" value={deviceForm.power_watts} onChange={e => setDeviceForm(p => ({ ...p, power_watts: Number(e.target.value) }))}
-                    className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-watts-input" />
-                  <span className="absolute right-6 top-1/2 -translate-y-1/2 admin-section-label text-muted-foreground/30">W</span>
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="admin-section-label ml-1">Turf Number</Label>
-                <Input type="number" value={deviceForm.turf_number} onChange={e => setDeviceForm(p => ({ ...p, turf_number: Number(e.target.value) }))}
-                  className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-turf-input" />
-              </div>
-              <div className="space-y-2">
-                <Label className="admin-section-label ml-1">Zone Assignment</Label>
-                <Select value={deviceForm.zone_id} onValueChange={v => setDeviceForm(p => ({ ...p, zone_id: v }))}>
-                  <SelectTrigger className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="device-zone-select"><SelectValue placeholder="Select zone" /></SelectTrigger>
-                  <SelectContent className="rounded-2xl border-border/40 bg-card">
-                    <SelectItem value="none" className="font-bold opacity-40 italic">No zone</SelectItem>
-                    {zones.map(z => <SelectItem key={z.id} value={z.id} className="font-medium">{z.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <Button className="w-full h-16 bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm rounded-2xl shadow-xl shadow-brand-600/20 active:scale-[0.98] transition-all mt-4 border-0" onClick={handleSaveDevice} data-testid="save-device-btn">
-              {editingDevice ? "UPDATE DEVICE" : "REGISTER DEVICE"}
-            </Button>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="IP Address">
+              <Input
+                value={deviceForm.ip_address}
+                onChange={(e) =>
+                  setDeviceForm((p) => ({ ...p, ip_address: e.target.value }))
+                }
+                placeholder="192.168.1.1"
+                className={`${inputCls} font-mono`}
+                data-testid="device-ip-input"
+              />
+            </FormField>
+            <FormField label="Power (W)">
+              <Input
+                type="number"
+                value={deviceForm.power_watts}
+                onChange={(e) =>
+                  setDeviceForm((p) => ({
+                    ...p,
+                    power_watts: Number(e.target.value),
+                  }))
+                }
+                className={inputCls}
+                data-testid="device-watts-input"
+              />
+            </FormField>
           </div>
-        </DialogContent>
-      </Dialog>
+          <div className="grid grid-cols-2 gap-3">
+            <FormField label="Turf #">
+              <Input
+                type="number"
+                value={deviceForm.turf_number}
+                onChange={(e) =>
+                  setDeviceForm((p) => ({
+                    ...p,
+                    turf_number: Number(e.target.value),
+                  }))
+                }
+                className={inputCls}
+                data-testid="device-turf-input"
+              />
+            </FormField>
+            <FormField label="Zone">
+              <Select
+                value={deviceForm.zone_id}
+                onValueChange={(v) =>
+                  setDeviceForm((p) => ({ ...p, zone_id: v }))
+                }
+              >
+                <SelectTrigger
+                  className={selectTriggerCls}
+                  data-testid="device-zone-select"
+                >
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/40 bg-card">
+                  <SelectItem value="none">No zone</SelectItem>
+                  {zones.map((z) => (
+                    <SelectItem key={z.id} value={z.id}>
+                      {z.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          </div>
+          <button
+            onClick={handleSaveDevice}
+            data-testid="save-device-btn"
+            className="w-full h-13 py-3.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold rounded-xl shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all"
+          >
+            {editingDevice ? "Update Device" : "Register Device"}
+          </button>
+        </div>
+      </AppSheet>
 
-      {/* Add Zone Dialog */}
-      <Dialog open={zoneDialogOpen} onOpenChange={setZoneDialogOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-[400px] bg-card border-border/40 p-0 rounded-[28px] overflow-hidden shadow-2xl max-h-[85vh] overflow-y-auto">
-          <div className="p-6 sm:p-8 pb-4">
-            <DialogTitle className="text-2xl font-medium tracking-tight font-display mb-1 flex items-center gap-2">
-              <span className="text-foreground">Create</span> <span className="text-brand-600">Zone</span>
-            </DialogTitle>
-          </div>
-          <div className="p-8 pt-2 space-y-6">
-            <div className="space-y-2">
-              <Label className="admin-section-label ml-1">Zone Name</Label>
-              <Input value={zoneForm.name} onChange={e => setZoneForm(p => ({ ...p, name: e.target.value }))}
-                placeholder="e.g. Main Turf North" className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="zone-name-input" />
-            </div>
-            <div className="space-y-2">
-              <Label className="admin-section-label ml-1">Turf Number</Label>
-              <Input type="number" value={zoneForm.turf_number} onChange={e => setZoneForm(p => ({ ...p, turf_number: Number(e.target.value) }))}
-                className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-medium text-base" data-testid="zone-turf-input" />
-            </div>
-            <div className="space-y-2">
-              <Label className="admin-section-label ml-1">Description</Label>
-              <Input value={zoneForm.description} onChange={e => setZoneForm(p => ({ ...p, description: e.target.value }))}
-                placeholder="Brief description..." className="h-14 rounded-2xl bg-secondary/20 border-border/40 px-6 font-bold text-base" data-testid="zone-desc-input" />
-            </div>
-            <Button className="w-full h-16 bg-brand-600 hover:bg-brand-500 text-white admin-btn text-sm rounded-2xl shadow-xl shadow-brand-600/20 active:scale-[0.98] transition-all mt-4 border-0" onClick={handleSaveZone} data-testid="save-zone-btn">
-              CREATE ZONE
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* ── Add Zone Sheet ── */}
+      <AppSheet
+        open={zoneDialogOpen}
+        onClose={setZoneDialogOpen}
+        title="Create Zone"
+      >
+        <div className="space-y-4">
+          <FormField label="Zone Name">
+            <Input
+              value={zoneForm.name}
+              onChange={(e) =>
+                setZoneForm((p) => ({ ...p, name: e.target.value }))
+              }
+              placeholder="e.g. Main Turf North"
+              className={inputCls}
+              data-testid="zone-name-input"
+            />
+          </FormField>
+          <FormField label="Turf Number">
+            <Input
+              type="number"
+              value={zoneForm.turf_number}
+              onChange={(e) =>
+                setZoneForm((p) => ({
+                  ...p,
+                  turf_number: Number(e.target.value),
+                }))
+              }
+              className={inputCls}
+              data-testid="zone-turf-input"
+            />
+          </FormField>
+          <FormField label="Description">
+            <Input
+              value={zoneForm.description}
+              onChange={(e) =>
+                setZoneForm((p) => ({ ...p, description: e.target.value }))
+              }
+              placeholder="Brief description..."
+              className={inputCls}
+              data-testid="zone-desc-input"
+            />
+          </FormField>
+          <button
+            onClick={handleSaveZone}
+            data-testid="save-zone-btn"
+            className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold rounded-xl shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all"
+          >
+            Create Zone
+          </button>
+        </div>
+      </AppSheet>
     </div>
   );
 }

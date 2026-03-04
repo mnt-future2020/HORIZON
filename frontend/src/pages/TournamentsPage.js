@@ -3,16 +3,9 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { tournamentAPI, venueAPI, liveAPI } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -37,9 +30,12 @@ import {
   Crown,
   Eye,
   Radio,
+  X,
+  Zap,
 } from "lucide-react";
 import { TournamentsSkeleton } from "@/components/SkeletonLoader";
 
+/* ─── Constants ─────────────────────────────────────────────────────── */
 const SPORTS = [
   "football",
   "cricket",
@@ -50,24 +46,209 @@ const SPORTS = [
   "table_tennis",
 ];
 const FORMATS = [
-  { id: "knockout", label: "Knockout", desc: "Single elimination bracket" },
+  { id: "knockout", label: "Knockout", desc: "Single elimination" },
   { id: "round_robin", label: "Round Robin", desc: "Everyone plays everyone" },
-  { id: "league", label: "League", desc: "Points-based league table" },
+  { id: "league", label: "League", desc: "Points-based table" },
 ];
-const STATUS_COLORS = {
-  registration: "bg-brand-500/15 text-brand-400",
-  in_progress: "bg-sky-500/15 text-sky-400",
-  completed: "bg-brand-500/15 text-brand-400",
-  cancelled: "bg-destructive/15 text-destructive",
-};
-const STATUS_LABELS = {
-  registration: "Open",
-  in_progress: "Live",
-  completed: "Completed",
-  cancelled: "Cancelled",
+const STATUS_CONFIG = {
+  registration: {
+    label: "Open",
+    cls: "bg-green-500/10 text-green-600 border border-green-500/20",
+  },
+  in_progress: {
+    label: "Live",
+    cls: "bg-red-500/10 text-red-500 border border-red-500/20",
+  },
+  completed: {
+    label: "Completed",
+    cls: "bg-secondary/50 text-muted-foreground border border-border/40",
+  },
+  cancelled: {
+    label: "Cancelled",
+    cls: "bg-destructive/10 text-destructive border border-destructive/20",
+  },
 };
 const FORMAT_ICONS = { knockout: Swords, round_robin: Target, league: Medal };
 
+/* ─── Bottom Sheet wrapper ───────────────────────────────────────────── */
+function AppSheet({ open, onClose, title, children }) {
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent
+        hideClose
+        className="
+          !fixed !bottom-0 !top-auto !translate-y-0 !translate-x-0 !left-0 !right-0
+          w-full max-w-full rounded-t-[24px] rounded-b-none bg-card p-0 shadow-2xl border-border/40
+          max-h-[92vh] overflow-y-auto
+          sm:!top-[50%] sm:!bottom-auto sm:!left-[50%] sm:!right-auto sm:!translate-x-[-50%] sm:!translate-y-[-50%]
+          sm:!w-full sm:!max-w-[520px] sm:!rounded-[24px]
+        "
+      >
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="w-10 h-1 rounded-full bg-border/60" />
+        </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border/40">
+          <DialogTitle className="text-base font-bold text-foreground">
+            {title}
+          </DialogTitle>
+          <button
+            onClick={() => onClose(false)}
+            className="w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:bg-secondary/50 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-5 py-5 space-y-4">{children}</div>
+        <div style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ─── Form field wrapper ─────────────────────────────────────────────── */
+function FormField({ label, children }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+        {label}
+      </p>
+      {children}
+    </div>
+  );
+}
+
+const inCls =
+  "h-12 rounded-xl bg-secondary/20 border-border/40 px-4 text-sm font-medium focus-visible:ring-brand-600/30";
+const selCls =
+  "h-12 rounded-xl bg-secondary/20 border-border/40 px-4 text-sm font-medium";
+
+/* ─── Tournament Card ────────────────────────────────────────────────── */
+function TournamentCard({ t, user, onRegister, onClick, index }) {
+  const FormatIcon = FORMAT_ICONS[t.format] || Swords;
+  const statusCfg = STATUS_CONFIG[t.status] || STATUS_CONFIG.completed;
+  const isRegistered = t.participants?.some((p) => p.user_id === user?.id);
+  const isOrganizer = t.organizer_id === user?.id;
+  const isOpen = t.status === "registration";
+  const isLive = t.status === "in_progress";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04, duration: 0.3 }}
+      onClick={onClick}
+      className="bg-card rounded-[24px] border border-border/40 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:border-brand-600/30 active:scale-[0.99] transition-all duration-300 group"
+      data-testid={`tournament-card-${t.id}`}
+    >
+      {/* Live pulse bar */}
+      {isLive && (
+        <div className="h-0.5 bg-gradient-to-r from-red-500 via-red-400 to-transparent" />
+      )}
+
+      <div className="p-4">
+        {/* Top: badges + chevron */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="flex flex-wrap gap-1.5">
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${statusCfg.cls}`}
+            >
+              {isLive && <Radio className="w-2.5 h-2.5 inline mr-0.5" />}
+              {statusCfg.label}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary/40 text-muted-foreground capitalize flex items-center gap-1">
+              <FormatIcon className="w-2.5 h-2.5" />
+              {t.format?.replace("_", " ")}
+            </span>
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-secondary/40 text-muted-foreground capitalize">
+              {t.sport?.replace("_", " ")}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {isOrganizer && (
+              <span className="flex items-center gap-1 text-[10px] font-bold text-amber-500">
+                <Crown className="w-3 h-3" /> Organizer
+              </span>
+            )}
+            {isRegistered && !isOrganizer && (
+              <span className="text-[10px] font-bold text-brand-600 bg-brand-600/10 px-2 py-0.5 rounded-full">
+                Joined
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-muted-foreground/40 group-hover:text-brand-600 transition-colors" />
+          </div>
+        </div>
+
+        {/* Tournament name */}
+        <h3 className="text-base font-bold text-foreground leading-snug truncate">
+          {t.name}
+        </h3>
+        {t.description && (
+          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+            {t.description}
+          </p>
+        )}
+
+        {/* Meta row */}
+        <div className="flex flex-wrap items-center justify-between gap-y-2 mt-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="flex items-center gap-1">
+              <Users className="w-3 h-3" />
+              {t.participant_count || 0}/{t.max_participants}
+            </span>
+            {t.start_date && (
+              <span className="flex items-center gap-1">
+                <Calendar className="w-3 h-3" />
+                {new Date(t.start_date).toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                })}
+              </span>
+            )}
+            {t.venue_name && (
+              <span className="flex items-center gap-1 truncate max-w-[140px]">
+                <MapPin className="w-3 h-3 shrink-0" />
+                {t.venue_name}
+              </span>
+            )}
+          </div>
+          {t.entry_fee > 0 ? (
+            <span className="font-bold text-brand-600 shrink-0">
+              ₹{t.entry_fee} entry
+            </span>
+          ) : (
+            <span className="font-bold text-green-600 shrink-0">Free</span>
+          )}
+        </div>
+
+        {t.prize_pool && (
+          <div className="mt-3 py-2 px-3 bg-amber-500/10 rounded-lg flex items-center gap-2 text-xs text-amber-600 font-semibold border border-amber-500/20">
+            <Trophy className="w-3.5 h-3.5 shrink-0" />
+            <span className="line-clamp-1">{t.prize_pool}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Register CTA — bottom bar */}
+      {isOpen && !isRegistered && !isOrganizer && (
+        <div className="border-t border-border/40">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onRegister(t.id);
+            }}
+            data-testid={`register-btn-${t.id}`}
+            className="w-full py-3 text-sm font-bold text-brand-600 hover:bg-brand-600/5 active:bg-brand-600/10 transition-colors"
+          >
+            Register Now →
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+}
+
+/* ─── Main Page ──────────────────────────────────────────────────────── */
 export default function TournamentsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -75,6 +256,7 @@ export default function TournamentsPage() {
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   useScrollRestoration("tournaments", !loading);
+
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
   const [filterSport, setFilterSport] = useState(
     searchParams.get("sport") || "",
@@ -85,6 +267,7 @@ export default function TournamentsPage() {
   const [showMyOnly, setShowMyOnly] = useState(
     searchParams.get("mine") === "1",
   );
+  const [showFilters, setShowFilters] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [venues, setVenues] = useState([]);
@@ -104,30 +287,29 @@ export default function TournamentsPage() {
     rules: "",
   });
 
+  /* Data loading */
   useEffect(() => {
     loadTournaments();
-  }, [filterSport, filterStatus, showMyOnly]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync filter state to URL so browser back/forward restores filters
+  }, [filterSport, filterStatus, showMyOnly]); // eslint-disable-line
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQuery) params.set("q", searchQuery);
-    if (filterSport) params.set("sport", filterSport);
-    if (filterStatus) params.set("status", filterStatus);
-    if (showMyOnly) params.set("mine", "1");
-    setSearchParams(params, { replace: true });
+    const p = new URLSearchParams();
+    if (searchQuery) p.set("q", searchQuery);
+    if (filterSport) p.set("sport", filterSport);
+    if (filterStatus) p.set("status", filterStatus);
+    if (showMyOnly) p.set("mine", "1");
+    setSearchParams(p, { replace: true });
   }, [searchQuery, filterSport, filterStatus, showMyOnly, setSearchParams]);
 
   useEffect(() => {
     const loadLive = async () => {
       try {
-        const res = await liveAPI.getActive();
-        setLiveMatches(res.data || []);
+        const r = await liveAPI.getActive();
+        setLiveMatches(r.data || []);
       } catch {}
     };
     loadLive();
-    const interval = setInterval(loadLive, 10000);
-    return () => clearInterval(interval);
+    const iv = setInterval(loadLive, 10000);
+    return () => clearInterval(iv);
   }, []);
 
   const loadTournaments = async () => {
@@ -149,11 +331,9 @@ export default function TournamentsPage() {
   const openCreate = async () => {
     if (user?.role === "venue_owner") {
       try {
-        const res = await venueAPI.getOwnerVenues();
-        setVenues(res.data || []);
-      } catch {
-        /* ignore */
-      }
+        const r = await venueAPI.getOwnerVenues();
+        setVenues(r.data || []);
+      } catch {}
     }
     setForm({
       name: "",
@@ -173,15 +353,14 @@ export default function TournamentsPage() {
   };
 
   const handleCreate = async () => {
-    if (!form.name.trim()) return toast.error("Tournament name required");
+    if (!form.name.trim()) return toast.error("Tournament name is required");
     setCreating(true);
     try {
-      const payload = {
+      const res = await tournamentAPI.create({
         ...form,
         max_participants: parseInt(form.max_participants, 10),
         entry_fee: parseInt(form.entry_fee, 10),
-      };
-      const res = await tournamentAPI.create(payload);
+      });
       toast.success("Tournament created!");
       setCreateOpen(false);
       navigate(`/tournaments/${res.data.id}`);
@@ -192,10 +371,9 @@ export default function TournamentsPage() {
     }
   };
 
-  const handleRegister = async (e, tournamentId) => {
-    e.stopPropagation();
+  const handleRegister = async (id) => {
     try {
-      await tournamentAPI.register(tournamentId);
+      await tournamentAPI.register(id);
       toast.success("Registered!");
       loadTournaments();
     } catch (err) {
@@ -203,142 +381,189 @@ export default function TournamentsPage() {
     }
   };
 
+  const canCreate = ["venue_owner", "super_admin", "coach"].includes(
+    user?.role,
+  );
   const filtered = tournaments.filter(
     (t) =>
       !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()),
   );
-
-  const canCreate =
-    user?.role === "venue_owner" ||
-    user?.role === "super_admin" ||
-    user?.role === "coach";
+  const activeFilterCount = [
+    filterSport,
+    filterStatus,
+    showMyOnly ? "1" : "",
+  ].filter(Boolean).length;
 
   return (
     <div
-      className=" mx-auto px-4 sm:px-4 md:px-6 py-5 sm:py-6 pb-16 md:pb-8"
+      className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 md:pb-8"
       data-testid="tournaments-page"
     >
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+      {/* ── Page Header ── */}
+      <div className="flex items-center justify-between pt-4 md:pt-8 pb-6">
         <div>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-1">
             Compete
-          </span>
-          <h1 className="admin-page-title flex items-center gap-2 [text-wrap:balance]">
-            <Trophy className="h-6 w-6 text-amber-400" aria-hidden="true" />{" "}
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex items-center gap-2">
+            <Trophy className="w-7 h-7 text-amber-500" aria-hidden />
             Tournaments
           </h1>
         </div>
         {canCreate && (
-          <Button
+          <button
             onClick={openCreate}
-            className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-11 px-4 w-full sm:w-auto"
             data-testid="create-tournament-btn"
+            className="flex items-center gap-1.5 h-10 px-4 rounded-xl bg-brand-600 text-white text-sm font-bold shadow-sm shadow-brand-600/20 active:scale-95 hover:bg-brand-700 transition-all"
           >
-            <Plus className="h-4 w-4 mr-1" /> Create
-          </Button>
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Create</span>
+            <span className="sm:hidden">New</span>
+          </button>
         )}
       </div>
 
-      {/* Search & Filters */}
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:gap-2 mb-6">
-        <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      {/* ── Search + Filter bar ── */}
+      <div className="flex gap-2 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
           <Input
             placeholder="Search tournaments..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             name="tournament-search"
             autoComplete="off"
-            className="pl-9 bg-secondary/20 border-border/40 rounded-xl h-11 text-sm"
+            className="pl-10 h-11 rounded-xl bg-secondary/20 border-border/40 text-sm"
             data-testid="tournament-search"
           />
         </div>
-        <Select
-          value={filterSport}
-          onValueChange={(v) => setFilterSport(v === "all" ? "" : v)}
-        >
-          <SelectTrigger className="w-full sm:w-[130px] h-11 bg-secondary/20 border-border/40 rounded-xl text-xs">
-            <Filter className="h-3 w-3 mr-1" />
-            <SelectValue placeholder="Sport" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Sports</SelectItem>
-            {SPORTS.map((s) => (
-              <SelectItem key={s} value={s} className="capitalize">
-                {s.replace("_", " ")}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select
-          value={filterStatus}
-          onValueChange={(v) => setFilterStatus(v === "all" ? "" : v)}
-        >
-          <SelectTrigger className="w-full sm:w-[130px] h-11 bg-secondary/20 border-border/40 rounded-xl text-xs">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="registration">Open</SelectItem>
-            <SelectItem value="in_progress">Live</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-          </SelectContent>
-        </Select>
         <button
-          onClick={() => setShowMyOnly(!showMyOnly)}
-          className={`px-3 h-11 rounded-full text-xs admin-btn transition-all border focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 ${showMyOnly ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/40 text-muted-foreground hover:text-foreground"}`}
+          onClick={() => setShowFilters((v) => !v)}
+          className={`relative h-11 w-11 flex items-center justify-center rounded-xl border transition-all ${
+            activeFilterCount > 0
+              ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+              : "bg-card border-border/40 text-muted-foreground hover:text-foreground"
+          }`}
+          aria-label="Filters"
         >
-          My Tournaments
+          <Filter className="w-4 h-4" />
+          {activeFilterCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Live Now */}
+      {/* ── Collapsible filter panel ── */}
+      <AnimatePresence>
+        {showFilters && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="flex flex-col sm:flex-row gap-2 mb-4 pb-1">
+              <Select
+                value={filterSport}
+                onValueChange={(v) => setFilterSport(v === "all" ? "" : v)}
+              >
+                <SelectTrigger
+                  className="h-11 rounded-xl bg-secondary/20 border-border/40 text-sm flex-1 sm:max-w-[160px]"
+                  data-testid="sport-filter"
+                >
+                  <SelectValue placeholder="All Sports" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/40 bg-card">
+                  <SelectItem value="all">All Sports</SelectItem>
+                  {SPORTS.map((s) => (
+                    <SelectItem key={s} value={s} className="capitalize">
+                      {s.replace("_", " ")}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
+                value={filterStatus}
+                onValueChange={(v) => setFilterStatus(v === "all" ? "" : v)}
+              >
+                <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40 text-sm flex-1 sm:max-w-[160px]">
+                  <SelectValue placeholder="Any Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/40 bg-card">
+                  <SelectItem value="all">Any Status</SelectItem>
+                  <SelectItem value="registration">Open</SelectItem>
+                  <SelectItem value="in_progress">Live</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <button
+                onClick={() => setShowMyOnly((v) => !v)}
+                className={`h-11 px-4 rounded-xl text-sm font-semibold border transition-all ${
+                  showMyOnly
+                    ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                    : "bg-card border-border/40 text-muted-foreground"
+                }`}
+              >
+                My Tournaments
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Live Now strip ── */}
       {liveMatches.length > 0 && (
-        <div className="mb-6">
+        <div className="mb-5">
           <div className="flex items-center gap-2 mb-3">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500" />
             </span>
-            <h2 className="text-sm font-bold text-red-400 uppercase tracking-wider">
+            <p className="text-xs font-bold text-red-500 uppercase tracking-widest">
               Live Now
-            </h2>
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div
+            className="flex gap-3 overflow-x-auto no-scrollbar pb-1"
+            style={{ WebkitOverflowScrolling: "touch" }}
+          >
             {liveMatches.map((lm) => (
               <div
                 key={lm.id}
                 onClick={() => navigate(`/tournaments/${lm.tournament_id}`)}
-                className="p-4 rounded-[28px] border border-red-500/20 bg-red-500/5 shadow-sm cursor-pointer hover:border-red-500/40 transition-all"
+                className="shrink-0 w-[260px] bg-red-500/5 border border-red-500/20 rounded-2xl p-4 cursor-pointer active:scale-[0.98] transition-all"
               >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-muted-foreground">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-[11px] text-muted-foreground truncate flex-1">
                     {lm.tournament_name}
+                  </p>
+                  <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <Eye className="w-3 h-3" />
+                    {lm.spectator_count || 0}
                   </span>
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Eye className="w-3 h-3" /> {lm.spectator_count || 0}
-                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium truncate flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold truncate flex-1">
                     {lm.home?.name}
-                  </span>
-                  <span className="text-lg sm:text-xl font-bold text-brand-600 mx-1.5 sm:mx-3 tabular-nums">
+                  </p>
+                  <p className="text-xl font-black text-red-500 tabular-nums shrink-0 px-2">
                     {lm.home?.score} — {lm.away?.score}
-                  </span>
-                  <span className="text-sm font-medium truncate flex-1 text-right">
+                  </p>
+                  <p className="text-sm font-semibold truncate flex-1 text-right">
                     {lm.away?.name}
-                  </span>
+                  </p>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <span className="text-[10px] text-muted-foreground">
+                  <p className="text-[10px] text-muted-foreground/70">
                     {lm.match_label}
-                  </span>
-                  <Badge className="text-[10px] bg-red-500/15 text-red-400 border-red-500/30">
-                    <Radio className="w-2.5 h-2.5 mr-1" />{" "}
+                  </p>
+                  <span className="text-[10px] font-bold text-red-500 flex items-center gap-1">
+                    <Radio className="w-2.5 h-2.5" />
                     {lm.period_label || lm.sport}
-                  </Badge>
+                  </span>
                 </div>
               </div>
             ))}
@@ -346,348 +571,230 @@ export default function TournamentsPage() {
         </div>
       )}
 
-      {/* Tournament Cards */}
+      {/* ── Tournament list ── */}
       {loading ? (
         <TournamentsSkeleton />
       ) : filtered.length === 0 ? (
-        <div className="text-center py-20">
-          <Trophy className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No tournaments found</p>
+        <div className="flex flex-col items-center justify-center py-20 bg-card rounded-2xl border border-border/40 text-center">
+          <div className="w-16 h-16 rounded-2xl bg-secondary/30 flex items-center justify-center mb-4">
+            <Trophy className="w-8 h-8 text-muted-foreground/20" />
+          </div>
+          <p className="text-sm font-semibold text-muted-foreground/70">
+            No tournaments found
+          </p>
+          <p className="text-xs text-muted-foreground/40 mt-1">
+            Try changing your filters
+          </p>
           {canCreate && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4 text-xs h-10"
+            <button
               onClick={openCreate}
+              className="mt-5 flex items-center gap-1.5 h-10 px-5 rounded-xl bg-brand-600 text-white text-sm font-bold shadow-sm active:scale-95 transition-all"
             >
-              <Plus className="h-3.5 w-3.5 mr-1" /> Create Tournament
-            </Button>
+              <Plus className="w-4 h-4" /> Create Tournament
+            </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <AnimatePresence>
-            {filtered.map((t, idx) => {
-              const FormatIcon = FORMAT_ICONS[t.format] || Swords;
-              const isRegistered = t.participants?.some(
-                (p) => p.user_id === user?.id,
-              );
-              const isOrganizer = t.organizer_id === user?.id;
-              return (
-                <motion.div
-                  key={t.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                  onClick={() => navigate(`/tournaments/${t.id}`)}
-                  className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 sm:p-5 cursor-pointer hover:border-brand-600/40 transition-all group"
-                  data-testid={`tournament-card-${t.id}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                        <Badge
-                          className={`text-[10px] font-bold ${STATUS_COLORS[t.status] || ""}`}
-                        >
-                          {STATUS_LABELS[t.status] || t.status}
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] capitalize gap-1"
-                        >
-                          <FormatIcon className="h-2.5 w-2.5" />
-                          {t.format?.replace("_", " ")}
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className="text-[10px] capitalize"
-                        >
-                          {t.sport?.replace("_", " ")}
-                        </Badge>
-                      </div>
-                      <h3 className="font-medium text-base sm:text-lg leading-tight truncate">
-                        {t.name}
-                      </h3>
-                      {t.description && (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {t.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-3 mt-3 text-xs sm:text-[11px] text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {t.participant_count || 0}/{t.max_participants}
-                        </span>
-                        {t.start_date && (
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {new Date(t.start_date).toLocaleDateString(
-                              "en-IN",
-                              { day: "numeric", month: "short" },
-                            )}
-                          </span>
-                        )}
-                        {t.venue_name && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="h-3 w-3" />
-                            {t.venue_name}
-                          </span>
-                        )}
-                        {t.entry_fee > 0 && (
-                          <span className="font-bold text-brand-600">
-                            Entry: ₹{t.entry_fee}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2 shrink-0">
-                      {t.status === "registration" &&
-                        !isRegistered &&
-                        !isOrganizer && (
-                          <Button
-                            size="sm"
-                            className="bg-brand-600 hover:bg-brand-500 text-white admin-btn h-10 px-4 rounded-lg shadow-sm shadow-brand-600/20 active:scale-[0.98] transition-all"
-                            onClick={(e) => handleRegister(e, t.id)}
-                            data-testid={`register-btn-${t.id}`}
-                          >
-                            Register
-                          </Button>
-                        )}
-                      {isRegistered && (
-                        <Badge className="bg-brand-600/15 text-brand-600 text-[10px]">
-                          Registered
-                        </Badge>
-                      )}
-                      {isOrganizer && (
-                        <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">
-                          <Crown className="h-2.5 w-2.5 mr-0.5" /> Organizer
-                        </Badge>
-                      )}
-                      <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
+            {filtered.map((t, idx) => (
+              <TournamentCard
+                key={t.id}
+                t={t}
+                user={user}
+                index={idx}
+                onRegister={handleRegister}
+                onClick={() => navigate(`/tournaments/${t.id}`)}
+              />
+            ))}
           </AnimatePresence>
         </div>
       )}
 
-      {/* Create Tournament Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="bg-card border-border/40 max-w-[95vw] sm:max-w-md max-h-[90vh] sm:max-h-[85vh] overflow-y-auto rounded-2xl sm:rounded-[28px]">
-          <DialogHeader>
-            <DialogTitle className="admin-heading flex items-center gap-2">
-              <Trophy className="h-5 w-5 text-amber-400" /> Create Tournament
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                Tournament Name *
-              </Label>
-              <Input
-                value={form.name}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, name: e.target.value }))
-                }
-                placeholder="e.g. Weekend Knockout Cup"
-                className="mt-1 bg-background border-border h-11"
-                data-testid="tournament-name-input"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                Description
-              </Label>
-              <Input
-                value={form.description}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, description: e.target.value }))
-                }
-                placeholder="Brief description"
-                className="mt-1 bg-background border-border h-11"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Sport</Label>
-                <Select
-                  value={form.sport}
-                  onValueChange={(v) => setForm((p) => ({ ...p, sport: v }))}
+      {/* ── Create Tournament Sheet ── */}
+      <AppSheet
+        open={createOpen}
+        onClose={setCreateOpen}
+        title="Create Tournament"
+      >
+        <FormField label="Tournament Name *">
+          <Input
+            value={form.name}
+            onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+            placeholder="e.g. Weekend Knockout Cup"
+            className={inCls}
+            data-testid="tournament-name-input"
+          />
+        </FormField>
+
+        <FormField label="Description">
+          <Input
+            value={form.description}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, description: e.target.value }))
+            }
+            placeholder="Brief description"
+            className={inCls}
+          />
+        </FormField>
+
+        {/* Format picker — native segmented style */}
+        <FormField label="Format">
+          <div className="grid grid-cols-3 gap-1.5">
+            {FORMATS.map((f) => {
+              const FIcon = FORMAT_ICONS[f.id];
+              return (
+                <button
+                  key={f.id}
+                  onClick={() => setForm((p) => ({ ...p, format: f.id }))}
+                  className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-center transition-all ${
+                    form.format === f.id
+                      ? "bg-brand-600/10 border-brand-600/40 text-brand-600"
+                      : "bg-secondary/20 border-border/40 text-muted-foreground"
+                  }`}
                 >
-                  <SelectTrigger
-                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11"
-                    data-testid="tournament-sport-select"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SPORTS.map((s) => (
-                      <SelectItem key={s} value={s} className="capitalize">
-                        {s.replace("_", " ")}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Format</Label>
-                <Select
-                  value={form.format}
-                  onValueChange={(v) => setForm((p) => ({ ...p, format: v }))}
-                >
-                  <SelectTrigger
-                    className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11"
-                    data-testid="tournament-format-select"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {FORMATS.map((f) => (
-                      <SelectItem key={f.id} value={f.id}>
-                        {f.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  Max Participants
-                </Label>
-                <Input
-                  type="number"
-                  value={form.max_participants}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, max_participants: e.target.value }))
-                  }
-                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11"
-                  data-testid="tournament-max-input"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  Entry Fee (₹)
-                </Label>
-                <Input
-                  type="number"
-                  value={form.entry_fee}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, entry_fee: e.target.value }))
-                  }
-                  placeholder="0 = Free"
-                  className="mt-1 bg-background border-border h-11"
-                />
-              </div>
-            </div>
-            {venues.length > 0 && (
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  Venue (optional)
-                </Label>
-                <Select
-                  value={form.venue_id}
-                  onValueChange={(v) =>
-                    setForm((p) => ({ ...p, venue_id: v === "none" ? "" : v }))
-                  }
-                >
-                  <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11">
-                    <SelectValue placeholder="Select venue" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No venue</SelectItem>
-                    {venues.map((v) => (
-                      <SelectItem key={v.id} value={v.id}>
-                        {v.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                Prize Pool
-              </Label>
-              <Input
-                value={form.prize_pool}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, prize_pool: e.target.value }))
-                }
-                placeholder="e.g. ₹10,000 + Trophy"
-                className="mt-1 bg-background border-border h-11"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  Start Date
-                </Label>
-                <Input
-                  type="date"
-                  value={form.start_date}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, start_date: e.target.value }))
-                  }
-                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11"
-                />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">
-                  End Date
-                </Label>
-                <Input
-                  type="date"
-                  value={form.end_date}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, end_date: e.target.value }))
-                  }
-                  className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11"
-                />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">
-                Registration Deadline
-              </Label>
-              <Input
-                type="date"
-                value={form.registration_deadline}
-                onChange={(e) =>
-                  setForm((p) => ({
-                    ...p,
-                    registration_deadline: e.target.value,
-                  }))
-                }
-                className="mt-1 bg-secondary/20 border-border/40 rounded-xl h-11"
-              />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Rules</Label>
-              <textarea
-                value={form.rules}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, rules: e.target.value }))
-                }
-                placeholder="Tournament rules..."
-                rows={3}
-                className="mt-1 w-full rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/50"
-              />
-            </div>
-            <Button
-              className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all h-12"
-              onClick={handleCreate}
-              disabled={creating}
-              data-testid="submit-tournament-btn"
-            >
-              {creating ? "Creating..." : "Create Tournament"}
-            </Button>
+                  <FIcon className="w-4 h-4" />
+                  <span className="text-[11px] font-bold">{f.label}</span>
+                </button>
+              );
+            })}
           </div>
-        </DialogContent>
-      </Dialog>
+        </FormField>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Sport">
+            <Select
+              value={form.sport}
+              onValueChange={(v) => setForm((p) => ({ ...p, sport: v }))}
+            >
+              <SelectTrigger
+                className={selCls}
+                data-testid="tournament-sport-select"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border/40 bg-card">
+                {SPORTS.map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s.replace("_", " ")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField label="Max Players">
+            <Input
+              type="number"
+              value={form.max_participants}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, max_participants: e.target.value }))
+              }
+              className={inCls}
+              data-testid="tournament-max-input"
+            />
+          </FormField>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Entry Fee (₹)">
+            <Input
+              type="number"
+              value={form.entry_fee}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, entry_fee: e.target.value }))
+              }
+              placeholder="0 = Free"
+              className={inCls}
+            />
+          </FormField>
+          <FormField label="Prize Pool">
+            <Input
+              value={form.prize_pool}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, prize_pool: e.target.value }))
+              }
+              placeholder="₹10,000 + Trophy"
+              className={inCls}
+            />
+          </FormField>
+        </div>
+
+        {venues.length > 0 && (
+          <FormField label="Venue (optional)">
+            <Select
+              value={form.venue_id}
+              onValueChange={(v) =>
+                setForm((p) => ({ ...p, venue_id: v === "none" ? "" : v }))
+              }
+            >
+              <SelectTrigger className={selCls}>
+                <SelectValue placeholder="No venue" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border/40 bg-card">
+                <SelectItem value="none">No venue</SelectItem>
+                {venues.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
+
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Start Date">
+            <Input
+              type="date"
+              value={form.start_date}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, start_date: e.target.value }))
+              }
+              className={inCls}
+            />
+          </FormField>
+          <FormField label="End Date">
+            <Input
+              type="date"
+              value={form.end_date}
+              onChange={(e) =>
+                setForm((p) => ({ ...p, end_date: e.target.value }))
+              }
+              className={inCls}
+            />
+          </FormField>
+        </div>
+
+        <FormField label="Registration Deadline">
+          <Input
+            type="date"
+            value={form.registration_deadline}
+            onChange={(e) =>
+              setForm((p) => ({ ...p, registration_deadline: e.target.value }))
+            }
+            className={inCls}
+          />
+        </FormField>
+
+        <FormField label="Rules">
+          <textarea
+            value={form.rules}
+            onChange={(e) => setForm((p) => ({ ...p, rules: e.target.value }))}
+            placeholder="Tournament rules..."
+            rows={3}
+            className="w-full rounded-xl border border-border/40 bg-secondary/20 px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-brand-600/30 font-medium"
+          />
+        </FormField>
+
+        <button
+          onClick={handleCreate}
+          disabled={creating}
+          data-testid="submit-tournament-btn"
+          className="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all disabled:opacity-60"
+        >
+          {creating ? "Creating..." : "Create Tournament"}
+        </button>
+      </AppSheet>
     </div>
   );
 }
