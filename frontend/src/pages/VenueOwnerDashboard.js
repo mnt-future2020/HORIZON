@@ -22,6 +22,7 @@ import {
   ResponsiveDialogTitle,
   ResponsiveDialogDescription,
 } from "@/components/ui/responsive-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
@@ -58,6 +59,7 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Globe,
   ImagePlus,
   Upload,
   Brain,
@@ -69,6 +71,7 @@ import {
   Loader2,
   XCircle,
   Lightbulb,
+  Tag,
 } from "lucide-react";
 import {
   BarChart,
@@ -241,6 +244,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const BOOKING_LIMIT = 10;
   const bookingFilterRef = useRef(false);
   const [pricingView, setPricingView] = useState("rules");
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
   const [copiedSlug, setCopiedSlug] = useState(false);
@@ -670,16 +674,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   Manage your venues, track revenue, and grow your sports
                   business.
                 </p>
-                <div className="flex items-center gap-3 mt-4 sm:mt-5">
-                  <Button
-                    onClick={() => setCreateVenueOpen(true)}
-                    className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-10 sm:h-12 px-4 sm:px-6 shrink-0 rounded-xl text-sm"
-                    data-testid="create-venue-btn"
-                  >
-                    <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />{" "}
-                    Add Venue
-                  </Button>
-                </div>
               </div>
               {/* Professional Image */}
               <div className="hidden md:block relative h-full min-h-[220px]">
@@ -692,32 +686,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
             </div>
           </motion.div>
-
-          <ResponsiveDialog
-            open={createVenueOpen}
-            onOpenChange={(o) => {
-              setCreateVenueOpen(o);
-              if (!o) setBaseTurf(null);
-            }}
-          >
-            <ResponsiveDialogContent className="sm:max-w-2xl">
-              <ResponsiveDialogHeader>
-                <ResponsiveDialogTitle>Create New Venue</ResponsiveDialogTitle>
-                <ResponsiveDialogDescription className="text-xs text-muted-foreground">
-                  Fill in the details below to list your venue on Lobbi.
-                </ResponsiveDialogDescription>
-              </ResponsiveDialogHeader>
-              <VenueForm
-                mode="create"
-                initialValues={venueForm}
-                onSubmit={handleCreateVenue}
-                isSubmitting={false}
-                baseTurf={baseTurf}
-                onBaseTurfChange={setBaseTurf}
-                onCancel={() => setCreateVenueOpen(false)}
-              />
-            </ResponsiveDialogContent>
-          </ResponsiveDialog>
 
           {/* Stats - Athletic Stat Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
@@ -831,54 +799,83 @@ function VenueOwnerDashboardContent({ defaultView }) {
         </>
       )}
 
+      {/* Create Venue Dialog — shared across dashboard & manage views */}
+      <ResponsiveDialog
+        open={createVenueOpen}
+        onOpenChange={(o) => {
+          setCreateVenueOpen(o);
+          if (!o) setBaseTurf(null);
+        }}
+      >
+        <ResponsiveDialogContent className="sm:max-w-2xl">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Create New Venue</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription className="text-xs text-muted-foreground">
+              Fill in the details below to list your venue on Lobbi.
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <VenueForm
+            mode="create"
+            initialValues={venueForm}
+            onSubmit={handleCreateVenue}
+            isSubmitting={false}
+            baseTurf={baseTurf}
+            onBaseTurfChange={setBaseTurf}
+            onCancel={() => setCreateVenueOpen(false)}
+          />
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
+
       {/* Venue selector + actions on manage view */}
-      {isManageView && venues.length > 0 && (
-        <div className="mb-6 space-y-3">
-          <div className="flex gap-2 items-center overflow-x-auto pb-1">
-            {venues.map((v) => (
-              <button
-                key={v.id}
-                onClick={() => handleSelectVenue(v)}
-                className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl admin-btn text-[10px] sm:text-xs uppercase tracking-wide transition-all border border-border/40 flex items-center gap-1.5 sm:gap-2 min-h-[44px] active:scale-[0.97] ${selectedVenue?.id === v.id ? "bg-brand-600/20 border-brand-600 text-brand-600" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"}`}
-              >
-                {v.name}
-                {selectedVenue?.id === v.id && (
-                  <span
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditVenue();
-                    }}
-                    className="p-1 rounded-md hover:bg-brand-600/20 transition-colors"
-                    title="Edit venue"
-                  >
-                    <Pencil className="h-3 w-3" />
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          {selectedVenue?.slug && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={() =>
-                  window.open(`/venue/${selectedVenue.slug}`, "_blank")
-                }
-              >
-                <ExternalLink className="w-3.5 h-3.5" /> View Public Page
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7 text-xs gap-1.5"
-                onClick={() => setShowVenueQR(true)}
-              >
-                <QrCode className="w-3.5 h-3.5" /> QR Code
-              </Button>
+      {isManageView && (
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between gap-4 flex-wrap rounded-2xl border border-border/40 bg-card/50 backdrop-blur-md px-4 sm:px-6 py-3.5 sm:py-4">
+            {/* Left: Venue selector dropdown + quick actions */}
+            <div className="flex items-center gap-3">
+              {venues.length > 0 && (
+                <Select value={selectedVenue?.id || ""} onValueChange={val => { const v = venues.find(x => x.id === val); if (v) handleSelectVenue(v); }}>
+                  <SelectTrigger className="h-11 sm:h-12 rounded-xl border-border/50 bg-background/60 px-4 min-w-[200px] sm:min-w-[260px] font-semibold text-sm sm:text-base">
+                    <SelectValue placeholder="Select venue" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl max-h-[140px] overflow-y-auto">
+                    {venues.map(v => (
+                      <SelectItem key={v.id} value={v.id} className="text-sm sm:text-base font-medium py-2.5">
+                        {v.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              {selectedVenue?.slug && (<>
+                <div className="hidden sm:block h-7 w-px bg-border/50" />
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <button onClick={() => openEditVenue()}
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl border border-border/40 bg-background/60 flex items-center justify-center text-muted-foreground hover:text-brand-600 hover:border-brand-600/40 hover:bg-brand-600/5 transition-all active:scale-95"
+                    title="Edit Venue">
+                    <Pencil className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  </button>
+                  <button onClick={() => window.open(`/venue/${selectedVenue.slug}`, "_blank")}
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl border border-border/40 bg-background/60 flex items-center justify-center text-muted-foreground hover:text-brand-600 hover:border-brand-600/40 hover:bg-brand-600/5 transition-all active:scale-95"
+                    title="View Public Page">
+                    <ExternalLink className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  </button>
+                  <button onClick={() => setShowVenueQR(true)}
+                    className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl border border-border/40 bg-background/60 flex items-center justify-center text-muted-foreground hover:text-brand-600 hover:border-brand-600/40 hover:bg-brand-600/5 transition-all active:scale-95"
+                    title="QR Code">
+                    <QrCode className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
+                  </button>
+                </div>
+              </>)}
             </div>
-          )}
+            {/* Right: Add Venue */}
+            <Button
+              onClick={() => setCreateVenueOpen(true)}
+              className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-11 sm:h-12 px-5 sm:px-6 shrink-0 rounded-xl text-sm sm:text-base"
+              data-testid="create-venue-btn"
+            >
+              <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" /> Add Venue
+            </Button>
+          </div>
         </div>
       )}
 
@@ -1528,7 +1525,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="admin-name text-sm text-foreground">{r.name}</span>
                           <Badge className={`text-[10px] border ${isDiscount ? "bg-brand-500/15 text-brand-400 border-brand-500/20" : "bg-amber-500/15 text-amber-400 border-amber-500/20"}`}>
-                            {isDiscount ? "🏷 Offer" : "⚡ Peak"} {valLabel} {isDiscount ? "off" : "extra"}
+                            {isDiscount ? <><Tag className="h-3 w-3 inline-block mr-0.5" /> Offer</> : <><Zap className="h-3 w-3 inline-block mr-0.5" /> Peak</>} {valLabel} {isDiscount ? "off" : "extra"}
                           </Badge>
                           {schedType === "one_time" && <Badge className="text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/20">One-time</Badge>}
                         </div>
@@ -1554,7 +1551,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <div className="flex items-center gap-2 shrink-0">
                         <Switch checked={r.is_active !== false} onCheckedChange={() => handleToggleRule(r.id)} data-testid={`toggle-rule-${r.id}`} />
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditRule(r)} data-testid={`edit-rule-${r.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteRule(r.id)} data-testid={`delete-rule-${r.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setDeleteTarget({ id: r.id, type: "pricing_rule", name: r.name || "pricing rule" })} data-testid={`delete-rule-${r.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                   </motion.div>
@@ -1582,10 +1579,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <div>
                   <Label className="text-xs text-muted-foreground mb-2 block">Type</Label>
                   <div className="grid grid-cols-2 gap-2">
-                    {[{ key: "discount", label: "🏷 Offer / Discount", desc: "Reduce price" }, { key: "surge", label: "⚡ Peak / Surge", desc: "Increase price" }].map(t => (
+                    {[{ key: "discount", label: "Offer / Discount", desc: "Reduce price", Icon: Tag }, { key: "surge", label: "Peak / Surge", desc: "Increase price", Icon: Zap }].map(t => (
                       <button key={t.key} onClick={() => setRuleForm(p => ({ ...p, rule_type: t.key }))}
                         className={`p-3 rounded-xl border text-left transition-all ${ruleForm.rule_type === t.key ? "border-brand-600 bg-brand-600/10" : "border-border bg-secondary/30 hover:border-brand-600/40"}`}>
-                        <p className="text-xs admin-label">{t.label}</p>
+                        <p className="text-xs admin-label flex items-center gap-1"><t.Icon className="h-3.5 w-3.5" />{t.label}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
                       </button>
                     ))}
@@ -1883,6 +1880,25 @@ function VenueOwnerDashboardContent({ defaultView }) {
           )}
         </ResponsiveDialogContent>
       </ResponsiveDialog>
+
+      {/* Delete Pricing Rule Confirmation */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Pricing Rule?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (deleteTarget) handleDeleteRule(deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -2844,6 +2860,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
           )}
         </div>
       )}
+
     </div>
   );
 }

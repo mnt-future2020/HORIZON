@@ -403,7 +403,7 @@ export default function BookmarksPage() {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display font-black text-2xl sm:text-3xl text-brand-600">
+            <h1 className="admin-page-title text-lg sm:text-2xl">
               Saved
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
@@ -808,8 +808,10 @@ export default function BookmarksPage() {
                 </div>
               </div>
 
-              {/* Modal Content — scrollable */}
-              <div className="flex-1 overflow-y-auto">
+              {/* Modal Content */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                {/* Post content — fixed */}
+                <div className="flex-shrink-0">
                 {/* Double-tap area */}
                 <div className="relative select-none" onClick={() => handleDoubleTap(activePost.id)}>
                   {activePost.content && (
@@ -926,8 +928,9 @@ export default function BookmarksPage() {
                   </div>
                 </div>
 
-                {/* Comments Section */}
-                <div className="px-4 sm:px-6 py-4">
+                </div>
+                {/* Comments Section — scrollable */}
+                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
                   <h4 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2">
                     <MessageSquare className="h-4 w-4 text-brand-600" />
                     Comments ({activePost.comments_count || 0})

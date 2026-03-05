@@ -111,7 +111,6 @@ export default function PublicVenuePage() {
           setVenue(msg.venue);
           setJustUpdated(true);
           toast.info("Venue details just updated by the owner!", {
-            icon: "✨",
             duration: 3000,
           });
           setTimeout(() => setJustUpdated(false), 3000);

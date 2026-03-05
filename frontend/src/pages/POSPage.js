@@ -35,6 +35,12 @@ import {
   Download,
   User,
   AlertTriangle,
+  LayoutGrid,
+  Coffee,
+  Cookie,
+  Trophy,
+  Shirt,
+  ShoppingBag,
 } from "lucide-react";
 
 // --- Offline queue helpers (IndexedDB with localStorage fallback) -------
@@ -62,12 +68,12 @@ const cacheProductsAsync = (venueId, products) =>
 
 // --- Config -------------------------------------------------------
 const CATEGORIES = [
-  { id: "all", label: "All", emoji: "📋" },
-  { id: "beverages", label: "Beverages", emoji: "🥤" },
-  { id: "snacks", label: "Snacks", emoji: "🍿" },
-  { id: "equipment", label: "Equipment", emoji: "⚽" },
-  { id: "apparel", label: "Apparel", emoji: "👕" },
-  { id: "other", label: "Other", emoji: "🛒" },
+  { id: "all", label: "All", icon: LayoutGrid },
+  { id: "beverages", label: "Beverages", icon: Coffee },
+  { id: "snacks", label: "Snacks", icon: Cookie },
+  { id: "equipment", label: "Equipment", icon: Trophy },
+  { id: "apparel", label: "Apparel", icon: Shirt },
+  { id: "other", label: "Other", icon: ShoppingBag },
 ];
 
 const PAYMENT_METHODS = [
@@ -76,12 +82,12 @@ const PAYMENT_METHODS = [
   { id: "upi", label: "UPI", icon: Smartphone, color: "text-brand-400" },
 ];
 
-const CAT_EMOJI = {
-  beverages: "🥤",
-  snacks: "🍿",
-  equipment: "⚽",
-  apparel: "👕",
-  other: "🛒",
+const CAT_ICON = {
+  beverages: Coffee,
+  snacks: Cookie,
+  equipment: Trophy,
+  apparel: Shirt,
+  other: ShoppingBag,
 };
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -146,8 +152,13 @@ function ProductCard({ product, cartQty, onAdd, onRemove }) {
       onClick={() => !outOfStock && onAdd(product)}
       data-testid={`product-card-${product.id}`}
     >
-      <div className="text-3xl text-center">
-        {product.emoji || CAT_EMOJI[product.category] || "🛒"}
+      <div className="flex justify-center text-muted-foreground">
+        {product.emoji ? (
+          <span className="text-3xl">{product.emoji}</span>
+        ) : (() => {
+          const CatIcon = CAT_ICON[product.category] || ShoppingCart;
+          return <CatIcon className="h-8 w-8" />;
+        })()}
       </div>
       <div className="flex-1">
         <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">
@@ -629,7 +640,7 @@ function POSTerminal({ user }) {
           created_at: saleData.offline_at,
           offline: true,
         };
-        toast("Sale saved offline — will sync when connected", { icon: "📴" });
+        toast("Sale saved offline — will sync when connected", { icon: <WifiOff className="h-4 w-4" /> });
       }
       setLastSale(result);
       setShowReceipt(true);
@@ -688,7 +699,7 @@ function POSTerminal({ user }) {
               return { ...p, stock: Math.max(0, p.stock - item.qty) };
             }),
           );
-          toast("Network unreachable — sale saved offline", { icon: "📴" });
+          toast("Network unreachable — sale saved offline", { icon: <WifiOff className="h-4 w-4" /> });
           return;
         } catch (offlineErr) {
           toast.error("Failed to save sale offline");
@@ -745,7 +756,7 @@ function POSTerminal({ user }) {
       category: productForm.category,
       price: parseFloat(productForm.price),
       stock: parseInt(productForm.stock, 10),
-      emoji: productForm.emoji || CAT_EMOJI[productForm.category],
+      emoji: productForm.emoji || "",
     };
     try {
       if (editingProduct) {
@@ -907,7 +918,7 @@ function POSTerminal({ user }) {
                         }`}
                         data-testid={`cat-${cat.id}`}
                       >
-                        <span className="text-base">{cat.emoji}</span>{" "}
+                        <cat.icon className="h-4 w-4" />
                         {cat.label}
                       </button>
                     ))}
@@ -1003,8 +1014,11 @@ function POSTerminal({ user }) {
                               className="flex items-center gap-2 p-2 hover:bg-white/5 rounded-xl transition-colors"
                               data-testid={`cart-item-${product.id}`}
                             >
-                              <span className="text-lg">
-                                {product.emoji || "🛒"}
+                              <span className="text-lg flex items-center text-muted-foreground">
+                                {product.emoji ? product.emoji : (() => {
+                                  const CatIcon = CAT_ICON[product.category] || ShoppingCart;
+                                  return <CatIcon className="h-5 w-5" />;
+                                })()}
                               </span>
                               <div className="flex-1 min-w-0">
                                 <p className="text-xs font-medium truncate">
@@ -1245,8 +1259,11 @@ function POSTerminal({ user }) {
                         className={`flex items-center gap-4 p-4 hover:bg-white/5 transition-colors ${p.is_active === false ? "opacity-50" : ""} ${p.stock >= 0 && p.stock <= LOW_STOCK_THRESHOLD && p.is_active !== false ? "bg-amber-500/5" : ""}`}
                         data-testid={`manage-product-${p.id}`}
                       >
-                        <span className="text-2xl">
-                          {p.emoji || CAT_EMOJI[p.category] || "🛒"}
+                        <span className="text-2xl flex items-center text-muted-foreground">
+                          {p.emoji ? p.emoji : (() => {
+                            const CatIcon = CAT_ICON[p.category] || ShoppingCart;
+                            return <CatIcon className="h-6 w-6" />;
+                          })()}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -1548,7 +1565,7 @@ function POSTerminal({ user }) {
                     setProductForm((p) => ({
                       ...p,
                       category: e.target.value,
-                      emoji: p.emoji || CAT_EMOJI[e.target.value],
+                      emoji: p.emoji || "",
                     }))
                   }
                   className="w-full h-11 rounded-xl bg-secondary/20 border border-border/40 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand-600"
@@ -1560,7 +1577,7 @@ function POSTerminal({ user }) {
                       value={c.id}
                       className="text-foreground bg-card"
                     >
-                      {c.emoji} {c.label}
+                      {c.label}
                     </option>
                   ))}
                 </select>

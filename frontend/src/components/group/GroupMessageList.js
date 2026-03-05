@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { mediaUrl } from "@/lib/utils";
 import {
   User, MessageCircle, Pin, Smile, MoreVertical,
   Trash2, Forward, Volume2,
 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 const REACTIONS = [
   { emoji: "thumbsup", display: "\ud83d\udc4d" },
@@ -35,6 +40,7 @@ export default function GroupMessageList({
   onVote,
 }) {
   const navigate = useNavigate();
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const renderPoll = (msg) => {
     const poll = msg.poll;
@@ -169,7 +175,7 @@ export default function GroupMessageList({
                               <Forward className="h-3 w-3" /> Forward
                             </button>
                             {(isMe || isAdmin) && (
-                              <button onClick={() => onDeleteMsg(msg.id)} className="w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 flex items-center gap-2 text-destructive">
+                              <button onClick={() => setDeleteTarget({ id: msg.id, type: "message" })} className="w-full text-left px-3 py-1.5 text-xs hover:bg-white/5 flex items-center gap-2 text-destructive">
                                 <Trash2 className="h-3 w-3" /> Delete
                               </button>
                             )}
@@ -204,6 +210,22 @@ export default function GroupMessageList({
           </div>
         </div>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Message?</AlertDialogTitle>
+            <AlertDialogDescription>This message will be permanently deleted. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (deleteTarget) onDeleteMsg(deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

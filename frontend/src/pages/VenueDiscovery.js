@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock } from "lucide-react";
+import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock, Tag } from "lucide-react";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import { VenueDiscoverySkeleton } from "@/components/SkeletonLoader";
@@ -81,8 +81,8 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
             </div>
           )}
           {venue.has_active_offer && (
-            <div className="admin-badge px-2 py-1 sm:px-3 rounded-full border-none bg-red-500/10 text-red-600">
-              🏷 OFFER
+            <div className="admin-badge px-2 py-1 sm:px-3 rounded-full border-none bg-red-500/10 text-red-600 flex items-center gap-1">
+              <Tag className="h-3 w-3" /> OFFER
             </div>
           )}
         </div>

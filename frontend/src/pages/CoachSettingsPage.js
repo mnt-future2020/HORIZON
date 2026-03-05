@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Clock, MessageCircle, Dumbbell, Plus, Trash2,
-  Loader2, CheckCircle2, X
+  Loader2, CheckCircle2, X, Smartphone, Bell, AlertTriangle, Banknote, Smile, BarChart3, Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -38,17 +38,17 @@ const ALL_SPORTS = [
   "hockey", "chess", "cycling", "yoga", "fitness",
 ];
 const AUTOMATIONS = [
-  { key: "welcome",              icon: "📱", title: "Welcome Message",         desc: "Sent automatically when you add a new offline client with a phone number" },
-  { key: "booking_confirmation", icon: "✅", title: "Booking Confirmation",    desc: "Sent when an online session is confirmed (payment or package)" },
-  { key: "session_reminder",     icon: "🔔", title: "Session Reminder",        desc: "Sent to the player before an upcoming session",
+  { key: "welcome",              icon: Smartphone,     title: "Welcome Message",         desc: "Sent automatically when you add a new offline client with a phone number" },
+  { key: "booking_confirmation", icon: CheckCircle2,   title: "Booking Confirmation",    desc: "Sent when an online session is confirmed (payment or package)" },
+  { key: "session_reminder",     icon: Bell,           title: "Session Reminder",        desc: "Sent to the player before an upcoming session",
     config: { field: "hours_before", label: "Remind", options: [{ v: 1, l: "1 hour before" }, { v: 2, l: "2 hours before" }, { v: 12, l: "12 hours before" }, { v: 24, l: "1 day before" }, { v: 48, l: "2 days before" }] } },
-  { key: "package_expiry",       icon: "⚠️", title: "Package Expiry Alert",    desc: "Sent when a student's package is about to expire",
+  { key: "package_expiry",       icon: AlertTriangle,  title: "Package Expiry Alert",    desc: "Sent when a student's package is about to expire",
     config: { field: "days_before", label: "Alert", options: [{ v: 1, l: "1 day before" }, { v: 2, l: "2 days before" }, { v: 3, l: "3 days before" }, { v: 5, l: "5 days before" }, { v: 7, l: "7 days before" }] } },
-  { key: "payment_reminder",     icon: "💰", title: "Payment Reminder",        desc: "Sent daily with Razorpay link when monthly fee is due (until paid)" },
-  { key: "no_show_followup",     icon: "😊", title: "No-Show Follow-up",       desc: "Sent at 9 PM when a client misses a confirmed session" },
-  { key: "monthly_progress",     icon: "📊", title: "Monthly Progress Report", desc: "Sent to all active subscribers on the last day of each month" },
+  { key: "payment_reminder",     icon: Banknote,       title: "Payment Reminder",        desc: "Sent daily with Razorpay link when monthly fee is due (until paid)" },
+  { key: "no_show_followup",     icon: Smile,          title: "No-Show Follow-up",       desc: "Sent at 9 PM when a client misses a confirmed session" },
+  { key: "monthly_progress",     icon: BarChart3,      title: "Monthly Progress Report", desc: "Sent to all active subscribers on the last day of each month" },
 ];
-const ICON_MAP = { welcome: "📱", booking_confirmation: "✅", session_reminder: "🔔", package_expiry: "⚠️", payment_reminder: "💰", no_show_followup: "😊", monthly_progress: "📊" };
+const ICON_MAP = { welcome: Smartphone, booking_confirmation: CheckCircle2, session_reminder: Bell, package_expiry: AlertTriangle, payment_reminder: Banknote, no_show_followup: Smile, monthly_progress: BarChart3 };
 
 const TABS = [
   { id: "availability", icon: Clock,          label: "Availability" },
@@ -397,7 +397,7 @@ export default function CoachSettingsPage() {
                   return (
                     <div key={a.key} className={`rounded-[24px] bg-card shadow-sm p-4 border transition-all ${enabled ? "border-brand-600/20" : "border-border/40 opacity-70"}`}>
                       <div className="flex items-start gap-3">
-                        <span className="text-xl mt-0.5 shrink-0">{a.icon}</span>
+                        <span className="mt-0.5 shrink-0 text-muted-foreground"><a.icon className="h-5 w-5" /></span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-3">
                             <div>
@@ -442,7 +442,7 @@ export default function CoachSettingsPage() {
                   <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
                     {waLogs.slice(0, 20).map(log => (
                       <div key={log.id} className="flex items-center gap-2 px-3 py-2 rounded-[28px] bg-card border border-border/40 shadow-sm">
-                        <span className="text-base shrink-0">{ICON_MAP[log.automation_type] || "📨"}</span>
+                        <span className="shrink-0 text-muted-foreground">{(() => { const IC = ICON_MAP[log.automation_type] || Mail; return <IC className="h-4 w-4" />; })()}</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-medium truncate">{log.client_name}</p>
                           <p className="text-[10px] text-muted-foreground capitalize">{log.automation_type?.replace(/_/g, " ")}</p>

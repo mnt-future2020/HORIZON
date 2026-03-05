@@ -449,7 +449,7 @@ export default function PrivacySettingsPage() {
               </div>
             </motion.div>
 
-            {/* Delete Card */}
+            {/* Delete Account & Data — commented out for now
             <motion.div
               {...anim({
                 initial: { opacity: 0, y: 10 },
@@ -483,6 +483,7 @@ export default function PrivacySettingsPage() {
                 </div>
               </div>
             </motion.div>
+            */}
           </div>
         )}
 

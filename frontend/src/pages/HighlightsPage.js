@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -375,6 +379,7 @@ export default function HighlightsPage() {
   const [highlights, setHighlights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [viewingHighlight, setViewingHighlight] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const baseUrl = window.location.origin;
 
   const loadHighlights = useCallback(async () => {
@@ -401,7 +406,7 @@ export default function HighlightsPage() {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDeleteHighlight = async (id) => {
     try {
       await highlightAPI.delete(id);
       setHighlights(prev => prev.filter(h => h.id !== id));
@@ -442,7 +447,10 @@ export default function HighlightsPage() {
                 <HighlightCard key={h.id} highlight={h}
                   onAnalyze={handleAnalyze}
                   onView={(hl) => setViewingHighlight(hl)}
-                  onDelete={handleDelete} />
+                  onDelete={(id) => {
+                    const hl = highlights.find(x => x.id === id);
+                    setDeleteTarget({ id, type: "highlight", name: hl?.title || "highlight" });
+                  }} />
               ))}
             </AnimatePresence>
           </div>
@@ -455,6 +463,24 @@ export default function HighlightsPage() {
         onClose={() => setViewingHighlight(null)}
         baseUrl={baseUrl}
       />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Highlight?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (deleteTarget) handleDeleteHighlight(deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

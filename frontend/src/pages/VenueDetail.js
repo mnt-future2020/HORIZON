@@ -47,6 +47,7 @@ import {
   Trash2,
   CalendarDays,
   Timer,
+  Tag,
 } from "lucide-react";
 import { format } from "date-fns";
 import { useRazorpay } from "@/hooks/useRazorpay";
@@ -1265,8 +1266,8 @@ export default function VenueDetail() {
                           )}
                         </div>
                         {selectionOriginalPrice > selectionPrice && (
-                          <span className="text-[10px] admin-label text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full">
-                            🏷 OFFER — Save ₹
+                          <span className="text-[10px] admin-label text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded-full inline-flex items-center gap-0.5">
+                            <Tag className="h-3 w-3" /> OFFER — Save ₹
                             {selectionOriginalPrice - selectionPrice}
                           </span>
                         )}

@@ -45,6 +45,11 @@ import {
   ThumbsDown,
   ChevronDown,
   Shield,
+  CircleDot,
+  Feather,
+  Disc,
+  Volleyball,
+  Medal,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MatchmakingSkeleton } from "@/components/SkeletonLoader";
@@ -62,12 +67,13 @@ function getInitParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
-const SPORT_EMOJI = {
-  football: "⚽",
-  cricket: "🏏",
-  badminton: "🏸",
-  tennis: "🎾",
-  basketball: "🏀",
+const SPORT_ICON = {
+  football: CircleDot,
+  cricket: Swords,
+  badminton: Feather,
+  tennis: Target,
+  basketball: Disc,
+  volleyball: Volleyball,
 };
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball"];
 
@@ -115,7 +121,7 @@ function MatchCard({
   const sportLabel = match.sport
     ?.replace("_", " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-  const sportEmoji = SPORT_EMOJI[match.sport] || "🏅";
+  const SportIcon = SPORT_ICON[match.sport] || Medal;
 
   const players = (match.players_joined || []).map((id, i) => ({
     id,
@@ -139,8 +145,8 @@ function MatchCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-brand-600/10 flex items-center justify-center text-lg sm:text-xl shrink-0">
-            {sportEmoji}
+          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-brand-600/10 flex items-center justify-center shrink-0">
+            <SportIcon className="h-5 w-5 text-brand-600" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -360,8 +366,9 @@ function MercenaryCard({
                   {post.venue_name}
                 </span>
               </span>
-              <span className="capitalize">
-                {SPORT_EMOJI[post.sport]} {post.sport}
+              <span className="capitalize flex items-center gap-1">
+                {(() => { const SI = SPORT_ICON[post.sport] || Medal; return <SI className="h-3 w-3" />; })()}
+                {post.sport}
               </span>
             </p>
           </div>
@@ -1190,7 +1197,7 @@ export default function MatchmakingPage() {
                           <SelectContent>
                             {SPORTS.map((s) => (
                               <SelectItem key={s} value={s}>
-                                {SPORT_EMOJI[s]}{" "}
+                                {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                                 {s.charAt(0).toUpperCase() + s.slice(1)}
                               </SelectItem>
                             ))}
@@ -1535,7 +1542,8 @@ export default function MatchmakingPage() {
                           : "bg-secondary/30 border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
                       }`}
                     >
-                      {SPORT_EMOJI[s]} {s.charAt(0).toUpperCase() + s.slice(1)}
+                      {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -1644,7 +1652,7 @@ export default function MatchmakingPage() {
                       <SelectItem value="all">All Sports</SelectItem>
                       {SPORTS.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {SPORT_EMOJI[s]}{" "}
+                          {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                           {s.charAt(0).toUpperCase() + s.slice(1)}
                         </SelectItem>
                       ))}

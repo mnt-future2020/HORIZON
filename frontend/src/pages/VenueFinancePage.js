@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, AlertTriangle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building, ChevronLeft, ChevronRight } from "lucide-react";
@@ -54,6 +55,7 @@ export default function VenueFinancePage() {
   const [gstSettings, setGstSettings] = useState({ gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "VEN" });
   const [showGSTSettings, setShowGSTSettings] = useState(false);
   const [gstSaving, setGstSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // ─── Payout state ───
   const [payoutSummary, setPayoutSummary] = useState(null);
@@ -500,7 +502,7 @@ export default function VenueFinancePage() {
                     <button onClick={() => openEditExpense(exp)} className="h-9 w-9 sm:h-7 sm:w-7 rounded-xl bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors active:scale-[0.93]">
                       <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                     </button>
-                    <button onClick={() => handleDeleteExpense(exp.id)} className="h-9 w-9 sm:h-7 sm:w-7 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors active:scale-[0.93]">
+                    <button onClick={() => setDeleteTarget({ id: exp.id, type: "expense", name: exp.category?.replace("_", " ") || "expense" })} className="h-9 w-9 sm:h-7 sm:w-7 rounded-xl bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors active:scale-[0.93]">
                       <Trash2 className="h-3.5 w-3.5 text-destructive" />
                     </button>
                   </div>
@@ -835,7 +837,7 @@ export default function VenueFinancePage() {
                       </button>
                     )}
                     {!inv.auto_generated && (
-                      <button onClick={() => handleDeleteInvoice(inv.id)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs admin-btn text-destructive transition-colors active:scale-[0.95] ml-auto">
+                      <button onClick={() => setDeleteTarget({ id: inv.id, type: "invoice", name: inv.invoice_no || "invoice" })} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs admin-btn text-destructive transition-colors active:scale-[0.95] ml-auto">
                         <Trash2 className="h-3 w-3" /> Delete
                       </button>
                     )}
@@ -1084,6 +1086,26 @@ export default function VenueFinancePage() {
           )}
         </div>
       )}
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.type === "expense" ? "Expense" : "Invoice"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (!deleteTarget) return;
+              if (deleteTarget.type === "expense") handleDeleteExpense(deleteTarget.id);
+              else if (deleteTarget.type === "invoice") handleDeleteInvoice(deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
