@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { matchAPI, mercenaryAPI, bookingAPI, venueAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
@@ -48,6 +48,19 @@ import {
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MatchmakingSkeleton } from "@/components/SkeletonLoader";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 
 const SPORT_EMOJI = {
   football: "⚽",
@@ -774,9 +787,8 @@ function EmptyState({ icon: Icon, title, sub }) {
 
 export default function MatchmakingPage() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  const [tab, setTab] = useState(searchParams.get("tab") || "recommended");
+  const [tab, setTab] = useState(() => getInitParam("tab") || "recommended");
   const [matches, setMatches] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [mercenaries, setMercenaries] = useState([]);
@@ -788,37 +800,22 @@ export default function MatchmakingPage() {
   const [paying, setPaying] = useState(null);
   const [autoMatchResult, setAutoMatchResult] = useState(null);
   const [autoMatching, setAutoMatching] = useState(false);
-  const [autoSport, setAutoSport] = useState(
-    searchParams.get("autoSport") || "football",
-  );
-  const [filterSport, setFilterSport] = useState(
-    searchParams.get("sport") || "all",
-  );
-  const [filterArea, setFilterArea] = useState(
-    searchParams.get("area") || "all",
-  );
-  const [expandedMatchId, setExpandedMatchId] = useState(
-    searchParams.get("expanded") || null,
-  );
+  const [autoSport, setAutoSport] = useState(() => getInitParam("autoSport") || "football");
+  const [filterSport, setFilterSport] = useState(() => getInitParam("sport") || "all");
+  const [filterArea, setFilterArea] = useState(() => getInitParam("area") || "all");
+  const [expandedMatchId, setExpandedMatchId] = useState(() => getInitParam("expanded") || null);
   const [areas, setAreas] = useState([]);
 
-  // Sync state to URL params so back-navigation preserves filters & expanded card
+  // Sync state to URL params — replaceParams uses history.replaceState (no React re-render cascade)
   useEffect(() => {
-    const params = {};
-    if (tab !== "recommended") params.tab = tab;
-    if (filterSport !== "all") params.sport = filterSport;
-    if (filterArea !== "all") params.area = filterArea;
-    if (autoSport !== "football") params.autoSport = autoSport;
-    if (expandedMatchId) params.expanded = expandedMatchId;
-    setSearchParams(params, { replace: true });
-  }, [
-    tab,
-    filterSport,
-    filterArea,
-    autoSport,
-    expandedMatchId,
-    setSearchParams,
-  ]);
+    replaceParams({
+      tab: tab !== "recommended" ? tab : null,
+      sport: filterSport !== "all" ? filterSport : null,
+      area: filterArea !== "all" ? filterArea : null,
+      autoSport: autoSport !== "football" ? autoSport : null,
+      expanded: expandedMatchId || null,
+    });
+  }, [tab, filterSport, filterArea, autoSport, expandedMatchId]);
   const [form, setForm] = useState({
     sport: "football",
     date: "",

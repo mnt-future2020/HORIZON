@@ -1,6 +1,19 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { authAPI, analyticsAPI, bookingAPI, uploadAPI, careerAPI, venueAPI, coachingAPI, organizationAPI, playerCardAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,6 +44,13 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
   useEffect(() => { window.scrollTo(0, 0); }, []);
+
+  // Tab persistence via URL
+  const [activeProfileTab, setActiveProfileTab] = useState(() => getInitParam("tab") || "info");
+  const handleProfileTabChange = useCallback((newTab) => {
+    setActiveProfileTab(newTab);
+    replaceParams({ tab: newTab === "info" ? null : newTab });
+  }, []);
 
   // State
   const [stats, setStats] = useState(null);
@@ -250,7 +270,12 @@ export default function ProfilePage() {
         />
 
         {/* Tabs */}
-        <Tabs defaultValue="info" data-testid="profile-tabs" className="space-y-6">
+        <Tabs
+          value={activeProfileTab}
+          onValueChange={handleProfileTabChange}
+          data-testid="profile-tabs"
+          className="space-y-6"
+        >
           <TabsList className="bg-muted/50 mb-6 w-full justify-start overflow-x-auto touch-action-manipulation">
             <TabsTrigger value="info" className="font-display font-bold data-[state=active]:bg-brand-600 data-[state=active]:text-white transition-all">
               Info

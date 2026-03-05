@@ -8,106 +8,131 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+} from "@/components/ui/responsive-dialog";
 import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Lightbulb } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import {
+  Building2,
+  IndianRupee,
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Plus,
+  Trash2,
+  BarChart2,
+  BarChart3,
+  Clock,
+  ShieldAlert,
+  Crown,
+  CheckCircle,
+  Pencil,
+  Users,
+  CreditCard,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  History,
+  CalendarDays,
+  CircleDot,
+  AlertCircle,
+  ArrowUpDown,
+  Star,
+  MessageSquare,
+  QrCode,
+  ExternalLink,
+  Copy,
+  Check,
+  ImagePlus,
+  Upload,
+  Brain,
+  Zap,
+  Camera,
+  UserCheck,
+  UserX,
+  ClipboardList,
+  Loader2,
+  XCircle,
+  Lightbulb,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+} from "recharts";
 import { VenueOwnerDashboardSkeleton } from "@/components/SkeletonLoader";
+import VenueForm from "@/components/venue/VenueForm";
 
 // Professional / venue owner imagery
-const OWNER_HERO = "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
+const OWNER_HERO =
+  "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
 
 function TabsIndicator() {
-  return <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full opacity-0 transition-opacity [[data-state=active]_&]:opacity-100" />;
+  return (
+    <div className="absolute bottom-0 left-0 w-full h-[3px] bg-brand-600 rounded-t-full opacity-0 transition-opacity [[data-state=active]_&]:opacity-100" />
+  );
 }
 
-function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  index = 0,
+  colorClass = "text-brand-600",
+  bgClass = "bg-brand-600/10",
+}) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 25 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        delay: index * 0.05,
+        type: "spring",
+        stiffness: 300,
+        damping: 25,
+      }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="bg-card rounded-2xl sm:rounded-[28px] p-4 sm:p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
     >
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <div className="admin-label text-xs sm:text-sm">{label}</div>
-        <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
+        <div
+          className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}
+        >
           <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${colorClass}`} />
         </div>
       </div>
-      <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-foreground tracking-tight">{value}</div>
+      <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-foreground tracking-tight">
+        {value}
+      </div>
     </motion.div>
   );
 }
-const VENUE_BANNER = "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80";
+const VENUE_BANNER =
+  "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?auto=format&fit=crop&w=1200&q=80";
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-/** Image upload component for venue images — S3 priority, local fallback */
-function VenueImageUpload({ images = [], onChange }) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-
-  const handleFiles = async (files) => {
-    const arr = Array.from(files).filter(f => f.type.startsWith("image/"));
-    if (!arr.length) return;
-    setUploading(true);
-    const uploaded = [...images];
-    for (const file of arr) {
-      try {
-        const res = await uploadAPI.image(file, (e) => {
-          if (e.total) setUploadProgress(Math.round((e.loaded / e.total) * 100));
-        });
-        uploaded.push(res.data.url);
-        setUploadProgress(0);
-      } catch (err) {
-        toast.error(`Upload failed: ${err?.response?.data?.detail || "Unknown error"}`);
-        break;
-      }
-    }
-    onChange(uploaded);
-    setUploading(false);
-  };
-
-  const removeImage = (idx) => onChange(images.filter((_, i) => i !== idx));
-
-  return (
-    <div className="space-y-2">
-      <Label className="text-xs text-muted-foreground">Venue Images</Label>
-      {/* Thumbnails */}
-      {images.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {images.map((url, i) => (
-            <div key={i} className="relative group w-20 h-20 rounded-lg overflow-hidden border border-border">
-              <img src={mediaUrl(url)} alt="" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={() => removeImage(i)}
-                className="absolute top-0.5 right-0.5 bg-black/70 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {/* Upload button */}
-      <label className={`flex items-center gap-2 px-3 py-2 rounded-xl border border-dashed cursor-pointer transition-colors text-sm font-medium ${uploading ? "opacity-60 pointer-events-none border-border" : "border-brand-600/40 hover:border-brand-600 hover:bg-brand-600/5 text-muted-foreground hover:text-brand-600"}`}>
-        {uploading ? (
-          <><div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />Uploading {uploadProgress > 0 ? `${uploadProgress}%` : "..."}</>
-        ) : (
-          <><ImagePlus className="h-4 w-4" />{images.length > 0 ? "Add more images" : "Upload venue images"}</>
-        )}
-        <input type="file" accept="image/*" multiple className="hidden" onChange={e => handleFiles(e.target.files)} disabled={uploading} />
-      </label>
-      <p className="text-[10px] text-muted-foreground">JPG, PNG, WebP · max 10 MB each. Images appear on your public venue page.</p>
-    </div>
-  );
-}
 
 export default function VenueOwnerDashboard({ defaultView }) {
   const { user } = useAuth();
@@ -115,12 +140,18 @@ export default function VenueOwnerDashboard({ defaultView }) {
   // Pending/rejected/suspended account gate
   if (user?.account_status === "pending") {
     return (
-      <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="pending-approval-screen">
+      <div
+        className="max-w-lg mx-auto px-4 py-24 text-center"
+        data-testid="pending-approval-screen"
+      >
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-6 sm:p-8 space-y-4">
           <ShieldAlert className="h-10 w-10 sm:h-12 sm:w-12 text-amber-400 mx-auto" />
-          <h1 className="font-display text-lg sm:text-xl admin-page-title">Account Pending Approval</h1>
+          <h1 className="font-display text-lg sm:text-xl admin-page-title">
+            Account Pending Approval
+          </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Your venue owner registration is being reviewed by the Horizon team. You'll receive a notification once approved.
+            Your venue owner registration is being reviewed by the Horizon team.
+            You'll receive a notification once approved.
           </p>
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300">
             Check back soon — most approvals happen within 24 hours.
@@ -129,12 +160,21 @@ export default function VenueOwnerDashboard({ defaultView }) {
       </div>
     );
   }
-  if (user?.account_status === "rejected" || user?.account_status === "suspended") {
+  if (
+    user?.account_status === "rejected" ||
+    user?.account_status === "suspended"
+  ) {
     return (
-      <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="account-blocked-screen">
+      <div
+        className="max-w-lg mx-auto px-4 py-24 text-center"
+        data-testid="account-blocked-screen"
+      >
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-6 sm:p-8 space-y-4">
           <ShieldAlert className="h-10 w-10 sm:h-12 sm:w-12 text-destructive mx-auto" />
-          <h1 className="font-display text-xl admin-page-title">Account {user.account_status === "rejected" ? "Not Approved" : "Suspended"}</h1>
+          <h1 className="font-display text-xl admin-page-title">
+            Account{" "}
+            {user.account_status === "rejected" ? "Not Approved" : "Suspended"}
+          </h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {user.account_status === "rejected"
               ? "Your venue owner registration was not approved. Please contact support for more information."
@@ -155,14 +195,24 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const isManageView = location.pathname === "/owner/manage";
   const [urlParams, setUrlParams] = useSearchParams();
   const urlTab = urlParams.get("tab");
-  const VALID_TABS = ["bookings", "slots", "reviews", "pricing", "checkin", "plan"];
+  const VALID_TABS = [
+    "bookings",
+    "slots",
+    "reviews",
+    "pricing",
+    "checkin",
+    "plan",
+  ];
   const activeTab = VALID_TABS.includes(urlTab) ? urlTab : "bookings";
   const setActiveTab = (tab) => {
-    setUrlParams(prev => {
-      const p = new URLSearchParams(prev);
-      p.set("tab", tab);
-      return p;
-    }, { replace: true });
+    setUrlParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        p.set("tab", tab);
+        return p;
+      },
+      { replace: true },
+    );
   };
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -177,7 +227,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [upgrading, setUpgrading] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState(urlParams.get("status") || "all");
+  const [statusFilter, setStatusFilter] = useState(
+    urlParams.get("status") || "all",
+  );
   const [timeFilter, setTimeFilter] = useState(urlParams.get("time") || "all");
   const [sortOrder, setSortOrder] = useState(urlParams.get("sort") || "desc");
   const [bookingView, setBookingView] = useState(urlParams.get("bview") || "list");
@@ -195,59 +247,24 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [editVenueOpen, setEditVenueOpen] = useState(false);
   const [editVenueForm, setEditVenueForm] = useState({});
   const [savingVenue, setSavingVenue] = useState(false);
-  const [baseTurf, setBaseTurf] = useState(null);     // { sport, idx } — create form selected base
+  const [baseTurf, setBaseTurf] = useState(null); // { sport, idx } — create form selected base
   const [editBaseTurf, setEditBaseTurf] = useState(null); // edit form selected base
-  const SPORT_SUGGESTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis", "Hockey", "Pickleball", "Swimming"];
-  const AMENITY_SUGGESTIONS = ["Parking", "Washroom", "Changing Room", "Drinking Water", "Floodlights", "Cafeteria", "First Aid", "WiFi", "Seating Area", "Scoreboard"];
-  const [sportInput, setSportInput] = useState("");
-  const [amenityInput, setAmenityInput] = useState("");
-  const [venueForm, setVenueForm] = useState({
-    name: "", description: "", sports: [], address: "", area: "", city: "Bengaluru",
-    slot_duration_minutes: 60, opening_hour: 6, closing_hour: 23,
-    amenities: [], images: [], turf_config: [],
+  const [venueForm] = useState({
+    name: "",
+    description: "",
+    sports: [],
+    address: "",
+    area: "",
+    city: "Bengaluru",
+    slot_duration_minutes: 60,
+    opening_hour: 6,
+    closing_hour: 23,
+    amenities: [],
+    images: [],
+    turf_config: [],
+    google_maps_url: "",
   });
 
-  // Shared venue form helpers — used by both create and edit forms
-  const makeVenueHelpers = (setForm, setSportInp, setAmenityInp) => ({
-    addSport: (sport) => {
-      const s = sport.trim().toLowerCase();
-      setForm(p => {
-        if (!s || (p.sports || []).includes(s)) return p;
-        return { ...p, sports: [...(p.sports || []), s], turf_config: [...(p.turf_config || []), { sport: s, turfs: [{ name: `${sport.trim()} Turf 1`, price: 2000 }] }] };
-      });
-      setSportInp("");
-    },
-    removeSport: (sport) => setForm(p => ({ ...p, sports: (p.sports || []).filter(s => s !== sport), turf_config: (p.turf_config || []).filter(tc => tc.sport !== sport) })),
-    addAmenity: (amenity) => {
-      const a = amenity.trim();
-      setForm(p => {
-        if (!a || (p.amenities || []).includes(a)) return p;
-        return { ...p, amenities: [...(p.amenities || []), a] };
-      });
-      setAmenityInp("");
-    },
-    removeAmenity: (amenity) => setForm(p => ({ ...p, amenities: (p.amenities || []).filter(a => a !== amenity) })),
-    addTurf: (sport) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: [...tc.turfs, { name: `${sport} Turf ${tc.turfs.length + 1}`, price: 2000 }] } : tc) })),
-    removeTurf: (sport, idx) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.filter((_, i) => i !== idx) } : tc) })),
-    renameTurf: (sport, idx, name) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, name } : t) } : tc) })),
-    updateTurfPrice: (sport, idx, price) => setForm(p => ({ ...p, turf_config: (p.turf_config || []).map(tc => tc.sport === sport ? { ...tc, turfs: tc.turfs.map((t, i) => i === idx ? { ...t, price: Number(price) } : t) } : tc) })),
-  });
-
-  const createH = makeVenueHelpers(setVenueForm, setSportInput, setAmenityInput);
-  const addSport = createH.addSport, removeSport = createH.removeSport;
-  const addAmenity = createH.addAmenity, removeAmenity = createH.removeAmenity;
-  const addTurfToSport = createH.addTurf, removeTurfFromSport = createH.removeTurf;
-  const renameTurf = createH.renameTurf, updateTurfPrice = createH.updateTurfPrice;
-  // AM/PM helpers
-  const to12h = (h24) => {
-    const ampm = h24 >= 12 ? "PM" : "AM";
-    const h12 = h24 === 0 ? 12 : h24 > 12 ? h24 - 12 : h24;
-    return { hour: h12, ampm };
-  };
-  const to24h = (h12, ampm) => {
-    if (ampm === "AM") return h12 === 12 ? 0 : h12;
-    return h12 === 12 ? 12 : h12 + 12;
-  };
   const emptyRule = {
     name: "",
     rule_type: "discount",
@@ -255,14 +272,19 @@ function VenueOwnerDashboardContent({ defaultView }) {
     value: 20,
     schedule_type: "recurring",
     conditions: { days: [], time_range: { start: "18:00", end: "22:00" } },
-    date_from: "", date_to: "",
-    time_from: "18:00", time_to: "22:00",
+    date_from: "",
+    date_to: "",
+    time_from: "18:00",
+    time_to: "22:00",
     is_active: true,
   };
   const [ruleForm, setRuleForm] = useState({ ...emptyRule });
 
   useEffect(() => {
-    subscriptionAPI.myPlan().then(r => setPlanData(r.data)).catch(() => {});
+    subscriptionAPI
+      .myPlan()
+      .then((r) => setPlanData(r.data))
+      .catch(() => {});
   }, []);
 
   const handleUpgrade = async (planId) => {
@@ -272,8 +294,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
       const r = await subscriptionAPI.myPlan();
       setPlanData(r.data);
       toast.success("Plan upgraded!");
-    } catch (err) { toast.error(err.response?.data?.detail || "Upgrade failed"); }
-    finally { setUpgrading(false); }
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Upgrade failed");
+    } finally {
+      setUpgrading(false);
+    }
   };
 
   const loadBookings = useCallback(async (p = 1, venue = selectedVenue) => {
@@ -318,10 +343,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
     } finally {
       setLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // Reload bookings when filters change (skip initial mount — loadData handles that)
   useEffect(() => {
@@ -332,43 +359,49 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
   // Sync booking filters → URL (preserve tab + other params)
   useEffect(() => {
-    setUrlParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (statusFilter !== "all") p.set("status", statusFilter); else p.delete("status");
-      if (timeFilter !== "all") p.set("time", timeFilter); else p.delete("time");
-      if (sortOrder !== "desc") p.set("sort", sortOrder); else p.delete("sort");
-      if (bookingView !== "list") p.set("bview", bookingView); else p.delete("bview");
-      return p;
-    }, { replace: true });
+    setUrlParams(
+      (prev) => {
+        const p = new URLSearchParams(prev);
+        if (statusFilter !== "all") p.set("status", statusFilter);
+        else p.delete("status");
+        if (timeFilter !== "all") p.set("time", timeFilter);
+        else p.delete("time");
+        if (sortOrder !== "desc") p.set("sort", sortOrder);
+        else p.delete("sort");
+        if (bookingView !== "list") p.set("bview", bookingView);
+        else p.delete("bview");
+        return p;
+      },
+      { replace: true },
+    );
   }, [statusFilter, timeFilter, sortOrder, bookingView, setUrlParams]);
 
   const loadVenueTeams = useCallback(async () => {
     if (!selectedVenue) return;
     setTeamsLoading(true);
-    try { const sport = selectedVenue?.sports?.[0] || ""; const res = await teamAPI.list({ sport }); setVenueTeams(res.data?.teams || []); }
-    catch { toast.error("Failed to load teams"); } finally { setTeamsLoading(false); }
+    try {
+      const sport = selectedVenue?.sports?.[0] || "";
+      const res = await teamAPI.list({ sport });
+      setVenueTeams(res.data?.teams || []);
+    } catch {
+      toast.error("Failed to load teams");
+    } finally {
+      setTeamsLoading(false);
+    }
   }, [selectedVenue]);
 
   // Load reviews when selectedVenue changes
   useEffect(() => {
     if (selectedVenue) {
-      venueAPI.getReviews(selectedVenue.id).then(res => setVenueReviews(res.data)).catch(() => setVenueReviews([]));
+      venueAPI
+        .getReviews(selectedVenue.id)
+        .then((res) => setVenueReviews(res.data))
+        .catch(() => setVenueReviews([]));
     }
   }, [selectedVenue]);
 
-  const handleCreateVenue = async () => {
+  const handleCreateVenue = async (payload) => {
     try {
-      const payload = { ...venueForm };
-      // Compute total turfs from turf_config
-      if (payload.turf_config?.length) {
-        payload.turfs = payload.turf_config.reduce((sum, tc) => sum + tc.turfs.length, 0);
-      } else {
-        payload.turfs = 1;
-      }
-      // Compute base_price from selected base turf
-      const bt = baseTurf || { sport: payload.turf_config?.[0]?.sport, idx: 0 };
-      const baseTc = payload.turf_config?.find(tc => tc.sport === bt.sport);
-      payload.base_price = baseTc?.turfs?.[bt.idx]?.price || 2000;
       await venueAPI.create(payload);
       toast.success("Venue created!");
       setCreateVenueOpen(false);
@@ -379,18 +412,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
     }
   };
 
-  const [editSportInput, setEditSportInput] = useState("");
-  const [editAmenityInput, setEditAmenityInput] = useState("");
-
   const [venueTeams, setVenueTeams] = useState([]);
   const [teamsLoading, setTeamsLoading] = useState(false);
-
-  // Edit form helpers — reuse same factory
-  const editH = makeVenueHelpers(setEditVenueForm, setEditSportInput, setEditAmenityInput);
-  const addEditSport = editH.addSport, removeEditSport = editH.removeSport;
-  const addEditAmenity = editH.addAmenity, removeEditAmenity = editH.removeAmenity;
-  const addEditTurf = editH.addTurf, removeEditTurf = editH.removeTurf;
-  const renameEditTurf = editH.renameTurf, updateEditTurfPrice = editH.updateTurfPrice;
 
   const openEditVenue = () => {
     if (!selectedVenue) return;
@@ -407,14 +430,18 @@ function VenueOwnerDashboardContent({ defaultView }) {
       turf_config: selectedVenue.turf_config || [],
       slot_duration_minutes: selectedVenue.slot_duration_minutes || 60,
       images: selectedVenue.images || [],
+      google_maps_url: selectedVenue.google_maps_url || "",
     });
-    setEditSportInput("");
-    setEditAmenityInput("");
     // Init editBaseTurf: find turf whose price matches existing base_price
     let foundBT = null;
-    for (const tc of (selectedVenue.turf_config || [])) {
-      const idx = (tc.turfs || []).findIndex(t => t.price === selectedVenue.base_price);
-      if (idx >= 0) { foundBT = { sport: tc.sport, idx }; break; }
+    for (const tc of selectedVenue.turf_config || []) {
+      const idx = (tc.turfs || []).findIndex(
+        (t) => t.price === selectedVenue.base_price,
+      );
+      if (idx >= 0) {
+        foundBT = { sport: tc.sport, idx };
+        break;
+      }
     }
     if (!foundBT && selectedVenue.turf_config?.[0]) {
       foundBT = { sport: selectedVenue.turf_config[0].sport, idx: 0 };
@@ -423,21 +450,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
     setEditVenueOpen(true);
   };
 
-  const handleSaveVenue = async () => {
+  const handleSaveVenue = async (payload) => {
     if (!selectedVenue) return;
     setSavingVenue(true);
     try {
-      const payload = { ...editVenueForm };
-      if (payload.turf_config?.length) {
-        payload.turfs = payload.turf_config.reduce((sum, tc) => sum + tc.turfs.length, 0);
-      }
-      // Compute base_price from selected base turf
-      const bt = editBaseTurf || { sport: payload.turf_config?.[0]?.sport, idx: 0 };
-      const baseTc = payload.turf_config?.find(tc => tc.sport === bt.sport);
-      payload.base_price = baseTc?.turfs?.[bt.idx]?.price || 2000;
       const res = await venueAPI.update(selectedVenue.id, payload);
       setSelectedVenue(res.data);
-      setVenues(prev => prev.map(v => v.id === res.data.id ? res.data : v));
+      setVenues((prev) =>
+        prev.map((v) => (v.id === res.data.id ? res.data : v)),
+      );
       toast.success("Venue updated! Changes are live on the public page.");
       setEditVenueOpen(false);
     } catch (err) {
@@ -457,14 +478,25 @@ function VenueOwnerDashboardContent({ defaultView }) {
     setEditingRule(rule);
     setRuleForm({
       name: rule.name || "",
-      rule_type: rule.rule_type || (rule.action?.type === "multiplier" ? "surge" : "discount"),
+      rule_type:
+        rule.rule_type ||
+        (rule.action?.type === "multiplier" ? "surge" : "discount"),
       value_type: rule.value_type || "percent",
-      value: rule.value ?? (rule.action?.value ? Math.round(rule.action.value * 100) : 20),
+      value:
+        rule.value ??
+        (rule.action?.value ? Math.round(rule.action.value * 100) : 20),
       schedule_type: rule.schedule_type || "recurring",
-      conditions: { days: rule.conditions?.days || [], time_range: rule.conditions?.time_range || { start: "18:00", end: "22:00" } },
+      conditions: {
+        days: rule.conditions?.days || [],
+        time_range: rule.conditions?.time_range || {
+          start: "18:00",
+          end: "22:00",
+        },
+      },
       date_from: rule.date_from || "",
       date_to: rule.date_to || "",
-      time_from: rule.time_from || rule.conditions?.time_range?.start || "18:00",
+      time_from:
+        rule.time_from || rule.conditions?.time_range?.start || "18:00",
       time_to: rule.time_to || rule.conditions?.time_range?.end || "22:00",
       is_active: rule.is_active !== false,
     });
@@ -492,17 +524,25 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const handleToggleRule = async (ruleId) => {
     try {
       await venueAPI.togglePricingRule(ruleId);
-      setPricingRules(prev => prev.map(r => r.id === ruleId ? { ...r, is_active: !r.is_active } : r));
+      setPricingRules((prev) =>
+        prev.map((r) =>
+          r.id === ruleId ? { ...r, is_active: !r.is_active } : r,
+        ),
+      );
       toast.success("Rule toggled");
-    } catch (err) { toast.error("Failed to toggle rule"); }
+    } catch (err) {
+      toast.error("Failed to toggle rule");
+    }
   };
 
   const handleDeleteRule = async (ruleId) => {
     try {
       await venueAPI.deletePricingRule(ruleId);
-      setPricingRules(prev => prev.filter(r => r.id !== ruleId));
+      setPricingRules((prev) => prev.filter((r) => r.id !== ruleId));
       toast.success("Rule deleted");
-    } catch (err) { toast.error("Failed to delete rule"); }
+    } catch (err) {
+      toast.error("Failed to delete rule");
+    }
   };
 
   const handleSelectVenue = async (v) => {
@@ -516,13 +556,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
   };
 
   const toggleDay = (dayIndex) => {
-    setRuleForm(prev => {
+    setRuleForm((prev) => {
       const days = prev.conditions.days || [];
       return {
         ...prev,
         conditions: {
           ...prev.conditions,
-          days: days.includes(dayIndex) ? days.filter(d => d !== dayIndex) : [...days, dayIndex],
+          days: days.includes(dayIndex)
+            ? days.filter((d) => d !== dayIndex)
+            : [...days, dayIndex],
         },
       };
     });
@@ -533,14 +575,20 @@ function VenueOwnerDashboardContent({ defaultView }) {
     const val = parseFloat(rule.value) || 0;
     const vtype = rule.value_type || "percent";
     if (rule.rule_type === "discount") {
-      return vtype === "percent" ? Math.max(Math.round(basePrice * (1 - val / 100)), 0) : Math.max(basePrice - val, 0);
+      return vtype === "percent"
+        ? Math.max(Math.round(basePrice * (1 - val / 100)), 0)
+        : Math.max(basePrice - val, 0);
     }
     if (rule.rule_type === "surge") {
-      return vtype === "percent" ? Math.round(basePrice * (1 + val / 100)) : basePrice + val;
+      return vtype === "percent"
+        ? Math.round(basePrice * (1 + val / 100))
+        : basePrice + val;
     }
     // legacy
-    if (rule.action?.type === "multiplier") return Math.round(basePrice * (rule.action.value || 1));
-    if (rule.action?.type === "discount") return Math.round(basePrice * (1 - (rule.action.value || 0)));
+    if (rule.action?.type === "multiplier")
+      return Math.round(basePrice * (rule.action.value || 1));
+    if (rule.action?.type === "discount")
+      return Math.round(basePrice * (1 - (rule.action.value || 0)));
     return basePrice;
   };
 
@@ -567,319 +615,242 @@ function VenueOwnerDashboardContent({ defaultView }) {
   };
 
   const statusConfig = {
-    confirmed: { color: "bg-brand-500/15 text-brand-400 border-brand-500/20", label: "Confirmed" },
-    pending: { color: "bg-amber-500/15 text-amber-400 border-amber-500/20", label: "Pending" },
-    payment_pending: { color: "bg-sky-500/15 text-sky-400 border-sky-500/20", label: "Awaiting Payment" },
-    cancelled: { color: "bg-destructive/15 text-destructive border-destructive/20", label: "Cancelled" },
-    expired: { color: "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/20", label: "Expired" },
+    confirmed: {
+      color: "bg-brand-500/15 text-brand-400 border-brand-500/20",
+      label: "Confirmed",
+    },
+    pending: {
+      color: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+      label: "Pending",
+    },
+    payment_pending: {
+      color: "bg-sky-500/15 text-sky-400 border-sky-500/20",
+      label: "Awaiting Payment",
+    },
+    cancelled: {
+      color: "bg-destructive/15 text-destructive border-destructive/20",
+      label: "Cancelled",
+    },
+    expired: {
+      color:
+        "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/20",
+      label: "Expired",
+    },
   };
 
   if (loading) return <VenueOwnerDashboardSkeleton />;
 
   return (
-    <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-5 sm:py-8 pb-20 md:pb-6" data-testid="owner-dashboard"
-      style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 1.25rem)", paddingBottom: "max(env(safe-area-inset-bottom, 0px), 5rem)" }}>
+    <div
+      className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-5 sm:py-8 pb-20 md:pb-6"
+      data-testid="owner-dashboard"
+      style={{
+        paddingTop: "max(env(safe-area-inset-top, 0px), 1.25rem)",
+        paddingBottom: "max(env(safe-area-inset-bottom, 0px), 5rem)",
+      }}
+    >
       {/* Welcome Hero, Stats, Venue Selector — only on Dashboard home */}
-      {!isManageView && (<>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-4 sm:mb-10 -mx-3 sm:mx-0 rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 bg-card/50 backdrop-blur-md overflow-hidden"
-      >
-        <div className="grid md:grid-cols-3 gap-0">
-          {/* Text Content */}
-          <div className="md:col-span-2 p-4 sm:p-8 md:p-10 flex flex-col justify-center">
-            <span className="admin-section-label text-muted-foreground text-[10px] sm:text-xs">Venue Owner</span>
-            <h1 className="font-display text-lg sm:text-3xl md:text-4xl admin-page-title mt-1 sm:mt-2 truncate">
-              Welcome, <span className="text-brand-600">{user?.name}</span>
-            </h1>
-            <p className="text-muted-foreground font-semibold mt-1.5 sm:mt-3 text-xs sm:text-base">
-              Manage your venues, track revenue, and grow your sports business.
-            </p>
-            <div className="flex items-center gap-3 mt-4 sm:mt-5">
-              <Button
-                onClick={() => setCreateVenueOpen(true)}
-                className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-10 sm:h-12 px-4 sm:px-6 shrink-0 rounded-xl text-sm"
-                data-testid="create-venue-btn"
-              >
-                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" /> Add Venue
-              </Button>
+      {!isManageView && (
+        <>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 sm:mb-10 -mx-3 sm:mx-0 rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 bg-card/50 backdrop-blur-md overflow-hidden"
+          >
+            <div className="grid md:grid-cols-3 gap-0">
+              {/* Text Content */}
+              <div className="md:col-span-2 p-4 sm:p-8 md:p-10 flex flex-col justify-center">
+                <span className="admin-section-label text-muted-foreground text-[10px] sm:text-xs">
+                  Venue Owner
+                </span>
+                <h1 className="font-display text-lg sm:text-3xl md:text-4xl admin-page-title mt-1 sm:mt-2 truncate">
+                  Welcome, <span className="text-brand-600">{user?.name}</span>
+                </h1>
+                <p className="text-muted-foreground font-semibold mt-1.5 sm:mt-3 text-xs sm:text-base">
+                  Manage your venues, track revenue, and grow your sports
+                  business.
+                </p>
+                <div className="flex items-center gap-3 mt-4 sm:mt-5">
+                  <Button
+                    onClick={() => setCreateVenueOpen(true)}
+                    className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-10 sm:h-12 px-4 sm:px-6 shrink-0 rounded-xl text-sm"
+                    data-testid="create-venue-btn"
+                  >
+                    <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" />{" "}
+                    Add Venue
+                  </Button>
+                </div>
+              </div>
+              {/* Professional Image */}
+              <div className="hidden md:block relative h-full min-h-[220px]">
+                <img
+                  src={OWNER_HERO}
+                  alt="Professional team meeting"
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-card/80 to-transparent" />
+              </div>
             </div>
-          </div>
-          {/* Professional Image */}
-          <div className="hidden md:block relative h-full min-h-[220px]">
-            <img
-              src={OWNER_HERO}
-              alt="Professional team meeting"
-              className="absolute inset-0 w-full h-full object-cover"
+          </motion.div>
+
+          <ResponsiveDialog
+            open={createVenueOpen}
+            onOpenChange={(o) => {
+              setCreateVenueOpen(o);
+              if (!o) setBaseTurf(null);
+            }}
+          >
+            <ResponsiveDialogContent className="sm:max-w-2xl">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>Create New Venue</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription className="text-xs text-muted-foreground">
+                  Fill in the details below to list your venue on Lobbi.
+                </ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              <VenueForm
+                mode="create"
+                initialValues={venueForm}
+                onSubmit={handleCreateVenue}
+                isSubmitting={false}
+                baseTurf={baseTurf}
+                onBaseTurfChange={setBaseTurf}
+                onCancel={() => setCreateVenueOpen(false)}
+              />
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
+
+          {/* Stats - Athletic Stat Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
+            <StatCard
+              icon={Building2}
+              label="Total Venues"
+              value={venues.length}
+              colorClass="text-brand-600"
+              bgClass="bg-brand-600/10"
+              delay={0.1}
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-card/80 to-transparent" />
+            <StatCard
+              icon={Calendar}
+              label="Total Bookings"
+              value={totalBookings}
+              colorClass="text-violet-500"
+              bgClass="bg-violet-500/10"
+              delay={0.2}
+            />
+            <StatCard
+              icon={IndianRupee}
+              label="Total Revenue"
+              value={`₹${(totalRevenue / 1000).toFixed(1)}K`}
+              colorClass="text-amber-500"
+              bgClass="bg-amber-500/10"
+              delay={0.3}
+            />
+            <StatCard
+              icon={TrendingUp}
+              label="Avg Booking"
+              value={`₹${analytics?.avg_booking_value || 0}`}
+              colorClass="text-sky-500"
+              bgClass="bg-sky-500/10"
+              delay={0.4}
+            />
           </div>
-        </div>
-      </motion.div>
 
-      <ResponsiveDialog open={createVenueOpen} onOpenChange={(o) => { setCreateVenueOpen(o); if (!o) setBaseTurf(null); }}>
-          <ResponsiveDialogContent className="sm:max-w-lg">
-            <ResponsiveDialogHeader><ResponsiveDialogTitle>Create Venue</ResponsiveDialogTitle></ResponsiveDialogHeader>
-            <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
-              <div><Label className="text-xs text-muted-foreground">Name *</Label>
-                <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))}
-                  className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" data-testid="venue-name-input" /></div>
-              <div><Label className="text-xs text-muted-foreground">Description</Label>
-                <textarea value={venueForm.description} onChange={e => setVenueForm(p => ({ ...p, description: e.target.value }))}
-                  rows={6} placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
-                  className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand-600/50" data-testid="venue-desc-input" /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label className="text-xs text-muted-foreground">Address</Label>
-                  <Input value={venueForm.address} onChange={e => setVenueForm(p => ({ ...p, address: e.target.value }))}
-                    className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" data-testid="venue-address-input" /></div>
-                <div><Label className="text-xs text-muted-foreground">Area</Label>
-                  <Input value={venueForm.area} onChange={e => setVenueForm(p => ({ ...p, area: e.target.value }))}
-                    placeholder="Koramangala" className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" /></div>
-              </div>
-              <div><Label className="text-xs text-muted-foreground">City *</Label>
-                <Input value={venueForm.city} onChange={e => setVenueForm(p => ({ ...p, city: e.target.value }))}
-                  className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" data-testid="venue-city-input" /></div>
-
-              {/* Sports — dynamic input */}
-              <div>
-                <Label className="text-xs text-muted-foreground">Sports *</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input value={sportInput} onChange={e => setSportInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addSport(sportInput))}
-                    placeholder="Type a sport and press Enter" className="h-11 rounded-xl bg-secondary/20 border-border/40 flex-1" />
-                  <Button type="button" size="sm" variant="outline" onClick={() => addSport(sportInput)} disabled={!sportInput.trim()}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {/* Added sports chips + remaining suggestions */}
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {venueForm.sports.map(s => (
-                    <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
-                      {s}
-                      <button type="button" onClick={() => removeSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
-                    </span>
-                  ))}
-                  {SPORT_SUGGESTIONS.filter(s => !venueForm.sports.includes(s.toLowerCase())).map(s => (
-                    <button key={s} type="button" onClick={() => addSport(s)}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
-                      + {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Amenities — dynamic input */}
-              <div>
-                <Label className="text-xs text-muted-foreground">Amenities</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input value={amenityInput} onChange={e => setAmenityInput(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addAmenity(amenityInput))}
-                    placeholder="Type an amenity and press Enter" className="h-11 rounded-xl bg-secondary/20 border-border/40 flex-1" />
-                  <Button type="button" size="sm" variant="outline" onClick={() => addAmenity(amenityInput)} disabled={!amenityInput.trim()}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {/* Added amenities chips + remaining suggestions */}
-                <div className="flex flex-wrap gap-1.5 mt-1.5">
-                  {venueForm.amenities.map(a => (
-                    <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
-                      {a}
-                      <button type="button" onClick={() => removeAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
-                    </span>
-                  ))}
-                  {AMENITY_SUGGESTIONS.filter(a => !venueForm.amenities.includes(a)).map(a => (
-                    <button key={a} type="button" onClick={() => addAmenity(a)}
-                      className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
-                      + {a}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Per-sport Turf Configuration */}
-              {venueForm.turf_config.length > 0 && (
-                <div>
-                  <Label className="text-xs text-muted-foreground">Turf Configuration</Label>
-                  <div className="space-y-3 mt-1.5">
-                    {venueForm.turf_config.map(tc => (
-                      <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="admin-section-label text-brand-600">{tc.sport}</span>
-                          <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addTurfToSport(tc.sport)}>
-                            <Plus className="h-3 w-3 mr-1" /> Add Turf
-                          </Button>
-                        </div>
-                        <div className="space-y-1.5">
-                          {tc.turfs.map((t, idx) => {
-                            const isBase = baseTurf ? (baseTurf.sport === tc.sport && baseTurf.idx === idx)
-                              : (venueForm.turf_config[0]?.sport === tc.sport && idx === 0);
-                            return (
-                              <div key={idx} className="flex items-center gap-2">
-                                <label className="flex items-center gap-1 cursor-pointer shrink-0" title="Set as base price">
-                                  <input type="radio" name="base_turf_create" checked={isBase}
-                                    onChange={() => setBaseTurf({ sport: tc.sport, idx })}
-                                    className="accent-brand-600 w-3 h-3" />
-                                  <span className={`text-[10px] admin-section-label w-8 ${isBase ? "text-brand-600" : "text-transparent"}`}>BASE</span>
-                                </label>
-                                <Input value={t.name} onChange={e => renameTurf(tc.sport, idx, e.target.value)}
-                                  placeholder={`Turf ${idx + 1} name`} className="rounded-xl bg-secondary/20 border-border/40 text-xs h-8 flex-1" />
-                                <div className="flex items-center gap-1">
-                                  <span className="text-[10px] text-muted-foreground">₹</span>
-                                  <Input type="number" value={t.price ?? 2000} onChange={e => updateTurfPrice(tc.sport, idx, e.target.value)}
-                                    placeholder="Price" className="rounded-xl bg-secondary/20 border-border/40 text-xs h-8 w-20" />
-                                </div>
-                                {tc.turfs.length > 1 && (
-                                  <button type="button" onClick={() => removeTurfFromSport(tc.sport, idx)}
-                                    className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ))}
+          {/* Analytics — Revenue + Chart on Dashboard */}
+          {analytics && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mb-10"
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">
+                    Total Revenue
                   </div>
+                  <div className="text-xl sm:text-2xl font-display font-black text-brand-600 mt-1">
+                    {"\u20B9"}
+                    {totalRevenue.toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">
+                    Confirmed
+                  </div>
+                  <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">
+                    {analytics.confirmed_bookings}
+                  </div>
+                </div>
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">
+                    Cancelled
+                  </div>
+                  <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">
+                    {analytics.cancelled_bookings}
+                  </div>
+                </div>
+              </div>
+              {analytics.daily_revenue?.length > 0 && (
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
+                  <h3 className="font-display admin-heading mb-4">
+                    Revenue Trend
+                  </h3>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={analytics.daily_revenue}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="hsl(217.2, 32.6%, 17.5%)"
+                      />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }}
+                      />
+                      <YAxis
+                        tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }}
+                        width={40}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          background: "hsl(222.2, 47.4%, 11.2%)",
+                          border: "1px solid hsl(217.2, 32.6%, 17.5%)",
+                          borderRadius: 8,
+                        }}
+                        labelStyle={{ color: "hsl(210, 40%, 98%)" }}
+                      />
+                      <Bar
+                        dataKey="revenue"
+                        fill="hsl(160, 84%, 39.4%)"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
               )}
-
-              {/* Opening / Closing Hours — AM/PM */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs text-muted-foreground">Opening Hour</Label>
-                  <div className="flex gap-1.5 mt-1">
-                    <select value={to12h(venueForm.opening_hour).hour}
-                      onChange={e => setVenueForm(p => ({ ...p, opening_hour: to24h(Number(e.target.value), to12h(p.opening_hour).ampm) }))}
-                      className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                      {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
-                    </select>
-                    <select value={to12h(venueForm.opening_hour).ampm}
-                      onChange={e => setVenueForm(p => ({ ...p, opening_hour: to24h(to12h(p.opening_hour).hour, e.target.value) }))}
-                      className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground">Closing Hour</Label>
-                  <div className="flex gap-1.5 mt-1">
-                    <select value={to12h(venueForm.closing_hour).hour}
-                      onChange={e => setVenueForm(p => ({ ...p, closing_hour: to24h(Number(e.target.value), to12h(p.closing_hour).ampm) }))}
-                      className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                      {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
-                    </select>
-                    <select value={to12h(venueForm.closing_hour).ampm}
-                      onChange={e => setVenueForm(p => ({ ...p, closing_hour: to24h(to12h(p.closing_hour).hour, e.target.value) }))}
-                      className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                      <option value="AM">AM</option>
-                      <option value="PM">PM</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              {/* 30-minute booking checkbox */}
-              <div className="flex items-center gap-3 py-1">
-                <input type="checkbox" id="allow30min"
-                  checked={venueForm.slot_duration_minutes === 30}
-                  onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: e.target.checked ? 30 : 60 }))}
-                  className="h-4 w-4 rounded border-border accent-brand-600" />
-                <Label htmlFor="allow30min" className="text-xs text-muted-foreground cursor-pointer">Allow 30-minute bookings (default: 1 hour)</Label>
-              </div>
-
-              <VenueImageUpload
-                images={venueForm.images}
-                onChange={imgs => setVenueForm(p => ({ ...p, images: imgs }))}
-              />
-              <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
-            </div>
-          </ResponsiveDialogContent>
-        </ResponsiveDialog>
-
-      {/* Stats - Athletic Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
-        <StatCard
-          icon={Building2}
-          label="Total Venues"
-          value={venues.length}
-          colorClass="text-brand-600"
-          bgClass="bg-brand-600/10"
-          delay={0.1}
-        />
-        <StatCard
-          icon={Calendar}
-          label="Total Bookings"
-          value={totalBookings}
-          colorClass="text-violet-500"
-          bgClass="bg-violet-500/10"
-          delay={0.2}
-        />
-        <StatCard
-          icon={IndianRupee}
-          label="Total Revenue"
-          value={`₹${(totalRevenue / 1000).toFixed(1)}K`}
-          colorClass="text-amber-500"
-          bgClass="bg-amber-500/10"
-          delay={0.3}
-        />
-        <StatCard
-          icon={TrendingUp}
-          label="Avg Booking"
-          value={`₹${analytics?.avg_booking_value || 0}`}
-          colorClass="text-sky-500"
-          bgClass="bg-sky-500/10"
-          delay={0.4}
-        />
-      </div>
-
-      {/* Analytics — Revenue + Chart on Dashboard */}
-      {analytics && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-brand-600 mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
-            </div>
-            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
-            </div>
-            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
-              <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
-              <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
-            </div>
-          </div>
-          {analytics.daily_revenue?.length > 0 && (
-            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
-              <h3 className="font-display admin-heading mb-4">Revenue Trend</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={analytics.daily_revenue}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(217.2, 32.6%, 17.5%)" />
-                  <XAxis dataKey="date" tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} />
-                  <YAxis tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }} width={40} />
-                  <Tooltip contentStyle={{ background: "hsl(222.2, 47.4%, 11.2%)", border: "1px solid hsl(217.2, 32.6%, 17.5%)", borderRadius: 8 }}
-                    labelStyle={{ color: "hsl(210, 40%, 98%)" }} />
-                  <Bar dataKey="revenue" fill="hsl(160, 84%, 39.4%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            </motion.div>
           )}
-        </motion.div>
+        </>
       )}
-      </>)}
 
       {/* Venue selector + actions on manage view */}
       {isManageView && venues.length > 0 && (
         <div className="mb-6 space-y-3">
           <div className="flex gap-2 items-center overflow-x-auto pb-1">
-            {venues.map(v => (
-              <button key={v.id} onClick={() => handleSelectVenue(v)}
-                className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl admin-btn text-[10px] sm:text-xs uppercase tracking-wide transition-all border border-border/40 flex items-center gap-1.5 sm:gap-2 min-h-[44px] active:scale-[0.97] ${selectedVenue?.id === v.id ? "bg-brand-600/20 border-brand-600 text-brand-600" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"}`}>
+            {venues.map((v) => (
+              <button
+                key={v.id}
+                onClick={() => handleSelectVenue(v)}
+                className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl admin-btn text-[10px] sm:text-xs uppercase tracking-wide transition-all border border-border/40 flex items-center gap-1.5 sm:gap-2 min-h-[44px] active:scale-[0.97] ${selectedVenue?.id === v.id ? "bg-brand-600/20 border-brand-600 text-brand-600" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"}`}
+              >
                 {v.name}
                 {selectedVenue?.id === v.id && (
-                  <span onClick={e => { e.stopPropagation(); openEditVenue(); }}
-                    className="p-1 rounded-md hover:bg-brand-600/20 transition-colors" title="Edit venue">
+                  <span
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditVenue();
+                    }}
+                    className="p-1 rounded-md hover:bg-brand-600/20 transition-colors"
+                    title="Edit venue"
+                  >
                     <Pencil className="h-3 w-3" />
                   </span>
                 )}
@@ -888,12 +859,22 @@ function VenueOwnerDashboardContent({ defaultView }) {
           </div>
           {selectedVenue?.slug && (
             <div className="flex items-center gap-2 flex-wrap">
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                onClick={() => window.open(`/venue/${selectedVenue.slug}`, "_blank")}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() =>
+                  window.open(`/venue/${selectedVenue.slug}`, "_blank")
+                }
+              >
                 <ExternalLink className="w-3.5 h-3.5" /> View Public Page
               </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5"
-                onClick={() => setShowVenueQR(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs gap-1.5"
+                onClick={() => setShowVenueQR(true)}
+              >
                 <QrCode className="w-3.5 h-3.5" /> QR Code
               </Button>
             </div>
@@ -902,87 +883,128 @@ function VenueOwnerDashboardContent({ defaultView }) {
       )}
 
       {isManageView && (
-      <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="owner-tabs">
-        <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 bg-background/95 backdrop-blur-md">
-        <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-3 sm:space-x-6 md:space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar border-b border-border/40 pb-1 sm:pb-2">
-          <TabsTrigger value="bookings" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-bookings">Bookings<TabsIndicator /></TabsTrigger>
-          <TabsTrigger value="slots" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-slots">
-            <CalendarDays className="h-3 w-3 mr-1" />Slots<TabsIndicator />
-          </TabsTrigger>
-          <TabsTrigger value="reviews" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-reviews">
-            <Star className="h-3 w-3 mr-1" />Reviews<TabsIndicator />
-          </TabsTrigger>
-          <TabsTrigger value="pricing" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-pricing">Pricing<TabsIndicator /></TabsTrigger>
-          <TabsTrigger value="checkin" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-checkin">
-            <QrCode className="h-3 w-3 mr-1" />Check-in<TabsIndicator />
-          </TabsTrigger>
-          <TabsTrigger value="plan" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-plan">Plan<TabsIndicator /></TabsTrigger>
-        </TabsList>
-        </div>
-        <div className="mb-4 sm:mb-6" />
-
-        {/* Bookings - Enhanced with filters, detail view, and timeline */}
-        <TabsContent value="bookings">
-          {/* Quick Stats Bar */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
-            {[
-              { label: "Total", value: bookingStats.total, color: "text-foreground" },
-              { label: "Confirmed", value: bookingStats.confirmed, color: "text-brand-400" },
-              { label: "Pending", value: bookingStats.pending, color: "text-amber-400" },
-              { label: "Cancelled", value: bookingStats.cancelled, color: "text-destructive" },
-              { label: "Upcoming", value: bookingStats.upcoming, color: "text-sky-400" },
-            ].map(s => (
-              <div key={s.label} className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
-                <div className={`text-base sm:text-lg font-display font-black ${s.color}`}>{s.value}</div>
-                <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{s.label}</div>
-              </div>
-            ))}
+        <Tabs
+          value={activeTab}
+          onValueChange={setActiveTab}
+          data-testid="owner-tabs"
+        >
+          <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 bg-background/95 backdrop-blur-md">
+            <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-3 sm:space-x-6 md:space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar border-b border-border/40 pb-1 sm:pb-2">
+              <TabsTrigger
+                value="bookings"
+                className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]"
+                data-testid="tab-bookings"
+              >
+                Bookings
+                <TabsIndicator />
+              </TabsTrigger>
+              <TabsTrigger
+                value="slots"
+                className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]"
+                data-testid="tab-slots"
+              >
+                <CalendarDays className="h-3 w-3 mr-1" />
+                Slots
+                <TabsIndicator />
+              </TabsTrigger>
+              <TabsTrigger
+                value="reviews"
+                className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]"
+                data-testid="tab-reviews"
+              >
+                <Star className="h-3 w-3 mr-1" />
+                Reviews
+                <TabsIndicator />
+              </TabsTrigger>
+              <TabsTrigger
+                value="pricing"
+                className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]"
+                data-testid="tab-pricing"
+              >
+                Pricing
+                <TabsIndicator />
+              </TabsTrigger>
+              <TabsTrigger
+                value="checkin"
+                className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]"
+                data-testid="tab-checkin"
+              >
+                <QrCode className="h-3 w-3 mr-1" />
+                Check-in
+                <TabsIndicator />
+              </TabsTrigger>
+              <TabsTrigger
+                value="plan"
+                className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]"
+                data-testid="tab-plan"
+              >
+                Plan
+                <TabsIndicator />
+              </TabsTrigger>
+            </TabsList>
           </div>
+          <div className="mb-4 sm:mb-6" />
 
-          {/* View Toggle: List / Timeline */}
-          <div className="inline-flex bg-secondary/40 p-1 rounded-xl mb-4">
-            {[{ key: "list", label: "List" }, { key: "timeline", label: "Timeline" }].map(v => (
-              <button key={v.key} onClick={() => setBookingView(v.key)}
-                className={`flex-1 px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${bookingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-                {v.label}
-              </button>
-            ))}
-          </div>
+          {/* Bookings - Enhanced with filters, detail view, and timeline */}
+          <TabsContent value="bookings">
+            {/* Quick Stats Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
+              {[
+                {
+                  label: "Total",
+                  value: bookingStats.total,
+                  color: "text-foreground",
+                },
+                {
+                  label: "Confirmed",
+                  value: bookingStats.confirmed,
+                  color: "text-brand-400",
+                },
+                {
+                  label: "Pending",
+                  value: bookingStats.pending,
+                  color: "text-amber-400",
+                },
+                {
+                  label: "Cancelled",
+                  value: bookingStats.cancelled,
+                  color: "text-destructive",
+                },
+                {
+                  label: "Upcoming",
+                  value: bookingStats.upcoming,
+                  color: "text-sky-400",
+                },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center"
+                  data-testid={`booking-stat-${s.label.toLowerCase()}`}
+                >
+                  <div
+                    className={`text-base sm:text-lg font-display font-black ${s.color}`}
+                  >
+                    {s.value}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
+                    {s.label}
+                  </div>
+                </div>
+              ))}
+            </div>
 
-          {/* ── List View ── */}
-          {bookingView === "list" && (
-            <>
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-2 mb-4" data-testid="booking-filters">
-                <div className="flex items-center gap-1.5">
-                  <Filter className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground font-mono uppercase">Filters</span>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  {["all", "upcoming", "past"].map(f => (
-                    <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
-                      className={`transition-all min-h-[44px] active:scale-[0.97] ${timeFilter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-3 sm:px-5 py-1.5 sm:py-2 admin-btn text-xs" : "bg-card border border-border/40 text-muted-foreground rounded-full px-3 sm:px-5 py-1.5 sm:py-2 admin-btn text-xs hover:text-foreground"}`}>
-                      {f === "all" ? "All" : f === "upcoming" ? "Upcoming" : "Past"}
-                    </button>
-                  ))}
-                </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[120px] sm:w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="confirmed">Confirmed</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="payment_pending">Awaiting Pay</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
-                    <SelectItem value="expired">Expired</SelectItem>
-                  </SelectContent>
-                </Select>
-                <button onClick={() => setSortOrder(s => s === "desc" ? "asc" : "desc")}
-                  className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-secondary/50 text-xs text-muted-foreground hover:text-foreground transition-all"
-                  data-testid="sort-toggle">
-                  <ArrowUpDown className="h-3 w-3" /> {sortOrder === "desc" ? "Newest" : "Oldest"}
+            {/* View Toggle: List / Timeline */}
+            <div className="inline-flex bg-secondary/40 p-1 rounded-xl mb-4">
+              {[
+                { key: "list", label: "List" },
+                { key: "timeline", label: "Timeline" },
+              ].map((v) => (
+                <button
+                  key={v.key}
+                  onClick={() => setBookingView(v.key)}
+                  className={`flex-1 px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${bookingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                >
+                  {v.label}
                 </button>
               </div>
 
@@ -1345,70 +1367,108 @@ function VenueOwnerDashboardContent({ defaultView }) {
               <p className="text-xs text-muted-foreground mt-0.5">See what Lobbians say about your venue</p>
             </div>
 
-            {venueReviews.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <MessageSquare className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
-                <p className="text-sm">No reviews yet for {selectedVenue?.name || "this venue"}</p>
-              </div>
-            ) : (
-              <>
-                {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  {(() => {
-                    const avg = venueReviews.length > 0 ? venueReviews.reduce((s, r) => s + (r.rating || 0), 0) / venueReviews.length : 0;
-                    const r5 = venueReviews.filter(r => r.rating === 5).length;
-                    return (
-                      <>
-                        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-600 fill-brand-600" />
-                            <span className="font-display font-black text-lg sm:text-xl text-brand-600">{avg.toFixed(1)}</span>
-                          </div>
-                          <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
-                        </div>
-                        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
-                          <div className="font-display font-black text-lg sm:text-xl text-foreground">{venueReviews.length}</div>
-                          <div className="text-[10px] text-muted-foreground font-mono uppercase">Total</div>
-                        </div>
-                        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
-                          <div className="font-display font-black text-lg sm:text-xl text-brand-400">{r5}</div>
-                          <div className="text-[10px] text-muted-foreground font-mono uppercase">5-Star</div>
-                        </div>
-                      </>
-                    );
-                  })()}
+              {venueReviews.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-3 text-muted-foreground" />
+                  <p className="text-sm">
+                    No reviews yet for {selectedVenue?.name || "this venue"}
+                  </p>
                 </div>
-
-                {/* Review Cards */}
-                <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
-                  {venueReviews.map(r => (
-                    <div key={r.id} className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border sm:border-border/40 sm:shadow-sm p-3 sm:p-4 active:scale-[0.97] transition-transform" data-testid={`owner-review-${r.id}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center text-xs font-bold text-brand-600">
-                            {r.user_name?.[0]?.toUpperCase()}
-                          </div>
-                          <div>
-                            <span className="admin-name text-sm">{r.user_name}</span>
-                            <div className="flex gap-0.5 mt-0.5">
-                              {[1, 2, 3, 4, 5].map(s => (
-                                <Star key={s} className={`h-3 w-3 ${s <= r.rating ? "text-brand-600 fill-brand-600" : "text-muted-foreground/40"}`} />
-                              ))}
+              ) : (
+                <>
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-3 mb-4">
+                    {(() => {
+                      const avg =
+                        venueReviews.length > 0
+                          ? venueReviews.reduce(
+                              (s, r) => s + (r.rating || 0),
+                              0,
+                            ) / venueReviews.length
+                          : 0;
+                      const r5 = venueReviews.filter(
+                        (r) => r.rating === 5,
+                      ).length;
+                      return (
+                        <>
+                          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-600 fill-brand-600" />
+                              <span className="font-display font-black text-lg sm:text-xl text-brand-600">
+                                {avg.toFixed(1)}
+                              </span>
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                              Avg Rating
                             </div>
                           </div>
+                          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
+                            <div className="font-display font-black text-lg sm:text-xl text-foreground">
+                              {venueReviews.length}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                              Total
+                            </div>
+                          </div>
+                          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
+                            <div className="font-display font-black text-lg sm:text-xl text-brand-400">
+                              {r5}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                              5-Star
+                            </div>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+
+                  {/* Review Cards */}
+                  <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
+                    {venueReviews.map((r) => (
+                      <div
+                        key={r.id}
+                        className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border sm:border-border/40 sm:shadow-sm p-3 sm:p-4 active:scale-[0.97] transition-transform"
+                        data-testid={`owner-review-${r.id}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center text-xs font-bold text-brand-600">
+                              {r.user_name?.[0]?.toUpperCase()}
+                            </div>
+                            <div>
+                              <span className="admin-name text-sm">
+                                {r.user_name}
+                              </span>
+                              <div className="flex gap-0.5 mt-0.5">
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star
+                                    key={s}
+                                    className={`h-3 w-3 ${s <= r.rating ? "text-brand-600 fill-brand-600" : "text-muted-foreground/40"}`}
+                                  />
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground shrink-0">
+                            {new Date(r.created_at).toLocaleDateString(
+                              "en-IN",
+                              { day: "numeric", month: "short" },
+                            )}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
-                          {new Date(r.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}
-                        </span>
+                        {r.comment && (
+                          <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
+                            {r.comment}
+                          </p>
+                        )}
                       </div>
-                      {r.comment && <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{r.comment}</p>}
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </TabsContent>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
 
         {/* Pricing Rules - Enhanced P2 */}
         <TabsContent value="pricing">
@@ -1748,203 +1808,24 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
       {/* Edit Venue Dialog */}
       <ResponsiveDialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
-        <ResponsiveDialogContent className="sm:max-w-lg">
+        <ResponsiveDialogContent className="sm:max-w-2xl">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>Edit Venue Details</ResponsiveDialogTitle>
             <ResponsiveDialogDescription className="text-xs text-muted-foreground pt-1">
-              Changes will be pushed <span className="text-brand-600 font-semibold">live</span> to all viewers of the public page instantly.
+              Changes will be pushed{" "}
+              <span className="text-brand-600 font-semibold">live</span> to all
+              viewers of the public page instantly.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
-          <div className="space-y-3 pt-1">
-            <div>
-              <Label className="text-xs text-muted-foreground">Venue Name</Label>
-              <Input value={editVenueForm.name || ""} onChange={e => setEditVenueForm(p => ({ ...p, name: e.target.value }))}
-                className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">Description</Label>
-              <textarea
-                value={editVenueForm.description || ""}
-                onChange={e => setEditVenueForm(p => ({ ...p, description: e.target.value }))}
-                rows={6}
-                placeholder={"Football:\n- Wearing football studs recommended\n- Metal studs not allowed\n\nCricket:\n- Sports equipment provided\n- Barefoot play prohibited"}
-                className="mt-1 w-full bg-background border border-border rounded-md px-3 py-2 text-sm resize-y min-h-[100px] focus:outline-none focus:ring-2 focus:ring-brand-600/50"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Address</Label>
-                <Input value={editVenueForm.address || ""} onChange={e => setEditVenueForm(p => ({ ...p, address: e.target.value }))}
-                  className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Area</Label>
-                <Input value={editVenueForm.area || ""} onChange={e => setEditVenueForm(p => ({ ...p, area: e.target.value }))}
-                  placeholder="Koramangala" className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
-              </div>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground">City</Label>
-              <Input value={editVenueForm.city || ""} onChange={e => setEditVenueForm(p => ({ ...p, city: e.target.value }))}
-                className="mt-1 h-11 rounded-xl bg-secondary/20 border-border/40" />
-            </div>
-
-            {/* Sports — dynamic input */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Sports</Label>
-              <div className="flex gap-2 mt-1">
-                <Input value={editSportInput} onChange={e => setEditSportInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addEditSport(editSportInput))}
-                  placeholder="Type a sport and press Enter" className="h-11 rounded-xl bg-secondary/20 border-border/40 flex-1" />
-                <Button type="button" size="sm" variant="outline" onClick={() => addEditSport(editSportInput)} disabled={!editSportInput.trim()}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {(editVenueForm.sports || []).map(s => (
-                  <span key={s} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
-                    {s}
-                    <button type="button" onClick={() => removeEditSport(s)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
-                  </span>
-                ))}
-                {SPORT_SUGGESTIONS.filter(s => !(editVenueForm.sports || []).includes(s.toLowerCase())).map(s => (
-                  <button key={s} type="button" onClick={() => addEditSport(s)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
-                    + {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Amenities — dynamic input */}
-            <div>
-              <Label className="text-xs text-muted-foreground">Amenities</Label>
-              <div className="flex gap-2 mt-1">
-                <Input value={editAmenityInput} onChange={e => setEditAmenityInput(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && (e.preventDefault(), addEditAmenity(editAmenityInput))}
-                  placeholder="Type an amenity and press Enter" className="h-11 rounded-xl bg-secondary/20 border-border/40 flex-1" />
-                <Button type="button" size="sm" variant="outline" onClick={() => addEditAmenity(editAmenityInput)} disabled={!editAmenityInput.trim()}>
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-1.5">
-                {(editVenueForm.amenities || []).map(a => (
-                  <span key={a} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-brand-600 text-white border border-brand-600">
-                    {a}
-                    <button type="button" onClick={() => removeEditAmenity(a)} className="hover:opacity-70"><X className="h-3 w-3" /></button>
-                  </span>
-                ))}
-                {AMENITY_SUGGESTIONS.filter(a => !(editVenueForm.amenities || []).includes(a)).map(a => (
-                  <button key={a} type="button" onClick={() => addEditAmenity(a)}
-                    className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-secondary/50 text-muted-foreground border border-border hover:border-brand-600/40 transition-colors">
-                    + {a}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Per-sport Turf Configuration */}
-            {(editVenueForm.turf_config || []).length > 0 && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Turf Configuration</Label>
-                <div className="space-y-3 mt-1.5">
-                  {(editVenueForm.turf_config || []).map(tc => (
-                    <div key={tc.sport} className="border border-border rounded-lg p-3 bg-secondary/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="admin-section-label text-brand-600">{tc.sport}</span>
-                        <Button type="button" size="sm" variant="ghost" className="h-6 text-[10px] px-2" onClick={() => addEditTurf(tc.sport)}>
-                          <Plus className="h-3 w-3 mr-1" /> Add Turf
-                        </Button>
-                      </div>
-                      <div className="space-y-1.5">
-                        {tc.turfs.map((t, idx) => {
-                          const isBase = editBaseTurf ? (editBaseTurf.sport === tc.sport && editBaseTurf.idx === idx)
-                            : ((editVenueForm.turf_config || [])[0]?.sport === tc.sport && idx === 0);
-                          return (
-                            <div key={idx} className="flex items-center gap-2">
-                              <label className="flex items-center gap-1 cursor-pointer shrink-0" title="Set as base price">
-                                <input type="radio" name="base_turf_edit" checked={isBase}
-                                  onChange={() => setEditBaseTurf({ sport: tc.sport, idx })}
-                                  className="accent-brand-600 w-3 h-3" />
-                                <span className={`text-[10px] admin-section-label w-8 ${isBase ? "text-brand-600" : "text-transparent"}`}>BASE</span>
-                              </label>
-                              <Input value={t.name} onChange={e => renameEditTurf(tc.sport, idx, e.target.value)}
-                                placeholder={`Turf ${idx + 1} name`} className="rounded-xl bg-secondary/20 border-border/40 text-xs h-8 flex-1" />
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] text-muted-foreground">₹</span>
-                                <Input type="number" value={t.price ?? 2000} onChange={e => updateEditTurfPrice(tc.sport, idx, e.target.value)}
-                                  placeholder="Price" className="rounded-xl bg-secondary/20 border-border/40 text-xs h-8 w-20" />
-                              </div>
-                              {tc.turfs.length > 1 && (
-                                <button type="button" onClick={() => removeEditTurf(tc.sport, idx)}
-                                  className="text-destructive hover:opacity-70"><Trash2 className="h-3.5 w-3.5" /></button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Opening / Closing Hours — AM/PM */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-xs text-muted-foreground">Opening Hour</Label>
-                <div className="flex gap-1.5 mt-1">
-                  <select value={to12h(editVenueForm.opening_hour ?? 6).hour}
-                    onChange={e => setEditVenueForm(p => ({ ...p, opening_hour: to24h(Number(e.target.value), to12h(p.opening_hour ?? 6).ampm) }))}
-                    className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                    {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
-                  </select>
-                  <select value={to12h(editVenueForm.opening_hour ?? 6).ampm}
-                    onChange={e => setEditVenueForm(p => ({ ...p, opening_hour: to24h(to12h(p.opening_hour ?? 6).hour, e.target.value) }))}
-                    className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Closing Hour</Label>
-                <div className="flex gap-1.5 mt-1">
-                  <select value={to12h(editVenueForm.closing_hour ?? 23).hour}
-                    onChange={e => setEditVenueForm(p => ({ ...p, closing_hour: to24h(Number(e.target.value), to12h(p.closing_hour ?? 23).ampm) }))}
-                    className="flex-1 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                    {[12,1,2,3,4,5,6,7,8,9,10,11].map(h => <option key={h} value={h}>{h}</option>)}
-                  </select>
-                  <select value={to12h(editVenueForm.closing_hour ?? 23).ampm}
-                    onChange={e => setEditVenueForm(p => ({ ...p, closing_hour: to24h(to12h(p.closing_hour ?? 23).hour, e.target.value) }))}
-                    className="w-16 h-9 rounded-md border border-border bg-background px-2 text-sm">
-                    <option value="AM">AM</option>
-                    <option value="PM">PM</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* 30-minute booking checkbox */}
-            <div className="flex items-center gap-3 py-1">
-              <input type="checkbox" id="edit-allow30min"
-                checked={(editVenueForm.slot_duration_minutes || 60) === 30}
-                onChange={e => setEditVenueForm(p => ({ ...p, slot_duration_minutes: e.target.checked ? 30 : 60 }))}
-                className="h-4 w-4 rounded border-border accent-brand-600" />
-              <Label htmlFor="edit-allow30min" className="text-xs text-muted-foreground cursor-pointer">Allow 30-minute bookings (default: 1 hour)</Label>
-            </div>
-
-            <VenueImageUpload
-              images={editVenueForm.images || []}
-              onChange={imgs => setEditVenueForm(p => ({ ...p, images: imgs }))}
-            />
-            <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setEditVenueOpen(false)}>Cancel</Button>
-              <Button className="flex-1 bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveVenue} disabled={savingVenue}>
-                {savingVenue ? "Saving..." : "Save & Go Live"}
-              </Button>
-            </div>
-          </div>
+          <VenueForm
+            mode="edit"
+            initialValues={editVenueForm}
+            onSubmit={handleSaveVenue}
+            isSubmitting={savingVenue}
+            baseTurf={editBaseTurf}
+            onBaseTurfChange={setEditBaseTurf}
+            onCancel={() => setEditVenueOpen(false)}
+          />
         </ResponsiveDialogContent>
       </ResponsiveDialog>
 
@@ -1966,10 +1847,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
               <div className="text-center">
                 <p className="font-semibold">{selectedVenue.name}</p>
-                <p className="text-sm text-muted-foreground font-mono">/venue/{selectedVenue.slug}</p>
+                <p className="text-sm text-muted-foreground font-mono">
+                  /venue/{selectedVenue.slug}
+                </p>
               </div>
               <p className="text-xs text-center text-muted-foreground">
-                Share this QR code with your customers so they can quickly access your venue's public page.
+                Share this QR code with your customers so they can quickly
+                access your venue's public page.
               </p>
               <div className="flex gap-2 w-full">
                 <Button
@@ -1984,7 +1868,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   <Copy className="w-4 h-4 mr-2" />
                   Copy Link
                 </Button>
-                <Button className="flex-1" onClick={() => setShowVenueQR(false)}>Done</Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => setShowVenueQR(false)}
+                >
+                  Done
+                </Button>
               </div>
             </div>
           )}
@@ -2020,16 +1909,20 @@ function VenueAnalyticsPanel({ venueId }) {
   const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   const insightIcon = (type) => {
-    if (type === "peak")    return <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />;
-    if (type === "low")     return <TrendingDown className="h-4 w-4 text-blue-400 shrink-0" />;
-    if (type === "loyalty") return <Users className="h-4 w-4 text-amber-400 shrink-0" />;
-    if (type === "warning") return <Zap className="h-4 w-4 text-destructive shrink-0" />;
+    if (type === "peak")
+      return <TrendingUp className="h-4 w-4 text-brand-400 shrink-0" />;
+    if (type === "low")
+      return <TrendingDown className="h-4 w-4 text-blue-400 shrink-0" />;
+    if (type === "loyalty")
+      return <Users className="h-4 w-4 text-amber-400 shrink-0" />;
+    if (type === "warning")
+      return <Zap className="h-4 w-4 text-destructive shrink-0" />;
     return <Lightbulb className="h-4 w-4 text-muted-foreground shrink-0" />;
   };
 
   const insightBg = (type) => {
-    if (type === "peak")    return "bg-brand-500/10 border-brand-500/20";
-    if (type === "low")     return "bg-blue-500/10 border-blue-500/20";
+    if (type === "peak") return "bg-brand-500/10 border-brand-500/20";
+    if (type === "low") return "bg-blue-500/10 border-blue-500/20";
     if (type === "loyalty") return "bg-amber-500/10 border-amber-500/20";
     if (type === "warning") return "bg-destructive/10 border-destructive/20";
     return "bg-secondary/50 border-border";
@@ -2052,14 +1945,15 @@ function VenueAnalyticsPanel({ venueId }) {
     );
   }
 
-  const activeHeatmap = selectedTurf === "all"
-    ? insights.heatmap
-    : (insights.heatmap_by_turf?.[selectedTurf] || []);
+  const activeHeatmap =
+    selectedTurf === "all"
+      ? insights.heatmap
+      : insights.heatmap_by_turf?.[selectedTurf] || [];
 
   // Aggregate totals per day and per hour
   const dayTotals = Array(7).fill(0);
   const hourTotalsMap = {};
-  activeHeatmap.forEach(h => {
+  activeHeatmap.forEach((h) => {
     dayTotals[h.dow] = (dayTotals[h.dow] || 0) + h.count;
     hourTotalsMap[h.hour] = (hourTotalsMap[h.hour] || 0) + h.count;
   });
@@ -2068,24 +1962,36 @@ function VenueAnalyticsPanel({ venueId }) {
     .map(([h, c]) => ({ hour: Number(h), count: c }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 6); // top 6 busiest hours
-  const maxHour = activeHourEntries.length > 0 ? Math.max(...activeHourEntries.map(e => e.count), 1) : 1;
+  const maxHour =
+    activeHourEntries.length > 0
+      ? Math.max(...activeHourEntries.map((e) => e.count), 1)
+      : 1;
 
   const periodLabel = period === 0 ? "all time" : `last ${period} days`;
   const totalBookings = insights.confirmed_count ?? 0;
 
   return (
     <div className="space-y-4" data-testid="analytics-panel">
-
       {/* Header: summary + period pills */}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <p className="text-sm text-muted-foreground">
-          <span className="text-foreground font-bold text-base">{totalBookings}</span>
-          {" "}bookings in the {periodLabel}
+          <span className="text-foreground font-bold text-base">
+            {totalBookings}
+          </span>{" "}
+          bookings in the {periodLabel}
         </p>
         <div className="inline-flex bg-secondary/40 p-1 rounded-xl">
-          {[{ label: "30d", days: 30 }, { label: "90d", days: 90 }, { label: "180d", days: 180 }, { label: "All", days: 0 }].map(p => (
-            <button key={p.days} onClick={() => setPeriod(p.days)}
-              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${period === p.days ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          {[
+            { label: "30d", days: 30 },
+            { label: "90d", days: 90 },
+            { label: "180d", days: 180 },
+            { label: "All", days: 0 },
+          ].map((p) => (
+            <button
+              key={p.days}
+              onClick={() => setPeriod(p.days)}
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${period === p.days ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
               {p.label}
             </button>
           ))}
@@ -2119,13 +2025,20 @@ function VenueAnalyticsPanel({ venueId }) {
             sub: "avg days before slot",
             icon: <Calendar className="h-4 w-4 text-purple-400" />,
           },
-        ].map(s => (
-          <div key={s.label} className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 flex flex-col gap-1">
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 flex flex-col gap-1"
+          >
             <div className="flex items-center gap-1.5">
               {s.icon}
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                {s.label}
+              </p>
             </div>
-            <p className="font-display font-bold text-xl sm:text-2xl text-foreground leading-none">{s.value}</p>
+            <p className="font-display font-bold text-xl sm:text-2xl text-foreground leading-none">
+              {s.value}
+            </p>
             <p className="text-[10px] text-muted-foreground">{s.sub}</p>
           </div>
         ))}
@@ -2133,7 +2046,6 @@ function VenueAnalyticsPanel({ venueId }) {
 
       {/* Charts */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
         {/* Busiest Days */}
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
@@ -2141,18 +2053,22 @@ function VenueAnalyticsPanel({ venueId }) {
             {insights.turf_list?.length > 1 && (
               <select
                 value={selectedTurf}
-                onChange={e => setSelectedTurf(e.target.value)}
+                onChange={(e) => setSelectedTurf(e.target.value)}
                 className="text-[10px] bg-secondary/50 border border-border rounded px-2 py-0.5 text-foreground"
               >
                 <option value="all">All Turfs</option>
-                {insights.turf_list.map(t => (
-                  <option key={t.turf_number} value={String(t.turf_number)}>{t.name}</option>
+                {insights.turf_list.map((t) => (
+                  <option key={t.turf_number} value={String(t.turf_number)}>
+                    {t.name}
+                  </option>
                 ))}
               </select>
             )}
           </div>
-          {dayTotals.every(v => v === 0) ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">No bookings yet.</p>
+          {dayTotals.every((v) => v === 0) ? (
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              No bookings yet.
+            </p>
           ) : (
             <div className="space-y-2">
               {DAYS.map((day, dow) => {
@@ -2160,13 +2076,21 @@ function VenueAnalyticsPanel({ venueId }) {
                 const pct = Math.round((count / maxDay) * 100);
                 return (
                   <div key={day} className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-7 shrink-0">{day}</span>
+                    <span className="text-xs text-muted-foreground w-7 shrink-0">
+                      {day}
+                    </span>
                     <div className="flex-1 bg-secondary/30 rounded-full h-5 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-brand-500/70 flex items-center justify-end pr-2 transition-all duration-500"
-                        style={{ width: `${Math.max(pct, count > 0 ? 8 : 0)}%` }}
+                        style={{
+                          width: `${Math.max(pct, count > 0 ? 8 : 0)}%`,
+                        }}
                       >
-                        {count > 0 && <span className="text-[10px] font-bold text-white">{count}</span>}
+                        {count > 0 && (
+                          <span className="text-[10px] font-bold text-white">
+                            {count}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -2180,7 +2104,9 @@ function VenueAnalyticsPanel({ venueId }) {
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3">
           <h3 className="admin-heading text-sm">⏰ Busiest Hours</h3>
           {activeHourEntries.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">No bookings yet.</p>
+            <p className="text-xs text-muted-foreground py-4 text-center">
+              No bookings yet.
+            </p>
           ) : (
             <div className="space-y-2">
               {activeHourEntries.map(({ hour, count }) => {
@@ -2190,13 +2116,17 @@ function VenueAnalyticsPanel({ venueId }) {
                 const label = `${h12} ${ampm}`;
                 return (
                   <div key={hour} className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground w-10 shrink-0">{label}</span>
+                    <span className="text-xs text-muted-foreground w-10 shrink-0">
+                      {label}
+                    </span>
                     <div className="flex-1 bg-secondary/30 rounded-full h-5 overflow-hidden">
                       <div
                         className="h-full rounded-full bg-emerald-500/70 flex items-center justify-end pr-2 transition-all duration-500"
                         style={{ width: `${Math.max(pct, 8)}%` }}
                       >
-                        <span className="text-[10px] font-bold text-white">{count}</span>
+                        <span className="text-[10px] font-bold text-white">
+                          {count}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -2215,7 +2145,10 @@ function VenueAnalyticsPanel({ venueId }) {
             Insights
           </h3>
           {insights.insights.map((ins, i) => (
-            <div key={i} className={`rounded-lg p-3 border flex items-start gap-3 ${insightBg(ins.type)}`}>
+            <div
+              key={i}
+              className={`rounded-lg p-3 border flex items-start gap-3 ${insightBg(ins.type)}`}
+            >
               {insightIcon(ins.type)}
               <p className="text-xs leading-relaxed">{ins.text}</p>
             </div>
@@ -2226,10 +2159,11 @@ function VenueAnalyticsPanel({ venueId }) {
   );
 }
 
-
 // ─── Slot Availability Panel ────────────────────────────────────────────────
 function SlotAvailabilityPanel({ venueId }) {
-  const [slotDate, setSlotDate] = useState(new Date().toISOString().split("T")[0]);
+  const [slotDate, setSlotDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [slots, setSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
@@ -2246,37 +2180,53 @@ function SlotAvailabilityPanel({ venueId }) {
     }
   }, [venueId, slotDate]);
 
-  useEffect(() => { loadSlots(); }, [loadSlots]);
+  useEffect(() => {
+    loadSlots();
+  }, [loadSlots]);
 
   const turfs = useMemo(() => {
     const map = new Map();
-    slots.forEach(s => {
+    slots.forEach((s) => {
       if (!map.has(s.turf_number)) {
-        map.set(s.turf_number, { turf_number: s.turf_number, turf_name: s.turf_name || `Turf #${s.turf_number}`, sport: s.sport });
+        map.set(s.turf_number, {
+          turf_number: s.turf_number,
+          turf_name: s.turf_name || `Turf #${s.turf_number}`,
+          sport: s.sport,
+        });
       }
     });
-    return Array.from(map.values()).sort((a, b) => a.turf_number - b.turf_number);
+    return Array.from(map.values()).sort(
+      (a, b) => a.turf_number - b.turf_number,
+    );
   }, [slots]);
 
   const timeSlots = useMemo(() => {
     const seen = new Set();
     return slots
-      .filter(s => { if (seen.has(s.start_time)) return false; seen.add(s.start_time); return true; })
+      .filter((s) => {
+        if (seen.has(s.start_time)) return false;
+        seen.add(s.start_time);
+        return true;
+      })
       .sort((a, b) => a.start_time.localeCompare(b.start_time))
-      .map(s => ({ start_time: s.start_time, end_time: s.end_time }));
+      .map((s) => ({ start_time: s.start_time, end_time: s.end_time }));
   }, [slots]);
 
   const slotMap = useMemo(() => {
     const map = {};
-    slots.forEach(s => { map[`${s.start_time}-${s.turf_number}`] = s; });
+    slots.forEach((s) => {
+      map[`${s.start_time}-${s.turf_number}`] = s;
+    });
     return map;
   }, [slots]);
 
   const stats = useMemo(() => {
     const total = slots.length;
-    const available = slots.filter(s => s.status === "available").length;
-    const booked = slots.filter(s => s.status === "booked").length;
-    const held = slots.filter(s => s.status === "on_hold" || s.status === "locked_by_you").length;
+    const available = slots.filter((s) => s.status === "available").length;
+    const booked = slots.filter((s) => s.status === "booked").length;
+    const held = slots.filter(
+      (s) => s.status === "on_hold" || s.status === "locked_by_you",
+    ).length;
     return { total, available, booked, held };
   }, [slots]);
 
@@ -2294,25 +2244,42 @@ function SlotAvailabilityPanel({ venueId }) {
     on_hold: "bg-amber-500/15 text-amber-500",
     locked_by_you: "bg-amber-500/15 text-amber-500",
   };
-  const statusLabels = { available: "Open", booked: "Booked", on_hold: "Held", locked_by_you: "Held" };
+  const statusLabels = {
+    available: "Open",
+    booked: "Booked",
+    on_hold: "Held",
+    locked_by_you: "Held",
+  };
 
   return (
     <div className="space-y-5">
       {/* Header + Date Nav */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h3 className="font-display admin-heading text-base sm:text-lg">Slot Availability</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">View turf availability for any date</p>
+          <h3 className="font-display admin-heading text-base sm:text-lg">
+            Slot Availability
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            View turf availability for any date
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => shiftDate(-1)}
-            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-colors">
+          <button
+            onClick={() => shiftDate(-1)}
+            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-colors"
+          >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          <Input type="date" value={slotDate} onChange={e => setSlotDate(e.target.value)}
-            className="w-40 h-11 rounded-xl bg-secondary/20 border-border/40 text-xs" />
-          <button onClick={() => shiftDate(1)}
-            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-colors">
+          <Input
+            type="date"
+            value={slotDate}
+            onChange={(e) => setSlotDate(e.target.value)}
+            className="w-40 h-11 rounded-xl bg-secondary/20 border-border/40 text-xs"
+          />
+          <button
+            onClick={() => shiftDate(1)}
+            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-colors"
+          >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
@@ -2321,21 +2288,37 @@ function SlotAvailabilityPanel({ venueId }) {
       {/* Stats Bar */}
       <div className="flex flex-wrap gap-3">
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-          <p className="font-display font-black text-base sm:text-lg">{stats.total}</p>
-          <p className="text-[10px] text-muted-foreground admin-section-label">Total</p>
+          <p className="font-display font-black text-base sm:text-lg">
+            {stats.total}
+          </p>
+          <p className="text-[10px] text-muted-foreground admin-section-label">
+            Total
+          </p>
         </div>
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-          <p className="font-display font-black text-base sm:text-lg text-emerald-500">{stats.available}</p>
-          <p className="text-[10px] text-muted-foreground admin-section-label">Available</p>
+          <p className="font-display font-black text-base sm:text-lg text-emerald-500">
+            {stats.available}
+          </p>
+          <p className="text-[10px] text-muted-foreground admin-section-label">
+            Available
+          </p>
         </div>
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-          <p className="font-display font-black text-base sm:text-lg text-red-500">{stats.booked}</p>
-          <p className="text-[10px] text-muted-foreground admin-section-label">Booked</p>
+          <p className="font-display font-black text-base sm:text-lg text-red-500">
+            {stats.booked}
+          </p>
+          <p className="text-[10px] text-muted-foreground admin-section-label">
+            Booked
+          </p>
         </div>
         {stats.held > 0 && (
           <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-            <p className="font-display font-black text-base sm:text-lg text-amber-500">{stats.held}</p>
-            <p className="text-[10px] text-muted-foreground admin-section-label">Held</p>
+            <p className="font-display font-black text-base sm:text-lg text-amber-500">
+              {stats.held}
+            </p>
+            <p className="text-[10px] text-muted-foreground admin-section-label">
+              Held
+            </p>
           </div>
         )}
       </div>
@@ -2344,44 +2327,72 @@ function SlotAvailabilityPanel({ venueId }) {
       {loadingSlots ? (
         <div className="flex items-center justify-center py-16 gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
-          <span className="text-sm text-muted-foreground">Loading slots...</span>
+          <span className="text-sm text-muted-foreground">
+            Loading slots...
+          </span>
         </div>
       ) : slots.length === 0 ? (
         <div className="text-center py-16">
           <CalendarDays className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-          <p className="text-sm admin-label text-muted-foreground">No slots for this date</p>
-          <p className="text-xs text-muted-foreground/60 mt-1">Try selecting a different date</p>
+          <p className="text-sm admin-label text-muted-foreground">
+            No slots for this date
+          </p>
+          <p className="text-xs text-muted-foreground/60 mt-1">
+            Try selecting a different date
+          </p>
         </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-border">
-          <div className="inline-grid min-w-full" style={{ gridTemplateColumns: `80px repeat(${turfs.length}, minmax(100px, 1fr))` }}>
+          <div
+            className="inline-grid min-w-full"
+            style={{
+              gridTemplateColumns: `80px repeat(${turfs.length}, minmax(100px, 1fr))`,
+            }}
+          >
             {/* Header row */}
             <div className="sticky left-0 z-10 bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-[10px] admin-section-label text-muted-foreground border-b border-r border-border admin-th">
               Time
             </div>
-            {turfs.map(t => (
-              <div key={t.turf_number} className="bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-center border-b border-r border-border last:border-r-0">
+            {turfs.map((t) => (
+              <div
+                key={t.turf_number}
+                className="bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-center border-b border-r border-border last:border-r-0"
+              >
                 <p className="text-xs admin-name truncate">{t.turf_name}</p>
-                <p className="text-[10px] text-muted-foreground capitalize">{t.sport}</p>
+                <p className="text-[10px] text-muted-foreground capitalize">
+                  {t.sport}
+                </p>
               </div>
             ))}
 
             {/* Data rows */}
-            {timeSlots.map(time => (
+            {timeSlots.map((time) => (
               <>
-                <div key={time.start_time} className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-mono text-muted-foreground border-b border-r border-border/50 flex items-center">
+                <div
+                  key={time.start_time}
+                  className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-mono text-muted-foreground border-b border-r border-border/50 flex items-center"
+                >
                   {fmt12h(time.start_time)}
                 </div>
-                {turfs.map(turf => {
-                  const slot = slotMap[`${time.start_time}-${turf.turf_number}`];
+                {turfs.map((turf) => {
+                  const slot =
+                    slotMap[`${time.start_time}-${turf.turf_number}`];
                   const status = slot?.status || "available";
                   const style = statusStyles[status] || statusStyles.available;
                   return (
-                    <div key={`${time.start_time}-${turf.turf_number}`}
+                    <div
+                      key={`${time.start_time}-${turf.turf_number}`}
                       className={`px-2 py-2 text-center border-b border-r border-border/50 last:border-r-0 ${style}`}
-                      title={`${turf.turf_name} | ${fmt12h(time.start_time)} - ${fmt12h(time.end_time)} | ${statusLabels[status] || status} | ₹${slot?.price || 0}`}>
-                      <div className="text-[11px] admin-label">{statusLabels[status] || status}</div>
-                      {slot?.price != null && <div className="text-[10px] opacity-60">₹{slot.price}</div>}
+                      title={`${turf.turf_name} | ${fmt12h(time.start_time)} - ${fmt12h(time.end_time)} | ${statusLabels[status] || status} | ₹${slot?.price || 0}`}
+                    >
+                      <div className="text-[11px] admin-label">
+                        {statusLabels[status] || status}
+                      </div>
+                      {slot?.price != null && (
+                        <div className="text-[10px] opacity-60">
+                          ₹{slot.price}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2393,7 +2404,6 @@ function SlotAvailabilityPanel({ venueId }) {
     </div>
   );
 }
-
 
 // ─── Venue QR Check-in Panel ─────────────────────────────────────────────────
 function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
@@ -2407,9 +2417,11 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
   const scannerInstanceRef = useRef(null);
 
   const today = new Date().toISOString().slice(0, 10);
-  const todayBookings = bookings.filter(b => b.date === today && b.status === "confirmed");
-  const checkedIn = todayBookings.filter(b => b.checked_in);
-  const notCheckedIn = todayBookings.filter(b => !b.checked_in);
+  const todayBookings = bookings.filter(
+    (b) => b.date === today && b.status === "confirmed",
+  );
+  const checkedIn = todayBookings.filter((b) => b.checked_in);
+  const notCheckedIn = todayBookings.filter((b) => !b.checked_in);
 
   const handleVerify = async (code) => {
     const qrData = (code || "").trim();
@@ -2426,7 +2438,10 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
         setTimeout(() => setScanMode("attendance"), 2000);
       }
     } catch (err) {
-      setResult({ error: true, message: err.response?.data?.detail || "Verification failed" });
+      setResult({
+        error: true,
+        message: err.response?.data?.detail || "Verification failed",
+      });
     }
     setVerifying(false);
   };
@@ -2443,8 +2458,10 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
         await scanner.start(
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 250, height: 250 } },
-          (decodedText) => { handleVerify(decodedText); },
-          () => {}
+          (decodedText) => {
+            handleVerify(decodedText);
+          },
+          () => {},
         );
       } catch (err) {
         setCameraError(
@@ -2452,7 +2469,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             ? "Camera permission denied. Please allow camera access."
             : err?.toString?.().includes("NotFound")
               ? "No camera found on this device."
-              : "Could not start camera. Try manual entry."
+              : "Could not start camera. Try manual entry.",
         );
         setCameraActive(false);
       }
@@ -2466,29 +2483,51 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
         scannerInstanceRef.current.clear();
         scannerInstanceRef.current = null;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
     setCameraActive(false);
   };
 
   useEffect(() => {
-    return () => { stopCamera(); };
+    return () => {
+      stopCamera();
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-6">
       {/* Mode tabs */}
       <div className="inline-flex bg-secondary/40 p-1 rounded-xl overflow-x-auto hide-scrollbar">
-        <button onClick={() => { setScanMode("camera"); stopCamera(); }}
-          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <Camera className="h-3.5 w-3.5" /><span className="hidden sm:inline">Camera</span> Scan
+        <button
+          onClick={() => {
+            setScanMode("camera");
+            stopCamera();
+          }}
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Camera className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Camera</span> Scan
         </button>
-        <button onClick={() => { setScanMode("upload"); stopCamera(); }}
-          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <Upload className="h-3.5 w-3.5" /><span className="hidden sm:inline">Upload</span> QR
+        <button
+          onClick={() => {
+            setScanMode("upload");
+            stopCamera();
+          }}
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Upload className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Upload</span> QR
         </button>
-        <button onClick={() => { setScanMode("attendance"); stopCamera(); }}
-          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <ClipboardList className="h-3.5 w-3.5" />Attendance
+        <button
+          onClick={() => {
+            setScanMode("attendance");
+            stopCamera();
+          }}
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <ClipboardList className="h-3.5 w-3.5" />
+          Attendance
           {todayBookings.length > 0 && (
             <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
               {checkedIn.length}/{todayBookings.length}
@@ -2505,9 +2544,12 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
               <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
             </div>
             <div>
-              <h3 className="font-display admin-heading text-sm sm:text-base">Scan Lobbian's QR Code</h3>
+              <h3 className="font-display admin-heading text-sm sm:text-base">
+                Scan Lobbian's QR Code
+              </h3>
               <p className="text-xs text-muted-foreground">
-                Point your camera at the Lobbian's phone to verify check-in at {venueName || "this venue"}.
+                Point your camera at the Lobbian's phone to verify check-in at{" "}
+                {venueName || "this venue"}.
               </p>
             </div>
           </div>
@@ -2516,21 +2558,41 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             <div className="text-center">
               <div className="w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 flex flex-col items-center justify-center mb-4 border border-dashed border-border">
                 <Camera className="h-12 w-12 text-muted-foreground mb-3" />
-                <p className="text-sm text-muted-foreground mb-1">Camera preview will appear here</p>
-                {cameraError && <p className="text-xs text-destructive mt-2 px-4">{cameraError}</p>}
+                <p className="text-sm text-muted-foreground mb-1">
+                  Camera preview will appear here
+                </p>
+                {cameraError && (
+                  <p className="text-xs text-destructive mt-2 px-4">
+                    {cameraError}
+                  </p>
+                )}
               </div>
-              <Button className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={startCamera}>
+              <Button
+                className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
+                onClick={startCamera}
+              >
                 <Camera className="h-4 w-4 mr-2" /> Start Camera Scanner
               </Button>
             </div>
           ) : (
             <div className="text-center">
-              <div id="venue-qr-reader" ref={scannerRef} className="w-full max-w-sm mx-auto rounded-xl overflow-hidden mb-4" />
+              <div
+                id="venue-qr-reader"
+                ref={scannerRef}
+                className="w-full max-w-sm mx-auto rounded-xl overflow-hidden mb-4"
+              />
               <div className="flex items-center justify-center gap-2 mb-2">
                 <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
-                <span className="text-xs text-muted-foreground admin-label">Scanning... point at QR code</span>
+                <span className="text-xs text-muted-foreground admin-label">
+                  Scanning... point at QR code
+                </span>
               </div>
-              <Button variant="outline" size="sm" onClick={stopCamera} className="text-xs">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={stopCamera}
+                className="text-xs"
+              >
                 <XCircle className="h-3.5 w-3.5 mr-1" /> Stop Camera
               </Button>
             </div>
@@ -2546,8 +2608,12 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
               <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
             </div>
             <div>
-              <h3 className="font-display admin-heading text-sm sm:text-base">Upload QR Image</h3>
-              <p className="text-xs text-muted-foreground">Upload a screenshot or photo of the Lobbian's QR code.</p>
+              <h3 className="font-display admin-heading text-sm sm:text-base">
+                Upload QR Image
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Upload a screenshot or photo of the Lobbian's QR code.
+              </p>
             </div>
           </div>
           <div className="space-y-3">
@@ -2609,22 +2675,32 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-brand-600" />
               </div>
               <div className="min-w-0">
-                <h3 className="font-display admin-heading text-xs sm:text-sm truncate">Today's Attendance — {venueName}</h3>
+                <h3 className="font-display admin-heading text-xs sm:text-sm truncate">
+                  Today's Attendance — {venueName}
+                </h3>
                 <p className="text-[10px] text-muted-foreground">{today}</p>
               </div>
             </div>
             {todayBookings.length > 0 && (
               <div className="text-right">
-                <div className="font-display font-black text-xl text-brand-600">{checkedIn.length}/{todayBookings.length}</div>
-                <div className="text-[10px] text-muted-foreground admin-label">Checked In</div>
+                <div className="font-display font-black text-xl text-brand-600">
+                  {checkedIn.length}/{todayBookings.length}
+                </div>
+                <div className="text-[10px] text-muted-foreground admin-label">
+                  Checked In
+                </div>
               </div>
             )}
           </div>
 
           {todayBookings.length > 0 && (
             <div className="w-full h-2 bg-secondary rounded-full overflow-hidden mb-4">
-              <div className="h-full bg-brand-600 rounded-full transition-all duration-500"
-                style={{ width: `${(checkedIn.length / todayBookings.length) * 100}%` }} />
+              <div
+                className="h-full bg-brand-600 rounded-full transition-all duration-500"
+                style={{
+                  width: `${(checkedIn.length / todayBookings.length) * 100}%`,
+                }}
+              />
             </div>
           )}
 
@@ -2635,38 +2711,68 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             </div>
           ) : (
             <div className="space-y-2">
-              {notCheckedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/50 active:scale-[0.97] transition-transform">
+              {notCheckedIn.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/50 active:scale-[0.97] transition-transform"
+                >
                   <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
                     <UserX className="h-4 w-4 text-amber-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="admin-name text-sm truncate">{b.host_name || b.booked_by_name || "Lobbian"}</span>
-                      {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
+                      <span className="admin-name text-sm truncate">
+                        {b.host_name || b.booked_by_name || "Lobbian"}
+                      </span>
+                      {b.sport && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] capitalize shrink-0"
+                        >
+                          {b.sport}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       {fmt12h(b.start_time)} - {fmt12h(b.end_time)} · Turf #{b.turf_number || 1}
                     </div>
                   </div>
-                  <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">Pending</Badge>
+                  <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
+                    Pending
+                  </Badge>
                 </div>
               ))}
-              {checkedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 active:scale-[0.97] transition-transform">
+              {checkedIn.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 active:scale-[0.97] transition-transform"
+                >
                   <div className="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center shrink-0">
                     <UserCheck className="h-4 w-4 text-brand-400" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="admin-name text-sm truncate">{b.host_name || b.booked_by_name || "Lobbian"}</span>
-                      {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
+                      <span className="admin-name text-sm truncate">
+                        {b.host_name || b.booked_by_name || "Lobbian"}
+                      </span>
+                      {b.sport && (
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] capitalize shrink-0"
+                        >
+                          {b.sport}
+                        </Badge>
+                      )}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
                       {fmt12h(b.start_time)} - {fmt12h(b.end_time)} · Turf #{b.turf_number || 1}
                       {b.checkin_time && (
                         <span className="ml-2 text-brand-400">
-                          at {new Date(b.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          at{" "}
+                          {new Date(b.checkin_time).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
                         </span>
                       )}
                     </div>
@@ -2683,29 +2789,46 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Result */}
       {scanMode !== "attendance" && result && (
-        <div className={`rounded-xl border-2 p-4 sm:p-6 text-center ${
-          result.error ? "border-destructive/50 bg-destructive/5"
-            : result.already_checked_in ? "border-amber-500/50 bg-amber-500/5"
-            : "border-brand-500/50 bg-brand-500/5"
-        }`}>
+        <div
+          className={`rounded-xl border-2 p-4 sm:p-6 text-center ${
+            result.error
+              ? "border-destructive/50 bg-destructive/5"
+              : result.already_checked_in
+                ? "border-amber-500/50 bg-amber-500/5"
+                : "border-brand-500/50 bg-brand-500/5"
+          }`}
+        >
           {result.error ? (
             <>
               <XCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-destructive" />
-              <p className="font-display admin-heading text-base sm:text-lg text-destructive">Verification Failed</p>
-              <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
+              <p className="font-display admin-heading text-base sm:text-lg text-destructive">
+                Verification Failed
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {result.message}
+              </p>
             </>
           ) : result.already_checked_in ? (
             <>
               <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-amber-400" />
-              <p className="font-display admin-heading text-base sm:text-lg text-amber-400">Already Checked In</p>
-              <p className="text-sm text-muted-foreground mt-1">{result.player_name} has already checked in.</p>
+              <p className="font-display admin-heading text-base sm:text-lg text-amber-400">
+                Already Checked In
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {result.player_name} has already checked in.
+              </p>
             </>
           ) : (
             <>
               <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-brand-400" />
-              <p className="font-display admin-heading text-base sm:text-lg text-brand-400">Check-in Successful!</p>
+              <p className="font-display admin-heading text-base sm:text-lg text-brand-400">
+                Check-in Successful!
+              </p>
               <p className="text-sm text-muted-foreground mt-2">
-                <span className="admin-name text-foreground">{result.player_name}</span> is checked in
+                <span className="admin-name text-foreground">
+                  {result.player_name}
+                </span>{" "}
+                is checked in
               </p>
               {result.booking && (
                 <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">

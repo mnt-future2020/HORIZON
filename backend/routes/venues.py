@@ -13,6 +13,20 @@ import re
 import json
 import whatsapp_service
 
+
+def extract_map_src(iframe_html: str) -> str:
+    """Extract 'src' URL from a Google Maps iframe or return the URL if already clean."""
+    if not iframe_html:
+        return ""
+    # Case: full <iframe>...</iframe>
+    match = re.search(r'src=["\']([^"\']+)["\']', iframe_html)
+    if match:
+        return match.group(1)
+    # Case: just the URL (likely already cleaned or just the src value)
+    if iframe_html.startswith("http"):
+        return iframe_html
+    return ""
+
 router = APIRouter()
 logger = logging.getLogger("horizon")
 
@@ -378,6 +392,8 @@ async def create_venue(input: VenueCreate, user=Depends(get_current_user)):
     # Use sent base_price if valid, else compute from min turf price
     if not data.get("base_price") or data["base_price"] <= 0:
         data["base_price"] = min_turf_price(data)
+    if data.get("google_maps_url"):
+        data["google_maps_url"] = extract_map_src(data["google_maps_url"])
     venue = {
         "id": str(uuid.uuid4()),
         "owner_id": user["id"],
@@ -413,6 +429,8 @@ async def update_venue(venue_id: str, input: VenueUpdate, user=Depends(get_curre
     if "name" in updates:
         base_slug = generate_slug(updates["name"])
         updates["slug"] = await unique_slug(base_slug, exclude_id=venue_id)
+    if updates.get("google_maps_url"):
+        updates["google_maps_url"] = extract_map_src(updates["google_maps_url"])
     if updates:
         await db.venues.update_one({"id": venue_id}, {"$set": updates})
     updated = await db.venues.find_one({"id": venue_id}, {"_id": 0})
@@ -420,7 +438,7 @@ async def update_venue(venue_id: str, input: VenueUpdate, user=Depends(get_curre
     public_fields = ["id", "name", "slug", "description", "sports", "address", "city", "area",
                      "amenities", "images", "base_price", "rating", "total_reviews",
                      "total_bookings", "turfs", "turf_config", "opening_hour", "closing_hour",
-                     "slot_duration_minutes", "lat", "lng", "status"]
+                     "slot_duration_minutes", "lat", "lng", "status", "google_maps_url"]
     safe_venue = {k: updated.get(k) for k in public_fields if k in updated}
     await venue_manager.broadcast(venue_id, {"type": "venue_update", "venue": safe_venue})
     return updated

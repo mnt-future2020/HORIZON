@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { socialAPI, chatAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -83,12 +96,12 @@ export default function BookmarksPage() {
   const [hasMore, setHasMore] = useState(false);
   const [nextCursor, setNextCursor] = useState(null);
 
-  // View & Filters
-  const [viewMode, setViewMode] = useState("grid"); // "grid" | "list"
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortOrder, setSortOrder] = useState("newest"); // "newest" | "oldest"
-  const [filterType, setFilterType] = useState("all"); // "all" | "media" | "text"
-  const [showSearch, setShowSearch] = useState(false);
+  // View & Filters — initialized from URL
+  const [viewMode, setViewMode] = useState(() => getInitParam("view") || "grid");
+  const [searchQuery, setSearchQuery] = useState(() => getInitParam("q") || "");
+  const [sortOrder, setSortOrder] = useState(() => getInitParam("sort") || "newest");
+  const [filterType, setFilterType] = useState(() => getInitParam("filter") || "all");
+  const [showSearch, setShowSearch] = useState(() => !!getInitParam("q"));
 
   // Post detail modal
   const [activePost, setActivePost] = useState(null);
@@ -403,7 +416,7 @@ export default function BookmarksPage() {
         {posts.length > 0 && (
           <div className="flex items-center gap-2 sm:gap-3 mb-5 overflow-x-auto pb-1 scrollbar-hide">
             <button
-              onClick={() => setFilterType("all")}
+              onClick={() => { setFilterType("all"); replaceParams({ filter: null }); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
                 filterType === "all"
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/25"
@@ -414,7 +427,7 @@ export default function BookmarksPage() {
               All ({posts.length})
             </button>
             <button
-              onClick={() => setFilterType("media")}
+              onClick={() => { setFilterType("media"); replaceParams({ filter: "media" }); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
                 filterType === "media"
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/25"
@@ -425,7 +438,7 @@ export default function BookmarksPage() {
               Media ({mediaCount})
             </button>
             <button
-              onClick={() => setFilterType("text")}
+              onClick={() => { setFilterType("text"); replaceParams({ filter: "text" }); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs sm:text-sm font-bold whitespace-nowrap transition-all ${
                 filterType === "text"
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/25"
@@ -455,12 +468,12 @@ export default function BookmarksPage() {
                     <input
                       ref={searchInputRef}
                       value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onChange={(e) => { setSearchQuery(e.target.value); replaceParams({ q: e.target.value || null }); }}
                       placeholder="Search saved posts..."
                       className="w-full h-11 bg-card border border-border/40 rounded-full pl-10 pr-10 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 outline-none transition-all placeholder:text-muted-foreground/60"
                     />
                     <button
-                      onClick={() => { setShowSearch(false); setSearchQuery(""); }}
+                      onClick={() => { setShowSearch(false); setSearchQuery(""); replaceParams({ q: null }); }}
                       className="absolute right-3 top-1/2 -translate-y-1/2 h-6 w-6 rounded-full hover:bg-secondary/50 flex items-center justify-center"
                     >
                       <X className="h-3.5 w-3.5 text-muted-foreground" />
@@ -480,7 +493,7 @@ export default function BookmarksPage() {
 
             {/* Sort Toggle */}
             <button
-              onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
+              onClick={() => { const next = sortOrder === "newest" ? "oldest" : "newest"; setSortOrder(next); replaceParams({ sort: next === "newest" ? null : next }); }}
               className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all ${
                 sortOrder === "oldest"
                   ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
@@ -494,7 +507,7 @@ export default function BookmarksPage() {
             {/* View Toggle */}
             <div className="h-11 flex rounded-xl border border-border/40 overflow-hidden bg-card">
               <button
-                onClick={() => setViewMode("grid")}
+                onClick={() => { setViewMode("grid"); replaceParams({ view: null }); }}
                 className={`w-11 flex items-center justify-center transition-all ${
                   viewMode === "grid"
                     ? "bg-brand-600 text-white"
@@ -505,7 +518,7 @@ export default function BookmarksPage() {
                 <Grid3X3 className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setViewMode("list")}
+                onClick={() => { setViewMode("list"); replaceParams({ view: "list" }); }}
                 className={`w-11 flex items-center justify-center transition-all ${
                   viewMode === "list"
                     ? "bg-brand-600 text-white"

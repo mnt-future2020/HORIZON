@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { notificationAPI } from "@/lib/api";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
@@ -20,7 +33,7 @@ import { NotificationsSkeleton } from "@/components/SkeletonLoader";
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(() => getInitParam("filter") || "all");
   const navigate = useNavigate();
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -142,7 +155,7 @@ export default function NotificationsPage() {
               key={f.key}
               variant={filter === f.key ? "athletic" : "outline"}
               size="sm"
-              onClick={() => setFilter(f.key)}
+              onClick={() => { setFilter(f.key); replaceParams({ filter: f.key === "all" ? null : f.key }); }}
               className="font-bold uppercase tracking-wide text-xs"
             >
               {f.label}
