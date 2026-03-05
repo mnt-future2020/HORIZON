@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { coachingAPI } from "@/lib/api";
+import { fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -231,7 +232,7 @@ export default function CoachSettingsPage() {
                         {daySlots.map(slot => (
                           <div key={slot.id} className="flex items-center gap-2 bg-secondary/30 rounded-xl px-3 py-1.5 text-xs admin-btn">
                             <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span>{slot.start_time} - {slot.end_time}</span>
+                            <span>{fmt12h(slot.start_time)} - {fmt12h(slot.end_time)}</span>
                             {(slot.sports || []).map(s => (
                               <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>
                             ))}

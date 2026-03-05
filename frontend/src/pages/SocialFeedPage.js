@@ -133,22 +133,32 @@ export default function SocialFeedPage() {
   const storiesRef = useRef(null);
   const reactionPickerRef = useRef(null);
   const restoredRef = useRef(false); // prevent double-load on re-render
+  const feedAbortRef = useRef(null); // abort in-flight feed requests on tab switch
 
   const loadFeed = useCallback(
     async (cursor = null, tab = feedTab) => {
+      // Abort previous in-flight request
+      if (feedAbortRef.current) feedAbortRef.current.abort();
+      const controller = new AbortController();
+      feedAbortRef.current = controller;
       try {
-        const res = await socialAPI.getFeed(tab, cursor);
+        const res = await socialAPI.getFeed(tab, cursor, { signal: controller.signal });
         const data = res.data || {};
         const newPosts = data.posts || [];
         if (!cursor) {
           setPosts(newPosts);
         } else {
-          setPosts((prev) => [...prev, ...newPosts]);
+          setPosts((prev) => {
+            const existing = new Set(prev.map((p) => p.id));
+            return [...prev, ...newPosts.filter((p) => !existing.has(p.id))];
+          });
         }
         setNextCursor(data.next_cursor || null);
         setHasMore(data.has_more || false);
-      } catch {
-        toast.error("Failed to load feed");
+      } catch (err) {
+        if (err?.name !== "AbortError" && err?.code !== "ERR_CANCELED") {
+          toast.error("Failed to load feed");
+        }
       } finally {
         setLoading(false);
       }
@@ -229,7 +239,7 @@ export default function SocialFeedPage() {
           cursor: urlCursor,
           scrollY: window.scrollY,
         }));
-        safeSessionSet("feedPosts", JSON.stringify(posts));
+        safeSessionSet("feedPosts", JSON.stringify(posts.slice(0, 50)));
       }
     };
   }, [posts]);
@@ -261,13 +271,13 @@ export default function SocialFeedPage() {
       (async () => {
         try {
           const allFresh = [];
-          let cursor = null;
+          let refreshCursor = null;
           while (allFresh.length < numToRefresh) {
-            const res = await socialAPI.getFeed(feedTab, cursor);
+            const res = await socialAPI.getFeed(feedTab, refreshCursor);
             const data = res.data || {};
             allFresh.push(...(data.posts || []));
             if (!data.has_more || !data.next_cursor || allFresh.length >= numToRefresh) break;
-            cursor = data.next_cursor;
+            refreshCursor = data.next_cursor;
           }
           const freshMap = Object.fromEntries(allFresh.map((p) => [p.id, p]));
           setPosts((prev) =>
@@ -279,7 +289,7 @@ export default function SocialFeedPage() {
           );
         } catch {}
       })();
-      Promise.all([loadStories(), loadEngagement(), loadSuggested(), loadAlgoPlayers(), loadEngScore()]);
+      Promise.all([loadStories(), loadEngagement(), loadSuggested(), loadAlgoPlayers(), loadEngScore()]).catch(() => {});
       return;
     }
 
@@ -293,7 +303,7 @@ export default function SocialFeedPage() {
       loadSuggested(),
       loadAlgoPlayers(),
       loadEngScore(),
-    ]);
+    ]).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Instagram-style: clicking Feed nav button while on feed → scroll top + refresh
@@ -403,13 +413,13 @@ export default function SocialFeedPage() {
         if (p.id !== postId) return p;
         const reactions = { ...(p.reactions || {}) };
         if (p.my_reaction === reaction) {
-          reactions[reaction] = Math.max(0, (reactions[reaction] || 1) - 1);
+          reactions[reaction] = Math.max(0, (reactions[reaction] || 0) - 1);
           return { ...p, my_reaction: null, reactions };
         }
         if (p.my_reaction)
           reactions[p.my_reaction] = Math.max(
             0,
-            (reactions[p.my_reaction] || 1) - 1,
+            (reactions[p.my_reaction] || 0) - 1,
           );
         reactions[reaction] = (reactions[reaction] || 0) + 1;
         return { ...p, my_reaction: reaction, reactions };
@@ -426,6 +436,9 @@ export default function SocialFeedPage() {
     try {
       await socialAPI.deletePost(postId);
       setPosts((prev) => prev.filter((p) => p.id !== postId));
+      setComments((prev) => { const c = { ...prev }; delete c[postId]; return c; });
+      setCommentPages((prev) => { const c = { ...prev }; delete c[postId]; return c; });
+      setExpandedComments((prev) => { const s = new Set(prev); s.delete(postId); return s; });
       toast.success("Post deleted");
     } catch {
       toast.error("Failed to delete");
@@ -582,8 +595,10 @@ export default function SocialFeedPage() {
   const [shareResults, setShareResults] = useState([]);
   const [shareSending, setShareSending] = useState(null); // user id being sent to
 
+  const shareFollowingLoaded = useRef(false);
   useEffect(() => {
-    if (sharePost && user?.id) {
+    if (sharePost && user?.id && !shareFollowingLoaded.current) {
+      shareFollowingLoaded.current = true;
       socialAPI
         .getFollowing(user.id)
         .then((r) => { const d = r.data || {}; setShareFollowing(d.users || d || []); })
@@ -716,6 +731,9 @@ export default function SocialFeedPage() {
     const newSet = new Set(expandedComments);
     if (newSet.has(postId)) {
       newSet.delete(postId);
+      // Reset cursor so re-expand fetches fresh comments
+      setCommentPages((prev) => { const c = { ...prev }; delete c[postId]; return c; });
+      setComments((prev) => { const c = { ...prev }; delete c[postId]; return c; });
     } else {
       newSet.add(postId);
       if (!comments[postId]) {

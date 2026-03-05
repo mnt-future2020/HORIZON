@@ -32,7 +32,15 @@ async def seed_demo_data():
     # --- Platform Settings ---
     await db.platform_settings.insert_one({
         "key": "platform",
-        "payment_gateway": {"provider": "razorpay", "key_id": "", "key_secret": "", "is_live": False},
+        "payment_gateway": {
+            "provider": "razorpay",
+            "key_id": "",
+            "key_secret": "",
+            "webhook_secret": "",
+            "account_webhook_secret": "",
+            "transfer_webhook_secret": "",
+            "is_live": False,
+        },
         "booking_commission_pct": 10,
         "coaching_commission_pct": 10,
         "tournament_commission_pct": 10,

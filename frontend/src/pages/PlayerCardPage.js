@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { fmt12h } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -170,7 +171,7 @@ export default function PlayerCardPage() {
     setPostsLoading(true);
     promises.push(
       socialAPI
-        .getUserPosts(targetId, 1)
+        .getUserPosts(targetId)
         .then((res) => setUserPosts(res.data?.posts || []))
         .catch(() => {})
         .finally(() => setPostsLoading(false)),
@@ -269,7 +270,7 @@ export default function PlayerCardPage() {
           currency: "INR",
           order_id: session.razorpay_order_id,
           name: card.name || "Coaching Session",
-          description: `${session.sport} · ${session.date} · ${session.start_time}`,
+          description: `${session.sport} · ${session.date} · ${fmt12h(session.start_time)}`,
           handler: async (response) => {
             try {
               await coachingAPI.verifyPayment(session.id, response);

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { fmt12h } from "@/lib/utils";
 
 export default function CoachingSection({
   card,
@@ -393,12 +394,12 @@ export default function CoachingSection({
                   }`}
                 >
                   <span className={slot.available ? "" : "line-through"}>
-                    {slot.start_time}
+                    {fmt12h(slot.start_time)}
                   </span>
                   <span
                     className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-brand-500/70" : "text-muted-foreground"}`}
                   >
-                    {slot.end_time}
+                    {fmt12h(slot.end_time)}
                   </span>
                   {!slot.available && (
                     <span className="text-[10px] text-red-400/70 mt-0.5">
@@ -459,7 +460,7 @@ export default function CoachingSection({
                   month: "short",
                 }).format(new Date(selectedDate))}
                 {" · "}
-                {selectedSlot.start_time}–{selectedSlot.end_time}
+                {fmt12h(selectedSlot.start_time)}–{fmt12h(selectedSlot.end_time)}
                 {bookingSport && (
                   <>
                     {" "}

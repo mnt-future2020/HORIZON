@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query, Request
 from typing import Optional, List
 from pydantic import BaseModel as PydanticBaseModel
 from datetime import datetime, timezone, timedelta
-from database import db, redis_client, db_retry
+from database import db, client, redis_client, db_retry
 from auth import get_current_user
 from tz import now_ist
 from models import SocialPostCreate
@@ -19,7 +19,7 @@ import asyncio
 import re as _re
 from services.algorithms import rank_feed_posts, compute_trending_scores
 
-# In-memory trending fallback (used only when Redis is unavailable)
+# In-memory trending fallback (single-worker only; Redis is primary cache)
 _trending_cache: dict = {"posts": [], "expires": 0.0}
 
 router = APIRouter()
@@ -207,19 +207,53 @@ async def get_feed(
         ).limit(limit).to_list(limit)
         next_cursor = posts[-1]["created_at"] if posts else None
     else:
-        # "for_you" — ranked feed uses integer offset to avoid duplicate on re-rank
-        query = {"$or": [{"visibility": "public"}, {"user_id": user["id"]}]}
+        # "for_you" — rank once, cache in Redis, paginate from cached order
         offset = int(before) if before and before.isdigit() else 0
-        raw_posts = await db.social_posts.find(query, {"_id": 0}, max_time_ms=10000).sort(
-            "created_at", -1
-        ).limit(50).to_list(50)
-        try:
-            ranked = await rank_feed_posts(raw_posts, user["id"])
-        except Exception as e:
-            logger.warning(f"Feed ranking fallback to chronological: {e}")
-            ranked = raw_posts
-        posts = ranked[offset:offset + limit]
-        next_cursor = str(offset + limit) if offset + limit < len(ranked) else None
+        cache_key = f"feed:foryou:{user['id']}"
+        ranked_ids = None
+
+        # Try to read cached ranked post IDs
+        if redis_client and offset > 0:
+            try:
+                cached = await redis_client.get(cache_key)
+                if cached:
+                    ranked_ids = json.loads(cached)
+            except Exception:
+                pass
+
+        if ranked_ids is None:
+            # Fresh rank: fetch recent posts, rank, cache the ID order
+            query = {"$or": [{"visibility": "public"}, {"user_id": user["id"]}]}
+            raw_posts = await db.social_posts.find(query, {"_id": 0}, max_time_ms=10000).sort(
+                "created_at", -1
+            ).limit(200).to_list(200)
+            try:
+                ranked = await rank_feed_posts(raw_posts, user["id"])
+            except Exception as e:
+                logger.warning(f"Feed ranking fallback to chronological: {e}")
+                ranked = raw_posts
+            ranked_ids = [p["id"] for p in ranked]
+            # Cache for 5 min so pagination is stable
+            if redis_client:
+                try:
+                    await redis_client.setex(cache_key, 300, json.dumps(ranked_ids))
+                except Exception:
+                    pass
+            # We already have the post objects — slice and return
+            posts = ranked[offset:offset + limit]
+            next_cursor = str(offset + limit) if offset + limit < len(ranked) else None
+        else:
+            # Paginate from cached ID list — fetch only the page we need
+            page_ids = ranked_ids[offset:offset + limit]
+            if page_ids:
+                id_docs = await db.social_posts.find(
+                    {"id": {"$in": page_ids}}, {"_id": 0}, max_time_ms=10000
+                ).to_list(len(page_ids))
+                id_map = {p["id"]: p for p in id_docs}
+                posts = [id_map[pid] for pid in page_ids if pid in id_map]
+            else:
+                posts = []
+            next_cursor = str(offset + limit) if offset + limit < len(ranked_ids) else None
 
     # Batch queries — 4 queries total instead of 4×N
     post_ids = [p["id"] for p in posts]
@@ -285,24 +319,46 @@ async def create_post(inp: SocialPostCreate, user=Depends(get_current_user)):
 @db_retry
 async def toggle_like(post_id: str, user=Depends(get_current_user)):
     await _rate_limit(user["id"], "like", 30)
-    # Atomic: try delete first — if doc existed, it was a unlike
-    removed = await db.social_likes.find_one_and_delete(
-        {"post_id": post_id, "user_id": user["id"]}
-    )
-    if removed:
-        await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": -1}})
-        return {"liked": False}
-    # Not found → insert (unique index prevents duplicates if double-tapped)
     try:
-        await db.social_likes.insert_one({
-            "post_id": post_id, "user_id": user["id"],
-            "created_at": now_ist().isoformat()
-        })
-        await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": 1}})
-        return {"liked": True}
+        # Transaction: both ops succeed or both fail (requires replica set / Atlas M10+)
+        async with await client.start_session() as session:
+            async with session.start_transaction():
+                removed = await db.social_likes.find_one_and_delete(
+                    {"post_id": post_id, "user_id": user["id"]}, session=session
+                )
+                if removed:
+                    await db.social_posts.update_one(
+                        {"id": post_id}, {"$inc": {"likes_count": -1}}, session=session
+                    )
+                    return {"liked": False}
+                try:
+                    await db.social_likes.insert_one({
+                        "post_id": post_id, "user_id": user["id"],
+                        "created_at": now_ist().isoformat()
+                    }, session=session)
+                    await db.social_posts.update_one(
+                        {"id": post_id}, {"$inc": {"likes_count": 1}}, session=session
+                    )
+                    return {"liked": True}
+                except Exception:
+                    return {"liked": True}
     except Exception:
-        # Duplicate key — already liked by a concurrent request
-        return {"liked": True}
+        # Fallback: non-transactional (free tier / standalone MongoDB)
+        removed = await db.social_likes.find_one_and_delete(
+            {"post_id": post_id, "user_id": user["id"]}
+        )
+        if removed:
+            await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": -1}})
+            return {"liked": False}
+        try:
+            await db.social_likes.insert_one({
+                "post_id": post_id, "user_id": user["id"],
+                "created_at": now_ist().isoformat()
+            })
+            await db.social_posts.update_one({"id": post_id}, {"$inc": {"likes_count": 1}})
+            return {"liked": True}
+        except Exception:
+            return {"liked": True}
 
 
 @router.post("/feed/{post_id}/react")
@@ -313,42 +369,74 @@ async def react_to_post(post_id: str, request: Request, user=Depends(get_current
     if reaction not in REACTION_TYPES:
         raise HTTPException(400, f"Invalid reaction. Must be one of: {REACTION_TYPES}")
 
-    # Step 1: Toggle off? Atomically delete exact match
-    removed = await db.social_reactions.find_one_and_delete(
-        {"post_id": post_id, "user_id": user["id"], "reaction": reaction}
-    )
-    if removed:
-        await db.social_posts.update_one(
-            {"id": post_id}, {"$inc": {f"reactions.{reaction}": -1}}
-        )
-        return {"reacted": False, "reaction": None}
-
-    # Step 2: Change existing? Atomically swap and return old value
-    old = await db.social_reactions.find_one_and_update(
-        {"post_id": post_id, "user_id": user["id"]},
-        {"$set": {"reaction": reaction}},
-    )
-    if old:
-        old_reaction = old["reaction"]
-        await db.social_posts.update_one(
-            {"id": post_id},
-            {"$inc": {f"reactions.{old_reaction}": -1, f"reactions.{reaction}": 1}}
-        )
-        return {"reacted": True, "reaction": reaction}
-
-    # Step 3: New reaction — insert with DuplicateKey protection
     try:
-        await db.social_reactions.insert_one({
-            "post_id": post_id, "user_id": user["id"],
-            "reaction": reaction,
-            "created_at": now_ist().isoformat()
-        })
-        await db.social_posts.update_one(
-            {"id": post_id}, {"$inc": {f"reactions.{reaction}": 1}}
-        )
-        return {"reacted": True, "reaction": reaction}
+        async with await client.start_session() as session:
+            async with session.start_transaction():
+                # Step 1: Toggle off?
+                removed = await db.social_reactions.find_one_and_delete(
+                    {"post_id": post_id, "user_id": user["id"], "reaction": reaction}, session=session
+                )
+                if removed:
+                    await db.social_posts.update_one(
+                        {"id": post_id}, {"$inc": {f"reactions.{reaction}": -1}}, session=session
+                    )
+                    return {"reacted": False, "reaction": None}
+                # Step 2: Change existing?
+                old = await db.social_reactions.find_one_and_update(
+                    {"post_id": post_id, "user_id": user["id"]},
+                    {"$set": {"reaction": reaction}}, session=session
+                )
+                if old:
+                    old_reaction = old["reaction"]
+                    await db.social_posts.update_one(
+                        {"id": post_id},
+                        {"$inc": {f"reactions.{old_reaction}": -1, f"reactions.{reaction}": 1}}, session=session
+                    )
+                    return {"reacted": True, "reaction": reaction}
+                # Step 3: New reaction
+                try:
+                    await db.social_reactions.insert_one({
+                        "post_id": post_id, "user_id": user["id"],
+                        "reaction": reaction, "created_at": now_ist().isoformat()
+                    }, session=session)
+                    await db.social_posts.update_one(
+                        {"id": post_id}, {"$inc": {f"reactions.{reaction}": 1}}, session=session
+                    )
+                    return {"reacted": True, "reaction": reaction}
+                except Exception:
+                    return {"reacted": True, "reaction": reaction}
     except Exception:
-        return {"reacted": True, "reaction": reaction}
+        # Fallback: non-transactional (free tier / standalone MongoDB)
+        removed = await db.social_reactions.find_one_and_delete(
+            {"post_id": post_id, "user_id": user["id"], "reaction": reaction}
+        )
+        if removed:
+            await db.social_posts.update_one(
+                {"id": post_id}, {"$inc": {f"reactions.{reaction}": -1}}
+            )
+            return {"reacted": False, "reaction": None}
+        old = await db.social_reactions.find_one_and_update(
+            {"post_id": post_id, "user_id": user["id"]},
+            {"$set": {"reaction": reaction}},
+        )
+        if old:
+            old_reaction = old["reaction"]
+            await db.social_posts.update_one(
+                {"id": post_id},
+                {"$inc": {f"reactions.{old_reaction}": -1, f"reactions.{reaction}": 1}}
+            )
+            return {"reacted": True, "reaction": reaction}
+        try:
+            await db.social_reactions.insert_one({
+                "post_id": post_id, "user_id": user["id"],
+                "reaction": reaction, "created_at": now_ist().isoformat()
+            })
+            await db.social_posts.update_one(
+                {"id": post_id}, {"$inc": {f"reactions.{reaction}": 1}}
+            )
+            return {"reacted": True, "reaction": reaction}
+        except Exception:
+            return {"reacted": True, "reaction": reaction}
 
 
 @router.post("/feed/{post_id}/comment")
@@ -367,8 +455,17 @@ async def add_comment(post_id: str, request: Request, user=Depends(get_current_u
         "content": content,
         "created_at": now_ist().isoformat(),
     }
-    await db.social_comments.insert_one(comment)
-    await db.social_posts.update_one({"id": post_id}, {"$inc": {"comments_count": 1}})
+    try:
+        async with await client.start_session() as session:
+            async with session.start_transaction():
+                await db.social_comments.insert_one(comment, session=session)
+                await db.social_posts.update_one(
+                    {"id": post_id}, {"$inc": {"comments_count": 1}}, session=session
+                )
+    except Exception:
+        # Fallback: non-transactional (free tier / standalone MongoDB)
+        await db.social_comments.insert_one(comment)
+        await db.social_posts.update_one({"id": post_id}, {"$inc": {"comments_count": 1}})
     comment.pop("_id", None)
     return comment
 
@@ -987,11 +1084,7 @@ async def explore(user=Depends(get_current_user), q: str = "", category: str = "
         # Parallel search: users, posts, venues at once
         user_query = {"$text": {"$search": q}, "id": {"$ne": user["id"]}}
         post_query = {"$text": {"$search": q}}
-        safe_q = _re.escape(q)
-        venue_query = {"$or": [
-            {"name": {"$regex": safe_q, "$options": "i"}},
-            {"area": {"$regex": safe_q, "$options": "i"}},
-        ]}
+        venue_query = {"$text": {"$search": q}}
         users, posts, venues = await asyncio.gather(
             db.users.find(user_query, {"_id": 0, "password_hash": 0}).limit(10).to_list(10),
             db.social_posts.find(post_query, {"_id": 0}, max_time_ms=10000).sort("created_at", -1).skip(skip).limit(limit).to_list(limit),

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building } from "lucide-react";
+import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, AlertTriangle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) {
@@ -62,6 +62,8 @@ export default function VenueFinancePage() {
   const [bankForm, setBankForm] = useState({ account_number: "", ifsc_code: "", beneficiary_name: "", bank_name: "", business_type: "individual", phone: "", email: "" });
   const [bankSaving, setBankSaving] = useState(false);
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
+  const [myDeductions, setMyDeductions] = useState([]);
+  const [pendingDeductionsTotal, setPendingDeductionsTotal] = useState(0);
 
   // ─── Venue filter state ───
   const [ownerVenues, setOwnerVenues] = useState([]);
@@ -105,14 +107,20 @@ export default function VenueFinancePage() {
   }, []);
   const loadPayoutData = useCallback(async () => {
     try {
-      const [summaryRes, payoutsRes, accountRes] = await Promise.allSettled([
+      const [summaryRes, payoutsRes, accountRes, deductionsRes] = await Promise.allSettled([
         payoutAPI.mySummary(),
         payoutAPI.myPayouts(),
         payoutAPI.getLinkedAccount(),
+        payoutAPI.myDeductions(),
       ]);
       if (summaryRes.status === "fulfilled") setPayoutSummary(summaryRes.value.data);
       if (payoutsRes.status === "fulfilled") { const pd = payoutsRes.value.data; setMyPayouts(Array.isArray(pd) ? pd : pd?.settlements || []); }
       if (accountRes.status === "fulfilled") { const ad = accountRes.value.data; setLinkedAccount(ad?.linked === false ? null : ad); }
+      if (deductionsRes.status === "fulfilled") {
+        const dd = deductionsRes.value.data;
+        setMyDeductions(dd?.deductions || []);
+        setPendingDeductionsTotal(dd?.pending_total || 0);
+      }
     } catch {}
   }, []);
 
@@ -784,11 +792,22 @@ export default function VenueFinancePage() {
                 <p className="text-sm admin-name text-foreground">Bank Account</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Link your bank account to receive venue payouts</p>
               </div>
-              {linkedAccount && (
-                <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-green-500/10 text-green-600" : "bg-amber-500/10 text-amber-500"}`}>
-                  {linkedAccount.status || "pending"}
-                </Badge>
-              )}
+              {linkedAccount && (() => {
+                const verified = linkedAccount.bank_account_verified;
+                const rzpStatus = linkedAccount.razorpay_account_status;
+                const isRejected = rzpStatus === "rejected";
+                const badgeClass = verified
+                  ? "bg-green-500/10 text-green-600"
+                  : isRejected
+                  ? "bg-red-500/10 text-red-600"
+                  : "bg-amber-500/10 text-amber-500";
+                const badgeLabel = verified
+                  ? "Verified"
+                  : isRejected
+                  ? "Failed"
+                  : "Pending Verification";
+                return <Badge className={`text-xs font-bold rounded-full px-3 ${badgeClass}`}>{badgeLabel}</Badge>;
+              })()}
             </div>
             {linkedAccount ? (
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -868,6 +887,29 @@ export default function VenueFinancePage() {
             </div>
           )}
 
+          {/* Pending Deductions Warning */}
+          {myDeductions.length > 0 && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-2">
+              <div className="flex items-center gap-2 text-amber-600">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm font-semibold">Pending Deductions: ₹{pendingDeductionsTotal.toLocaleString()}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">These will be subtracted from your next payout.</p>
+              <div className="space-y-1 mt-2">
+                {myDeductions.map((d, i) => (
+                  <div key={d.id || i} className="flex items-center justify-between py-1.5 px-3 bg-secondary/20 rounded-xl text-xs">
+                    <span>
+                      {d.created_at ? new Date(d.created_at).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "N/A"}
+                      <span className="ml-2 text-muted-foreground">Refund {d.refund_pct || 100}%</span>
+                      <span className="ml-1 text-muted-foreground capitalize">({d.deduction_status || "pending"})</span>
+                    </span>
+                    <span className="font-semibold text-red-500">-₹{(d.venue_clawback_amount || 0).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Payout History */}
           <div className="space-y-3">
             <p className="admin-section-label text-muted-foreground">Payout History</p>
@@ -925,6 +967,9 @@ export default function VenueFinancePage() {
                   <div className="bg-secondary/30 rounded-xl p-4 space-y-2 text-sm">
                     <div className="flex justify-between"><span className="text-muted-foreground">Gross</span><span className="font-medium">₹{(payoutDetailDialog.gross_amount || 0).toLocaleString()}</span></div>
                     <div className="flex justify-between"><span className="text-muted-foreground">Commission ({payoutDetailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(payoutDetailDialog.commission_amount || 0).toLocaleString()}</span></div>
+                    {(payoutDetailDialog.total_deductions > 0) && (
+                      <div className="flex justify-between"><span className="text-muted-foreground">Deductions</span><span className="font-medium text-red-500">-₹{(payoutDetailDialog.total_deductions || 0).toLocaleString()}</span></div>
+                    )}
                     <div className="border-t border-border/40 pt-2 flex justify-between"><span className="admin-name">Net Payout</span><span className="font-black text-green-600">₹{(payoutDetailDialog.net_amount || 0).toLocaleString()}</span></div>
                   </div>
                   {payoutDetailDialog.razorpay_transfer_id && (

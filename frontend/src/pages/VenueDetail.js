@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { fmt12h } from "@/lib/utils";
 import { useParams, Link } from "react-router-dom";
 import { venueAPI, bookingAPI, slotLockAPI, paymentAPI } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
@@ -370,6 +371,7 @@ export default function VenueDetail() {
   const [cartOpen, setCartOpen] = useState(false);
 
   // Checkout / payment state
+  const activeLocks = useRef([]);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [bookingDialog, setBookingDialog] = useState(false);
   const [payMode, setPayMode] = useState("full");
@@ -378,6 +380,30 @@ export default function VenueDetail() {
   const [confirmResults, setConfirmResults] = useState([]);
   const [payStep, setPayStep] = useState(null);
   const [copied, setCopied] = useState(false);
+
+  // ─── Release locks on tab close / navigate away ────────────────
+  useEffect(() => {
+    const releaseLocks = () => {
+      const locks = activeLocks.current;
+      if (!locks.length) return;
+      const token = localStorage.getItem("horizon_token");
+      const base = process.env.REACT_APP_BACKEND_URL || "http://localhost:8000";
+      for (const lk of locks) {
+        fetch(`${base}/api/slots/unlock`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(lk),
+          keepalive: true,
+        }).catch(() => {});
+      }
+      activeLocks.current = [];
+    };
+    window.addEventListener("beforeunload", releaseLocks);
+    return () => window.removeEventListener("beforeunload", releaseLocks);
+  }, []);
 
   // ─── Data Loading ───────────────────────────────────────────────
   useEffect(() => {
@@ -676,6 +702,13 @@ export default function VenueDetail() {
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price, 0);
 
+  const releaseAllLocks = async (keys) => {
+    for (const lk of keys) {
+      await slotLockAPI.unlock(lk).catch(() => {});
+    }
+    activeLocks.current = [];
+  };
+
   // ─── Checkout Flow ──────────────────────────────────────────────
   const handleCheckout = async () => {
     if (!cart.length) return;
@@ -734,12 +767,11 @@ export default function VenueDetail() {
           try {
             await slotLockAPI.lock(lockData);
             lockedKeys.push(lockData);
+            activeLocks.current = [...lockedKeys];
           } catch (err) {
             if (err.response?.status === 409) {
               // Release all acquired locks
-              for (const lk of lockedKeys) {
-                await slotLockAPI.unlock(lk).catch(() => {});
-              }
+              await releaseAllLocks(lockedKeys);
               toast.error(
                 `Slot ${slotStart} on ${item.court.turf_name} is no longer available`,
               );
@@ -828,17 +860,13 @@ export default function VenueDetail() {
                 toast.error(`Booking creation failed: ${detail}`);
               } finally {
                 // Always release remaining locks (backend already released locks for successful bookings)
-                for (const lk of lockedKeys) {
-                  await slotLockAPI.unlock(lk).catch(() => {});
-                }
+                await releaseAllLocks(lockedKeys);
                 setCheckoutLoading(false);
               }
             },
             onDismiss: async () => {
               // No bookings to cancel — just release locks
-              for (const lk of lockedKeys) {
-                await slotLockAPI.unlock(lk).catch(() => {});
-              }
+              await releaseAllLocks(lockedKeys);
               toast.info("Payment cancelled");
               setCheckoutLoading(false);
               loadSlots();
@@ -853,32 +881,12 @@ export default function VenueDetail() {
         }
       }
 
-      // ── TEST MODE: Create bookings as payment_pending, confirm via test button ──
-      const allBookings = [];
-      for (const item of cart) {
-        const data = {
-          venue_id: id,
-          date: item.date,
-          start_time: item.startTime,
-          end_time: item.endTime,
-          turf_number: item.court.turf_number,
-          sport: item.sport,
-          payment_mode: payMode,
-          num_players: item.numPlayers || 1,
-        };
-        if (payMode === "split") data.split_count = splitCount;
-        const res = await bookingAPI.create(data);
-        allBookings.push(res.data);
-      }
-      setPayStep("review");
-      setConfirmResults(allBookings);
-      setBookingDialog(true);
-      toast.info("Review your payment details before confirming");
-      loadSlots();
+      // No payment gateway → block checkout
+      await releaseAllLocks(lockedKeys);
+      toast.error("Payment gateway not configured. Please contact the venue.");
+      return;
     } catch (err) {
-      for (const lk of lockedKeys) {
-        await slotLockAPI.unlock(lk).catch(() => {});
-      }
+      await releaseAllLocks(lockedKeys);
       toast.error(err.response?.data?.detail || "Booking failed");
       loadSlots();
     } finally {
@@ -891,41 +899,10 @@ export default function VenueDetail() {
     0,
   );
 
-  const handleTestPayment = async () => {
-    if (!confirmResults.length) return;
-    setPayStep("processing");
-    try {
-      for (const b of confirmResults) {
-        await bookingAPI.testConfirm(b.id);
-      }
-      setPayStep("done");
-      setConfirmResults(
-        confirmResults.map((b) => ({ ...b, status: "confirmed" })),
-      );
-      toast.success(
-        `Payment successful! ${confirmResults.length} booking${confirmResults.length > 1 ? "s" : ""} confirmed.`,
-      );
-      setCart([]);
-      loadSlots();
-    } catch (err) {
-      toast.error(err.response?.data?.detail || "Payment failed");
-      setPayStep("review");
-    }
-  };
-
   const handleDialogClose = async (open) => {
     if (!open && payStep !== "processing") {
-      // Cancel all pending bookings if user closes without paying
       if (confirmResults.length > 0 && payStep !== "done") {
-        for (const b of confirmResults) {
-          if (b.status !== "confirmed") {
-            try {
-              await bookingAPI.cancel(b.id);
-            } catch {
-              /* ignore */
-            }
-          }
-        }
+        await releaseAllLocks(activeLocks.current);
         loadSlots();
       }
       setConfirmResults([]);
@@ -944,14 +921,7 @@ export default function VenueDetail() {
     }
   };
 
-  // ─── Format time for display (24h -> 12h) ──────────────────────
-  const fmt12h = (t) => {
-    if (!t) return "";
-    const [h, m] = t.split(":").map(Number);
-    const ampm = h >= 12 ? "PM" : "AM";
-    const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
-    return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
-  };
+  // fmt12h imported from @/lib/utils
 
   // ─── Render ─────────────────────────────────────────────────────
   if (loading)
@@ -1404,94 +1374,6 @@ export default function VenueDetail() {
               <p className="text-xs text-muted-foreground/60">
                 Please do not close this window
               </p>
-            </div>
-          )}
-
-          {/* Payment Review */}
-          {payStep === "review" && confirmResults.length > 0 && (
-            <div className="space-y-6">
-              <div className="rounded-2xl border border-border/40 bg-card/50 backdrop-blur-md p-6 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">
-                    Venue
-                  </span>
-                  <span className="font-display admin-value text-base">
-                    {confirmResults[0].venue_name}
-                  </span>
-                </div>
-                {confirmResults.map((b) => (
-                  <div
-                    key={b.id}
-                    className="flex justify-between items-center text-sm"
-                  >
-                    <span className="text-muted-foreground">
-                      {b.turf_name || `Turf #${b.turf_number}`} &middot;{" "}
-                      {fmt12h(b.start_time)} - {fmt12h(b.end_time)}
-                    </span>
-                    <span className="font-display admin-value text-brand-600">
-                      ₹{b.total_amount}
-                    </span>
-                  </div>
-                ))}
-                <div className="flex justify-between items-center pt-3 border-t border-border/50">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">
-                    Total
-                  </span>
-                  <span className="font-display admin-value text-2xl text-brand-600">
-                    ₹{confirmTotal}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">
-                    Status
-                  </span>
-                  <Badge variant="athletic">Awaiting Payment</Badge>
-                </div>
-              </div>
-
-              {confirmResults[0].payment_gateway === "test" && (
-                <div className="p-4 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sm text-sky-400 font-semibold">
-                  Payment gateway is being configured. Please confirm to
-                  proceed.
-                </div>
-              )}
-
-              {confirmResults[0].split_config && (
-                <div className="rounded-2xl border border-brand-600/30 bg-brand-600/10 backdrop-blur-md p-6">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-brand-600" />
-                    </div>
-                    <span className="font-display text-base admin-heading">
-                      Split Payment
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground font-semibold">
-                    Your share:{" "}
-                    <span className="text-brand-600 admin-value">
-                      ₹
-                      {Math.floor(
-                        confirmTotal /
-                          confirmResults[0].split_config.total_shares,
-                      )}
-                    </span>{" "}
-                    ({confirmResults[0].split_config.total_shares} Lobbians)
-                  </p>
-                </div>
-              )}
-
-              <Button
-                className="w-full h-14 bg-brand-600 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] uppercase tracking-wide text-base transition-all"
-                onClick={handleTestPayment}
-              >
-                Confirm Payment ₹
-                {confirmResults[0].split_config
-                  ? Math.floor(
-                      confirmTotal /
-                        confirmResults[0].split_config.total_shares,
-                    )
-                  : confirmTotal}
-              </Button>
             </div>
           )}
 

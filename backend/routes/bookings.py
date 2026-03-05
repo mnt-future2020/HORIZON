@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Depends, Request
 from datetime import datetime, timedelta
 from database import db, get_redis, lock_key
 from auth import get_current_user, get_razorpay_client, get_platform_settings
-from tz import now_ist
+from tz import now_ist, parse_ist
+from routes.finance_utils import log_webhook, update_webhook_log, log_finance_event
 from models import BookingCreate
 from routes.venues import apply_rule
 import uuid
@@ -385,6 +386,15 @@ async def razorpay_webhook(request: Request):
     body = await request.body()
     signature = request.headers.get("X-Razorpay-Signature", "")
 
+    # Log webhook immediately
+    import json as _json
+    wh_log_id = str(uuid.uuid4())
+    try:
+        payload = _json.loads(body)
+    except Exception:
+        payload = {}
+    asyncio.create_task(log_webhook(wh_log_id, "razorpay", payload.get("event", ""), payload))
+
     # Get webhook secret from platform settings
     settings = await get_platform_settings()
     gw = settings.get("payment_gateway", {})
@@ -397,13 +407,7 @@ async def razorpay_webhook(request: Request):
     expected = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, signature):
         logger.warning("Razorpay webhook signature mismatch — rejecting")
-        return {"status": "ok"}
-
-    import json as _json
-    try:
-        payload = _json.loads(body)
-    except Exception:
-        logger.error("Razorpay webhook: invalid JSON body")
+        asyncio.create_task(update_webhook_log(wh_log_id, "signature_mismatch"))
         return {"status": "ok"}
 
     event = payload.get("event", "")
@@ -475,20 +479,81 @@ async def razorpay_webhook(request: Request):
     elif event == "payment.failed":
         logger.warning(f"Webhook: payment failed for order {order_id} — {payment_entity.get('error_description', '')}")
 
+    elif event == "refund.processed":
+        refund_entity = payload.get("payload", {}).get("refund", {}).get("entity", {})
+        payment_id = refund_entity.get("payment_id", "")
+        if payment_id:
+            booking = await db.bookings.find_one(
+                {"payment_details.razorpay_payment_id": payment_id, "refund_status": "pending"}
+            )
+            if booking:
+                await db.bookings.update_one(
+                    {"id": booking["id"]},
+                    {"$set": {"refund_status": "processed"}}
+                )
+                asyncio.create_task(log_finance_event(
+                    "refund_processed", "system", booking.get("venue_id"),
+                    booking_id=booking["id"], amount=booking.get("refund_amount", 0),
+                ))
+                await db.notifications.insert_one({
+                    "id": str(uuid.uuid4()),
+                    "user_id": booking["host_id"],
+                    "type": "refund_processed",
+                    "title": "Refund Processed",
+                    "message": f"Your refund of ₹{booking.get('refund_amount', 0):,} has been processed.",
+                    "is_read": False,
+                    "created_at": now_ist().isoformat(),
+                })
+
+    elif event == "refund.failed":
+        refund_entity = payload.get("payload", {}).get("refund", {}).get("entity", {})
+        payment_id = refund_entity.get("payment_id", "")
+        if payment_id:
+            booking = await db.bookings.find_one(
+                {"payment_details.razorpay_payment_id": payment_id, "refund_status": "pending"}
+            )
+            if booking:
+                await db.bookings.update_one(
+                    {"id": booking["id"]},
+                    {"$set": {"refund_status": "failed"}}
+                )
+                asyncio.create_task(log_finance_event(
+                    "refund_failed", "system", booking.get("venue_id"),
+                    booking_id=booking["id"], amount=booking.get("refund_amount", 0),
+                ))
+                # Notify admin
+                admins = await db.users.find({"role": "super_admin"}, {"id": 1}).to_list(10)
+                for admin in admins:
+                    await db.notifications.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "user_id": admin["id"],
+                        "type": "refund_failed",
+                        "title": "Refund Failed — Manual Action Needed",
+                        "message": f"Refund failed for booking {booking['id']}. Amount: ₹{booking.get('refund_amount', 0):,}.",
+                        "is_read": False,
+                        "created_at": now_ist().isoformat(),
+                    })
+
+    asyncio.create_task(update_webhook_log(wh_log_id, "success"))
     return {"status": "ok"}
 
 
 @router.get("/bookings")
-async def list_bookings(user=Depends(get_current_user)):
+async def list_bookings(user=Depends(get_current_user), page: int = 1, limit: int = 15):
+    page = max(page, 1)
+    limit = min(max(limit, 1), 50)
+    skip = (page - 1) * limit
+
     if user["role"] == "venue_owner":
         venues = await db.venues.find({"owner_id": user["id"]}, {"id": 1, "_id": 0}).to_list(100)
         vids = [v["id"] for v in venues]
-        bookings = await db.bookings.find({"venue_id": {"$in": vids}}, {"_id": 0}).sort("date", -1).to_list(200)
+        query = {"venue_id": {"$in": vids}}
     else:
-        bookings = await db.bookings.find(
-            {"$or": [{"host_id": user["id"]}, {"players": user["id"]}]}, {"_id": 0}
-        ).sort("date", -1).to_list(200)
-    return bookings
+        query = {"$or": [{"host_id": user["id"]}, {"players": user["id"]}]}
+
+    total = await db.bookings.count_documents(query)
+    bookings = await db.bookings.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+    return {"bookings": bookings, "total": total, "page": page, "limit": limit, "pages": -(-total // limit)}
 
 
 @router.get("/bookings/{booking_id}")
@@ -511,32 +576,219 @@ async def get_booking(booking_id: str, user=Depends(get_current_user)):
 
 @router.post("/bookings/{booking_id}/cancel")
 async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
+    # Guard 1: Booking exists
     booking = await db.bookings.find_one({"id": booking_id})
     if not booking:
         raise HTTPException(404, "Booking not found")
-    if booking["host_id"] != user["id"]:
-        raise HTTPException(403, "Only the host can cancel")
-    if booking.get("status") in ("cancelled", "expired"):
-        raise HTTPException(400, f"Booking is already {booking['status']}")
-    # Atomic: only cancel if status hasn't changed since we read it
+
+    # Guard 2: Auth — host or venue owner only (NO admin/super_admin)
+    is_host = booking["host_id"] == user["id"]
+    is_venue_owner = False
+    if user.get("role") == "venue_owner":
+        venue = await db.venues.find_one({"id": booking["venue_id"], "owner_id": user["id"]}, {"_id": 0, "id": 1})
+        is_venue_owner = venue is not None
+    if not (is_host or is_venue_owner):
+        raise HTTPException(403, "Only the host or venue owner can cancel")
+
+    # Guard 3: Idempotent — already cancelled? Return success, don't error
+    if booking.get("status") == "cancelled":
+        return {"message": "Booking already cancelled"}
+
+    # Guard 4: Terminal state
+    if booking.get("status") == "expired":
+        raise HTTPException(400, "Booking is already expired")
+
+    # Guard 5: Time check — can't cancel if slot time has passed
+    booking_start = parse_ist(booking["date"], booking["start_time"])
+    if booking_start <= now_ist():
+        raise HTTPException(400, "Cannot cancel a booking that has already started")
+
+    # Atomic cancel
     result = await db.bookings.update_one(
         {"id": booking_id, "status": {"$nin": ["cancelled", "expired"]}},
-        {"$set": {"status": "cancelled"}}
+        {"$set": {"status": "cancelled", "cancelled_at": now_ist().isoformat(), "cancelled_by": user["id"]}}
     )
     if result.modified_count == 0:
-        raise HTTPException(400, "Booking was already cancelled or expired")
-    # Decrement counters — safe because the atomic update above ensures single execution
+        return {"message": "Booking already cancelled"}  # Race condition — still idempotent
+
+    # Decrement counters
     await db.venues.update_one({"id": booking["venue_id"]}, {"$inc": {"total_bookings": -1}})
     await db.users.update_one({"id": booking["host_id"]}, {"$inc": {"total_games": -1}})
+
+    # ── Refund calculation (IST-based time tiers) ──
+    hours_until_slot = (booking_start - now_ist()).total_seconds() / 3600
+    if hours_until_slot >= 24:
+        refund_pct = 100
+    elif hours_until_slot >= 4:
+        refund_pct = 50
+    else:
+        refund_pct = 0
+    refund_amount = round(booking.get("total_amount", 0) * refund_pct / 100)
+
+    await db.bookings.update_one({"id": booking_id}, {"$set": {
+        "refund_pct": refund_pct,
+        "refund_amount": refund_amount,
+    }})
+
+    # ── Razorpay Refund Call ──
+    if booking.get("payment_gateway") in ("test", "mock"):
+        await db.bookings.update_one({"id": booking_id}, {"$set": {"refund_status": "not_applicable"}})
+    elif refund_amount <= 0:
+        await db.bookings.update_one({"id": booking_id}, {"$set": {"refund_status": "not_applicable"}})
+    elif booking.get("refund_status") in ("pending", "processed"):
+        pass  # Don't double-refund
+    else:
+        rzp = await get_razorpay_client()
+        if rzp:
+            try:
+                refund_ids = []
+
+                if booking.get("split_config"):
+                    # ── SPLIT PAYMENT: refund each payer separately ──
+                    split_payments = await db.split_payments.find(
+                        {"booking_id": booking_id, "status": "paid", "razorpay_payment_id": {"$exists": True, "$ne": ""}},
+                        {"_id": 0}
+                    ).to_list(20)
+
+                    if split_payments:
+                        per_payer_refund = refund_amount // len(split_payments)
+                        remainder = refund_amount - (per_payer_refund * (len(split_payments) - 1))
+
+                        for idx, sp in enumerate(split_payments):
+                            payer_refund = remainder if idx == len(split_payments) - 1 else per_payer_refund
+                            if payer_refund <= 0:
+                                continue
+                            try:
+                                resp = rzp.payment.refund(sp["razorpay_payment_id"], {
+                                    "amount": payer_refund * 100,
+                                    "notes": {"booking_id": booking_id, "payer": sp.get("payer_name", ""), "reason": "booking_cancellation"},
+                                })
+                                refund_ids.append(resp.get("id"))
+                                await db.split_payments.update_one(
+                                    {"id": sp["id"]},
+                                    {"$set": {"status": "refunded", "refund_id": resp.get("id"), "refund_amount": payer_refund}}
+                                )
+                            except Exception as e:
+                                logger.error(f"Split refund failed for payer {sp.get('payer_name')}: {e}")
+                                refund_ids.append(f"failed:{sp['id']}")
+                    else:
+                        # Test mode splits — no razorpay_payment_id
+                        await db.bookings.update_one({"id": booking_id}, {"$set": {"refund_status": "not_applicable"}})
+                        refund_ids = None
+                else:
+                    # ── SINGLE PAYMENT: refund the one payment_id ──
+                    payment_id = (booking.get("payment_details") or {}).get("razorpay_payment_id")
+                    if not payment_id:
+                        await db.bookings.update_one({"id": booking_id}, {"$set": {"refund_status": "not_applicable"}})
+                        refund_ids = None
+                    else:
+                        resp = rzp.payment.refund(payment_id, {
+                            "amount": refund_amount * 100,
+                            "notes": {"booking_id": booking_id, "reason": "booking_cancellation"},
+                        })
+                        refund_ids = [resp.get("id")]
+
+                # Update booking with refund info
+                if refund_ids is not None:
+                    failed_count = sum(1 for r in refund_ids if isinstance(r, str) and r.startswith("failed:"))
+                    await db.bookings.update_one({"id": booking_id}, {"$set": {
+                        "razorpay_refund_id": refund_ids[0] if len(refund_ids) == 1 else refund_ids,
+                        "refund_status": "pending" if failed_count == 0 else "partial_failed",
+                        "refund_created_at": now_ist().isoformat(),
+                    }})
+                    asyncio.create_task(log_finance_event(
+                        "refund_initiated", user["id"], booking.get("venue_id"),
+                        booking_id=booking_id, amount=refund_amount,
+                        metadata={"split": bool(booking.get("split_config")), "refund_ids": refund_ids},
+                    ))
+                    # Notify player
+                    await db.notifications.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "user_id": booking["host_id"],
+                        "type": "refund_initiated",
+                        "title": "Refund Initiated",
+                        "message": f"Refund of ₹{refund_amount:,} initiated for your cancelled booking. 3-5 business days.",
+                        "is_read": False,
+                        "created_at": now_ist().isoformat(),
+                    })
+
+            except Exception as e:
+                logger.error(f"Razorpay refund failed for booking {booking_id}: {e}")
+                await db.bookings.update_one({"id": booking_id}, {"$set": {"refund_status": "failed"}})
+                asyncio.create_task(log_finance_event(
+                    "refund_failed", user["id"], booking.get("venue_id"),
+                    booking_id=booking_id, amount=refund_amount,
+                    metadata={"error": str(e)},
+                ))
+                # Notify admin — NO auto retry (duplicate refund risk)
+                admins = await db.users.find({"role": "super_admin"}, {"id": 1}).to_list(10)
+                for admin in admins:
+                    await db.notifications.insert_one({
+                        "id": str(uuid.uuid4()),
+                        "user_id": admin["id"],
+                        "type": "refund_failed",
+                        "title": "Refund Failed — Manual Action Needed",
+                        "message": f"Razorpay refund failed for booking {booking_id}. Amount: ₹{refund_amount:,}. Error: {str(e)[:100]}",
+                        "is_read": False,
+                        "created_at": now_ist().isoformat(),
+                    })
+        else:
+            await db.bookings.update_one({"id": booking_id}, {"$set": {"refund_status": "not_applicable"}})
+
+    # ── Post-payout deduction (if booking was already settled) ──
+    if booking.get("settlement_id"):
+        venue_doc = await db.venues.find_one({"id": booking["venue_id"]}, {"_id": 0, "owner_id": 1})
+        owner_id = (venue_doc or {}).get("owner_id")
+        if owner_id and refund_amount > 0:
+            deduction = {
+                "id": str(uuid.uuid4()),
+                "venue_owner_id": owner_id,
+                "venue_id": booking["venue_id"],
+                "booking_id": booking_id,
+                "original_settlement_id": booking["settlement_id"],
+                "booking_amount": booking.get("total_amount", 0),
+                "commission_amount": booking.get("commission_amount", 0),
+                "player_refund_amount": refund_amount,
+                "venue_clawback_amount": refund_amount,
+                "refund_pct": refund_pct,
+                "deduction_status": "pending",
+                "applied_settlement_id": None,
+                "created_at": now_ist().isoformat(),
+            }
+            await db.payout_deductions.insert_one(deduction)
+            asyncio.create_task(log_finance_event(
+                "deduction_created", user["id"], owner_id,
+                booking_id=booking_id, settlement_id=booking["settlement_id"],
+                amount=refund_amount,
+            ))
+            await db.notifications.insert_one({
+                "id": str(uuid.uuid4()),
+                "user_id": owner_id,
+                "type": "booking_clawback",
+                "title": "Booking Cancelled — Deduction Applied",
+                "message": f"Booking on {booking['date']} {booking['start_time']} was cancelled. ₹{refund_amount:,} will be adjusted in your next payout.",
+                "is_read": False,
+                "created_at": now_ist().isoformat(),
+            })
+    else:
+        # Pre-payout cancellation — no deduction needed
+        asyncio.create_task(log_finance_event(
+            "booking_cancelled_pre_payout", user["id"], booking.get("venue_id"),
+            booking_id=booking_id, amount=booking.get("total_amount", 0),
+        ))
+
+    # Handle split payment status update
     if booking.get("split_config"):
         await db.split_payments.update_many(
-            {"booking_id": booking_id}, {"$set": {"status": "refunded"}}
+            {"booking_id": booking_id, "status": "paid"},
+            {"$set": {"status": "refunded"}}
         )
+
+    # Release slot locks
     redis_client = get_redis()
     if redis_client:
-        # Release ALL constituent slot locks (multi-slot bookings span multiple base slots)
-        venue = await db.venues.find_one({"id": booking["venue_id"]}, {"_id": 0, "slot_duration_minutes": 1})
-        slot_dur = (venue or {}).get("slot_duration_minutes", 60)
+        venue_for_lock = await db.venues.find_one({"id": booking["venue_id"]}, {"_id": 0, "slot_duration_minutes": 1})
+        slot_dur = (venue_for_lock or {}).get("slot_duration_minutes", 60)
         b_start = booking["start_time"].split(":")
         b_end = booking["end_time"].split(":")
         b_start_min = int(b_start[0]) * 60 + int(b_start[1])
@@ -565,7 +817,7 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
     except Exception as e:
         logger.warning(f"Waitlist promotion failed: {e}")
 
-    return {"message": "Booking cancelled"}
+    return {"message": "Booking cancelled", "refund_pct": refund_pct, "refund_amount": refund_amount}
 
 
 # --- Split Payment Routes ---

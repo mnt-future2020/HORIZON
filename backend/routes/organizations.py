@@ -86,7 +86,7 @@ async def list_organizations(
     if city:
         query["city"] = {"$regex": city, "$options": "i"}
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+        query["$text"] = {"$search": search}
     orgs = await db.organizations.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return orgs
 

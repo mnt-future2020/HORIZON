@@ -11,7 +11,7 @@ import asyncio
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from database import db, redis_client
-from tz import now_ist
+from tz import now_ist, IST
 
 logger = logging.getLogger("horizon")
 
@@ -79,9 +79,9 @@ async def rank_feed_posts(posts: list, viewer_id: str) -> list:
         content_w = CONTENT_WEIGHTS.get(post.get("post_type", "text"), 1.0)
 
         # 3. Time decay — exponential decay with half-life
-        created = datetime.fromisoformat(post["created_at"].replace("Z", "+00:00")) if isinstance(post["created_at"], str) else post["created_at"]
+        created = datetime.fromisoformat(post["created_at"].replace("Z", "+05:30")) if isinstance(post["created_at"], str) else post["created_at"]
         if created.tzinfo is None:
-            created = created.replace(tzinfo=timezone.utc)
+            created = created.replace(tzinfo=IST)
         hours_old = max((now - created).total_seconds() / 3600, 0.01)
         time_decay = math.pow(0.5, hours_old / DECAY_HALF_LIFE)
 
@@ -115,18 +115,19 @@ async def rank_feed_posts(posts: list, viewer_id: str) -> list:
 
     # Diversity pass: no more than 3 consecutive posts from same author
     result = []
-    author_consecutive = defaultdict(int)
+    last_author = None
+    consecutive = 0
     deferred = []
 
     for score, post in scored:
         uid = post["user_id"]
-        if author_consecutive[uid] < 3:
+        if uid == last_author:
+            consecutive += 1
+        else:
+            last_author = uid
+            consecutive = 1
+        if consecutive <= 3:
             result.append(post)
-            author_consecutive[uid] += 1
-            # Reset other authors
-            for k in author_consecutive:
-                if k != uid:
-                    author_consecutive[k] = 0
         else:
             deferred.append(post)
 
@@ -145,21 +146,30 @@ async def _compute_affinity_map(viewer_id: str, author_ids: list) -> dict:
     unique_ids = list(set(author_ids))
     affinity = {}
 
-    # 1. Follow status (0.3 boost)
-    following = set()
-    async for doc in db.follows.find(
+    # Parallel fetch: follows, bookings, likes — all at once
+    follows_coro = db.follows.find(
         {"follower_id": viewer_id, "following_id": {"$in": unique_ids}},
         {"following_id": 1}
-    ):
-        following.add(doc["following_id"])
+    ).to_list(len(unique_ids))
 
-    # 2. Co-play frequency (up to 0.4 boost)
-    coplay_counts = defaultdict(int)
-    viewer_bookings = await db.bookings.find(
+    bookings_coro = db.bookings.find(
         {"$or": [{"host_id": viewer_id}, {"players": viewer_id}]},
         {"_id": 0, "host_id": 1, "players": 1}
     ).sort("created_at", -1).limit(50).to_list(50)
 
+    likes_coro = db.social_likes.find(
+        {"user_id": viewer_id}, {"_id": 0, "post_id": 1}
+    ).sort("created_at", -1).limit(100).to_list(100)
+
+    follow_docs, viewer_bookings, recent_likes = await asyncio.gather(
+        follows_coro, bookings_coro, likes_coro
+    )
+
+    # 1. Follow status (0.3 boost)
+    following = {doc["following_id"] for doc in follow_docs}
+
+    # 2. Co-play frequency (up to 0.4 boost)
+    coplay_counts = defaultdict(int)
     for b in viewer_bookings:
         participants = set(b.get("players", []))
         if b.get("host_id"):
@@ -171,9 +181,6 @@ async def _compute_affinity_map(viewer_id: str, author_ids: list) -> dict:
 
     # 3. Interaction history — likes/comments on their posts (up to 0.3 boost)
     interaction_counts = defaultdict(int)
-    recent_likes = await db.social_likes.find(
-        {"user_id": viewer_id}, {"_id": 0, "post_id": 1}
-    ).sort("created_at", -1).limit(100).to_list(100)
 
     if recent_likes:
         liked_post_ids = [l["post_id"] for l in recent_likes]
@@ -238,7 +245,7 @@ async def compute_trending_scores(hours: int = 48, limit: int = 20) -> list:
     posts = await db.social_posts.find(
         {"created_at": {"$gte": cutoff}, "visibility": "public"},
         {"_id": 0}
-    ).to_list(500)
+    ).to_list(100)
 
     now = now_ist()
     scored = []
@@ -253,9 +260,9 @@ async def compute_trending_scores(hours: int = 48, limit: int = 20) -> list:
 
         # Impressions estimate: rough heuristic
         # (In production, track actual impressions)
-        created = datetime.fromisoformat(post["created_at"].replace("Z", "+00:00")) if isinstance(post["created_at"], str) else post["created_at"]
+        created = datetime.fromisoformat(post["created_at"].replace("Z", "+05:30")) if isinstance(post["created_at"], str) else post["created_at"]
         if created.tzinfo is None:
-            created = created.replace(tzinfo=timezone.utc)
+            created = created.replace(tzinfo=IST)
         hours_live = max((now - created).total_seconds() / 3600, 0.1)
         estimated_impressions = max(total_engagement * 3, hours_live * 5, 10)
 
@@ -750,7 +757,7 @@ async def recommend_groups(user_id: str, limit: int = 10) -> list:
 
         # Recent activity
         if g.get("last_message_at"):
-            last_msg = datetime.fromisoformat(g["last_message_at"].replace("Z", "+00:00"))
+            last_msg = datetime.fromisoformat(g["last_message_at"].replace("Z", "+05:30"))
             hours_since = (now_ist() - last_msg).total_seconds() / 3600
             if hours_since < 24:
                 score += 15
@@ -903,7 +910,7 @@ async def predict_churn_risk(user_id: str) -> dict:
     last_login = user.get("last_login", user.get("created_at", "")) if user else ""
     if last_login:
         try:
-            last_dt = datetime.fromisoformat(last_login.replace("Z", "+00:00"))
+            last_dt = datetime.fromisoformat(last_login.replace("Z", "+05:30"))
             if last_dt.tzinfo is None:
                 last_dt = last_dt.replace(tzinfo=timezone.utc)
             days_since_login = (now - last_dt).days
@@ -1001,3 +1008,73 @@ async def predict_churn_risk(user_id: str) -> dict:
         "risk_level": level,
         "signals": signals,
     }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# 7. ENGAGEMENT SCORE BATCH JOB — Pre-compute every 30 min
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def run_engagement_batch():
+    """
+    Pre-compute engagement scores for all active users.
+    Runs every 30 min via APScheduler.
+    Uses Redis NX lock to prevent duplicate runs in multi-worker setups.
+    Processes in chunks of 50 with semaphore to keep DB pool free.
+    """
+    lock_key = "batch:engagement_lock"
+
+    # Redis NX lock — only one worker runs this
+    if redis_client:
+        try:
+            acquired = await redis_client.set(lock_key, "1", nx=True, ex=1800)
+            if not acquired:
+                logger.info("Engagement batch: another worker holds the lock, skipping")
+                return
+        except Exception as e:
+            logger.warning(f"Engagement batch: Redis lock failed, proceeding anyway: {e}")
+
+    logger.info("Engagement batch: starting")
+    sem = asyncio.Semaphore(10)
+    updated = 0
+
+    try:
+        # Get all user IDs (only id field to minimize memory)
+        user_ids = []
+        async for u in db.users.find({}, {"_id": 0, "id": 1}):
+            user_ids.append(u["id"])
+
+        # Process in chunks of 50
+        for i in range(0, len(user_ids), 50):
+            chunk = user_ids[i:i + 50]
+
+            async def _compute_and_store(uid: str):
+                async with sem:
+                    try:
+                        result = await compute_engagement_score(uid)
+                        await db.users.update_one(
+                            {"id": uid},
+                            {"$set": {
+                                "engagement_score": result["score"],
+                                "engagement_data": result,
+                            }}
+                        )
+                    except Exception as e:
+                        logger.warning(f"Engagement batch: failed for {uid}: {e}")
+
+            await asyncio.gather(*[_compute_and_store(uid) for uid in chunk])
+            updated += len(chunk)
+
+            # Breathing room between chunks
+            if i + 50 < len(user_ids):
+                await asyncio.sleep(1)
+
+    except Exception as e:
+        logger.error(f"Engagement batch: fatal error: {e}")
+    finally:
+        # Release lock early if we finish before TTL
+        if redis_client:
+            try:
+                await redis_client.delete(lock_key)
+            except Exception:
+                pass
+        logger.info(f"Engagement batch: done, updated {updated} users")

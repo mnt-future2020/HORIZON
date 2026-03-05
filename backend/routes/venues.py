@@ -179,13 +179,7 @@ async def list_venues(
         esc_area = re.escape(area)
         query["area"] = {"$regex": esc_area, "$options": "i"}
     if search:
-        esc_search = re.escape(search)
-        query["$or"] = [
-            {"name": {"$regex": esc_search, "$options": "i"}},
-            {"address": {"$regex": esc_search, "$options": "i"}},
-            {"city": {"$regex": esc_search, "$options": "i"}},
-            {"area": {"$regex": esc_search, "$options": "i"}}
-        ]
+        query["$text"] = {"$search": search}
     if min_price is not None:
         query["base_price"] = query.get("base_price", {})
         query["base_price"]["$gte"] = min_price
@@ -527,7 +521,9 @@ async def get_slots(venue_id: str, date: str, request: Request):
 
     try:
         date_obj = datetime.strptime(date, "%Y-%m-%d")
-        dow = date_obj.weekday()
+        # Convert Python weekday (Mon=0..Sun=6) to JS convention (Sun=0..Sat=6)
+        py_dow = date_obj.weekday()
+        dow = (py_dow + 1) % 7
     except Exception:
         dow = 0
     slot_defs = []

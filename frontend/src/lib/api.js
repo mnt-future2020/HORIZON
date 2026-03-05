@@ -115,7 +115,7 @@ export const venueAPI = {
 
 export const bookingAPI = {
   create: (data) => api.post("/bookings", data),
-  list: () => api.get("/bookings"),
+  list: (page = 1, limit = 15) => api.get(`/bookings?page=${page}&limit=${limit}`),
   get: (id) => api.get(`/bookings/${id}`),
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
   testConfirm: (id) => api.post(`/bookings/${id}/test-confirm`),
@@ -348,7 +348,7 @@ export const reviewSentimentAPI = {
 };
 
 export const socialAPI = {
-  getFeed: (tab, before = null) => api.get("/feed", { params: before ? { tab, before } : { tab } }),
+  getFeed: (tab, before = null, config = {}) => api.get("/feed", { params: before ? { tab, before } : { tab }, ...config }),
   getPost: (postId) => api.get(`/feed/${postId}`),
   createPost: (data) => api.post("/feed", data),
   toggleLike: (postId) => api.post(`/feed/${postId}/like`),
@@ -663,6 +663,7 @@ export const payoutAPI = {
   settlements: (params) => api.get("/payouts/settlements", { params }),
   settlementDetail: (id) => api.get(`/payouts/settlements/${id}`),
   adminLinkedAccount: (userId) => api.get(`/payouts/linked-account/${userId}`),
+  myDeductions: () => api.get("/payouts/my-deductions"),
 };
 
 // ─── Venue Finance & Invoices ────────────────────────────────────────────────

@@ -52,10 +52,16 @@ from routes.coach_reminders import (
 )
 from routes.coach_whatsapp import router as coach_whatsapp_router
 from routes.coach_invoices import router as coach_invoices_router
-from routes.payouts import router as payouts_router
+from routes.payouts import (
+    router as payouts_router,
+    run_bank_verification_sync,
+    run_stuck_payout_sync,
+    run_stuck_refund_sync,
+)
 from routes.venue_finance import router as venue_finance_router
 from routes.venue_invoices import router as venue_invoices_router
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from services.algorithms import run_engagement_batch
 from indexes import ensure_indexes
 
 scheduler = AsyncIOScheduler(timezone="Asia/Kolkata")
@@ -237,8 +243,12 @@ async def startup():
         scheduler.add_job(run_session_reminders,       "cron", hour=20, minute=0,  id="session_reminders",  replace_existing=True)
         scheduler.add_job(run_no_show_followup,        "cron", hour=21, minute=0,  id="no_show_followup",   replace_existing=True)
         scheduler.add_job(run_monthly_progress,        "cron", day="last", hour=20, minute=0, id="monthly_progress", replace_existing=True)
+        scheduler.add_job(run_engagement_batch,      "interval", minutes=30, id="engagement_batch", replace_existing=True)
+        scheduler.add_job(run_bank_verification_sync, "cron", hour=10, minute=0,  id="bank_verify_sync",  replace_existing=True)
+        scheduler.add_job(run_stuck_payout_sync,      "cron", hour=10, minute=30, id="stuck_payout_sync", replace_existing=True)
+        scheduler.add_job(run_stuck_refund_sync,       "cron", hour=11, minute=0,  id="stuck_refund_sync", replace_existing=True)
         scheduler.start()
-        logger.info("WhatsApp automation scheduler started (5 jobs)")
+        logger.info("Automation scheduler started (9 jobs)")
     else:
         logger.info("Scheduler disabled on this instance (SCHEDULER_ENABLED != true)")
 

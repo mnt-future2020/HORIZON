@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { matchAPI, mercenaryAPI, bookingAPI, venueAPI } from "@/lib/api";
-import { mediaUrl } from "@/lib/utils";
+import { mediaUrl, fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -539,13 +539,13 @@ export default function MatchmakingPage() {
       matchAPI.recommended(recParams).catch(() => ({ data: [] })),
       mercenaryAPI.list(filterSport !== "all" ? { sport: filterSport } : {}).catch(() => ({ data: [] })),
       mercenaryAPI.myPosts().catch(() => ({ data: [] })),
-      bookingAPI.list().catch(() => ({ data: [] })),
+      bookingAPI.list(1, 50).catch(() => ({ data: { bookings: [] } })),
     ]).then(([m, rec, mer, mp, bk]) => {
       setMatches(m.data || []);
       setRecommended(rec.data || []);
       setMercenaries(mer.data || []);
       setMyPosts(mp.data || []);
-      setMyBookings((bk.data || []).filter(b => b.status === "confirmed" && b.host_id === user?.id));
+      setMyBookings((bk.data?.bookings || []).filter(b => b.status === "confirmed" && b.host_id === user?.id));
     }).finally(() => setLoading(false));
   }, [user?.id, filterSport, filterArea, autoSport]);
 
@@ -813,7 +813,7 @@ export default function MatchmakingPage() {
                           </SelectTrigger>
                           <SelectContent>
                             {myBookings.map(b => (
-                              <SelectItem key={b.id} value={b.id}>{b.venue_name} — {b.date} at {b.start_time} ({b.sport})</SelectItem>
+                              <SelectItem key={b.id} value={b.id}>{b.venue_name} — {b.date} at {fmt12h(b.start_time)} ({b.sport})</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>

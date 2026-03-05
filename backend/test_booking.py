@@ -101,7 +101,7 @@ else:
 print("\n🔍 Fetching final booking...")
 r = requests.get(f"{BASE}/bookings", headers=headers)
 if r.status_code == 200:
-    for b in r.json():
+    for b in r.json().get("bookings", []):
         if b["id"] == booking_id:
             print(f"   Status:  {b['status']}")
             print(f"   QR Data: {b.get('qr_data', '(none)')}")

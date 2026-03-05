@@ -141,13 +141,13 @@ export default function PlayerDashboard() {
 
   useEffect(() => {
     Promise.all([
-      bookingAPI.list().catch(() => ({ data: [] })),
+      bookingAPI.list(1, 50).catch(() => ({ data: { bookings: [] } })),
       analyticsAPI.player().catch(() => ({ data: null })),
       waitlistAPI.myWaitlist().catch(() => ({ data: [] })),
       recommendationAPI.venues(6).catch(() => ({ data: { venues: [] } })),
       recommendationAPI.engagementScore().catch(() => ({ data: null })),
     ]).then(([bRes, sRes, wRes, vRecRes, engRes]) => {
-      setBookings(bRes.data || []);
+      setBookings(bRes.data?.bookings || []);
       setStats(sRes.data);
       setWaitlistEntries(wRes.data || []);
       setVenueRecs(vRecRes.data?.venues || []);
@@ -589,7 +589,7 @@ export default function PlayerDashboard() {
                     <h4 className="font-semibold text-sm text-foreground">{entry.venue_name || "Venue"}</h4>
                     <div className="flex items-center gap-3 text-xs admin-label mt-1">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {entry.date}</span>
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {entry.start_time}</span>
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {fmt12h(entry.start_time)}</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-500 border border-purple-500/20 font-medium">
                         #{entry.position || "?"} in queue
                       </span>

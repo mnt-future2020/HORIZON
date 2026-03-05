@@ -111,11 +111,7 @@ async def list_clients(
     if status:
         q["status"] = status
     if search:
-        q["$or"] = [
-            {"name": {"$regex": search, "$options": "i"}},
-            {"phone": {"$regex": search, "$options": "i"}},
-            {"email": {"$regex": search, "$options": "i"}},
-        ]
+        q["$text"] = {"$search": search}
     offline_clients = []
     async for c in db.coach_clients.find(q, {"_id": 0}).sort("created_at", -1):
         c["client_source"] = "offline"

@@ -1412,7 +1412,7 @@ export default function CoachDashboard({ defaultView }) {
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {s.date} · {s.start_time} · ₹{s.price}
+                      {s.date} · {fmt12h(s.start_time)} · ₹{s.price}
                       {s.review && <span className="ml-2 italic">"{s.review}"</span>}
                     </div>
                   </div>
@@ -2069,7 +2069,7 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex items-start justify-between mb-3">
                             <div>
                               <h4 className="font-medium text-sm">{b.name}</h4>
-                              <p className="text-xs text-muted-foreground">{b.start_time} - {b.end_time}</p>
+                              <p className="text-xs text-muted-foreground">{fmt12h(b.start_time)} - {fmt12h(b.end_time)}</p>
                             </div>
                             <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => handleDeleteBatch(b.id)}>
                               <Trash2 className="h-3.5 w-3.5" />
@@ -2817,7 +2817,7 @@ export default function CoachDashboard({ defaultView }) {
                           </Badge>
                         </div>
                         <div className="text-xs text-muted-foreground flex items-center gap-3">
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} - {s.end_time}</span>
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} - {fmt12h(s.end_time)}</span>
                           <span className="font-bold text-brand-600">₹{s.price || s.amount}</span>
                         </div>
                       </div>
@@ -2974,7 +2974,7 @@ export default function CoachDashboard({ defaultView }) {
                             {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} – {fmt12h(s.end_time)}</span>
                             <span className="font-bold text-brand-600">₹{s.price}</span>
                             {s.location && <span>{s.location}</span>}
                           </div>
@@ -3014,7 +3014,7 @@ export default function CoachDashboard({ defaultView }) {
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} – {fmt12h(s.end_time)}</span>
                             <span className="font-bold text-brand-600">₹{s.price}</span>
                             {s.location && <span>{s.location}</span>}
                           </div>
@@ -3048,7 +3048,7 @@ export default function CoachDashboard({ defaultView }) {
                             {s.rating && <Badge className="bg-amber-500/15 text-amber-400 text-[10px]"><Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{s.rating}/5</Badge>}
                             {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
                           </div>
-                          <div className="text-xs text-muted-foreground">{s.date} · {s.start_time} · ₹{s.price}
+                          <div className="text-xs text-muted-foreground">{s.date} · {fmt12h(s.start_time)} · ₹{s.price}
                             {s.review && <span className="ml-2 italic">"{s.review}"</span>}
                           </div>
                         </div>
@@ -3069,7 +3069,7 @@ export default function CoachDashboard({ defaultView }) {
                             <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                             <Badge className="bg-destructive/10 text-destructive text-[10px]">Cancelled</Badge>
                           </div>
-                          <div className="text-xs text-muted-foreground">{s.date} · {s.start_time}</div>
+                          <div className="text-xs text-muted-foreground">{s.date} · {fmt12h(s.start_time)}</div>
                         </div>
                       </div>
                     ))}
@@ -3153,7 +3153,7 @@ export default function CoachDashboard({ defaultView }) {
                       </div>
                       <div className="text-xs text-muted-foreground flex items-center gap-3">
                         <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
-                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{s.start_time} – {s.end_time}</span>
+                        <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} – {fmt12h(s.end_time)}</span>
                         <span className="font-bold text-brand-600">₹{s.amount}</span>
                       </div>
                       {s.notes && <p className="text-xs text-muted-foreground mt-1 italic">"{s.notes}"</p>}
@@ -3598,7 +3598,7 @@ export default function CoachDashboard({ defaultView }) {
                                   </Badge>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                                  {s.start_time} – {s.end_time}{s.location && ` · ${s.location}`}
+                                  {fmt12h(s.start_time)} – {fmt12h(s.end_time)}{s.location && ` · ${s.location}`}
                                 </p>
                                 {s.notes && <p className="text-[10px] text-muted-foreground italic mt-0.5">"{s.notes}"</p>}
                               </div>
@@ -3714,7 +3714,7 @@ export default function CoachDashboard({ defaultView }) {
                                     {s.payment_status}
                                   </Badge>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">{s.start_time} – {s.end_time}</p>
+                                <p className="text-[10px] text-muted-foreground mt-0.5">{fmt12h(s.start_time)} – {fmt12h(s.end_time)}</p>
                               </div>
                               <span className="text-xs font-bold text-brand-600 shrink-0">₹{s.amount || 0}</span>
                             </div>
@@ -5397,7 +5397,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
               {result.booking && (
                 <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{result.booking.date}</span>
-                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{result.booking.start_time}</span>
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(result.booking.start_time)}</span>
                   {result.booking.sport && (
                     <Badge variant="secondary" className="text-[10px] capitalize">{result.booking.sport}</Badge>
                   )}

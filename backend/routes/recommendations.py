@@ -3,6 +3,7 @@ Recommendation & Algorithm API Routes
 Venue recs, player recs, group recs, compatibility, engagement scores, churn prediction.
 """
 from fastapi import APIRouter, HTTPException, Depends, Query
+from database import db
 from auth import get_current_user
 from services.algorithms import (
     recommend_venues,
@@ -95,8 +96,11 @@ async def get_compatibility(target_id: str, user=Depends(get_current_user)):
 
 @router.get("/engagement/score")
 async def get_engagement_score(user=Depends(get_current_user)):
-    """Get detailed engagement score breakdown for the current user."""
+    """Get engagement score — reads pre-computed value, falls back to live compute."""
     try:
+        cached = user.get("engagement_data")
+        if cached:
+            return cached
         result = await compute_engagement_score(user["id"])
         return result
     except Exception as e:
@@ -106,8 +110,11 @@ async def get_engagement_score(user=Depends(get_current_user)):
 
 @router.get("/engagement/score/{user_id}")
 async def get_user_engagement_score(user_id: str, user=Depends(get_current_user)):
-    """Get engagement score for any user (public data)."""
+    """Get engagement score for any user — reads pre-computed value, falls back to live compute."""
     try:
+        target = await db.users.find_one({"id": user_id}, {"_id": 0, "engagement_data": 1})
+        if target and target.get("engagement_data"):
+            return target["engagement_data"]
         result = await compute_engagement_score(user_id)
         return result
     except Exception as e:

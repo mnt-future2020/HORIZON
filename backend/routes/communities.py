@@ -99,7 +99,7 @@ async def list_groups(
 ):
     query = {}
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+        query["$text"] = {"$search": search}
     if sport:
         query["sport"] = sport
     if group_type:
@@ -414,7 +414,7 @@ async def search_group_messages(group_id: str, q: str = Query("", min_length=1),
     group = await db.groups.find_one({"id": group_id})
     if not group or user["id"] not in group.get("members", []):
         raise HTTPException(403, "Not a member")
-    query = {"group_id": group_id, "deleted": {"$ne": True}, "content": {"$regex": q, "$options": "i"}}
+    query = {"group_id": group_id, "deleted": {"$ne": True}, "$text": {"$search": q}}
     total = await db.group_messages.count_documents(query)
     skip = (page - 1) * limit
     results = await db.group_messages.find(query, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
@@ -892,7 +892,7 @@ async def list_teams(
 ):
     query = {}
     if search:
-        query["name"] = {"$regex": search, "$options": "i"}
+        query["$text"] = {"$search": search}
     if sport:
         query["sport"] = sport
 
@@ -1389,7 +1389,7 @@ async def search_users(
     user=Depends(get_current_user)
 ):
     users = await db.users.find(
-        {"name": {"$regex": q, "$options": "i"}, "id": {"$ne": user["id"]}},
+        {"$text": {"$search": q}, "id": {"$ne": user["id"]}},
         {"_id": 0, "id": 1, "name": 1, "avatar": 1, "role": 1, "skill_rating": 1}
     ).limit(limit).to_list(limit)
     return users

@@ -33,7 +33,7 @@ if not redis_url:
 
 # Lock config
 SOFT_LOCK_TTL = 600      # 10 minutes
-HARD_LOCK_TTL = 1800     # 30 minutes
+HARD_LOCK_TTL = 900      # 15 minutes
 
 
 # Retry decorator for transient MongoDB failures (network blips, Atlas maintenance)

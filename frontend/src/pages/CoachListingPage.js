@@ -275,7 +275,7 @@ export default function CoachListingPage() {
           currency: "INR",
           order_id: session.razorpay_order_id,
           name: selectedCoach.name || "Coaching Session",
-          description: `${session.sport} session on ${session.date} at ${session.start_time}`,
+          description: `${session.sport} session on ${session.date} at ${fmt12h(session.start_time)}`,
           handler: async (response) => {
             try {
               await coachingAPI.verifyPayment(session.id, {
@@ -622,9 +622,9 @@ export default function CoachListingPage() {
                                       ? "border-border/40 bg-background hover:border-brand-600/50 hover:bg-brand-600/5"
                                       : "border-border/20 bg-secondary/20 text-muted-foreground/40 cursor-not-allowed"
                                 }`}>
-                                <span className={slot.available ? "" : "line-through"}>{slot.start_time}</span>
+                                <span className={slot.available ? "" : "line-through"}>{fmt12h(slot.start_time)}</span>
                                 <span className={`text-[10px] font-normal mt-0.5 ${selectedSlot?.start_time === slot.start_time ? "text-brand-600/70" : "text-muted-foreground"}`}>
-                                  {slot.end_time}
+                                  {fmt12h(slot.end_time)}
                                 </span>
                                 {!slot.available && <span className="text-[10px] text-red-400/70 mt-0.5">Booked</span>}
                               </button>
@@ -818,7 +818,7 @@ export default function CoachListingPage() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Time</span>
-                        <span className="font-bold text-sm">{pendingSession.start_time} – {pendingSession.end_time}</span>
+                        <span className="font-bold text-sm">{fmt12h(pendingSession.start_time)} – {fmt12h(pendingSession.end_time)}</span>
                       </div>
                       {pendingSession.sport && (
                         <div className="flex justify-between items-center">
@@ -948,7 +948,7 @@ function SessionReviewCard({ session, onReview }) {
             <Badge className="bg-brand-500/15 text-brand-400 text-[10px]">Completed</Badge>
           </div>
           <div className="text-xs text-muted-foreground">
-            {session.date} · {session.start_time} · ₹{session.price}
+            {session.date} · {fmt12h(session.start_time)} · ₹{session.price}
           </div>
         </div>
       </div>

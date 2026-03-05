@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, teamAPI } from "@/lib/api";
-import { mediaUrl } from "@/lib/utils";
+import { mediaUrl, fmt12h } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -273,10 +273,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
     try {
       const [vRes, bRes] = await Promise.all([
         venueAPI.getOwnerVenues().catch(() => ({ data: [] })),
-        bookingAPI.list().catch(() => ({ data: [] })),
+        bookingAPI.list(1, 50).catch(() => ({ data: { bookings: [] } })),
       ]);
       const venueList = Array.isArray(vRes.data) ? vRes.data : [];
-      const bookingList = Array.isArray(bRes.data) ? bRes.data : [];
+      const bookingList = Array.isArray(bRes.data?.bookings) ? bRes.data.bookings : [];
       setVenues(venueList);
       setBookings(bookingList);
       if (venueList.length > 0) {
@@ -1024,7 +1024,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <div className="flex items-center gap-3">
                               <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
-                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{b.start_time}-{b.end_time}</span>
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
                               <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
                             </div>
                             <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{b.total_amount}</span>
@@ -1085,7 +1085,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                   <div className="flex items-center justify-between gap-2">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-xs font-bold">{b.start_time}-{b.end_time}</span>
+                                        <span className="text-xs font-bold">{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
                                         <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
                                         <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
                                         {b.payment_mode === "split" && <Badge variant="outline" className="text-[10px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
@@ -1153,7 +1153,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Time</span>
-                      <p className="text-sm admin-name mt-0.5">{selectedBooking.start_time} - {selectedBooking.end_time}</p>
+                      <p className="text-sm admin-name mt-0.5">{fmt12h(selectedBooking.start_time)} - {fmt12h(selectedBooking.end_time)}</p>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Turf</span>
@@ -1407,8 +1407,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   ? (r.value_type === "percent" ? `${r.value}%` : `₹${r.value}`)
                   : (r.action?.type === "multiplier" ? `${r.action.value}x` : `-${Math.round((r.action?.value||0)*100)}%`);
                 const scheduleLabel = schedType === "one_time"
-                  ? `${r.date_from || "?"} → ${r.date_to || "?"}, ${r.time_from||""}–${r.time_to||""}`
-                  : `${r.conditions?.days?.length > 0 ? r.conditions.days.map(d => DAY_LABELS[d]).join(", ") : "Every day"}${r.conditions?.time_range ? `, ${r.conditions.time_range.start}–${r.conditions.time_range.end}` : ""}`;
+                  ? `${r.date_from || "?"} → ${r.date_to || "?"}, ${fmt12h(r.time_from)||""}–${fmt12h(r.time_to)||""}`
+                  : `${r.conditions?.days?.length > 0 ? r.conditions.days.map(d => DAY_LABELS[d]).join(", ") : "Every day"}${r.conditions?.time_range ? `, ${fmt12h(r.conditions.time_range.start)}–${fmt12h(r.conditions.time_range.end)}` : ""}`;
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
                     className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-4 border-l-4 ${r.is_active ? (isDiscount ? "border-l-brand-500" : "border-l-amber-500") : "border-l-muted-foreground/30 opacity-60"}`}
@@ -1534,15 +1534,19 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <div className="grid grid-cols-2 gap-2">
                           <div>
                             <p className="text-[10px] text-muted-foreground mb-1">From</p>
-                            <input type="time" value={ruleForm.conditions.time_range?.start || "18:00"}
+                            <select value={ruleForm.conditions.time_range?.start || "18:00"}
                               onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
-                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                              {Array.from({ length: 24 }, (_, i) => { const h24 = String(i).padStart(2, "0") + ":00"; const h12 = i === 0 ? "12:00 AM" : i < 12 ? `${i}:00 AM` : i === 12 ? "12:00 PM" : `${i - 12}:00 PM`; return <option key={h24} value={h24}>{h12}</option>; })}
+                            </select>
                           </div>
                           <div>
                             <p className="text-[10px] text-muted-foreground mb-1">To</p>
-                            <input type="time" value={ruleForm.conditions.time_range?.end || "22:00"}
+                            <select value={ruleForm.conditions.time_range?.end || "22:00"}
                               onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
-                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                              {Array.from({ length: 24 }, (_, i) => { const h24 = String(i).padStart(2, "0") + ":00"; const h12 = i === 0 ? "12:00 AM" : i < 12 ? `${i}:00 AM` : i === 12 ? "12:00 PM" : `${i - 12}:00 PM`; return <option key={h24} value={h24}>{h12}</option>; })}
+                            </select>
                           </div>
                         </div>
                       </div>
@@ -1569,15 +1573,19 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <div className="grid grid-cols-2 gap-2">
                         <div>
                           <p className="text-[10px] text-muted-foreground mb-1">From Time</p>
-                          <input type="time" value={ruleForm.time_from || "18:00"}
+                          <select value={ruleForm.time_from || "18:00"}
                             onChange={e => setRuleForm(p => ({ ...p, time_from: e.target.value }))}
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                            {Array.from({ length: 24 }, (_, i) => { const h24 = String(i).padStart(2, "0") + ":00"; const h12 = i === 0 ? "12:00 AM" : i < 12 ? `${i}:00 AM` : i === 12 ? "12:00 PM" : `${i - 12}:00 PM`; return <option key={h24} value={h24}>{h12}</option>; })}
+                          </select>
                         </div>
                         <div>
                           <p className="text-[10px] text-muted-foreground mb-1">To Time</p>
-                          <input type="time" value={ruleForm.time_to || "22:00"}
+                          <select value={ruleForm.time_to || "22:00"}
                             onChange={e => setRuleForm(p => ({ ...p, time_to: e.target.value }))}
-                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
+                            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
+                            {Array.from({ length: 24 }, (_, i) => { const h24 = String(i).padStart(2, "0") + ":00"; const h12 = i === 0 ? "12:00 AM" : i < 12 ? `${i}:00 AM` : i === 12 ? "12:00 PM" : `${i - 12}:00 PM`; return <option key={h24} value={h24}>{h12}</option>; })}
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -2232,11 +2240,7 @@ function SlotAvailabilityPanel({ venueId }) {
     setSlotDate(d.toISOString().split("T")[0]);
   };
 
-  const fmt12h = (t) => {
-    const [h, m] = t.split(":").map(Number);
-    const suffix = h >= 12 ? "PM" : "AM";
-    return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${suffix}`;
-  };
+  // fmt12h imported from @/lib/utils
 
   const statusStyles = {
     available: "bg-emerald-500/15 text-emerald-500",
@@ -2352,6 +2356,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
   const [result, setResult] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState(null);
+  const [dragOver, setDragOver] = useState(false);
   const scannerRef = useRef(null);
   const scannerInstanceRef = useRef(null);
 
@@ -2500,9 +2505,31 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             </div>
           </div>
           <div className="space-y-3">
-            <label className="flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border border-dashed border-border cursor-pointer hover:border-brand-600/40 hover:bg-brand-600/5 transition-all">
+            <label
+              className={`flex flex-col items-center justify-center w-full aspect-[4/3] max-w-sm mx-auto rounded-xl bg-secondary/20 border-2 border-dashed cursor-pointer transition-all ${dragOver ? "border-brand-600 bg-brand-600/10 scale-[1.02]" : "border-border hover:border-brand-600/40 hover:bg-brand-600/5"}`}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={async (e) => {
+                e.preventDefault();
+                setDragOver(false);
+                const file = e.dataTransfer.files?.[0];
+                if (!file || !file.type.startsWith("image/")) return;
+                setVerifying(true);
+                setResult(null);
+                try {
+                  const { Html5Qrcode } = await import("html5-qrcode");
+                  const scanner = new Html5Qrcode("upload-qr-decode");
+                  const decoded = await scanner.scanFile(file, true);
+                  scanner.clear();
+                  await handleVerify(decoded);
+                } catch {
+                  setResult({ error: true, message: "Could not read QR code from image. Try a clearer photo." });
+                  setVerifying(false);
+                }
+              }}
+            >
               <ImagePlus className="h-10 w-10 text-muted-foreground mb-2" />
-              <span className="text-sm admin-label text-muted-foreground">Click to select QR image</span>
+              <span className="text-sm admin-label text-muted-foreground">{dragOver ? "Drop QR image here" : "Click or drag & drop QR image"}</span>
               <span className="text-[10px] text-muted-foreground/60 mt-1">JPG, PNG, or screenshot</span>
               <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                 const file = e.target.files?.[0];
@@ -2573,7 +2600,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                       {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      {b.start_time} - {b.end_time} · Turf #{b.turf_number || 1}
+                      {fmt12h(b.start_time)} - {fmt12h(b.end_time)} · Turf #{b.turf_number || 1}
                     </div>
                   </div>
                   <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">Pending</Badge>
@@ -2590,7 +2617,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                       {b.sport && <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{b.sport}</Badge>}
                     </div>
                     <div className="text-[10px] text-muted-foreground">
-                      {b.start_time} - {b.end_time} · Turf #{b.turf_number || 1}
+                      {fmt12h(b.start_time)} - {fmt12h(b.end_time)} · Turf #{b.turf_number || 1}
                       {b.checkin_time && (
                         <span className="ml-2 text-brand-400">
                           at {new Date(b.checkin_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
@@ -2637,7 +2664,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
               {result.booking && (
                 <div className="flex items-center justify-center gap-4 mt-3 text-xs text-muted-foreground">
                   <span>{result.booking.date}</span>
-                  <span>{result.booking.start_time} - {result.booking.end_time}</span>
+                  <span>{fmt12h(result.booking.start_time)} - {fmt12h(result.booking.end_time)}</span>
                 </div>
               )}
             </>

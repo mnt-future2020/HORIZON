@@ -270,6 +270,7 @@ async def dev_login(request: Request):
         # Auto-create known dev accounts if not seeded yet
         dev_accounts = {
             "admin@lobbi.com": {"name": "Horizon Admin", "role": "super_admin"},
+            "kansha@mntfuture.com": {"name": "Kansha", "role": "player"},
             "priya@lobbi.com": {"name": "Coach Priya", "role": "coach", "coach_type": "individual"},
             "coach@lobbi.com": {"name": "Coach Ravi", "role": "coach", "coach_type": "academy"},
         }

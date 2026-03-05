@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { fmt12h } from "@/lib/utils";
 
 export default function PaymentReviewModal({
   payStep,
@@ -95,7 +96,7 @@ export default function PaymentReviewModal({
                       Time
                     </span>
                     <span className="font-bold text-sm">
-                      {pendingSession.start_time} – {pendingSession.end_time}
+                      {fmt12h(pendingSession.start_time)} – {fmt12h(pendingSession.end_time)}
                     </span>
                   </div>
                   {pendingSession.sport && (

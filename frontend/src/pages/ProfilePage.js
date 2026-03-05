@@ -34,6 +34,7 @@ export default function ProfilePage() {
   // State
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
+  const [bookingsTotal, setBookingsTotal] = useState(0);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", preferred_position: "" });
   const [saving, setSaving] = useState(false);
@@ -101,7 +102,7 @@ export default function ProfilePage() {
     // Rule 1.4: Promise.all for independent operations - parallel data loading
     if (role === "player") {
       const playerStatsPromise = analyticsAPI.player().catch(() => ({ data: null }));
-      const bookingsPromise = bookingAPI.list().catch(() => ({ data: [] }));
+      const bookingsPromise = bookingAPI.list(1, 15).catch(() => ({ data: { bookings: [] } }));
       const careerPromise = user.id ? careerAPI.getCareer(user.id).catch(() => ({ data: null })) : Promise.resolve({ data: null });
       const playerCardPromise = user.id ? playerCardAPI.getCard(user.id).catch(() => ({ data: null })) : Promise.resolve({ data: null });
 
@@ -109,20 +110,22 @@ export default function ProfilePage() {
       Promise.all([playerStatsPromise, bookingsPromise, careerPromise, playerCardPromise])
         .then(([sRes, bRes, cRes, pRes]) => {
           setStats(sRes.data);
-          setBookings(bRes.data || []);
+          setBookings(bRes.data?.bookings || []);
+          setBookingsTotal(bRes.data?.total || 0);
           setCareer(cRes.data);
           setPlayerCard(pRes.data);
         })
         .finally(() => setCareerLoading(false));
     } else if (role === "venue_owner") {
       const venuesPromise = venueAPI.getOwnerVenues();
-      const bookingsPromise = bookingAPI.list();
+      const bookingsPromise = bookingAPI.list(1, 15);
 
       Promise.all([venuesPromise, bookingsPromise])
         .then(async ([vRes, bRes]) => {
           const venues = vRes.data || [];
           setOwnerVenues(venues);
-          setBookings(bRes.data || []);
+          setBookings(bRes.data?.bookings || []);
+          setBookingsTotal(bRes.data?.total || 0);
           
           const analyticsMap = {};
           const reviewMap = {};
@@ -252,7 +255,7 @@ export default function ProfilePage() {
             {user?.role === "player" && (
               <>
                 <TabsTrigger value="history" className="font-display font-bold data-[state=active]:bg-brand-600 data-[state=active]:text-white transition-all">
-                  History
+                  My Bookings
                 </TabsTrigger>
                 <TabsTrigger value="performance" className="font-display font-bold data-[state=active]:bg-brand-600 data-[state=active]:text-white transition-all">
                   Performance
@@ -360,7 +363,7 @@ export default function ProfilePage() {
           {/* Player History Tab */}
           {user?.role === "player" && (
             <TabsContent value="history">
-              <BookingHistory bookings={bookings} />
+              <BookingHistory bookings={bookings} total={bookingsTotal} />
             </TabsContent>
           )}
 

@@ -1,5 +1,6 @@
 import { Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { fmt12h } from "@/lib/utils";
 
 export function CoachSessionsList({ coachSessions }) {
   if (coachSessions.length === 0) {
@@ -49,7 +50,7 @@ function SessionCard({ session }) {
         <div className="text-xs text-muted-foreground font-medium space-y-0.5">
           <div>
             {session.sport} • {session.date}
-            {session.start_time && ` • ${session.start_time}`}
+            {session.start_time && ` • ${fmt12h(session.start_time)}`}
           </div>
         </div>
       </div>

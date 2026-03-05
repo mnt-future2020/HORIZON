@@ -40,8 +40,13 @@ async def ensure_indexes(db):
         [("name", "text"), ("username", "text")],
         name="user_text_search", default_language="english"
     )
+    # Drop old venue text index before recreating with address field
+    try:
+        await db.venues.drop_index("venue_text_search")
+    except Exception:
+        pass
     await db.venues.create_index(
-        [("name", "text"), ("area", "text"), ("city", "text")],
+        [("name", "text"), ("address", "text"), ("area", "text"), ("city", "text")],
         name="venue_text_search", default_language="english"
     )
 
@@ -63,6 +68,28 @@ async def ensure_indexes(db):
     await db.story_views.create_index([("story_id", 1), ("viewer_id", 1)], unique=True)
     await db.streaks.create_index("user_id")
 
+    # --- Text indexes for $text search (replaces $regex full scans) ---
+    await db.groups.create_index(
+        [("name", "text"), ("description", "text")],
+        name="group_text_search", default_language="english"
+    )
+    await db.group_messages.create_index(
+        [("content", "text")],
+        name="group_message_text_search", default_language="english"
+    )
+    await db.teams.create_index(
+        [("name", "text")],
+        name="team_text_search", default_language="english"
+    )
+    await db.coach_clients.create_index(
+        [("name", "text"), ("phone", "text"), ("email", "text")],
+        name="coach_client_text_search", default_language="english"
+    )
+    await db.organizations.create_index(
+        [("name", "text")],
+        name="org_text_search", default_language="english"
+    )
+
     # --- Audit round 2: missing indexes for performance ---
     await db.social_posts.create_index([("likes_count", -1)])          # explore sorts by likes
     await db.bookings.create_index("players")                          # affinity map, player card $or queries
@@ -70,5 +97,26 @@ async def ensure_indexes(db):
     await db.groups.create_index("members")                            # group recommendations
     await db.social_reactions.create_index([("user_id", 1), ("created_at", -1)])  # engagement score
     await db.stories.create_index([("user_id", 1), ("created_at", -1)])           # engagement score
+
+    # Feed affinity: host_id + created_at for co-play lookup
+    await db.bookings.create_index([("host_id", 1), ("created_at", -1)])
+    # Comments by user (engagement score)
+    await db.social_comments.create_index("user_id")
+
+    # --- Payout system indexes ---
+    await db.payout_deductions.create_index("venue_owner_id")
+    await db.payout_deductions.create_index("deduction_status")
+    await db.payout_deductions.create_index([("venue_owner_id", 1), ("deduction_status", 1)])
+
+    await db.finance_events.create_index("owner_id")
+    await db.finance_events.create_index("booking_id")
+    await db.finance_events.create_index("created_at")
+
+    await db.webhook_logs.create_index("event_type")
+    await db.webhook_logs.create_index("received_at")
+
+    await db.linked_accounts.create_index("razorpay_account_id", unique=True, sparse=True)
+
+    await db.bookings.create_index("refund_status", sparse=True)
 
     logger.info("MongoDB indexes ensured")
