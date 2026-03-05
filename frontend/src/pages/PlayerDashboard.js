@@ -7,11 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { motion } from "framer-motion";
 import {
   MapPin, Swords, Calendar, Trophy, TrendingUp, Clock,
-  Star, Search, Play, ListOrdered, X, User, Loader2, Dumbbell,
+  Star, Play, ListOrdered, X, User, Loader2, Dumbbell,
   BarChart3, Target, Zap, Flame, Building2,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Input } from "@/components/ui/input";
 import BookingReceipt from "@/components/BookingReceipt";
 import { PlayerDashboardSkeleton } from "@/components/SkeletonLoader";
 
@@ -133,7 +132,6 @@ export default function PlayerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchQ, setSearchQ] = useState("");
   const [waitlistEntries, setWaitlistEntries] = useState([]);
   const [leavingWaitlist, setLeavingWaitlist] = useState(null);
   const [venueRecs, setVenueRecs] = useState([]);
@@ -232,41 +230,6 @@ export default function PlayerDashboard() {
       </div>
 
       {/* ── Quick Venue Search ────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mb-10 rounded-[28px] bg-card border border-border/40 shadow-sm p-6"
-        data-testid="quick-venue-search"
-      >
-        <p className="admin-section-label mb-4">Quick Search</p>
-        <form
-          onSubmit={(e) => { e.preventDefault(); navigate(`/venues?q=${encodeURIComponent(searchQ)}`); }}
-          className="flex flex-col sm:flex-row gap-3"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search venue, area, or city…"
-              value={searchQ}
-              onChange={e => setSearchQ(e.target.value)}
-              className="pl-11 h-11 bg-secondary/20 border-border/40 rounded-xl text-sm"
-              name="venue-search"
-              autoComplete="off"
-              data-testid="dashboard-search-input"
-            />
-          </div>
-          <button
-            type="submit"
-            aria-label="Search venues"
-            className="h-12 sm:h-11 px-5 w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white rounded-xl admin-btn shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 flex items-center justify-center gap-2"
-            data-testid="dashboard-search-btn"
-          >
-            <Search className="h-4 w-4" />
-            <span className="sm:hidden text-sm font-semibold">Search</span>
-          </button>
-        </form>
-      </motion.div>
 
       {/* ── Quick Actions ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-10">

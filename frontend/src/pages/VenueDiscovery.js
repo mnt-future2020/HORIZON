@@ -147,6 +147,7 @@ export default function VenueDiscovery() {
   );
   const [nearMeActive, setNearMeActive] = useState(searchParams.get("nearme") === "1");
   const [userLocation, setUserLocation] = useState(null);
+  const [userLocationName, setUserLocationName] = useState("");
   const [locatingUser, setLocatingUser] = useState(false);
   const [distanceMap, setDistanceMap] = useState({});
   const [driveTimeMap, setDriveTimeMap] = useState({});
@@ -190,6 +191,7 @@ export default function VenueDiscovery() {
     if (nearMeActive) {
       setNearMeActive(false);
       setUserLocation(null);
+      setUserLocationName("");
       setDistanceMap({});
       return;
     }
@@ -200,11 +202,24 @@ export default function VenueDiscovery() {
     setLocatingUser(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
         setNearMeActive(true);
         setLocatingUser(false);
         setSelectedCity("all");
         setSelectedArea("all");
+        // Reverse geocode to get location name
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=18&addressdetails=1`)
+          .then(r => r.json())
+          .then(data => {
+            const addr = data.address || {};
+            const city = addr.city || addr.town || addr.state_district || addr.state || "";
+            // Pick most granular area name, skip fields that match the city name
+            const areaCandidates = [addr.neighbourhood, addr.suburb, addr.quarter, addr.residential, addr.road, addr.village, addr.city_district, addr.town];
+            const area = areaCandidates.find(a => a && a !== city) || "";
+            setUserLocationName(area ? (city && city !== area ? `${area}, ${city}` : area) : city);
+          })
+          .catch(() => {});
         toast.success("Location detected! Showing nearest venues.");
       },
       (err) => {
@@ -295,7 +310,7 @@ export default function VenueDiscovery() {
   const clearFilters = () => {
     setSearchText(""); setSelectedCity("all"); setSelectedArea("all");
     setSelectedSport("all"); setSortBy("rating"); setPriceRange("all");
-    setSelectedAmenity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false);
+    setSelectedAmenity("all"); setNearMeActive(false); setUserLocation(null); setUserLocationName(""); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false);
   };
 
   const sports = ["football", "cricket", "badminton", "basketball", "tennis", "table_tennis"];
@@ -372,7 +387,7 @@ export default function VenueDiscovery() {
               disabled={locatingUser}
               className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all flex items-center gap-1.5 sm:gap-2 border rounded-full ${nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
               {locatingUser ? <Loader2 className="h-4 w-4 animate-spin" /> : <Navigation className="h-4 w-4" />}
-              {locatingUser ? "Locating..." : "Near Me"}
+              {locatingUser ? "Locating..." : nearMeActive && userLocationName ? userLocationName : "Near Me"}
             </button>
             {nearMeActive && (
               <button onClick={() => setDriveTimeMode(!driveTimeMode)} data-testid="drive-time-toggle"
@@ -381,12 +396,12 @@ export default function VenueDiscovery() {
                 Drive Time
               </button>
             )}
-            <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false); }} data-testid="city-pill-all"
+            <button onClick={() => { setSelectedCity("all"); setNearMeActive(false); setUserLocation(null); setUserLocationName(""); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false); }} data-testid="city-pill-all"
               className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all border rounded-full ${selectedCity === "all" && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
               All Cities
             </button>
             {cities.map(c => (
-              <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
+              <button key={c.city} onClick={() => { setSelectedCity(c.city); setNearMeActive(false); setUserLocation(null); setUserLocationName(""); setDistanceMap({}); }} data-testid={`city-pill-${c.city}`}
                 className={`px-2.5 sm:px-5 py-1.5 sm:py-2.5 min-h-[36px] sm:min-h-[40px] admin-btn text-[10px] sm:text-[11px] whitespace-nowrap transition-all border rounded-full ${selectedCity === c.city && !nearMeActive ? "bg-brand-600 text-white border-brand-600" : "bg-card text-muted-foreground border-border/40 hover:border-brand-500 hover:text-brand-600"}`}>
                 {c.city} <span className="opacity-50 ml-1">({c.count})</span>
               </button>
@@ -488,7 +503,7 @@ export default function VenueDiscovery() {
         {!loading && venues.length > 0 && (nearMeActive || selectedCity !== "all" || selectedArea !== "all") && (
           <p className="admin-label mb-4 sm:mb-6" data-testid="results-count">
             Showing results
-            {nearMeActive && <> <span className="text-brand-600 font-black">near you</span> <span className="text-[10px]">(within 50 km)</span></>}
+            {nearMeActive && <> <span className="text-brand-600 font-black">near you</span>{userLocationName && <> in <span className="text-foreground font-black">{userLocationName}</span></>}</>}
             {!nearMeActive && selectedCity !== "all" && <> in <span className="text-foreground font-black">{selectedCity}</span></>}
             {selectedArea !== "all" && <>, <span className="text-foreground">{selectedArea}</span></>}
           </p>

@@ -774,6 +774,10 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
 function VenuesTab() {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalVenues, setTotalVenues] = useState(0);
+  const LIMIT = 10;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const SPORTS_OPTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis"];
@@ -789,9 +793,15 @@ function VenuesTab() {
   const [useOwnerPhone, setUseOwnerPhone] = useState(false);
   const [confirmAssign, setConfirmAssign] = useState(false);
 
-  const load = useCallback(() => {
+  const load = useCallback((p = 1) => {
     setLoading(true);
-    adminAPI.venues().then(r => setVenues(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+    adminAPI.venues({ page: p, limit: LIMIT }).then(r => {
+      const data = r.data || {};
+      setVenues(data.venues || []);
+      setTotalPages(data.pages || 1);
+      setTotalVenues(data.total || 0);
+      setPage(data.page || p);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -801,7 +811,7 @@ function VenuesTab() {
       if (currentStatus === "active") await adminAPI.suspendVenue(venueId);
       else await adminAPI.activateVenue(venueId);
       toast.success(`Venue ${currentStatus === "active" ? "suspended" : "activated"}`);
-      load();
+      load(page);
     } catch { toast.error("Failed to update venue"); }
   };
 
@@ -813,7 +823,7 @@ function VenuesTab() {
       toast.success("Venue created (Enquiry mode)");
       setShowCreateDialog(false);
       setVenueForm({ name: "", description: "", address: "", city: "", sports: ["football"], turfs: 1, contact_phone: "", images: [] });
-      load();
+      load(1);
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to create venue"); }
     finally { setCreating(false); }
   };
@@ -853,7 +863,7 @@ function VenuesTab() {
       toast.success("Owner assigned! Venue is now bookable.");
       setAssignDialog(null);
       setConfirmAssign(false);
-      load();
+      load(page);
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to assign owner"); }
     finally { setAssigning(false); }
   };
@@ -864,7 +874,7 @@ function VenuesTab() {
       <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
           <h2 className="admin-heading text-base sm:text-lg">Venues</h2>
-          <p className="admin-label mt-0.5 sm:mt-1 text-xs">{venues.length} Managed</p>
+          <p className="admin-label mt-0.5 sm:mt-1 text-xs">{totalVenues} Managed</p>
         </div>
         <Button size="sm" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-3 sm:px-5 admin-btn rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 hover:bg-brand-500 active:scale-95 bg-brand-600 text-white text-[11px] sm:text-xs" onClick={() => setShowCreateDialog(true)}>
           <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Add New</span> Venue
@@ -882,6 +892,52 @@ function VenuesTab() {
           />
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+          <span className="admin-section-label text-[11px] sm:text-xs">
+            {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, totalVenues)} of {totalVenues}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page <= 1}
+              onClick={() => load(page - 1)}
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "..." ? (
+                  <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                ) : (
+                  <button key={p} onClick={() => load(p)}
+                    className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${
+                      p === page
+                        ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}>
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              disabled={page >= totalPages}
+              onClick={() => load(page + 1)}
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create Venue Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -1647,21 +1703,49 @@ function PayoutsTab() {
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [detailDialog, setDetailDialog] = useState(null); // settlement object or null
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  // Pagination state
+  const [pendingPage, setPendingPage] = useState(1);
+  const [pendingTotalPages, setPendingTotalPages] = useState(1);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const LIMIT = 10;
 
   // Load data
+  const loadPending = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const res = await payoutAPI.pending({ page: p, limit: LIMIT });
+      const data = res.data || {};
+      setPendingPayouts(data.payouts || []);
+      setPendingTotalPages(data.pages || 1);
+      setPendingTotal(data.total || 0);
+      setPendingPage(data.page || p);
+    } catch { toast.error("Failed to load pending payouts"); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadHistory = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const res = await payoutAPI.settlements({ page: p, limit: LIMIT });
+      const sData = res.data || {};
+      setSettlements(sData.settlements || []);
+      setHistoryTotalPages(sData.pages || Math.ceil((sData.total || 0) / LIMIT) || 1);
+      setHistoryTotal(sData.total || 0);
+      setHistoryPage(sData.page || p);
+    } catch { toast.error("Failed to load settlements"); }
+    finally { setLoading(false); }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [pendingRes, settlementsRes] = await Promise.all([
-        payoutAPI.pending(),
-        payoutAPI.settlements(),
-      ]);
-      setPendingPayouts(pendingRes.data || []);
-      const sData = settlementsRes.data;
-      setSettlements(Array.isArray(sData) ? sData : sData?.settlements || []);
-    } catch { toast.error("Failed to load payouts"); }
+      await Promise.all([loadPending(1), loadHistory(1)]);
+    } catch {}
     finally { setLoading(false); }
-  }, []);
+  }, [loadPending, loadHistory]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1681,7 +1765,8 @@ function PayoutsTab() {
     try {
       await payoutAPI.createSettlement({ user_id: userId });
       toast.success("Payout processed successfully");
-      load();
+      loadPending(pendingPage);
+      loadHistory(1);
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to process payout"); }
     finally { setProcessing(null); }
   };
@@ -1692,7 +1777,8 @@ function PayoutsTab() {
     try {
       const res = await payoutAPI.bulkSettle();
       toast.success(`Processed ${res.data?.processed || 0} payouts`);
-      load();
+      loadPending(1);
+      loadHistory(1);
     } catch (err) { toast.error(err?.response?.data?.detail || "Bulk process failed"); }
     finally { setBulkProcessing(false); }
   };
@@ -1733,7 +1819,7 @@ function PayoutsTab() {
       {/* Header with stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={IndianRupee} label="Total Settled" value={`₹${totalSettledAmount.toLocaleString()}`} index={0} />
-        <StatCard icon={Clock} label="Pending Payouts" value={pendingPayouts.length} sub={`₹${totalPendingAmount.toLocaleString()}`} index={1} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+        <StatCard icon={Clock} label="Pending Payouts" value={pendingTotal} sub={`₹${totalPendingAmount.toLocaleString()}`} index={1} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
         <StatCard icon={CheckCircle} label="Completed" value={settlements.filter(s => s.status === "completed").length} index={2} />
         <StatCard icon={CreditCard} label="Active Accounts" value={settlements.length > 0 ? "—" : "0"} index={3} />
       </div>
@@ -1850,6 +1936,37 @@ function PayoutsTab() {
                 </div>
               </div>
             )}
+            {/* Pending Pagination */}
+            {pendingTotalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                <span className="admin-section-label text-[11px] sm:text-xs">
+                  {(pendingPage - 1) * LIMIT + 1}–{Math.min(pendingPage * LIMIT, pendingTotal)} of {pendingTotal}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button disabled={pendingPage <= 1} onClick={() => loadPending(pendingPage - 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: pendingTotalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === pendingTotalPages || Math.abs(p - pendingPage) <= 1)
+                    .reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, [])
+                    .map((p, i) =>
+                      p === "..." ? (
+                        <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                      ) : (
+                        <button key={p} onClick={() => loadPending(p)}
+                          className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === pendingPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button disabled={pendingPage >= pendingTotalPages} onClick={() => loadPending(pendingPage + 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -1913,6 +2030,37 @@ function PayoutsTab() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+            {/* History Pagination */}
+            {historyTotalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                <span className="admin-section-label text-[11px] sm:text-xs">
+                  {(historyPage - 1) * LIMIT + 1}–{Math.min(historyPage * LIMIT, historyTotal)} of {historyTotal}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button disabled={historyPage <= 1} onClick={() => loadHistory(historyPage - 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: historyTotalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === historyTotalPages || Math.abs(p - historyPage) <= 1)
+                    .reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, [])
+                    .map((p, i) =>
+                      p === "..." ? (
+                        <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                      ) : (
+                        <button key={p} onClick={() => loadHistory(p)}
+                          className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === historyPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button disabled={historyPage >= historyTotalPages} onClick={() => loadHistory(historyPage + 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )}

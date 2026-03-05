@@ -218,21 +218,23 @@ export default function ProfilePage() {
         />
 
         {/* Stats Grid */}
-        <div className="rounded-2xl bg-gradient-to-br from-card via-card to-muted/20 border border-border shadow-lg p-6 sm:p-8 mb-6">
-          {user?.role === "player" && <PlayerStats user={user} stats={stats} tier={tier} />}
-          {user?.role === "venue_owner" && (
-            <VenueOwnerStats
-              ownerVenues={ownerVenues}
-              venueAnalytics={venueAnalytics}
-              reviewSummaries={reviewSummaries}
-            />
-          )}
-          {user?.role === "coach" && <CoachStats coachStats={coachStats} />}
+        {(user?.role === "player" || user?.role === "venue_owner" || user?.role === "coach" || playerCard?.overall_score !== undefined) && (
+          <div className="rounded-2xl bg-gradient-to-br from-card via-card to-muted/20 border border-border shadow-lg p-6 sm:p-8 mb-6">
+            {user?.role === "player" && <PlayerStats user={user} stats={stats} tier={tier} />}
+            {user?.role === "venue_owner" && (
+              <VenueOwnerStats
+                ownerVenues={ownerVenues}
+                venueAnalytics={venueAnalytics}
+                reviewSummaries={reviewSummaries}
+              />
+            )}
+            {user?.role === "coach" && <CoachStats coachStats={coachStats} />}
 
-          {playerCard?.overall_score !== undefined && (
-            <OverallScoreCard playerCard={playerCard} userId={user?.id} navigate={navigate} />
-          )}
-        </div>
+            {playerCard?.overall_score !== undefined && (
+              <OverallScoreCard playerCard={playerCard} userId={user?.id} navigate={navigate} />
+            )}
+          </div>
+        )}
 
         {/* Verification Banners */}
         <VerificationBanner

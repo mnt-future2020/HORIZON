@@ -13,13 +13,11 @@ import {
   Trash2,
   Pause,
   Play,
-  Heart,
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
 
 const STORY_DURATION = 8000; // 8 seconds per story
-const REACTION_EMOJI = { fire: "\uD83D\uDD25", trophy: "\uD83C\uDFC6", clap: "\uD83D\uDC4F", heart: "\u2764\uFE0F", 100: "\uD83D\uDCAF", muscle: "\uD83D\uDCAA" };
 
 /**
  * Production-grade StoryViewer — Instagram/Facebook style
@@ -40,8 +38,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
   const [progress, setProgress] = useState(0);
   const [direction, setDirection] = useState(0); // -1 = left, 1 = right for slide animation
   const [replyText, setReplyText] = useState("");
-  const [showReactions, setShowReactions] = useState(false);
-  const [myReaction, setMyReaction] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -99,8 +95,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
 
   /* ─── Navigation ─────────────────────────────────────────── */
   const goNext = useCallback(() => {
-    setShowReactions(false);
-    setMyReaction(null);
     const group = storyGroups[groupIdx];
     if (!group) { onClose(); return; }
 
@@ -125,8 +119,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
   goNextRef.current = goNext;
 
   const goPrev = useCallback(() => {
-    setShowReactions(false);
-    setMyReaction(null);
     if (storyIdx > 0) {
       setDirection(-1);
       setStoryIdx((i) => i - 1);
@@ -147,8 +139,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
     setGroupIdx(idx);
     setStoryIdx(0);
     elapsedRef.current = 0;
-    setShowReactions(false);
-    setMyReaction(null);
   }, [groupIdx]);
 
   /* ─── Lock body scroll while open ────────────────────────── */
@@ -285,19 +275,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
       goPrev();
     } else {
       goNext();
-    }
-  };
-
-  /* ─── Reactions ──────────────────────────────────────────── */
-  const handleReaction = async (reaction) => {
-    const prev = myReaction;
-    setMyReaction(reaction);
-    setShowReactions(false);
-    try {
-      await socialAPI.reactStory(currentStory.id, reaction);
-    } catch {
-      setMyReaction(prev); // rollback on failure
-      toast.error("Failed to react");
     }
   };
 
@@ -587,39 +564,9 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
 
         {/* ─── Bottom section ─── */}
         <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-4 flex flex-col gap-3" data-ignore-tap>
-          {/* Reactions row */}
-          <AnimatePresence>
-            {showReactions && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="flex items-center justify-center gap-2 py-2"
-              >
-                {Object.entries(REACTION_EMOJI).map(([key, emoji]) => (
-                  <button
-                    key={key}
-                    onClick={() => handleReaction(key)}
-                    className={`h-12 w-12 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-2xl hover:bg-white/20 hover:scale-110 active:scale-95 transition-all ${
-                      myReaction === key ? "ring-2 ring-white bg-white/25" : ""
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
           {/* Reply bar (not for own stories) */}
           {!isOwnStory && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setShowReactions((s) => !s); }}
-                className="h-11 w-11 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center text-white/70 hover:bg-white/20 transition-all flex-shrink-0"
-              >
-                <Heart className="h-5 w-5" />
-              </button>
               <div className="flex-1 relative">
                 <input
                   ref={replyInputRef}
@@ -652,20 +599,6 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
           </div>
         </div>
 
-        {/* ─── Reaction flyout when reacted ─── */}
-        <AnimatePresence>
-          {myReaction && (
-            <motion.div
-              initial={{ scale: 0, y: 0 }}
-              animate={{ scale: 1, y: -80 }}
-              exit={{ scale: 0, opacity: 0 }}
-              transition={{ type: "spring", damping: 10, stiffness: 200 }}
-              className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 text-5xl pointer-events-none"
-            >
-              {REACTION_EMOJI[myReaction]}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       {/* ─── Delete Confirmation Dialog ─── */}

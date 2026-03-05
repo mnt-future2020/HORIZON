@@ -4,7 +4,6 @@ import {
   FileText,
   Play,
   Pause,
-  Heart,
   Pin,
   Trash2,
   Reply as ReplyIcon,
@@ -19,7 +18,6 @@ const MessageBubble = ({
   isMe,
   showTail,
   onLongPress,
-  onReaction,
   onReply,
   onDelete,
   onPin,
@@ -32,7 +30,6 @@ const MessageBubble = ({
   user,
 }) => {
   const isDeleted = msg.deleted;
-  const reactions = Object.entries(msg.reactions || {});
   const hasMedia = !!msg.media_url;
   const isImageOnly =
     hasMedia && (!msg.media_type || msg.media_type === "image") && !msg.content;
@@ -73,12 +70,6 @@ const MessageBubble = ({
                 label: "Reply",
                 onClick: () => onReply(msg),
                 hoverCls: "hover:text-brand-600",
-              },
-              {
-                icon: Heart,
-                label: "React",
-                onClick: () => onReaction(msg, "heart"),
-                hoverCls: "hover:text-red-500",
               },
               {
                 icon: Pin,
@@ -361,28 +352,6 @@ const MessageBubble = ({
           )}
         </div>
 
-        {/* Reactions */}
-        {reactions.length > 0 && !isDeleted && (
-          <div
-            className={`flex flex-wrap gap-1 mt-1.5 ${isMe ? "justify-end pr-1" : "justify-start pl-1"}`}
-          >
-            {reactions.map(([emoji, count]) => (
-              <motion.div
-                key={emoji}
-                initial={{ scale: 0.5, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[12px] bg-card border border-border/40 shadow-sm hover:scale-110 transition-transform cursor-default"
-              >
-                <span>{emoji}</span>
-                {count > 1 && (
-                  <span className="text-[10px] font-bold text-muted-foreground/70">
-                    {count}
-                  </span>
-                )}
-              </motion.div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -233,7 +233,6 @@ export default function ChatPage() {
             msgSearchResults={dm.msgSearchResults}
             onScrollToMessage={dm.scrollToMessage}
             onLongPress={(msg) => dm.setLongPressMsg(msg)}
-            onReaction={dm.handleReaction}
             onReply={(msg) => dm.setReplyTo(msg)}
             onDelete={dm.handleDeleteMessage}
             onPin={dm.handlePinMessage}

@@ -225,7 +225,7 @@ export const adminAPI = {
   suspendUser: (id) => api.put(`/admin/users/${id}/suspend`),
   activateUser: (id) => api.put(`/admin/users/${id}/activate`),
   setUserPlan: (id, data) => api.put(`/admin/users/${id}/set-plan`, data),
-  venues: () => api.get("/admin/venues"),
+  venues: (params) => api.get("/admin/venues", { params }),
   createVenue: (data) => api.post("/admin/venues", data),
   assignVenueOwner: (venueId, ownerId, useOwnerPhone = false) => api.put(`/admin/venues/${venueId}/assign-owner`, { owner_id: ownerId, use_owner_phone: useOwnerPhone }),
   suspendVenue: (id) => api.put(`/admin/venues/${id}/suspend`),
