@@ -127,7 +127,14 @@ export default function useGroupChat({
   // ════════════════════════════════════════════════════════════════
 
   const formatTime = useCallback(
-    (d) => new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    (d) => {
+      if (!d) return "";
+      try {
+        return new Date(d).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+      } catch {
+        return "";
+      }
+    },
     []
   );
 
@@ -254,6 +261,10 @@ export default function useGroupChat({
       setShowClearConfirm(false);
       return;
     }
+    // Clear stale data from previous group immediately
+    setMessages([]);
+    setGroup(null);
+    setTypingUsers([]);
     setLoading(true);
     Promise.all([loadGroup(), loadMessages()]).finally(() => setLoading(false));
   }, [groupId, loadGroup, loadMessages]);
@@ -264,7 +275,11 @@ export default function useGroupChat({
 
     const handleGroupMsg = (data) => {
       if (data.group_id === groupId) {
-        setMessages((prev) => [...prev, data]);
+        setMessages((prev) => {
+          // Prevent duplicate messages
+          if (data.id && prev.some((m) => m.id === data.id)) return prev;
+          return [...prev, data];
+        });
         refreshConversations();
       }
     };
@@ -287,11 +302,13 @@ export default function useGroupChat({
       }
     };
 
+    let groupTypingTimer = null;
     const handleGroupTyping = (data) => {
       if (data.group_id === groupId) {
         setTypingUsers(data.typing || (data.user_name ? [data.user_name] : []));
-        // Clear typing after 3s
-        setTimeout(() => {
+        // Clear previous timer and reset
+        if (groupTypingTimer) clearTimeout(groupTypingTimer);
+        groupTypingTimer = setTimeout(() => {
           setTypingUsers([]);
         }, 3000);
       }
@@ -315,6 +332,7 @@ export default function useGroupChat({
       wsOff("group_message_deleted", handleGroupMessageDeleted);
       wsOff("group_typing", handleGroupTyping);
       wsOff("group_poll_update", handleGroupPollUpdate);
+      if (groupTypingTimer) clearTimeout(groupTypingTimer);
     };
   }, [groupId, group?.is_member, wsOn, wsOff, loadMessages, refreshConversations]);
 
