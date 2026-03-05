@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { matchAPI, mercenaryAPI, bookingAPI, venueAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
@@ -45,16 +45,35 @@ import {
   ThumbsDown,
   ChevronDown,
   Shield,
+  CircleDot,
+  Feather,
+  Disc,
+  Volleyball,
+  Medal,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MatchmakingSkeleton } from "@/components/SkeletonLoader";
 
-const SPORT_EMOJI = {
-  football: "⚽",
-  cricket: "🏏",
-  badminton: "🏸",
-  tennis: "🎾",
-  basketball: "🏀",
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
+
+const SPORT_ICON = {
+  football: CircleDot,
+  cricket: Swords,
+  badminton: Feather,
+  tennis: Target,
+  basketball: Disc,
+  volleyball: Volleyball,
 };
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball"];
 
@@ -102,7 +121,7 @@ function MatchCard({
   const sportLabel = match.sport
     ?.replace("_", " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-  const sportEmoji = SPORT_EMOJI[match.sport] || "🏅";
+  const SportIcon = SPORT_ICON[match.sport] || Medal;
 
   const players = (match.players_joined || []).map((id, i) => ({
     id,
@@ -126,8 +145,8 @@ function MatchCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-brand-600/10 flex items-center justify-center text-lg sm:text-xl shrink-0">
-            {sportEmoji}
+          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-brand-600/10 flex items-center justify-center shrink-0">
+            <SportIcon className="h-5 w-5 text-brand-600" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -347,8 +366,9 @@ function MercenaryCard({
                   {post.venue_name}
                 </span>
               </span>
-              <span className="capitalize">
-                {SPORT_EMOJI[post.sport]} {post.sport}
+              <span className="capitalize flex items-center gap-1">
+                {(() => { const SI = SPORT_ICON[post.sport] || Medal; return <SI className="h-3 w-3" />; })()}
+                {post.sport}
               </span>
             </p>
           </div>
@@ -774,9 +794,8 @@ function EmptyState({ icon: Icon, title, sub }) {
 
 export default function MatchmakingPage() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  const [tab, setTab] = useState(searchParams.get("tab") || "recommended");
+  const [tab, setTab] = useState(() => getInitParam("tab") || "recommended");
   const [matches, setMatches] = useState([]);
   const [recommended, setRecommended] = useState([]);
   const [mercenaries, setMercenaries] = useState([]);
@@ -788,37 +807,22 @@ export default function MatchmakingPage() {
   const [paying, setPaying] = useState(null);
   const [autoMatchResult, setAutoMatchResult] = useState(null);
   const [autoMatching, setAutoMatching] = useState(false);
-  const [autoSport, setAutoSport] = useState(
-    searchParams.get("autoSport") || "football",
-  );
-  const [filterSport, setFilterSport] = useState(
-    searchParams.get("sport") || "all",
-  );
-  const [filterArea, setFilterArea] = useState(
-    searchParams.get("area") || "all",
-  );
-  const [expandedMatchId, setExpandedMatchId] = useState(
-    searchParams.get("expanded") || null,
-  );
+  const [autoSport, setAutoSport] = useState(() => getInitParam("autoSport") || "football");
+  const [filterSport, setFilterSport] = useState(() => getInitParam("sport") || "all");
+  const [filterArea, setFilterArea] = useState(() => getInitParam("area") || "all");
+  const [expandedMatchId, setExpandedMatchId] = useState(() => getInitParam("expanded") || null);
   const [areas, setAreas] = useState([]);
 
-  // Sync state to URL params so back-navigation preserves filters & expanded card
+  // Sync state to URL params — replaceParams uses history.replaceState (no React re-render cascade)
   useEffect(() => {
-    const params = {};
-    if (tab !== "recommended") params.tab = tab;
-    if (filterSport !== "all") params.sport = filterSport;
-    if (filterArea !== "all") params.area = filterArea;
-    if (autoSport !== "football") params.autoSport = autoSport;
-    if (expandedMatchId) params.expanded = expandedMatchId;
-    setSearchParams(params, { replace: true });
-  }, [
-    tab,
-    filterSport,
-    filterArea,
-    autoSport,
-    expandedMatchId,
-    setSearchParams,
-  ]);
+    replaceParams({
+      tab: tab !== "recommended" ? tab : null,
+      sport: filterSport !== "all" ? filterSport : null,
+      area: filterArea !== "all" ? filterArea : null,
+      autoSport: autoSport !== "football" ? autoSport : null,
+      expanded: expandedMatchId || null,
+    });
+  }, [tab, filterSport, filterArea, autoSport, expandedMatchId]);
   const [form, setForm] = useState({
     sport: "football",
     date: "",
@@ -1193,7 +1197,7 @@ export default function MatchmakingPage() {
                           <SelectContent>
                             {SPORTS.map((s) => (
                               <SelectItem key={s} value={s}>
-                                {SPORT_EMOJI[s]}{" "}
+                                {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                                 {s.charAt(0).toUpperCase() + s.slice(1)}
                               </SelectItem>
                             ))}
@@ -1538,7 +1542,8 @@ export default function MatchmakingPage() {
                           : "bg-secondary/30 border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
                       }`}
                     >
-                      {SPORT_EMOJI[s]} {s.charAt(0).toUpperCase() + s.slice(1)}
+                      {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
+                      {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -1647,7 +1652,7 @@ export default function MatchmakingPage() {
                       <SelectItem value="all">All Sports</SelectItem>
                       {SPORTS.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {SPORT_EMOJI[s]}{" "}
+                          {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                           {s.charAt(0).toUpperCase() + s.slice(1)}
                         </SelectItem>
                       ))}

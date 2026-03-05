@@ -21,6 +21,9 @@ import ActiveChat from "@/components/chat/ActiveChat";
 import GroupChatView from "@/components/group/GroupChatView";
 import GroupInfoPanel from "@/components/group/GroupInfoPanel";
 import GroupDiscoveryView from "@/components/chat/GroupDiscoveryView";
+import MessageActionSheet from "@/components/chat/MessageActionSheet";
+import PinnedMessagesModal from "@/components/group/PinnedMessagesModal";
+import MediaGalleryModal from "@/components/group/MediaGalleryModal";
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -233,9 +236,9 @@ export default function ChatPage() {
             msgSearchResults={dm.msgSearchResults}
             onScrollToMessage={dm.scrollToMessage}
             onLongPress={(msg) => dm.setLongPressMsg(msg)}
-            onReply={(msg) => dm.setReplyTo(msg)}
+            onReply={(msg) => { dm.setReplyTo(msg); setTimeout(() => dm.inputRef.current?.focus(), 100); }}
             onDelete={dm.handleDeleteMessage}
-            onPin={dm.handlePinMessage}
+            onPin={dm.handleTogglePin}
             onForward={dm.openForwardModal}
             onOpenSharedPost={dm.openSharedPost}
             onOpenLightbox={(img) => dm.setLightboxImage(img)}
@@ -402,6 +405,115 @@ export default function ChatPage() {
               className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/5"
               onClick={(e) => e.stopPropagation()}
             />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* DM Long-Press Action Sheet (mobile) */}
+      <AnimatePresence>
+        {dm.longPressMsg && (
+          <MessageActionSheet
+            msg={dm.longPressMsg}
+            isMe={dm.longPressMsg.sender_id === user?.id}
+            onClose={() => dm.setLongPressMsg(null)}
+            onReply={(msg) => { dm.setReplyTo(msg); setTimeout(() => dm.inputRef.current?.focus(), 150); }}
+            onPin={dm.handleTogglePin}
+            onDelete={dm.handleDeleteMessage}
+            onForward={dm.openForwardModal}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* DM Pinned Messages Modal */}
+      <AnimatePresence>
+        <PinnedMessagesModal
+          isOpen={dm.showPinned}
+          onClose={() => dm.setShowPinned?.(false)}
+          pinnedMsgs={dm.pinnedMessages}
+          formatTime={dm.formatTime}
+          onUnpin={dm.handleUnpinMessage}
+        />
+      </AnimatePresence>
+
+      {/* DM Media Gallery Modal */}
+      <AnimatePresence>
+        <MediaGalleryModal
+          isOpen={dm.showMediaGallery}
+          onClose={() => dm.setShowMediaGallery(false)}
+          galleryMedia={dm.mediaItems}
+        />
+      </AnimatePresence>
+
+      {/* DM Forward Modal */}
+      <AnimatePresence>
+        {dm.showForwardModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+            onClick={() => { dm.setShowForwardModal(false); }}
+          >
+            <motion.div
+              initial={{ y: 60, scale: 0.95 }}
+              animate={{ y: 0, scale: 1 }}
+              exit={{ y: 60, scale: 0.95 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="w-full max-w-sm bg-card border border-border/40 rounded-3xl shadow-2xl p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-[15px] font-black tracking-tight">
+                  Forward message
+                </h3>
+                <button
+                  onClick={() => dm.setShowForwardModal(false)}
+                  className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary/50 transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+              {dm.forwardMsg?.content && (
+                <div className="px-3 py-2 mb-3 rounded-xl bg-secondary/20 border border-border/20">
+                  <p className="text-[11px] text-muted-foreground/70 line-clamp-2 italic">
+                    {dm.forwardMsg.content}
+                  </p>
+                </div>
+              )}
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">
+                Select conversation
+              </p>
+              <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+                {dm.forwardConvos.length === 0 ? (
+                  <p className="text-[13px] text-muted-foreground/50 text-center py-6 italic">
+                    No conversations available
+                  </p>
+                ) : (
+                  dm.forwardConvos.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => dm.handleForwardToConvo(c)}
+                      className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/40 active:bg-secondary/60 transition-colors text-left"
+                    >
+                      <div className="h-9 w-9 rounded-xl bg-brand-600/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {c.other_user?.avatar ? (
+                          <img
+                            src={mediaUrl(c.other_user.avatar)}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <User className="h-4 w-4 text-brand-600" />
+                        )}
+                      </div>
+                      <span className="text-[13px] font-semibold truncate">
+                        {c.display_name || c.other_user?.name || "Chat"}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>

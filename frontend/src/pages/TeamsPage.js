@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { teamAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -23,18 +23,28 @@ import {
 import { toast } from "sonner";
 import { TeamsSkeleton } from "@/components/SkeletonLoader";
 
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
+
 export default function TeamsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [tab, setTab] = useState(searchParams.get("tab") || "discover");
+  const [tab, setTab] = useState(() => getInitParam("tab") || "discover");
   const [teams, setTeams] = useState([]);
   const [myTeams, setMyTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [sportFilter, setSportFilter] = useState(
-    searchParams.get("sport") || "",
-  );
+  const [search, setSearch] = useState(() => getInitParam("q") || "");
+  const [sportFilter, setSportFilter] = useState(() => getInitParam("sport") || "");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -74,14 +84,14 @@ export default function TeamsPage() {
     Promise.all([loadTeams(), loadMyTeams()]).finally(() => setLoading(false));
   }, [loadTeams, loadMyTeams]);
 
-  // Sync filter state to URL so browser back/forward restores filters
+  // Sync filter state to URL — replaceParams uses history.replaceState (no React re-render cascade)
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (tab !== "discover") params.set("tab", tab);
-    if (search) params.set("q", search);
-    if (sportFilter) params.set("sport", sportFilter);
-    setSearchParams(params, { replace: true });
-  }, [tab, search, sportFilter, setSearchParams]);
+    replaceParams({
+      tab: tab !== "discover" ? tab : null,
+      q: search || null,
+      sport: sportFilter || null,
+    });
+  }, [tab, search, sportFilter]);
 
   const handleCreate = async () => {
     if (!form.name.trim()) {

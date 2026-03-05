@@ -2,6 +2,20 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { fmt12h } from "@/lib/utils";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false)
+      url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import {
   playerCardAPI,
   recommendationAPI,
@@ -46,7 +60,9 @@ export default function PlayerCardPage() {
   const { userId } = useParams();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  useEffect(() => { window.scrollTo(0, 0); }, []);
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   // State
   const [card, setCard] = useState(null);
@@ -76,7 +92,13 @@ export default function PlayerCardPage() {
   const [payStep, setPayStep] = useState(null);
   const [pendingSession, setPendingSession] = useState(null);
   const [pendingSubPkg, setPendingSubPkg] = useState(null);
-  const [activeTab, setActiveTab] = useState("stats");
+  const [activeTab, setActiveTab] = useState(
+    () => getInitParam("tab") || "stats",
+  );
+  const handleTabChange = useCallback((newTab) => {
+    setActiveTab(newTab);
+    replaceParams({ tab: newTab === "stats" ? null : newTab });
+  }, []);
 
   const isOwnProfile = useMemo(
     () => !userId || userId === "me" || userId === currentUser?.id,
@@ -498,7 +520,7 @@ export default function PlayerCardPage() {
             return (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => handleTabChange(tab.key)}
                 className={`flex-1 py-4 flex flex-col items-center justify-center gap-1.5 relative cursor-pointer group touch-manipulation transition-all duration-200 ${
                   isActive
                     ? "bg-brand-600/5"
@@ -619,7 +641,10 @@ export default function PlayerCardPage() {
                         bgColor: "bg-muted-foreground/10",
                       },
                     ].map((s, i) => (
-                      <div key={s.label} className="flex items-center gap-3 sm:gap-6">
+                      <div
+                        key={s.label}
+                        className="flex items-center gap-3 sm:gap-6"
+                      >
                         <div
                           className={`text-center group px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl ${s.bgColor} hover:scale-110 transition-all duration-300 cursor-default`}
                         >
@@ -814,6 +839,13 @@ export default function PlayerCardPage() {
                   loading={postsLoading}
                   postCount={card.post_count}
                   card={card}
+                  isOwnProfile={isOwnProfile}
+                  onDeletePost={(postId) => {
+                    socialAPI.deletePost(postId).then(() => {
+                      setUserPosts(prev => prev.filter(p => p.id !== postId));
+                      toast.success("Post deleted");
+                    }).catch(() => toast.error("Failed to delete post"));
+                  }}
                 />
               </motion.div>
             )}

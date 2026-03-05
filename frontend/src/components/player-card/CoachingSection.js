@@ -460,7 +460,8 @@ export default function CoachingSection({
                   month: "short",
                 }).format(new Date(selectedDate))}
                 {" · "}
-                {fmt12h(selectedSlot.start_time)}–{fmt12h(selectedSlot.end_time)}
+                {fmt12h(selectedSlot.start_time)}–
+                {fmt12h(selectedSlot.end_time)}
                 {bookingSport && (
                   <>
                     {" "}

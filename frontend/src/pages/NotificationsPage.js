@@ -1,6 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { notificationAPI } from "@/lib/api";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
@@ -20,7 +33,7 @@ import { NotificationsSkeleton } from "@/components/SkeletonLoader";
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState(() => getInitParam("filter") || "all");
   const navigate = useNavigate();
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -104,7 +117,7 @@ export default function NotificationsPage() {
           className="flex items-center justify-between mb-8"
         >
           <div>
-            <h1 className="font-display text-display-sm font-black tracking-athletic">
+            <h1 className="admin-page-title text-lg sm:text-2xl">
               Notifications
             </h1>
             {unreadCount > 0 && (
@@ -138,15 +151,13 @@ export default function NotificationsPage() {
             { key: "slot_available", label: "Slot Alerts" },
             { key: "booking", label: "Bookings" },
           ].map((f) => (
-            <Button
+            <button
               key={f.key}
-              variant={filter === f.key ? "athletic" : "outline"}
-              size="sm"
-              onClick={() => setFilter(f.key)}
-              className="font-bold uppercase tracking-wide text-xs"
+              onClick={() => { setFilter(f.key); replaceParams({ filter: f.key === "all" ? null : f.key }); }}
+              className={`transition-all min-h-[44px] active:scale-[0.97] ${filter === f.key ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-3 sm:px-5 py-1.5 sm:py-2 admin-btn text-xs" : "bg-card border border-border/40 text-muted-foreground rounded-full px-3 sm:px-5 py-1.5 sm:py-2 admin-btn text-xs hover:text-foreground"}`}
             >
               {f.label}
-            </Button>
+            </button>
           ))}
         </motion.div>
 

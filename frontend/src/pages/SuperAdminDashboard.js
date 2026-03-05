@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
 import { adminAPI, uploadAPI, payoutAPI } from "@/lib/api";
+
+// Stable URL param writer — no React Router subscription, no re-renders
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +35,7 @@ import {
   ChevronLeft, ChevronRight, Search
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AdminSkeleton } from "@/components/SkeletonLoader";
+import { AdminSkeleton, AdminUsersSkeleton, AdminVenuesSkeleton, AdminSettingsSkeleton, AdminPayoutsSkeleton } from "@/components/SkeletonLoader";
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
@@ -151,11 +164,10 @@ function OverviewTab() {
 }
 
 function UsersTab() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
-  const [filter, setFilter] = useState(searchParams.get("filter") || "all");
+  const [filter, setFilter] = useState(() => getInitParam("filter") || "all");
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(() => parseInt(searchParams.get("page") || "1", 10));
+  const [page, setPage] = useState(() => parseInt(getInitParam("page") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
   const LIMIT = 10;
@@ -167,41 +179,30 @@ function UsersTab() {
   const [rejectReason, setRejectReason] = useState("");
   const [rejectMode, setRejectMode] = useState(false);
 
+  const filterRef = useRef(filter);
+  filterRef.current = filter;
+
   const load = useCallback((p = 1) => {
     setLoading(true);
+    const f = filterRef.current;
     const params = { page: p, limit: LIMIT };
-    if (filter === "pending") params.status = "pending";
-    else if (filter !== "all") params.role = filter;
+    if (f === "pending") params.status = "pending";
+    else if (f !== "all") params.role = f;
     adminAPI.users(params).then(r => {
       const data = r.data || {};
       setUsers(data.users || []);
       setTotalPages(data.pages || 1);
       setTotalUsers(data.total || 0);
-      setPage(data.page || p);
+      const actualPage = data.page || p;
+      setPage(actualPage);
+      replaceParams({ filter: f === "all" ? null : f, page: actualPage > 1 ? actualPage : null });
     }).catch(() => {}).finally(() => setLoading(false));
-  }, [filter]);
+  }, []);
 
   // Mount: load URL-restored page
   useEffect(() => {
     load(page);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Filter change: reset to page 1 (skip on initial mount)
-  useEffect(() => {
-    if (!filterChangedRef.current) { filterChangedRef.current = true; return; }
-    setPage(1);
-    load(1);
-  }, [filter]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync filter + page → URL (preserve other params)
-  useEffect(() => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (filter !== "all") p.set("filter", filter); else p.delete("filter");
-      if (page > 1) p.set("page", String(page)); else p.delete("page");
-      return p;
-    }, { replace: true });
-  }, [filter, page, setSearchParams]);
 
   const handleAction = async (userId, action) => {
     try {
@@ -424,7 +425,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
     <div className="space-y-4" data-testid="admin-users-tab">
       <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
-          <button key={f} onClick={() => { setFilter(f); setPage(1); }} data-testid={`filter-${f}`}
+          <button key={f} onClick={() => { setFilter(f); filterRef.current = f; setPage(1); load(1); }} data-testid={`filter-${f}`}
             className={`px-3 sm:px-5 py-2 rounded-full admin-btn transition-all duration-300 active:scale-95 text-[11px] sm:text-xs min-h-[36px] ${
               filter === f
                 ? "bg-brand-600 text-white shadow-md shadow-brand-600/20"
@@ -435,7 +436,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         ))}
       </div>
       {loading ? (
-        <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-brand-600 animate-spin" /></div>
+        <AdminUsersSkeleton />
       ) : users.length === 0 ? (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -774,7 +775,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
 function VenuesTab() {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => parseInt(getInitParam("vp") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalVenues, setTotalVenues] = useState(0);
   const LIMIT = 10;
@@ -800,11 +801,13 @@ function VenuesTab() {
       setVenues(data.venues || []);
       setTotalPages(data.pages || 1);
       setTotalVenues(data.total || 0);
-      setPage(data.page || p);
+      const actualPage = data.page || p;
+      setPage(actualPage);
+      replaceParams({ vp: actualPage > 1 ? actualPage : null });
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(page); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleVenue = async (venueId, currentStatus) => {
     try {
@@ -868,7 +871,7 @@ function VenuesTab() {
     finally { setAssigning(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <AdminVenuesSkeleton />;
   return (
     <div className="space-y-3" data-testid="admin-venues-tab">
       <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
@@ -1146,7 +1149,6 @@ function VenuesTab() {
 }
 
 function SettingsTab() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [settings, setSettings] = useState(null);
   const [saving, setSaving] = useState(false);
   const [showSecret, setShowSecret] = useState(false);
@@ -1157,20 +1159,11 @@ function SettingsTab() {
   const [changingPw, setChangingPw] = useState(false);
   const [testingS3, setTestingS3] = useState(false);
   const [s3Status, setS3Status] = useState(null); // null | {ok, message}
-  const [activeSubTab, setActiveSubTab] = useState(searchParams.get("subtab") || "payments");
+  const [activeSubTab, setActiveSubTab] = useState(() => getInitParam("subtab") || "payments");
 
   useEffect(() => {
     adminAPI.getSettings().then(r => setSettings(r.data)).catch(() => toast.error("Failed to load settings"));
   }, []);
-
-  // Sync activeSubTab → URL (preserve other params)
-  useEffect(() => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (activeSubTab !== "payments") p.set("subtab", activeSubTab); else p.delete("subtab");
-      return p;
-    }, { replace: true });
-  }, [activeSubTab, setSearchParams]);
 
   const saveSettings = async () => {
     setSaving(true);
@@ -1234,7 +1227,7 @@ function SettingsTab() {
     return { ...s, subscription_plans: plans };
   });
 
-  if (!settings) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (!settings) return <AdminSettingsSkeleton />;
 
   const s3 = settings.s3_storage || {};
   const s3Configured = !!(s3.access_key_id && s3.secret_access_key && s3.bucket_name && s3.region);
@@ -1254,7 +1247,7 @@ function SettingsTab() {
         {subTabs.map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
+            onClick={() => { setActiveSubTab(tab.id); replaceParams({ subtab: tab.id === "payments" ? null : tab.id }); }}
             className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl admin-btn transition-all duration-300 min-h-[36px] shrink-0 ${
               activeSubTab === tab.id
                 ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95"
@@ -1692,22 +1685,21 @@ function SettingsTab() {
 }
 
 function PayoutsTab() {
-  const [searchParams, setSearchParams] = useSearchParams();
   // State
   const [loading, setLoading] = useState(true);
   const [pendingPayouts, setPendingPayouts] = useState([]);
   const [settlements, setSettlements] = useState([]);
-  const [subTab, setSubTab] = useState(searchParams.get("ptab") || "pending"); // pending | history | accounts
+  const [subTab, setSubTab] = useState(() => getInitParam("ptab") || "pending"); // pending | history | accounts
   const [processing, setProcessing] = useState(null); // user_id being processed
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [detailDialog, setDetailDialog] = useState(null); // settlement object or null
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [searchQuery, setSearchQuery] = useState(() => getInitParam("q") || "");
   // Pagination state
-  const [pendingPage, setPendingPage] = useState(1);
+  const [pendingPage, setPendingPage] = useState(() => parseInt(getInitParam("pp") || "1", 10));
   const [pendingTotalPages, setPendingTotalPages] = useState(1);
   const [pendingTotal, setPendingTotal] = useState(0);
-  const [historyPage, setHistoryPage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(() => parseInt(getInitParam("hp") || "1", 10));
   const [historyTotalPages, setHistoryTotalPages] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
   const LIMIT = 10;
@@ -1721,7 +1713,9 @@ function PayoutsTab() {
       setPendingPayouts(data.payouts || []);
       setPendingTotalPages(data.pages || 1);
       setPendingTotal(data.total || 0);
-      setPendingPage(data.page || p);
+      const actualPage = data.page || p;
+      setPendingPage(actualPage);
+      replaceParams({ pp: actualPage > 1 ? actualPage : null });
     } catch { toast.error("Failed to load pending payouts"); }
     finally { setLoading(false); }
   }, []);
@@ -1734,30 +1728,27 @@ function PayoutsTab() {
       setSettlements(sData.settlements || []);
       setHistoryTotalPages(sData.pages || Math.ceil((sData.total || 0) / LIMIT) || 1);
       setHistoryTotal(sData.total || 0);
-      setHistoryPage(sData.page || p);
+      const actualPage = sData.page || p;
+      setHistoryPage(actualPage);
+      replaceParams({ hp: actualPage > 1 ? actualPage : null });
     } catch { toast.error("Failed to load settlements"); }
     finally { setLoading(false); }
   }, []);
 
+  const initialPendingPage = useRef(parseInt(getInitParam("pp") || "1", 10));
+  const initialHistoryPage = useRef(parseInt(getInitParam("hp") || "1", 10));
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      await Promise.all([loadPending(1), loadHistory(1)]);
+      await Promise.all([loadPending(initialPendingPage.current), loadHistory(initialHistoryPage.current)]);
+      initialPendingPage.current = 1;
+      initialHistoryPage.current = 1;
     } catch {}
     finally { setLoading(false); }
   }, [loadPending, loadHistory]);
 
   useEffect(() => { load(); }, [load]);
-
-  // Sync subTab + searchQuery → URL (preserve other params)
-  useEffect(() => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (subTab !== "pending") p.set("ptab", subTab); else p.delete("ptab");
-      if (searchQuery) p.set("q", searchQuery); else p.delete("q");
-      return p;
-    }, { replace: true });
-  }, [subTab, searchQuery, setSearchParams]);
 
   // Process single payout
   const handleProcessPayout = async (userId) => {
@@ -1783,7 +1774,7 @@ function PayoutsTab() {
     finally { setBulkProcessing(false); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return <AdminPayoutsSkeleton />;
 
   // Filtered lists
   const filteredPending = searchQuery
@@ -1830,7 +1821,7 @@ function PayoutsTab() {
           {subTabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => { setSubTab(tab.id); setSearchQuery(""); }}
+              onClick={() => { setSubTab(tab.id); setSearchQuery(""); replaceParams({ ptab: tab.id === "pending" ? null : tab.id, q: null }); }}
               className={`inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-full admin-btn transition-all shrink-0 min-h-[36px] ${
                 subTab === tab.id
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20"
@@ -1848,7 +1839,7 @@ function PayoutsTab() {
             <Input
               placeholder="Search..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={e => { setSearchQuery(e.target.value); replaceParams({ q: e.target.value || null }); }}
               className="pl-9 h-9 sm:h-10 w-full sm:w-48 rounded-full text-sm"
             />
           </div>
@@ -2146,17 +2137,12 @@ function PayoutsTab() {
 }
 
 export default function SuperAdminDashboard() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "overview");
+  const [activeTab, setActiveTab] = useState(() => getInitParam("tab") || "overview");
 
-  // Sync main tab → URL (preserve other params)
-  useEffect(() => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (activeTab !== "overview") p.set("tab", activeTab); else p.delete("tab");
-      return p;
-    }, { replace: true });
-  }, [activeTab, setSearchParams]);
+  const handleTabChange = useCallback((newTab) => {
+    setActiveTab(newTab);
+    replaceParams({ tab: newTab === "overview" ? null : newTab });
+  }, []);
 
   return (
     <div className="min-h-screen bg-transparent pb-20 md:pb-8" data-testid="super-admin-dashboard">
@@ -2169,7 +2155,7 @@ export default function SuperAdminDashboard() {
             <p className="text-xs sm:text-sm text-muted-foreground">Horizon Platform Management</p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
             <div className="flex items-center justify-between border-b border-border/40 pb-1 sm:pb-2 mb-4 sm:mb-6">
               <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-4 sm:space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
                 {["overview", "users", "venues", "payouts", "settings"].map((tab) => (

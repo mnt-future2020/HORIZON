@@ -37,6 +37,7 @@ class VenueCreate(BaseModel):
     turfs: int = 1
     turf_config: Optional[List[dict]] = None
     # e.g. [{"sport": "football", "turfs": [{"name": "Main Ground"}, {"name": "Mini Pitch"}]}]
+    google_maps_url: Optional[str] = ""
 
 
 class VenueUpdate(BaseModel):
@@ -54,6 +55,7 @@ class VenueUpdate(BaseModel):
     closing_hour: Optional[int] = None
     turfs: Optional[int] = None
     turf_config: Optional[List[dict]] = None
+    google_maps_url: Optional[str] = None
 
 
 class BookingCreate(BaseModel):

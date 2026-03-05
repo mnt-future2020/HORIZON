@@ -1,6 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -10,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock } from "lucide-react";
+import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock, Tag } from "lucide-react";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import { VenueDiscoverySkeleton } from "@/components/SkeletonLoader";
@@ -68,8 +81,8 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
             </div>
           )}
           {venue.has_active_offer && (
-            <div className="admin-badge px-2 py-1 sm:px-3 rounded-full border-none bg-red-500/10 text-red-600">
-              🏷 OFFER
+            <div className="admin-badge px-2 py-1 sm:px-3 rounded-full border-none bg-red-500/10 text-red-600 flex items-center gap-1">
+              <Tag className="h-3 w-3" /> OFFER
             </div>
           )}
         </div>
@@ -124,7 +137,6 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
 export default function VenueDiscovery() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const [venues, setVenues] = useState([]);
@@ -134,25 +146,26 @@ export default function VenueDiscovery() {
   const [loading, setLoading] = useState(true);
   useScrollRestoration("venues", !loading);
 
-  const [searchText, setSearchText] = useState(searchParams.get("q") || "");
-  const [selectedCity, setSelectedCity] = useState(searchParams.get("city") || "all");
-  const [selectedArea, setSelectedArea] = useState(searchParams.get("area") || "all");
-  const [selectedSport, setSelectedSport] = useState(searchParams.get("sport") || "all");
-  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "rating");
-  const [priceRange, setPriceRange] = useState(searchParams.get("price") || "all");
-  const [selectedAmenity, setSelectedAmenity] = useState(searchParams.get("amenity") || "all");
+  // All filter state initialized from URL (one-time read, no subscription)
+  const [searchText, setSearchText] = useState(() => getInitParam("q") || "");
+  const [selectedCity, setSelectedCity] = useState(() => getInitParam("city") || "all");
+  const [selectedArea, setSelectedArea] = useState(() => getInitParam("area") || "all");
+  const [selectedSport, setSelectedSport] = useState(() => getInitParam("sport") || "all");
+  const [sortBy, setSortBy] = useState(() => getInitParam("sort") || "rating");
+  const [priceRange, setPriceRange] = useState(() => getInitParam("price") || "all");
+  const [selectedAmenity, setSelectedAmenity] = useState(() => getInitParam("amenity") || "all");
   // Auto-open filters panel if any panel-level filter was active when navigating back
   const [filtersOpen, setFiltersOpen] = useState(
-    !!(searchParams.get("sort") || searchParams.get("price") || searchParams.get("amenity") ||
-       searchParams.get("area") || searchParams.get("sport"))
+    () => !!(getInitParam("sort") || getInitParam("price") || getInitParam("amenity") ||
+       getInitParam("area") || getInitParam("sport"))
   );
-  const [nearMeActive, setNearMeActive] = useState(searchParams.get("nearme") === "1");
+  const [nearMeActive, setNearMeActive] = useState(() => getInitParam("nearme") === "1");
   const [userLocation, setUserLocation] = useState(null);
   const [userLocationName, setUserLocationName] = useState("");
   const [locatingUser, setLocatingUser] = useState(false);
   const [distanceMap, setDistanceMap] = useState({});
   const [driveTimeMap, setDriveTimeMap] = useState({});
-  const [driveTimeMode, setDriveTimeMode] = useState(searchParams.get("drivetime") === "1");
+  const [driveTimeMode, setDriveTimeMode] = useState(() => getInitParam("drivetime") === "1");
   const isInitialMount = useRef(true);
 
   // Load initial data
@@ -279,29 +292,29 @@ export default function VenueDiscovery() {
     return () => clearTimeout(timer);
   }, [loadVenues]);
 
+  // Immediate URL sync — uses replaceParams (native history.replaceState),
+  // NOT setSearchParams, so no React Router subscription = zero re-render cascade.
+  useEffect(() => {
+    replaceParams({
+      q: searchText || null,
+      city: selectedCity !== "all" ? selectedCity : null,
+      area: selectedArea !== "all" ? selectedArea : null,
+      sport: selectedSport !== "all" ? selectedSport : null,
+      nearme: nearMeActive ? "1" : null,
+      sort: sortBy !== "rating" ? sortBy : null,
+      price: priceRange !== "all" ? priceRange : null,
+      amenity: selectedAmenity !== "all" ? selectedAmenity : null,
+      drivetime: driveTimeMode ? "1" : null,
+    });
+  }, [searchText, selectedCity, selectedArea, selectedSport, nearMeActive, sortBy, priceRange, selectedAmenity, driveTimeMode]);
+
   // Auto-activate Near Me from URL param
   useEffect(() => {
-    if (searchParams.get("nearme") === "1" && !nearMeActive && !userLocation) {
+    if (getInitParam("nearme") === "1" && !nearMeActive && !userLocation) {
       handleNearMe();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Update URL params — all filter state is encoded in the URL so browser
-  // back/forward navigation fully restores the applied filters.
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchText) params.set("q", searchText);
-    if (selectedCity !== "all") params.set("city", selectedCity);
-    if (selectedArea !== "all") params.set("area", selectedArea);
-    if (selectedSport !== "all") params.set("sport", selectedSport);
-    if (nearMeActive) params.set("nearme", "1");
-    if (sortBy !== "rating") params.set("sort", sortBy);
-    if (priceRange !== "all") params.set("price", priceRange);
-    if (selectedAmenity !== "all") params.set("amenity", selectedAmenity);
-    if (driveTimeMode) params.set("drivetime", "1");
-    setSearchParams(params, { replace: true });
-  }, [searchText, selectedCity, selectedArea, selectedSport, nearMeActive, sortBy, priceRange, selectedAmenity, driveTimeMode, setSearchParams]);
 
   const activeFilterCount = [
     selectedCity !== "all", selectedArea !== "all", selectedSport !== "all",
@@ -312,6 +325,7 @@ export default function VenueDiscovery() {
     setSearchText(""); setSelectedCity("all"); setSelectedArea("all");
     setSelectedSport("all"); setSortBy("rating"); setPriceRange("all");
     setSelectedAmenity("all"); setNearMeActive(false); setUserLocation(null); setUserLocationName(""); setDistanceMap({}); setDriveTimeMap({}); setDriveTimeMode(false);
+    replaceParams({ q: null, city: null, area: null, sport: null, nearme: null, sort: null, price: null, amenity: null, drivetime: null });
   };
 
   const sports = ["football", "cricket", "badminton", "basketball", "tennis", "table_tennis"];

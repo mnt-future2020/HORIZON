@@ -1,6 +1,7 @@
 import React, { useRef, useCallback } from "react";
 import { Mic, Send, X, Smile, Paperclip, Trash2, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import EmojiPicker from "./EmojiPicker";
 
 const MessageInput = ({
   msgText,
@@ -157,6 +158,25 @@ const MessageInput = ({
                   <span>Send</span>
                 </button>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Emoji Picker */}
+        <AnimatePresence>
+          {showEmojiPicker && (
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.96 }}
+              transition={{ duration: 0.15 }}
+              className="relative"
+            >
+              <EmojiPicker
+                pickerRef={emojiPickerRef}
+                onSelect={onAddEmoji}
+                onClose={onToggleEmojiPicker}
+              />
             </motion.div>
           )}
         </AnimatePresence>

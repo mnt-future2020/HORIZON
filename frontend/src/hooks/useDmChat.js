@@ -88,7 +88,18 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     if (!convoId) return;
     try {
       const res = await chatAPI.getMessages(convoId);
-      setMessages(res.data || []);
+      const msgs = res.data || [];
+      // Enrich reply_preview/reply_sender from referenced messages
+      const byId = {};
+      for (const m of msgs) byId[m.id] = m;
+      for (const m of msgs) {
+        if (m.reply_to && !m.reply_preview && byId[m.reply_to]) {
+          const ref = byId[m.reply_to];
+          m.reply_preview = (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "…");
+          m.reply_sender = ref.sender_name || "Unknown";
+        }
+      }
+      setMessages(msgs);
     } catch (err) {
       console.error("Failed to load messages:", err);
     }
@@ -96,15 +107,37 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
 
   // ─── Effects ────────────────────────────────────────────────────────────────
 
-  // 1. Load messages when activeConvo changes
+  // 1. Load messages + reset state when activeConvo changes
   useEffect(() => {
     if (activeConvo?.id) {
       loadMessages(activeConvo.id);
     } else {
       setMessages([]);
-      setOnlineStatus(null);
-      setIsTyping(false);
     }
+    // Clear stale state from previous conversation
+    setOnlineStatus(null);
+    setIsTyping(false);
+    setReplyTo(null);
+    setLongPressMsg(null);
+    setPendingFile(null);
+    setMsgText("");
+    setShowEmojiPicker(false);
+    setShowMsgSearch(false);
+    setMsgSearchQuery("");
+    setMsgSearchResults([]);
+    setShowScrollBtn(false);
+    setNewMsgWhileAway(0);
+    setPlayingAudio(null);
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (typingTimeout.current) {
+      clearTimeout(typingTimeout.current);
+      typingTimeout.current = null;
+    }
+    prevMsgLengthRef.current = 0;
+    isAtBottomRef.current = true;
   }, [activeConvo?.id, loadMessages]);
 
   // 2. WebSocket event handlers (use specific handler refs for cleanup)
@@ -115,8 +148,39 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     const handleNewMsg = (data) => {
       if (data.conversation_id === activeConvo.id) {
         setMessages((prev) => {
+          // Skip if we already have this exact message
           if (prev.some((m) => m.id === data.message.id)) return prev;
-          return [...prev, data.message];
+          // Replace matching temp message (same sender + similar timestamp) if exists
+          const isMine = data.message.sender_id === user?.id;
+          if (isMine) {
+            const tempIdx = prev.findIndex(
+              (m) => typeof m.id === "string" && m.id.startsWith("temp-") && m.sender_id === user?.id
+            );
+            if (tempIdx !== -1) {
+              const temp = prev[tempIdx];
+              const next = [...prev];
+              // Preserve reply data from temp message if WS payload doesn't include it
+              next[tempIdx] = {
+                ...data.message,
+                reply_preview: data.message.reply_preview || temp.reply_preview,
+                reply_sender: data.message.reply_sender || temp.reply_sender,
+              };
+              return next;
+            }
+          }
+          // Enrich reply data from existing messages if missing
+          const incoming = data.message;
+          if (incoming.reply_to && !incoming.reply_preview) {
+            const ref = prev.find((m) => m.id === incoming.reply_to);
+            if (ref) {
+              return [...prev, {
+                ...incoming,
+                reply_preview: (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "…"),
+                reply_sender: ref.sender_name || "Unknown",
+              }];
+            }
+          }
+          return [...prev, incoming];
         });
       }
       refreshConversations();
@@ -218,9 +282,18 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
 
   // 4. Scroll management
 
-  // Scroll to bottom on initial convo load
+  // Scroll to bottom when messages first load for a conversation
+  const hasScrolledRef = useRef(null);
   useEffect(() => {
-    if (!activeConvo?.id) return;
+    // Reset scroll tracker when conversation changes
+    hasScrolledRef.current = null;
+  }, [activeConvo?.id]);
+
+  useEffect(() => {
+    if (!activeConvo?.id || messages.length === 0) return;
+    // Only auto-scroll on initial load (not on every new message)
+    if (hasScrolledRef.current === activeConvo.id) return;
+    hasScrolledRef.current = activeConvo.id;
     const t = setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
       isAtBottomRef.current = true;
@@ -229,8 +302,7 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
       prevMsgLengthRef.current = messages.length;
     }, 50);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeConvo?.id]);
+  }, [activeConvo?.id, messages.length]);
 
   // Auto-scroll on new messages
   useEffect(() => {
@@ -375,7 +447,10 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     } else {
       chatAPI.setTyping(activeConvo.id).catch(() => {});
     }
-    typingTimeout.current = setTimeout(() => {}, 3000);
+    // Debounce: don't send another typing signal for 3s
+    typingTimeout.current = setTimeout(() => {
+      typingTimeout.current = null;
+    }, 3000);
   };
 
   const handleDeleteMessage = async (msg) => {
@@ -566,6 +641,15 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     }
   };
 
+  // Unified toggle: pin if not pinned, unpin if pinned
+  const handleTogglePin = async (msg) => {
+    if (msg.pinned) {
+      await handleUnpinMessage(msg);
+    } else {
+      await handlePinMessage(msg);
+    }
+  };
+
   const loadPinnedMessages = async () => {
     if (!activeConvo) return;
     try {
@@ -736,11 +820,17 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     });
   };
 
-  const formatTime = (dateStr) =>
-    new Date(dateStr).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const formatTime = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      return new Date(dateStr).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "";
+    }
+  };
 
   const formatDate = (dateStr) => {
     const d = new Date(dateStr);
@@ -820,6 +910,7 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     msgSearchQuery,
     msgSearchResults,
     showPinned,
+    setShowPinned,
     pinnedMessages,
     showPollCreate,
     setShowPollCreate,
@@ -873,6 +964,7 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     scrollToMessage,
     handlePinMessage,
     handleUnpinMessage,
+    handleTogglePin,
     loadPinnedMessages,
     handleCreatePoll,
     handleVotePoll,

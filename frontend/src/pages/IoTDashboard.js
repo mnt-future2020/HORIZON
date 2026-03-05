@@ -17,6 +17,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -404,6 +414,7 @@ export default function IoTDashboard() {
     turf_number: 1,
     description: "",
   });
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     iotAPI
@@ -463,9 +474,11 @@ export default function IoTDashboard() {
         setSelectedVenue(
           v.find((x) => String(x.id) === String(pendingId)) || v[0],
         );
+      } else {
+        setLoading(false);
       }
     } catch {
-      /* ignore */
+      setLoading(false);
     }
   }, [user?.role]);
 
@@ -820,7 +833,7 @@ export default function IoTDashboard() {
                   device={d}
                   onControl={handleControlDevice}
                   onEdit={openDeviceDialog}
-                  onDelete={handleDeleteDevice}
+                  onDelete={(id) => setDeleteTarget({ id, type: "device", name: d.name || "device" })}
                   index={idx}
                 />
               ))}
@@ -859,7 +872,7 @@ export default function IoTDashboard() {
                   zone={z}
                   onControl={handleControlZone}
                   onEdit={() => {}}
-                  onDelete={handleDeleteZone}
+                  onDelete={(id) => setDeleteTarget({ id, type: "zone", name: z.name || "zone" })}
                   index={idx}
                 />
               ))}
@@ -1342,6 +1355,27 @@ export default function IoTDashboard() {
           </button>
         </div>
       </AppSheet>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {deleteTarget?.type === "device" ? "Device" : "Zone"}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (!deleteTarget) return;
+              if (deleteTarget.type === "device") handleDeleteDevice(deleteTarget.id);
+              else if (deleteTarget.type === "zone") handleDeleteZone(deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

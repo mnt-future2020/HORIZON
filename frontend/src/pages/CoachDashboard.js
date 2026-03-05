@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -21,7 +22,8 @@ import {
   QrCode, ScanLine, Loader2, ShieldCheck, Camera, ClipboardList, UserCheck, UserX,
   Building2, FileText, Dumbbell, ChevronDown, ChevronUp, Award, Activity, BadgeCheck, Package,
   Upload, AlertTriangle, Info, X, ArrowUpRight, ArrowDownRight, Wallet, Receipt, Filter, Pencil,
-  Eye, Download, MessageCircle, Banknote, CheckCircle2
+  Eye, Download, MessageCircle, Banknote, CheckCircle2,
+  Smartphone, Bell, Smile, Flame, Tag, Mail, BarChart3,
 } from "lucide-react";
 import { CoachDashboardSkeleton } from "@/components/SkeletonLoader";
 
@@ -233,6 +235,7 @@ export default function CoachDashboard({ defaultView }) {
   const [bankForm, setBankForm] = useState({ account_number: "", ifsc_code: "", beneficiary_name: "", bank_name: "", business_type: "individual", phone: "", email: "" });
   const [bankSaving, setBankSaving] = useState(false);
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   // Sync tab/filter state → URL params
   useEffect(() => {
@@ -788,14 +791,14 @@ export default function CoachDashboard({ defaultView }) {
       const res = await coachingAPI.sendWelcomeWhatsapp(clientId);
       if (res.data?.ok === false && res.data?.wa_link) {
         window.open(res.data.wa_link, "_blank");
-        toast("WhatsApp not configured — opened manual link", { icon: "📱" });
+        toast("WhatsApp not configured — opened manual link", { icon: <Smartphone className="h-4 w-4" /> });
       } else {
         toast.success("Welcome message sent via WhatsApp!");
         loadClients();
       }
     } catch (err) {
       const d = err.response?.data;
-      if (d?.wa_link) { window.open(d.wa_link, "_blank"); toast("Opened manual WhatsApp link", { icon: "📱" }); }
+      if (d?.wa_link) { window.open(d.wa_link, "_blank"); toast("Opened manual WhatsApp link", { icon: <Smartphone className="h-4 w-4" /> }); }
       else toast.error(d?.detail || "Failed to send");
     }
   };
@@ -806,7 +809,7 @@ export default function CoachDashboard({ defaultView }) {
       const res = await coachingAPI.sendPaymentReminder(clientId);
       if (res.data?.ok) {
         if (res.data.whatsapp_sent) toast.success("Payment reminder sent via WhatsApp!");
-        else { window.open(res.data.wa_fallback, "_blank"); toast("WhatsApp not configured — opened manual link", { icon: "💰" }); }
+        else { window.open(res.data.wa_fallback, "_blank"); toast("WhatsApp not configured — opened manual link", { icon: <Banknote className="h-4 w-4" /> }); }
       }
     } catch (err) { toast.error(err.response?.data?.detail || "Failed to send reminder"); }
   };
@@ -2156,7 +2159,7 @@ export default function CoachDashboard({ defaultView }) {
                                 style={{ width: `${s.percentage}%` }} />
                             </div>
                             <span className="text-xs font-mono w-10 text-right">{s.percentage}%</span>
-                            <span className="text-[10px] text-muted-foreground">🔥{s.current_streak}</span>
+                            <span className="text-[10px] text-muted-foreground flex items-center gap-0.5"><Flame className="h-3 w-3 text-orange-500" />{s.current_streak}</span>
                           </div>
                         ))}
                       </div>
@@ -2679,7 +2682,7 @@ export default function CoachDashboard({ defaultView }) {
                                     {p.email && p.name && <span className="text-xs text-muted-foreground truncate">{p.email}</span>}
                                   </div>
                                   <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive shrink-0"
-                                    onClick={() => handleRemoveOrgPlayer(org.id, p.user_id || p.id)}
+                                    onClick={() => setDeleteTarget({ orgId: org.id, id: p.user_id || p.id, type: "org_player", name: p.name || "player" })}
                                     disabled={orgActionLoading} data-testid={`org-remove-player-${p.user_id || p.id}`}>
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -2719,7 +2722,7 @@ export default function CoachDashboard({ defaultView }) {
                                     {s.email && s.name && <span className="text-xs text-muted-foreground truncate">{s.email}</span>}
                                   </div>
                                   <Button size="icon" variant="ghost" className="h-6 w-6 text-destructive shrink-0"
-                                    onClick={() => handleRemoveOrgStaff(org.id, s.user_id || s.id)}
+                                    onClick={() => setDeleteTarget({ orgId: org.id, id: s.user_id || s.id, type: "org_staff", name: s.name || "staff" })}
                                     disabled={orgActionLoading} data-testid={`org-remove-staff-${s.user_id || s.id}`}>
                                     <Trash2 className="h-3 w-3" />
                                   </Button>
@@ -3309,7 +3312,7 @@ export default function CoachDashboard({ defaultView }) {
               ) : reminders.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <p className="text-sm">No reminders sent this month yet.</p>
-                  <p className="text-xs mt-1 opacity-60">Add a monthly fee to a client and click "💰 Remind"</p>
+                  <p className="text-xs mt-1 opacity-60">Add a monthly fee to a client and click "Remind"</p>
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -3402,13 +3405,13 @@ export default function CoachDashboard({ defaultView }) {
                             className={`text-[10px] h-6 flex-1 ${c.whatsapp_welcome_sent ? "border-green-500/40 text-green-400" : "border-sky-500/30 text-sky-400"}`}
                             title={c.whatsapp_welcome_sent ? `Sent ${c.whatsapp_sent_at ? new Date(c.whatsapp_sent_at).toLocaleDateString() : ""}` : "Send app download link via WhatsApp"}
                             onClick={e => handleSendWelcome(c.id, e)}>
-                            {c.whatsapp_welcome_sent ? "✓ App Sent" : "📱 App Link"}
+                            {c.whatsapp_welcome_sent ? <><CheckCircle2 className="h-3 w-3 mr-0.5" /> App Sent</> : <><Smartphone className="h-3 w-3 mr-0.5" /> App Link</>}
                           </Button>
                           {c.monthly_fee > 0 && (
                             <Button size="sm" variant="outline" className="text-[10px] h-6 flex-1 border-amber-500/30 text-amber-400"
                               title={`Send ₹${c.monthly_fee?.toLocaleString()} payment reminder`}
                               onClick={e => handleSendReminder(c.id, e)}>
-                              💰 Remind
+                              <Banknote className="h-3 w-3 mr-0.5" /> Remind
                             </Button>
                           )}
                           <Button size="sm" variant="outline" className="text-[10px] h-6 text-destructive border-destructive/30"
@@ -3507,7 +3510,7 @@ export default function CoachDashboard({ defaultView }) {
                   <div>
                     <Label className="text-xs text-muted-foreground mb-1.5 block">Preferred Payment Mode</Label>
                     <div className="flex gap-2">
-                      {[["cash","Cash 💵"],["upi","UPI 📲"],["bank_transfer","Bank 🏦"]].map(([val, label]) => (
+                      {[["cash","Cash"],["upi","UPI"],["bank_transfer","Bank"]].map(([val, label]) => (
                         <button key={val} type="button" onClick={() => setClientForm(p => ({ ...p, payment_mode: val }))}
                           className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition-all ${clientForm.payment_mode === val ? "bg-brand-600/15 border-brand-600/40 text-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
                           {label}
@@ -3525,7 +3528,7 @@ export default function CoachDashboard({ defaultView }) {
                   </div>
                   {clientForm.monthly_fee > 0 && (
                     <p className="text-[10px] text-muted-foreground bg-amber-500/5 border border-amber-500/20 rounded-lg px-3 py-2">
-                      💰 WhatsApp payment reminder — day {clientForm.reminder_day} of each month.
+                      <Banknote className="h-3.5 w-3.5 inline-block mr-1 text-amber-500" /> WhatsApp payment reminder — day {clientForm.reminder_day} of each month.
                     </p>
                   )}
                 </div>
@@ -3750,13 +3753,13 @@ export default function CoachDashboard({ defaultView }) {
                         <Button size="sm" variant="outline"
                           className={`flex-1 text-xs ${viewClientData.whatsapp_welcome_sent ? "border-green-500/40 text-green-400" : "border-sky-500/30 text-sky-400"}`}
                           onClick={e => handleSendWelcome(viewClientData.id, e)}>
-                          {viewClientData.whatsapp_welcome_sent ? "✓ App Link Sent" : "📱 Send App Link"}
+                          {viewClientData.whatsapp_welcome_sent ? <><CheckCircle2 className="h-3.5 w-3.5 mr-1" /> App Link Sent</> : <><Smartphone className="h-3.5 w-3.5 mr-1" /> Send App Link</>}
                         </Button>
                         {viewClientData.monthly_fee > 0 && (
                           <Button size="sm" variant="outline"
                             className="flex-1 text-xs border-amber-500/30 text-amber-400"
                             onClick={e => handleSendReminder(viewClientData.id, e)}>
-                            💰 Send Reminder
+                            <Banknote className="h-3.5 w-3.5 mr-1" /> Send Reminder
                           </Button>
                         )}
                       </div>
@@ -4220,7 +4223,7 @@ export default function CoachDashboard({ defaultView }) {
                         <button onClick={() => openEditExpense(exp)} className="h-7 w-7 rounded-md bg-muted/50 hover:bg-muted flex items-center justify-center transition-colors">
                           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
                         </button>
-                        <button onClick={() => handleDeleteExpense(exp.id)} className="h-7 w-7 rounded-md bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors">
+                        <button onClick={() => setDeleteTarget({ id: exp.id, type: "expense", name: exp.category || "expense" })} className="h-7 w-7 rounded-md bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center transition-colors">
                           <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </button>
                       </div>
@@ -4669,7 +4672,7 @@ export default function CoachDashboard({ defaultView }) {
                           </button>
                         )}
                         {!inv.auto_generated && (
-                          <button onClick={() => handleDeleteInvoice(inv.id)}
+                          <button onClick={() => setDeleteTarget({ id: inv.id, type: "invoice", name: inv.invoice_no || "invoice" })}
                             className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-xs font-bold text-destructive transition-colors ml-auto">
                             <Trash2 className="h-3 w-3" /> Delete
                           </button>
@@ -4918,17 +4921,17 @@ export default function CoachDashboard({ defaultView }) {
       {/* ─── WHATSAPP Tab ─── */}
       {mgmtTab === "whatsapp" && (() => {
         const AUTOMATIONS = [
-          { key: "welcome",              icon: "📱", title: "Welcome Message",        desc: "Sent automatically when you add a new offline client with a phone number", config: null },
-          { key: "booking_confirmation", icon: "✅", title: "Booking Confirmation",   desc: "Sent when an online session is confirmed (payment or package)", config: null },
-          { key: "session_reminder",     icon: "🔔", title: "Session Reminder",       desc: "Sent to the player before an upcoming session",
+          { key: "welcome",              icon: Smartphone,    title: "Welcome Message",        desc: "Sent automatically when you add a new offline client with a phone number", config: null },
+          { key: "booking_confirmation", icon: CheckCircle2,  title: "Booking Confirmation",   desc: "Sent when an online session is confirmed (payment or package)", config: null },
+          { key: "session_reminder",     icon: Bell,          title: "Session Reminder",       desc: "Sent to the player before an upcoming session",
             config: { field: "hours_before", label: "Remind", options: [{ v: 1, l: "1 hour before" }, { v: 2, l: "2 hours before" }, { v: 12, l: "12 hours before" }, { v: 24, l: "1 day before" }, { v: 48, l: "2 days before" }] } },
-          { key: "package_expiry",       icon: "⚠️", title: "Package Expiry Alert",   desc: "Sent when a student's package is about to expire",
+          { key: "package_expiry",       icon: AlertTriangle, title: "Package Expiry Alert",   desc: "Sent when a student's package is about to expire",
             config: { field: "days_before", label: "Alert", options: [{ v: 1, l: "1 day before" }, { v: 2, l: "2 days before" }, { v: 3, l: "3 days before" }, { v: 5, l: "5 days before" }, { v: 7, l: "7 days before" }] } },
-          { key: "payment_reminder",     icon: "💰", title: "Payment Reminder",       desc: "Sent daily with Razorpay link when monthly fee is due (until paid)", config: null },
-          { key: "no_show_followup",     icon: "😊", title: "No-Show Follow-up",      desc: "Sent at 9 PM when a client misses a confirmed session", config: null },
-          { key: "monthly_progress",     icon: "📊", title: "Monthly Progress Report", desc: "Sent to all active subscribers on the last day of each month", config: null },
+          { key: "payment_reminder",     icon: Banknote,      title: "Payment Reminder",       desc: "Sent daily with Razorpay link when monthly fee is due (until paid)", config: null },
+          { key: "no_show_followup",     icon: Smile,         title: "No-Show Follow-up",      desc: "Sent at 9 PM when a client misses a confirmed session", config: null },
+          { key: "monthly_progress",     icon: BarChart3,     title: "Monthly Progress Report", desc: "Sent to all active subscribers on the last day of each month", config: null },
         ];
-        const ICON_MAP = { welcome: "📱", booking_confirmation: "✅", session_reminder: "🔔", package_expiry: "⚠️", payment_reminder: "💰", no_show_followup: "😊", monthly_progress: "📊" };
+        const ICON_MAP = { welcome: Smartphone, booking_confirmation: CheckCircle2, session_reminder: Bell, package_expiry: AlertTriangle, payment_reminder: Banknote, no_show_followup: Smile, monthly_progress: BarChart3 };
         if (!Object.keys(waSettings).length && !waLoading) loadWaSettings();
         return (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -4947,7 +4950,7 @@ export default function CoachDashboard({ defaultView }) {
                     return (
                       <div key={a.key} className={`rounded-[28px] bg-card border border-border/40 shadow-sm p-4 transition-all border ${enabled ? "border-brand-600/20" : "border-border/40 opacity-60"}`}>
                         <div className="flex items-start gap-3">
-                          <span className="text-xl mt-0.5 shrink-0">{a.icon}</span>
+                          <span className="mt-0.5 shrink-0 text-muted-foreground"><a.icon className="h-5 w-5" /></span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-3">
                               <div>
@@ -4999,7 +5002,7 @@ export default function CoachDashboard({ defaultView }) {
                     <div className="space-y-1.5">
                       {waLogs.slice(0, 20).map(log => (
                         <div key={log.id} className="flex items-center gap-2 px-3 py-2 bg-card border border-border/40 shadow-sm rounded-[28px] rounded-lg">
-                          <span className="text-base shrink-0">{ICON_MAP[log.automation_type] || "📨"}</span>
+                          <span className="shrink-0 text-muted-foreground">{(() => { const IC = ICON_MAP[log.automation_type] || Mail; return <IC className="h-4 w-4" />; })()}</span>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs font-medium truncate">{log.client_name}</p>
                             <p className="text-[10px] text-muted-foreground capitalize">{log.automation_type?.replace(/_/g, " ")}</p>
@@ -5404,6 +5407,29 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
           )}
         </motion.div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (!deleteTarget) return;
+              if (deleteTarget.type === "expense") handleDeleteExpense(deleteTarget.id);
+              else if (deleteTarget.type === "invoice") handleDeleteInvoice(deleteTarget.id);
+              else if (deleteTarget.type === "org_player") handleRemoveOrgPlayer(deleteTarget.orgId, deleteTarget.id);
+              else if (deleteTarget.type === "org_staff") handleRemoveOrgStaff(deleteTarget.orgId, deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

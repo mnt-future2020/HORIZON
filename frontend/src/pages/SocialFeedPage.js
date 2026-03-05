@@ -1096,15 +1096,6 @@ export default function SocialFeedPage() {
                             Media
                           </span>
                         </button>
-                        <button
-                          className="hover:text-brand-600 transition-colors flex items-center gap-1.5"
-                          aria-label="Add score"
-                        >
-                          <Zap className="h-5 w-5" />
-                          <span className="text-xs font-bold hidden sm:inline">
-                            Score
-                          </span>
-                        </button>
                       </div>
                       <div className="flex gap-2 items-center">
                         <button

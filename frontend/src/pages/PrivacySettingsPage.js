@@ -1,7 +1,20 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { complianceAPI } from "@/lib/api";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion, useReducedMotion } from "framer-motion";
@@ -69,7 +82,11 @@ export default function PrivacySettingsPage() {
   const { logout } = useAuth();
   const shouldReduceMotion = useReducedMotion();
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  const [tab, setTab] = useState("consent");
+  const [tab, setTab] = useState(() => getInitParam("tab") || "consent");
+  const handleTabChange = useCallback((newTab) => {
+    setTab(newTab);
+    replaceParams({ tab: newTab === "consent" ? null : newTab });
+  }, []);
   const [consents, setConsents] = useState([]);
   const [notifPrefs, setNotifPrefs] = useState({});
   const [auditLog, setAuditLog] = useState([]);
@@ -209,7 +226,7 @@ export default function PrivacySettingsPage() {
               role="tab"
               aria-selected={tab === t.id}
               aria-controls={`panel-${t.id}`}
-              onClick={() => setTab(t.id)}
+              onClick={() => handleTabChange(t.id)}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 min-h-[44px] rounded-[22px] text-xs font-bold uppercase tracking-wide transition-all cursor-pointer whitespace-nowrap px-3
                 ${
                   tab === t.id
@@ -432,7 +449,7 @@ export default function PrivacySettingsPage() {
               </div>
             </motion.div>
 
-            {/* Delete Card */}
+            {/* Delete Account & Data — commented out for now
             <motion.div
               {...anim({
                 initial: { opacity: 0, y: 10 },
@@ -466,6 +483,7 @@ export default function PrivacySettingsPage() {
                 </div>
               </div>
             </motion.div>
+            */}
           </div>
         )}
 

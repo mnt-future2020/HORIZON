@@ -186,6 +186,136 @@ export function AdminSkeleton() {
   );
 }
 
+// Admin Users Tab Skeleton
+export function AdminUsersSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {[...Array(5)].map((_, i) => (
+          <SkeletonBox key={i} className="h-9 w-20 rounded-full" />
+        ))}
+      </div>
+      <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-1.5 sm:p-2 shadow-sm">
+        <div className="divide-y divide-border/30">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="flex items-center justify-between p-3 sm:p-4">
+              <div className="flex items-center gap-3">
+                <SkeletonCircle className="h-10 w-10" />
+                <div>
+                  <SkeletonText className="w-28 h-4 mb-2" />
+                  <SkeletonText className="w-40 h-3" />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <SkeletonBox className="w-16 h-6 rounded-full" />
+                <SkeletonBox className="w-8 h-8 rounded-lg" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Admin Venues Tab Skeleton
+export function AdminVenuesSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <SkeletonText className="w-24 h-5 mb-1" />
+          <SkeletonText className="w-16 h-3" />
+        </div>
+        <SkeletonBox className="w-28 h-10 rounded-full" />
+      </div>
+      <div className="grid grid-cols-1 gap-4">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="bg-card border border-border/40 rounded-2xl p-4 shadow-sm flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <SkeletonBox className="h-14 w-14 rounded-xl" />
+              <div>
+                <SkeletonText className="w-36 h-4 mb-2" />
+                <SkeletonText className="w-48 h-3 mb-1" />
+                <SkeletonText className="w-24 h-3" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <SkeletonBox className="w-16 h-6 rounded-full" />
+              <SkeletonBox className="w-8 h-8 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Admin Settings Tab Skeleton
+export function AdminSettingsSkeleton() {
+  return (
+    <div className="space-y-6 max-w-4xl">
+      <div className="flex items-center gap-2 p-1.5 rounded-2xl w-fit border border-border/40">
+        {[...Array(5)].map((_, i) => (
+          <SkeletonBox key={i} className="h-10 w-24 rounded-xl" />
+        ))}
+      </div>
+      <div className="space-y-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-card border border-border/40 rounded-2xl p-5 shadow-sm">
+            <SkeletonText className="w-32 h-4 mb-4" />
+            <div className="space-y-3">
+              <SkeletonBox className="w-full h-10 rounded-xl" />
+              <SkeletonBox className="w-full h-10 rounded-xl" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Admin Payouts Tab Skeleton
+export function AdminPayoutsSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-card rounded-2xl p-6 border border-border/40 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <SkeletonText className="w-24 h-3" />
+              <SkeletonBox className="w-8 h-8 rounded-xl" />
+            </div>
+            <SkeletonText className="w-20 h-8 mb-2" />
+            <SkeletonText className="w-16 h-3" />
+          </div>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        {[...Array(3)].map((_, i) => (
+          <SkeletonBox key={i} className="h-9 w-24 rounded-full" />
+        ))}
+      </div>
+      <div className="bg-card border border-border/40 rounded-2xl overflow-hidden shadow-sm">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between p-4 border-b border-border/20">
+            <div className="flex items-center gap-3">
+              <div>
+                <SkeletonText className="w-28 h-4 mb-2" />
+                <SkeletonText className="w-20 h-3" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <SkeletonText className="w-20 h-4" />
+              <SkeletonBox className="w-20 h-8 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // IoT Dashboard Skeleton
 export function IoTSkeleton() {
   return (
