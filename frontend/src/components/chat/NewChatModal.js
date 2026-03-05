@@ -29,8 +29,8 @@ const NewChatModal = ({ isOpen, onClose, onStartConvo, user }) => {
       socialAPI.getFollowers(user.id),
       socialAPI.getFollowing(user.id),
     ]);
-    if (results[0].status === "fulfilled") setTabFollowers(results[0].value.data || []);
-    if (results[1].status === "fulfilled") setTabFollowing(results[1].value.data || []);
+    if (results[0].status === "fulfilled") setTabFollowers(results[0].value.data?.users || []);
+    if (results[1].status === "fulfilled") setTabFollowing(results[1].value.data?.users || []);
     setTabLoading(false);
   }, [user?.id]);
 
