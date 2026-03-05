@@ -30,6 +30,8 @@ import {
   IndianRupee,
   Users,
   LayoutGrid,
+  Timer,
+  CalendarClock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -59,6 +61,7 @@ export default function PublicVenuePage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [wsStatus, setWsStatus] = useState("connecting");
   const [justUpdated, setJustUpdated] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const wsRef = useRef(null);
   const venueIdRef = useRef(null);
@@ -263,50 +266,54 @@ export default function PublicVenuePage() {
       {/* Public Navbar — shown only for non-logged-in users */}
       {!user && <LandingHeader />}
 
-      <div className="mx-4 lg:mx-20">
-        {/* Breadcrumb */}
-        <div className={user ? "pt-5 md:pt-7" : "pt-20"}>
-          <nav aria-label="Breadcrumb" className="inline-flex items-center rounded-full bg-secondary/50 border border-border/30 px-3 py-1.5 sm:px-4 sm:py-2">
-            <ol className="flex items-center gap-0 text-xs sm:text-[13px] text-muted-foreground">
-              <li className="inline-flex items-center">
-                <Link
-                  to="/venues"
-                  className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md whitespace-nowrap transition-all duration-200 hover:text-brand-600 hover:bg-brand-600/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 focus-visible:rounded-md"
-                >
-                  <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                  Venues
-                </Link>
-              </li>
-              <li role="presentation" aria-hidden="true" className="mx-0.5 sm:mx-1 text-border">
-                <span className="text-[10px]">/</span>
-              </li>
-              <li className="inline-flex items-center">
-                <Link
-                  to={`/venues?city=${encodeURIComponent(venue.city || "")}`}
-                  className="px-1.5 py-0.5 rounded-md whitespace-nowrap transition-all duration-200 hover:text-brand-600 hover:bg-brand-600/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 focus-visible:rounded-md"
-                >
-                  {venue.city || "City"}
-                </Link>
-              </li>
-              <li role="presentation" aria-hidden="true" className="mx-0.5 sm:mx-1 text-border">
-                <span className="text-[10px]">/</span>
-              </li>
-              <li className="inline-flex items-center min-w-0">
-                <span
-                  className="px-1.5 py-0.5 text-foreground font-semibold truncate max-w-[140px] sm:max-w-[240px] md:max-w-[360px]"
-                  aria-current="page"
-                  title={venue.name}
-                >
-                  {venue.name}
-                </span>
-              </li>
-            </ol>
-          </nav>
-        </div>
+      <div className="mx-4 sm:mx-6 md:mx-10 lg:mx-20">
+        {/* Breadcrumb — logged-in users only */}
+        {user ? (
+          <div className="pt-5 md:pt-7">
+            <nav aria-label="Breadcrumb" className="inline-flex items-center rounded-full bg-secondary/50 border border-border/30 px-3 py-1.5 sm:px-4 sm:py-2">
+              <ol className="flex items-center gap-0 text-xs sm:text-[13px] text-muted-foreground">
+                <li className="inline-flex items-center">
+                  <Link
+                    to="/venues"
+                    className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md whitespace-nowrap transition-all duration-200 hover:text-brand-600 hover:bg-brand-600/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 focus-visible:rounded-md"
+                  >
+                    <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    Venues
+                  </Link>
+                </li>
+                <li role="presentation" aria-hidden="true" className="mx-0.5 sm:mx-1 text-border">
+                  <span className="text-[10px]">/</span>
+                </li>
+                <li className="inline-flex items-center">
+                  <Link
+                    to={`/venues?city=${encodeURIComponent(venue.city || "")}`}
+                    className="px-1.5 py-0.5 rounded-md whitespace-nowrap transition-all duration-200 hover:text-brand-600 hover:bg-brand-600/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 focus-visible:rounded-md"
+                  >
+                    {venue.city || "City"}
+                  </Link>
+                </li>
+                <li role="presentation" aria-hidden="true" className="mx-0.5 sm:mx-1 text-border">
+                  <span className="text-[10px]">/</span>
+                </li>
+                <li className="inline-flex items-center min-w-0">
+                  <span
+                    className="px-1.5 py-0.5 text-foreground font-semibold truncate max-w-[140px] sm:max-w-[240px] md:max-w-[360px]"
+                    aria-current="page"
+                    title={venue.name}
+                  >
+                    {venue.name}
+                  </span>
+                </li>
+              </ol>
+            </nav>
+          </div>
+        ) : (
+          <div className="pt-20" />
+        )}
 
         {/* Venue Header — 3 col grid matching reference */}
         <div className="mt-6">
-          <div className="grid w-full md:h-24 grid-flow-row-dense grid-cols-3 grid-rows-2 gap-y-1 md:gap-y-0 md:gap-x-5">
+          <div className="grid w-full grid-flow-row-dense grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-y-0 md:gap-x-5">
             {/* Name + Badge — full width */}
             <div className="w-full relative text-wrap col-span-3">
               <div className="flex items-center gap-3 flex-wrap">
@@ -382,38 +389,31 @@ export default function PublicVenuePage() {
             </div>
 
             {/* Action Buttons — right col (hidden on mobile, shown in sticky bar) */}
-            <div className="hidden md:flex z-10 flex-row w-full col-span-3 mt-3 space-x-2 md:mt-0 sm:col-span-2 md:col-span-1">
-              <div className="flex flex-col items-center justify-start w-full space-y-3">
-                <div className="w-full">
+            <div className="hidden md:flex z-10 w-full col-span-3 md:col-span-1 mt-3 md:mt-0">
+              <div className="flex flex-col w-full gap-2.5">
+                <button
+                  className="w-full h-12 px-3 py-2 font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-500 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+                  onClick={handleBookNow}
+                  aria-label={user ? "Book this venue now" : "Log in to book this venue"}
+                >
+                  {user ? "Book Now" : "Login to Book"}
+                </button>
+                <div className="flex gap-2">
                   <button
-                    className="w-full h-12 px-3 py-2 font-semibold text-white rounded-md bg-brand-600 hover:bg-brand-500 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
-                    onClick={handleBookNow}
-                    aria-label={
-                      user ? "Book this venue now" : "Log in to book this venue"
-                    }
-                  >
-                    {user ? "Book Now" : "Login to Book"}
-                  </button>
-                </div>
-                <div className="flex flex-row items-center justify-start w-full space-x-2">
-                  <button
-                    className="flex items-center justify-center w-full h-12 space-x-2 font-semibold border-2 cursor-pointer hover:bg-secondary rounded-md border-border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="flex items-center justify-center flex-1 h-11 gap-2 font-semibold border border-border cursor-pointer hover:bg-secondary rounded-xl transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                     onClick={handleShare}
                     aria-label={copied ? "Link copied" : "Share this venue"}
                   >
-                    {copied ? (
-                      <Check className="w-5 h-5" />
-                    ) : (
-                      <Share2 className="w-5 h-5" />
-                    )}
-                    <div>{copied ? "Copied!" : "Share"}</div>
+                    {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                    <span className="text-sm">{copied ? "Copied!" : "Share"}</span>
                   </button>
                   <button
-                    className="w-full h-12 px-3 py-2 font-semibold text-sm md:text-base border-brand-600 border text-brand-600 rounded-md bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="flex items-center justify-center flex-1 h-11 gap-2 font-semibold text-sm border border-brand-600 text-brand-600 rounded-xl bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                     onClick={() => setShowQR(true)}
                     aria-label="Show QR code for this venue"
                   >
-                    QR Code
+                    <QrCode className="w-4 h-4" />
+                    <span>QR Code</span>
                   </button>
                 </div>
               </div>
@@ -423,10 +423,10 @@ export default function PublicVenuePage() {
 
         {/* Main Content Grid */}
         <div className="grid w-full grid-cols-1 gap-2 mt-6 md:gap-x-5 md:grid-cols-3">
-          {/* Image Carousel — 2 cols */}
-          <div className="hidden w-full row-span-1 md:block md:col-span-2">
+          {/* Image Carousel */}
+          <div className="w-full md:col-span-2 order-1 md:order-none">
             <div
-              className={`overflow-hidden aspect-video rounded-md w-full relative bg-muted ${justUpdated ? "ring-2 ring-brand-600 ring-offset-2 transition-all duration-500" : ""}`}
+              className={`overflow-hidden aspect-video rounded-2xl w-full relative bg-muted ${justUpdated ? "ring-2 ring-brand-600 ring-offset-2 transition-all duration-500" : ""}`}
             >
               <img
                 src={mediaUrl(images[currentImageIndex])}
@@ -445,26 +445,26 @@ export default function PublicVenuePage() {
                         (i) => (i - 1 + images.length) % images.length,
                       )
                     }
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center text-foreground hover:bg-white cursor-pointer transition-colors duration-200 shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-white cursor-pointer transition-colors duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                     aria-label="Previous image"
                   >
-                    <ChevronLeft className="h-5 w-5" />
+                    <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                   <button
                     onClick={() =>
                       setCurrentImageIndex((i) => (i + 1) % images.length)
                     }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center text-foreground hover:bg-white cursor-pointer transition-colors duration-200 shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center text-foreground hover:bg-white cursor-pointer transition-colors duration-200 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
                     aria-label="Next image"
                   >
-                    <ChevronRight className="h-5 w-5" />
+                    <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2 z-10">
                     {images.map((_, i) => (
                       <button
                         key={i}
                         onClick={() => setCurrentImageIndex(i)}
-                        className={`w-3 h-3 rounded-full cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${i === currentImageIndex ? "bg-brand-600" : "bg-white/80 hover:bg-white"}`}
+                        className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${i === currentImageIndex ? "bg-brand-600 scale-110" : "bg-white/80 hover:bg-white"}`}
                         aria-label={`Go to image ${i + 1}`}
                       />
                     ))}
@@ -474,105 +474,58 @@ export default function PublicVenuePage() {
             </div>
           </div>
 
-          {/* Mobile Image Carousel */}
-          <div className="md:hidden w-full">
-            <div
-              className={`overflow-hidden aspect-video rounded-md w-full relative bg-muted ${justUpdated ? "ring-2 ring-brand-600 ring-offset-2 transition-all duration-500" : ""}`}
-            >
-              <img
-                src={mediaUrl(images[currentImageIndex])}
-                alt={venue.name}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.target.src =
-                    "https://images.unsplash.com/photo-1551698618-1dfe5d97d256?w=1200&q=80";
-                }}
-              />
-              {images.length > 1 && (
-                <>
-                  <button
-                    onClick={() =>
-                      setCurrentImageIndex(
-                        (i) => (i - 1 + images.length) % images.length,
-                      )
-                    }
-                    className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center text-foreground hover:bg-white cursor-pointer transition-colors duration-200 shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                    aria-label="Previous image"
-                  >
-                    <ChevronLeft className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentImageIndex((i) => (i + 1) % images.length)
-                    }
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/80 flex items-center justify-center text-foreground hover:bg-white cursor-pointer transition-colors duration-200 shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                    aria-label="Next image"
-                  >
-                    <ChevronRight className="h-5 w-5" />
-                  </button>
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
-                    {images.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentImageIndex(i)}
-                        className={`w-3 h-3 rounded-full cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 ${i === currentImageIndex ? "bg-brand-600" : "bg-white/80 hover:bg-white"}`}
-                        aria-label={`Go to image ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-          {/* Sidebar — right column */}
-          <div className="w-full z-0 md:row-span-2">
-            <div className="flex flex-col gap-4 md:mt-14">
-              {/* Quick Info Card — price, turfs, duration, contact */}
-              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
-                <div className="grid grid-cols-2 gap-3">
+          {/* Sidebar — right column (pushed below main content on mobile) */}
+          <div className="w-full z-0 md:row-span-2 order-3 md:order-none">
+            <div className="flex flex-col gap-4 mt-4 md:mt-0">
+              {/* Quick Info Card — price, turfs, duration, hours, contact */}
+              <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden divide-y divide-border/40">
+                {/* Key stats row */}
+                <div className="flex items-stretch">
                   {venue.base_price != null && (
-                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-brand-600/5 border border-brand-600/10">
-                      <IndianRupee className="h-4 w-4 text-brand-600 shrink-0" />
-                      <div>
-                        <div className="text-base font-bold text-foreground">₹{venue.base_price}</div>
-                        <div className="text-[10px] text-muted-foreground leading-tight">per slot</div>
+                    <div className="flex-1 py-4 text-center border-r border-border/40">
+                      <div className="text-lg font-bold text-foreground leading-none">
+                        <span className="text-brand-600">₹</span>{venue.base_price}
                       </div>
+                      <div className="text-[10px] text-muted-foreground mt-1">per slot</div>
                     </div>
                   )}
                   {venue.turfs > 0 && (
-                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/50 border border-border/30">
-                      <LayoutGrid className="h-4 w-4 text-brand-600 shrink-0" />
-                      <div>
-                        <div className="text-base font-bold text-foreground">{venue.turfs}</div>
-                        <div className="text-[10px] text-muted-foreground leading-tight">{venue.turfs === 1 ? "Court" : "Courts"}</div>
-                      </div>
+                    <div className="flex-1 py-4 text-center border-r border-border/40">
+                      <div className="text-lg font-bold text-foreground leading-none">{venue.turfs}</div>
+                      <div className="text-[10px] text-muted-foreground mt-1">{venue.turfs === 1 ? "Court" : "Courts"}</div>
                     </div>
                   )}
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/50 border border-border/30">
-                    <Clock className="h-4 w-4 text-brand-600 shrink-0" />
-                    <div>
-                      <div className="text-sm font-bold text-foreground">{venue.slot_duration_minutes || 60} min</div>
-                      <div className="text-[10px] text-muted-foreground leading-tight">per session</div>
+                  <div className="flex-1 py-4 text-center">
+                    <div className="text-lg font-bold text-foreground leading-none">
+                      {venue.slot_duration_minutes || 60}<span className="text-xs font-semibold ml-0.5">min</span>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/50 border border-border/30">
-                    <Clock className="h-4 w-4 text-brand-600 shrink-0" />
-                    <div>
-                      <div className="text-sm font-bold text-foreground whitespace-nowrap">{formatTime(venue.opening_hour)} – {formatTime(venue.closing_hour)}</div>
-                      <div className="text-[10px] text-muted-foreground leading-tight">open hours</div>
-                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-1">session</div>
                   </div>
                 </div>
+
+                {/* Open hours */}
+                <div className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-brand-600/8 shrink-0">
+                    <CalendarClock className="h-4 w-4 text-brand-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-foreground">{formatTime(venue.opening_hour)} – {formatTime(venue.closing_hour)}</div>
+                    <div className="text-[10px] text-muted-foreground">Open hours</div>
+                  </div>
+                </div>
+
+                {/* Contact phone */}
                 {venue.contact_phone && (
                   <a
                     href={`tel:${venue.contact_phone}`}
-                    className="flex items-center gap-2.5 mt-3 p-3 rounded-xl bg-secondary/50 border border-border/30 hover:border-brand-600/40 transition-colors group"
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/40 transition-colors group"
                   >
-                    <Phone className="h-4 w-4 text-brand-600 shrink-0" />
+                    <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-brand-600/8 shrink-0 group-hover:bg-brand-600/15 transition-colors">
+                      <Phone className="h-4 w-4 text-brand-600" />
+                    </div>
                     <div>
-                      <div className="text-sm font-medium text-foreground group-hover:text-brand-600 transition-colors">{venue.contact_phone}</div>
-                      <div className="text-[10px] text-muted-foreground leading-tight">Tap to call</div>
+                      <div className="text-sm font-semibold text-foreground group-hover:text-brand-600 transition-colors">{venue.contact_phone}</div>
+                      <div className="text-[10px] text-muted-foreground">Tap to call</div>
                     </div>
                   </a>
                 )}
@@ -607,7 +560,7 @@ export default function PublicVenuePage() {
           </div>
 
           {/* Left content sections — 2 cols */}
-          <div className="w-full rounded-md md:row-span-5 md:col-span-2">
+          <div className="w-full md:row-span-5 md:col-span-2 order-2 md:order-none">
             {/* Sports Available */}
             {venue.sports?.length > 0 && (
               <div className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 mt-4 shadow-sm">
@@ -681,7 +634,7 @@ export default function PublicVenuePage() {
                 <h3 className="font-semibold text-base sm:text-lg text-foreground mb-4">
                   About Venue
                 </h3>
-                <div className="text-sm sm:text-base">
+                <div className={`text-sm sm:text-base relative ${!descExpanded ? "max-h-[200px] overflow-hidden" : ""}`}>
                   {isHtmlContent(venue.description) ? (
                     <div
                       className="text-muted-foreground leading-relaxed prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-strong:text-foreground prose-ul:list-disc prose-ol:list-decimal"
@@ -694,7 +647,16 @@ export default function PublicVenuePage() {
                       {venue.description}
                     </p>
                   )}
+                  {!descExpanded && (
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card to-transparent" />
+                  )}
                 </div>
+                <button
+                  onClick={() => setDescExpanded(prev => !prev)}
+                  className="mt-2 text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors cursor-pointer"
+                >
+                  {descExpanded ? "Show less" : "Show more"}
+                </button>
               </div>
             )}
 
@@ -789,39 +751,33 @@ export default function PublicVenuePage() {
           </div>
         </div>
 
+        {/* Spacer for mobile sticky bottom bar */}
+        <div className="h-36 md:hidden" />
+
         {/* Mobile Action Buttons — sticky bottom */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border z-50 supports-[backdrop-filter]:bg-background/80">
-          <div className="flex flex-col items-center justify-start w-full space-y-2 p-3">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border/60 z-50 pb-[env(safe-area-inset-bottom)]">
+          <div className="flex items-center gap-2 p-3">
             <button
-              className="w-full h-12 px-3 py-2 font-semibold text-white rounded-md bg-brand-600 hover:bg-brand-500 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+              className="flex-1 h-11 px-3 font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-500 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 text-sm"
               onClick={handleBookNow}
-              aria-label={
-                user ? "Book this venue now" : "Log in to book this venue"
-              }
+              aria-label={user ? "Book this venue now" : "Log in to book this venue"}
             >
               {user ? "Book Now" : "Login to Book"}
             </button>
-            <div className="flex flex-row items-center justify-start w-full space-x-2">
-              <button
-                className="flex items-center justify-center w-full h-12 space-x-2 font-semibold border-2 cursor-pointer hover:bg-secondary rounded-md border-border transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                onClick={handleShare}
-                aria-label={copied ? "Link copied" : "Share this venue"}
-              >
-                {copied ? (
-                  <Check className="w-5 h-5" />
-                ) : (
-                  <Share2 className="w-5 h-5" />
-                )}
-                <div>{copied ? "Copied!" : "Share"}</div>
-              </button>
-              <button
-                className="w-full h-12 px-3 py-2 font-semibold text-sm border-brand-600 border text-brand-600 rounded-md bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                onClick={() => setShowQR(true)}
-                aria-label="Show QR code for this venue"
-              >
-                QR Code
-              </button>
-            </div>
+            <button
+              className="flex items-center justify-center h-11 w-11 shrink-0 border border-border rounded-xl cursor-pointer hover:bg-secondary transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+              onClick={handleShare}
+              aria-label={copied ? "Link copied" : "Share this venue"}
+            >
+              {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+            </button>
+            <button
+              className="flex items-center justify-center h-11 w-11 shrink-0 border border-brand-600 text-brand-600 rounded-xl bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+              onClick={() => setShowQR(true)}
+              aria-label="Show QR code for this venue"
+            >
+              <QrCode className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
