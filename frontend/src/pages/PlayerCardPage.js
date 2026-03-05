@@ -839,6 +839,13 @@ export default function PlayerCardPage() {
                   loading={postsLoading}
                   postCount={card.post_count}
                   card={card}
+                  isOwnProfile={isOwnProfile}
+                  onDeletePost={(postId) => {
+                    socialAPI.deletePost(postId).then(() => {
+                      setUserPosts(prev => prev.filter(p => p.id !== postId));
+                      toast.success("Post deleted");
+                    }).catch(() => toast.error("Failed to delete post"));
+                  }}
                 />
               </motion.div>
             )}

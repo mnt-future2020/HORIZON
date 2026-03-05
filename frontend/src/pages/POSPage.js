@@ -885,13 +885,13 @@ function POSTerminal({ user }) {
                   onClick={() => setActiveView(id)}
                   className={`relative flex items-center gap-2 px-5 py-2.5 rounded-full text-[13px] tracking-wide whitespace-nowrap transition-all shadow-sm active:scale-95 ${
                     activeView === id
-                      ? "bg-foreground text-background font-bold"
+                      ? "bg-brand-600 text-white font-bold shadow-md shadow-brand-600/20"
                       : "bg-card border border-border/40 text-muted-foreground hover:bg-secondary/60 hover:text-foreground"
                   }`}
                   data-testid={`pos-tab-${id}`}
                 >
                   <Icon
-                    className={`w-4 h-4 ${activeView === id ? "text-background opacity-80" : "text-muted-foreground/70"}`}
+                    className={`w-4 h-4 ${activeView === id ? "text-white opacity-80" : "text-muted-foreground/70"}`}
                   />
                   {label}
                 </button>
@@ -930,10 +930,9 @@ function POSTerminal({ user }) {
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
+                      className="flex flex-col items-center"
                     >
-                      <div className="p-6 rounded-3xl bg-secondary/30 mb-4">
-                        <Package className="h-10 w-10 text-muted-foreground/30" />
-                      </div>
+                      <Package className="h-10 w-10 text-muted-foreground/30 mb-4" />
                       <p className="text-muted-foreground text-sm font-medium mb-3">
                         No products yet
                       </p>
@@ -1238,10 +1237,9 @@ function POSTerminal({ user }) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center"
                   >
-                    <div className="p-6 rounded-3xl bg-secondary/30 mb-4">
-                      <Package className="h-10 w-10 text-muted-foreground/30" />
-                    </div>
+                    <Package className="h-10 w-10 text-muted-foreground/30 mb-4" />
                     <p className="text-muted-foreground text-sm font-medium">
                       No products yet. Add your first item!
                     </p>
@@ -1420,10 +1418,9 @@ function POSTerminal({ user }) {
                   <motion.div
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
+                    className="flex flex-col items-center"
                   >
-                    <div className="p-6 rounded-3xl bg-secondary/30 mb-4">
-                      <History className="h-10 w-10 text-muted-foreground/30" />
-                    </div>
+                    <History className="h-10 w-10 text-muted-foreground/30 mb-4" />
                     <p className="text-muted-foreground text-sm font-medium">
                       No sales yet
                     </p>
