@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useRef, useCallback } from "react";
 import {
   Slash,
   FileText,
   Play,
   Pause,
   Pin,
+  PinOff,
   Trash2,
   Reply as ReplyIcon,
   User,
@@ -33,34 +34,77 @@ const MessageBubble = ({
   const hasMedia = !!msg.media_url;
   const isImageOnly =
     hasMedia && (!msg.media_type || msg.media_type === "image") && !msg.content;
+  const hasReply = (msg.reply_preview || msg.reply_to) && !isDeleted;
+
+  // Long-press for mobile touch
+  const longPressTimer = useRef(null);
+  const touchStartPos = useRef(null);
+  const handleTouchStart = useCallback(
+    (e) => {
+      if (isDeleted) return;
+      const touch = e.touches[0];
+      touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+      longPressTimer.current = setTimeout(() => {
+        longPressTimer.current = null;
+        window.getSelection()?.removeAllRanges();
+        onLongPress(msg);
+      }, 500);
+    },
+    [msg, isDeleted, onLongPress],
+  );
+  const handleTouchMove = useCallback((e) => {
+    if (longPressTimer.current && touchStartPos.current) {
+      const touch = e.touches[0];
+      const dx = Math.abs(touch.clientX - touchStartPos.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+      if (dx > 10 || dy > 10) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    }
+  }, []);
+  const handleTouchEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    touchStartPos.current = null;
+  }, []);
 
   // Bubble border radii
-  const myRadii =
-    showTail && !msg.reply_preview
-      ? "rounded-[20px] rounded-br-[5px]"
-      : "rounded-[20px]";
-  const theirRadii =
-    showTail && !msg.reply_preview
-      ? "rounded-[20px] rounded-bl-[5px]"
-      : "rounded-[20px]";
+  const myRadii = showTail
+    ? "rounded-[20px] rounded-br-[5px]"
+    : "rounded-[20px]";
+  const theirRadii = showTail
+    ? "rounded-[20px] rounded-bl-[5px]"
+    : "rounded-[20px]";
 
   return (
     <div
       id={`msg-${msg.id}`}
-      className={`flex ${isMe ? "justify-end" : "justify-start"} ${showTail ? "mt-3 sm:mt-4" : "mt-0.5"} group/msg relative px-1`}
+      className={`flex ${isMe ? "justify-end" : "justify-start"} ${
+        showTail ? "mt-2 sm:mt-2.5" : "mt-[3px]"
+      } group/msg relative px-1 sm:px-2`}
       onContextMenu={(e) => {
         e.preventDefault();
         if (!isDeleted) onLongPress(msg);
       }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
     >
       {/* Bubble column */}
       <div
-        className={`relative flex flex-col max-w-[86%] sm:max-w-[72%] md:max-w-[65%] ${isMe ? "items-end" : "items-start"}`}
+        className={`relative flex flex-col max-w-[85%] sm:max-w-[72%] md:max-w-[65%] ${
+          isMe ? "items-end" : "items-start"
+        }`}
       >
-        {/* Hover action strip — desktop only, appears above bubble */}
+        {/* Hover action strip — desktop only */}
         {!isDeleted && (
           <div
-            className={`absolute -top-8 ${isMe ? "right-1" : "left-1"} hidden sm:group-hover/msg:flex items-center gap-1 px-2 py-1.5 rounded-full bg-card/95 backdrop-blur-sm border border-border/40 shadow-lg z-30`}
+            className={`absolute -top-8 ${
+              isMe ? "right-1" : "left-1"
+            } hidden sm:group-hover/msg:flex items-center gap-0.5 px-1.5 py-1 rounded-full bg-card/95 backdrop-blur-sm border border-border/40 shadow-lg z-30`}
             role="toolbar"
             aria-label="Message actions"
           >
@@ -72,10 +116,12 @@ const MessageBubble = ({
                 hoverCls: "hover:text-brand-600",
               },
               {
-                icon: Pin,
-                label: "Pin",
+                icon: msg.pinned ? PinOff : Pin,
+                label: msg.pinned ? "Unpin" : "Pin",
                 onClick: () => onPin(msg),
-                hoverCls: "hover:text-amber-500",
+                hoverCls: msg.pinned
+                  ? "hover:text-muted-foreground"
+                  : "hover:text-amber-500",
               },
               ...(isMe
                 ? [
@@ -100,31 +146,13 @@ const MessageBubble = ({
           </div>
         )}
 
-        {/* Reply preview */}
-        {(msg.reply_preview || msg.reply_to) && !isDeleted && (
-          <div
-            className={`w-full mx-0.5 mb-0.5 px-3 py-2 text-[11px] border-l-[3px] rounded-t-2xl ${
-              isMe
-                ? "bg-white/10 border-white/40 text-white/80"
-                : "bg-secondary/50 border-brand-600/40 text-muted-foreground"
-            }`}
-          >
-            <p className="font-black uppercase tracking-tight opacity-70 mb-0.5 text-[9px]">
-              {msg.reply_sender || "Reply"}
-            </p>
-            <p className="line-clamp-1 italic font-medium opacity-80">
-              {msg.reply_preview || "…"}
-            </p>
-          </div>
-        )}
-
         {/* Main bubble */}
         <div
-          className={`relative shadow-sm transition-all select-text ${
+          className={`relative shadow-sm transition-all select-text overflow-hidden ${
             isImageOnly
               ? ""
-              : isMe
-                ? "px-3.5 sm:px-4 py-2.5"
+              : hasReply
+                ? "pt-0 pb-2.5 px-0"
                 : "px-3.5 sm:px-4 py-2.5"
           } ${
             isMe
@@ -135,30 +163,91 @@ const MessageBubble = ({
               ? "italic opacity-50 !bg-secondary/20 !border-border/20"
               : "active:scale-[0.99] transition-transform"
           }`}
-          onTouchStart={() => {
-            if (!isDeleted) {
-              // Long-press handled by parent via onContextMenu equivalent
-            }
-          }}
         >
+          {/* Pin indicator */}
+          {msg.pinned && !isDeleted && (
+            <div
+              className={`flex items-center gap-1 ${hasReply ? "px-3.5 pt-2" : ""} mb-1 ${
+                isMe ? "text-white/60" : "text-amber-500/70"
+              }`}
+            >
+              <Pin className="h-2.5 w-2.5" />
+              <span className="text-[9px] font-bold uppercase tracking-widest">
+                Pinned
+              </span>
+            </div>
+          )}
+
           {isDeleted ? (
-            <span className="flex items-center gap-2 text-[12px] font-medium py-0.5 text-muted-foreground">
+            <span className="flex items-center gap-2 text-[12px] font-medium py-0.5 px-3.5 text-muted-foreground">
               <Slash className="h-3.5 w-3.5 opacity-50 rotate-12" />
               Message deleted
             </span>
           ) : (
-            <div className="flex flex-col gap-2">
-              {/* Text content (skip for story replies — rendered inside story card) */}
-              {msg.content && !msg.shared_post && !(msg.shared_post?.type === "story") && (
-                <p className="text-[14px] sm:text-[14.5px] leading-relaxed font-medium whitespace-pre-wrap break-words">
-                  {linkifyText(msg.content)}
-                </p>
+            <div className="flex flex-col">
+              {/* Reply preview — INSIDE the bubble as a quoted block */}
+              {hasReply && (
+                <div
+                  className={`mx-2.5 mt-2.5 mb-2 px-3 py-2 rounded-xl border-l-[3px] cursor-pointer transition-colors ${
+                    isMe
+                      ? "bg-white/10 hover:bg-white/15 border-white/40"
+                      : "bg-secondary/40 hover:bg-secondary/60 border-brand-600/50"
+                  }`}
+                  onClick={() => {
+                    if (msg.reply_to) {
+                      const el = document.getElementById(
+                        `msg-${msg.reply_to}`,
+                      );
+                      if (el) {
+                        el.scrollIntoView({
+                          behavior: "smooth",
+                          block: "center",
+                        });
+                        el.classList.add("ring-2", "ring-brand-600/40");
+                        setTimeout(
+                          () =>
+                            el.classList.remove("ring-2", "ring-brand-600/40"),
+                          2000,
+                        );
+                      }
+                    }
+                  }}
+                >
+                  <p
+                    className={`text-[10px] font-black uppercase tracking-wider mb-0.5 ${
+                      isMe ? "text-white/70" : "text-brand-600/80"
+                    }`}
+                  >
+                    {msg.reply_sender || "Reply"}
+                  </p>
+                  <p
+                    className={`text-[12px] leading-snug line-clamp-2 font-medium ${
+                      isMe ? "text-white/60" : "text-muted-foreground/70"
+                    }`}
+                  >
+                    {msg.reply_preview || "…"}
+                  </p>
+                </div>
               )}
 
-              {/* Story reply card (Instagram-style) */}
+              {/* Text content */}
+              {msg.content &&
+                !msg.shared_post &&
+                !(msg.shared_post?.type === "story") && (
+                  <p
+                    className={`text-[14px] sm:text-[14.5px] leading-relaxed font-medium whitespace-pre-wrap break-words ${
+                      hasReply ? "px-3.5 sm:px-4" : ""
+                    }`}
+                  >
+                    {linkifyText(msg.content)}
+                  </p>
+                )}
+
+              {/* Story reply card */}
               {msg.shared_post?.type === "story" && (
-                <div className="w-full rounded-2xl overflow-hidden mb-1">
-                  {/* Story preview thumbnail */}
+                <div
+                  className={`w-full rounded-2xl overflow-hidden mb-1 ${hasReply ? "px-2.5" : ""}`}
+                >
                   <div className="relative w-full h-36 sm:h-40 rounded-2xl overflow-hidden">
                     {msg.shared_post.media_url ? (
                       <img
@@ -169,7 +258,8 @@ const MessageBubble = ({
                     ) : (
                       <div
                         className={`w-full h-full flex items-center justify-center p-4 bg-gradient-to-br ${
-                          msg.shared_post.bg_color || "from-purple-500 to-pink-600"
+                          msg.shared_post.bg_color ||
+                          "from-purple-500 to-pink-600"
                         }`}
                       >
                         {msg.shared_post.content && (
@@ -179,9 +269,7 @@ const MessageBubble = ({
                         )}
                       </div>
                     )}
-                    {/* Gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    {/* Story label */}
                     <div className="absolute bottom-2 left-2.5 flex items-center gap-1.5">
                       {msg.shared_post.user_avatar ? (
                         <img
@@ -195,13 +283,14 @@ const MessageBubble = ({
                         </div>
                       )}
                       <span className="text-[10px] font-bold text-white/90 drop-shadow">
-                        {isMe ? `${msg.shared_post.user_name}'s story` : "Your story"}
+                        {isMe
+                          ? `${msg.shared_post.user_name}'s story`
+                          : "Your story"}
                       </span>
                     </div>
                   </div>
-                  {/* Reply text */}
                   {msg.content && (
-                    <p className="text-[14px] sm:text-[14.5px] leading-relaxed font-medium whitespace-pre-wrap break-words pt-2">
+                    <p className="text-[14px] sm:text-[14.5px] leading-relaxed font-medium whitespace-pre-wrap break-words pt-2 px-1">
                       {linkifyText(msg.content)}
                     </p>
                   )}
@@ -212,7 +301,13 @@ const MessageBubble = ({
               {msg.shared_post && msg.shared_post.type !== "story" && (
                 <button
                   onClick={() => onOpenSharedPost(msg.shared_post.id)}
-                  className={`block w-full text-left rounded-2xl overflow-hidden ${isMe ? "bg-black/20 hover:bg-black/30" : "bg-secondary/30 hover:bg-secondary/50"} border border-white/8 active:scale-[0.98] transition-all`}
+                  className={`block w-full text-left rounded-2xl overflow-hidden ${
+                    hasReply ? "mx-2.5 w-[calc(100%-20px)]" : ""
+                  } ${
+                    isMe
+                      ? "bg-black/20 hover:bg-black/30"
+                      : "bg-secondary/30 hover:bg-secondary/50"
+                  } border border-white/8 active:scale-[0.98] transition-all`}
                 >
                   {msg.shared_post.media_url && (
                     <img
@@ -245,12 +340,18 @@ const MessageBubble = ({
                 </button>
               )}
 
-              {/* Image — full bleed when image only */}
+              {/* Image */}
               {hasMedia && (!msg.media_type || msg.media_type === "image") && (
                 <button
                   onClick={() => onOpenLightbox(mediaUrl(msg.media_url))}
                   aria-label="View image"
-                  className={`block overflow-hidden ${isImageOnly ? "" : "mt-1 rounded-2xl"} ${
+                  className={`block overflow-hidden ${
+                    isImageOnly
+                      ? ""
+                      : hasReply
+                        ? "mt-1 mx-2.5 rounded-2xl"
+                        : "mt-1 rounded-2xl"
+                  } ${
                     isImageOnly
                       ? `w-full max-w-[240px] sm:max-w-[280px] ${isMe ? myRadii : theirRadii}`
                       : ""
@@ -272,13 +373,17 @@ const MessageBubble = ({
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`flex items-center gap-3 mt-1 p-2.5 sm:p-3 rounded-2xl border transition-all group/doc ${
+                    hasReply ? "mx-2.5" : ""
+                  } ${
                     isMe
                       ? "bg-white/10 hover:bg-white/20 border-white/10"
                       : "bg-secondary/30 hover:bg-secondary/50 border-border/20"
                   }`}
                 >
                   <div
-                    className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${isMe ? "bg-white/20" : "bg-brand-600/10"}`}
+                    className={`h-9 w-9 sm:h-10 sm:w-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      isMe ? "bg-white/20" : "bg-brand-600/10"
+                    }`}
                   >
                     <FileText
                       className={`h-4.5 w-4.5 ${isMe ? "text-white" : "text-brand-600"}`}
@@ -302,14 +407,20 @@ const MessageBubble = ({
               {hasMedia &&
                 (msg.media_type === "voice" || msg.media_type === "audio") && (
                   <div
-                    className={`flex items-center gap-3 mt-1 p-2.5 rounded-2xl w-full min-w-[180px] sm:min-w-[200px] max-w-[260px] ${isMe ? "bg-white/10" : "bg-secondary/30"}`}
+                    className={`flex items-center gap-3 mt-1 p-2.5 rounded-2xl w-full min-w-[180px] sm:min-w-[200px] max-w-[260px] ${
+                      hasReply ? "mx-2.5" : ""
+                    } ${isMe ? "bg-white/10" : "bg-secondary/30"}`}
                   >
                     <button
                       onClick={() =>
                         onTogglePlayAudio(msg.id, mediaUrl(msg.media_url))
                       }
                       aria-label={playingAudio === msg.id ? "Pause" : "Play"}
-                      className={`h-9 w-9 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-95 ${isMe ? "bg-white/20 hover:bg-white/35" : "bg-brand-600/15 hover:bg-brand-600/25"}`}
+                      className={`h-9 w-9 sm:h-10 sm:w-10 rounded-full flex items-center justify-center flex-shrink-0 transition-all active:scale-95 ${
+                        isMe
+                          ? "bg-white/20 hover:bg-white/35"
+                          : "bg-brand-600/15 hover:bg-brand-600/25"
+                      }`}
                     >
                       {playingAudio === msg.id ? (
                         <Pause className="h-4 w-4" />
@@ -329,13 +440,16 @@ const MessageBubble = ({
                           </span>
                         )}
                       </div>
-                      {/* Waveform bar */}
                       <div
-                        className={`h-1.5 rounded-full overflow-hidden ${isMe ? "bg-white/20" : "bg-brand-600/15"}`}
+                        className={`h-1.5 rounded-full overflow-hidden ${
+                          isMe ? "bg-white/20" : "bg-brand-600/15"
+                        }`}
                       >
                         {playingAudio === msg.id && (
                           <motion.div
-                            className={`h-full rounded-full origin-left ${isMe ? "bg-white/70" : "bg-brand-600/60"}`}
+                            className={`h-full rounded-full origin-left ${
+                              isMe ? "bg-white/70" : "bg-brand-600/60"
+                            }`}
                             initial={{ scaleX: 0 }}
                             animate={{ scaleX: 1 }}
                             transition={{
@@ -351,7 +465,6 @@ const MessageBubble = ({
             </div>
           )}
         </div>
-
       </div>
     </div>
   );

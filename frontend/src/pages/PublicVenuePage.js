@@ -26,6 +26,10 @@ import {
   Copy,
   Check,
   Radio,
+  MapPin,
+  IndianRupee,
+  Users,
+  LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -260,64 +264,87 @@ export default function PublicVenuePage() {
       {!user && <LandingHeader />}
 
       <div className="mx-4 lg:mx-20">
-        {/* Breadcrumb — only for logged-in users */}
-        {user ? (
-          <div className="pt-6 md:pt-8">
-            <nav
-              className="flex items-center flex-wrap text-gray-500 text-sm font-medium w-full"
-              aria-label="Breadcrumb"
-            >
-              <Link
-                to="/venues"
-                className="hover:text-brand-600 hover:underline cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded-sm"
-              >
-                Venues
-              </Link>
-              <span className="mx-2">&gt;</span>
-              <Link
-                to={`/venues?city=${encodeURIComponent(venue.city || "")}`}
-                className="hover:text-brand-600 hover:underline cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded-sm"
-              >
-                {venue.city || "City"}
-              </Link>
-              <span className="mx-2">&gt;</span>
-              <span
-                className="text-gray-900 font-medium truncate max-w-[250px]"
-                aria-current="page"
-              >
-                {venue.name}
-              </span>
-            </nav>
-          </div>
-        ) : (
-          <div className="pt-20" />
-        )}
+        {/* Breadcrumb */}
+        <div className={user ? "pt-5 md:pt-7" : "pt-20"}>
+          <nav aria-label="Breadcrumb" className="inline-flex items-center rounded-full bg-secondary/50 border border-border/30 px-3 py-1.5 sm:px-4 sm:py-2">
+            <ol className="flex items-center gap-0 text-xs sm:text-[13px] text-muted-foreground">
+              <li className="inline-flex items-center">
+                <Link
+                  to="/venues"
+                  className="inline-flex items-center gap-1.5 px-1.5 py-0.5 rounded-md whitespace-nowrap transition-all duration-200 hover:text-brand-600 hover:bg-brand-600/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 focus-visible:rounded-md"
+                >
+                  <ChevronLeft className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                  Venues
+                </Link>
+              </li>
+              <li role="presentation" aria-hidden="true" className="mx-0.5 sm:mx-1 text-border">
+                <span className="text-[10px]">/</span>
+              </li>
+              <li className="inline-flex items-center">
+                <Link
+                  to={`/venues?city=${encodeURIComponent(venue.city || "")}`}
+                  className="px-1.5 py-0.5 rounded-md whitespace-nowrap transition-all duration-200 hover:text-brand-600 hover:bg-brand-600/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600/40 focus-visible:rounded-md"
+                >
+                  {venue.city || "City"}
+                </Link>
+              </li>
+              <li role="presentation" aria-hidden="true" className="mx-0.5 sm:mx-1 text-border">
+                <span className="text-[10px]">/</span>
+              </li>
+              <li className="inline-flex items-center min-w-0">
+                <span
+                  className="px-1.5 py-0.5 text-foreground font-semibold truncate max-w-[140px] sm:max-w-[240px] md:max-w-[360px]"
+                  aria-current="page"
+                  title={venue.name}
+                >
+                  {venue.name}
+                </span>
+              </li>
+            </ol>
+          </nav>
+        </div>
 
         {/* Venue Header — 3 col grid matching reference */}
         <div className="mt-6">
           <div className="grid w-full md:h-24 grid-flow-row-dense grid-cols-3 grid-rows-2 gap-y-1 md:gap-y-0 md:gap-x-5">
-            {/* Name — full width */}
+            {/* Name + Badge — full width */}
             <div className="w-full relative text-wrap col-span-3">
-              <h1 className="md:font-bold md:text-[32px] md:leading-[36px] font-bold text-[24px] leading-[36px] text-foreground md:whitespace-nowrap whitespace-normal md:line-clamp-1 line-clamp-2">
-                {venue.name}
-              </h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="md:font-bold md:text-[32px] md:leading-[36px] font-bold text-[24px] leading-[36px] text-foreground md:whitespace-nowrap whitespace-normal md:line-clamp-1 line-clamp-2">
+                  {venue.name}
+                </h1>
+                {venue.badge && (
+                  <span className={`inline-flex items-center shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${venue.badge === "bookable" ? "bg-green-500/10 text-green-600 border-green-500/20" : "bg-amber-500/10 text-amber-600 border-amber-500/20"}`}>
+                    {venue.badge === "bookable" ? "Instant Book" : "Enquiry Only"}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Location + Rating — left 2 cols */}
             <div className="flex items-center w-full col-span-3 md:col-span-2">
               <div className="flex flex-col w-full sm:items-center sm:justify-start sm:flex-row">
-                <div className="text-[#515455] font-medium">
+                <div className="text-muted-foreground font-medium">
                   {venue.area || venue.city}
                 </div>
-                <div className="flex flex-row mt-2 md:mt-0 sm:ml-2 sm:items-center sm:justify-center">
+                <div className="flex flex-row mt-2 md:mt-0 sm:ml-2 sm:items-center sm:justify-center flex-wrap gap-y-1">
                   <span className="bg-muted-foreground w-1 h-1 rounded-full hidden md:block" />
-                  <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 ml-1" />
-                  <div className="mr-1 text-[#515455] text-sm font-semibold ml-1">
+                  <Star className="w-4 h-4 fill-yellow-400 text-yellow-400 ml-1" />
+                  <span className="text-sm font-semibold text-foreground ml-1">
                     {avgRating.toFixed(1)}
-                  </div>
-                  <div className="text-sm text-[#515455] font-medium">
-                    ({totalReviews} ratings)
-                  </div>
+                  </span>
+                  <span className="text-sm text-muted-foreground ml-0.5">
+                    ({totalReviews} {totalReviews === 1 ? "rating" : "ratings"})
+                  </span>
+                  {venue.total_bookings > 0 && (
+                    <>
+                      <span className="bg-muted-foreground w-1 h-1 rounded-full mx-2 hidden sm:block" />
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground ml-2 sm:ml-0">
+                        <Users className="w-3 h-3" />
+                        {venue.total_bookings}+ booked
+                      </span>
+                    </>
+                  )}
                   <button
                     onClick={handleBookNow}
                     className="ml-2 text-sm font-semibold underline cursor-pointer text-brand-600 hover:text-brand-700 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 rounded-sm min-h-[32px] px-1"
@@ -499,31 +526,75 @@ export default function PublicVenuePage() {
           </div>
 
           {/* Sidebar — right column */}
-          <div className="w-full rounded-md z-0 md:row-span-2">
-            <div className="flex flex-col md:mt-14">
-              {/* Timing Card */}
-              <div className="flex flex-col p-4 border rounded-md border-border">
-                <h2 className="font-semibold text-base md:text-lg">Timing</h2>
-                <div className="mt-2 leading-relaxed">
-                  {formatTime(venue.opening_hour)} -{" "}
-                  {formatTime(venue.closing_hour)}
+          <div className="w-full z-0 md:row-span-2">
+            <div className="flex flex-col gap-4 md:mt-14">
+              {/* Quick Info Card — price, turfs, duration, contact */}
+              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  {venue.base_price != null && (
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-brand-600/5 border border-brand-600/10">
+                      <IndianRupee className="h-4 w-4 text-brand-600 shrink-0" />
+                      <div>
+                        <div className="text-base font-bold text-foreground">₹{venue.base_price}</div>
+                        <div className="text-[10px] text-muted-foreground leading-tight">per slot</div>
+                      </div>
+                    </div>
+                  )}
+                  {venue.turfs > 0 && (
+                    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/50 border border-border/30">
+                      <LayoutGrid className="h-4 w-4 text-brand-600 shrink-0" />
+                      <div>
+                        <div className="text-base font-bold text-foreground">{venue.turfs}</div>
+                        <div className="text-[10px] text-muted-foreground leading-tight">{venue.turfs === 1 ? "Court" : "Courts"}</div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/50 border border-border/30">
+                    <Clock className="h-4 w-4 text-brand-600 shrink-0" />
+                    <div>
+                      <div className="text-sm font-bold text-foreground">{venue.slot_duration_minutes || 60} min</div>
+                      <div className="text-[10px] text-muted-foreground leading-tight">per session</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2.5 p-3 rounded-xl bg-secondary/50 border border-border/30">
+                    <Clock className="h-4 w-4 text-brand-600 shrink-0" />
+                    <div>
+                      <div className="text-sm font-bold text-foreground whitespace-nowrap">{formatTime(venue.opening_hour)} – {formatTime(venue.closing_hour)}</div>
+                      <div className="text-[10px] text-muted-foreground leading-tight">open hours</div>
+                    </div>
+                  </div>
                 </div>
+                {venue.contact_phone && (
+                  <a
+                    href={`tel:${venue.contact_phone}`}
+                    className="flex items-center gap-2.5 mt-3 p-3 rounded-xl bg-secondary/50 border border-border/30 hover:border-brand-600/40 transition-colors group"
+                  >
+                    <Phone className="h-4 w-4 text-brand-600 shrink-0" />
+                    <div>
+                      <div className="text-sm font-medium text-foreground group-hover:text-brand-600 transition-colors">{venue.contact_phone}</div>
+                      <div className="text-[10px] text-muted-foreground leading-tight">Tap to call</div>
+                    </div>
+                  </a>
+                )}
               </div>
 
               {/* Location Card with Map */}
-              <div className="flex flex-col h-auto p-4 mt-5 border rounded-md border-border">
-                <div className="font-semibold text-base md:text-lg">
-                  Location
+              <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="p-2 rounded-xl bg-brand-600/10">
+                    <MapPin className="h-4 w-4 text-brand-600" />
+                  </div>
+                  <h2 className="font-semibold text-sm sm:text-base text-foreground">Location</h2>
                 </div>
-                <h2 className="my-2 text-sm">{venue.address}</h2>
+                <p className="text-sm text-muted-foreground leading-relaxed">{venue.address}</p>
                 {(venue.google_maps_url || (venue.lat && venue.lng)) && (
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border mt-2 shadow-inner bg-muted/30">
+                  <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-border/40 mt-4 bg-muted/30">
                     <iframe
                       src={
                         venue.google_maps_url ||
                         `https://www.google.com/maps/embed/v1/place?key=AIzaSyB9q4uF6xjrDG-n2jvClxrtOV_jSXUAPUY&q=${venue.lat},${venue.lng}&zoom=18`
                       }
-                      className="absolute inset-0 w-full h-full border-0 shadow-sm"
+                      className="absolute inset-0 w-full h-full border-0"
                       allowFullScreen=""
                       loading="lazy"
                       referrerPolicy="no-referrer-when-downgrade"
@@ -539,40 +610,41 @@ export default function PublicVenuePage() {
           <div className="w-full rounded-md md:row-span-5 md:col-span-2">
             {/* Sports Available */}
             {venue.sports?.length > 0 && (
-              <div className="p-6 mt-4 border rounded-md border-border">
-                <div className="flex flex-col justify-start md:items-center md:flex-row">
-                  <h2 className="font-semibold text-base md:text-lg">
+              <div className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 mt-4 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 mb-5">
+                  <h2 className="font-semibold text-base sm:text-lg text-foreground">
                     Sports Available
                   </h2>
-                  <div className="text-sm text-muted-foreground md:ml-2">
-                    (Click on sports to view price chart)
-                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Tap a sport to view price chart
+                  </span>
                 </div>
-                <div className="grid items-center w-full grid-cols-3 gap-5 mt-5 sm:gap-6 sm:grid-cols-5 lg:gap-6 xl:grid-cols-7">
+                <div className="flex flex-wrap gap-3">
                   {venue.sports.map((s) => {
                     const SportIcon =
                       SPORT_ICONS[s] || SPORT_ICONS[s.replace(/ /g, "_")];
+                    const colorCls = SPORT_COLORS[s] || SPORT_COLORS[s.replace(/ /g, "_")] || "bg-gray-100 text-gray-700";
                     return (
                       <div
                         key={s}
                         role="button"
                         tabIndex={0}
-                        className="flex flex-col items-center py-1 border rounded shadow-md cursor-pointer hover:border-brand-600 aspect-square border-border justify-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                        className="flex flex-col items-center gap-2 w-[72px] sm:w-20 py-3 rounded-2xl border border-border/40 bg-background cursor-pointer hover:border-brand-600/50 hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 group"
                       >
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center ${SPORT_COLORS[s] || SPORT_COLORS[s.replace(/ /g, "_")] || "bg-gray-100 text-gray-700"}`}
+                          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110 ${colorCls}`}
                         >
                           {SportIcon ? (
                             <SportIcon className="w-5 h-5" />
                           ) : (
-                            <span className="text-lg font-semibold">
+                            <span className="text-base font-bold">
                               {(SPORT_LABELS[s] || s).charAt(0)}
                             </span>
                           )}
                         </div>
-                        <h3 className="flex justify-center w-full mt-1 text-xs font-medium text-center text-muted-foreground">
+                        <span className="text-[11px] sm:text-xs font-medium text-muted-foreground text-center leading-tight capitalize">
                           {SPORT_LABELS[s] || s}
-                        </h3>
+                        </span>
                       </div>
                     );
                   })}
@@ -582,144 +654,136 @@ export default function PublicVenuePage() {
 
             {/* Amenities */}
             {venue.amenities?.length > 0 && (
-              <div className="flex flex-col mt-5">
-                <div className="p-6 border rounded-md border-border">
-                  <h3 className="font-semibold text-base md:text-lg">
-                    Amenities
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2 mt-5 md:grid-cols-3 lg:grid-cols-4 gap-y-6">
-                    {venue.amenities.map((amenity) => {
-                      const AmenityIcon = getAmenityIcon(amenity);
-                      return (
-                        <div
-                          key={amenity}
-                          className="flex flex-row items-start space-x-2 text-sm capitalize"
-                        >
-                          <div className="relative h-5 min-w-[20px] flex items-center">
-                            <AmenityIcon className="w-5 h-5 text-brand-600 fill-brand-600/20" />
-                          </div>
-                          <span>{amenity}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+              <div className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 mt-4 shadow-sm">
+                <h3 className="font-semibold text-base sm:text-lg text-foreground mb-4">
+                  Amenities
+                </h3>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {venue.amenities.map((amenity) => {
+                    const AmenityIcon = getAmenityIcon(amenity);
+                    return (
+                      <div
+                        key={amenity}
+                        className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl bg-secondary/40 border border-border/30 text-sm capitalize"
+                      >
+                        <AmenityIcon className="w-4 h-4 text-brand-600 shrink-0" />
+                        <span className="text-foreground/80 truncate">{amenity}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
             {/* About Venue */}
-            <div className="w-full">
-              <div className="flex flex-col items-start w-full mt-5">
-                <div className="w-full p-5 border rounded-md border-border">
-                  <div className="font-semibold text-base md:text-lg">
-                    About Venue
-                  </div>
-                  <div className="mt-5 text-sm md:text-base">
-                    {isHtmlContent(venue.description) ? (
-                      <div
-                        className="text-muted-foreground leading-relaxed prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-strong:text-foreground prose-ul:list-disc prose-ol:list-decimal"
-                        dangerouslySetInnerHTML={{
-                          __html: sanitizeHtml(venue.description),
-                        }}
-                      />
-                    ) : (
-                      <p className="text-muted-foreground leading-relaxed whitespace-pre-line line-clamp-7">
-                        {venue.description}
-                      </p>
-                    )}
-                  </div>
+            {venue.description && (
+              <div className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 mt-4 shadow-sm">
+                <h3 className="font-semibold text-base sm:text-lg text-foreground mb-4">
+                  About Venue
+                </h3>
+                <div className="text-sm sm:text-base">
+                  {isHtmlContent(venue.description) ? (
+                    <div
+                      className="text-muted-foreground leading-relaxed prose prose-sm max-w-none prose-headings:text-foreground prose-headings:font-semibold prose-strong:text-foreground prose-ul:list-disc prose-ol:list-decimal"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeHtml(venue.description),
+                      }}
+                    />
+                  ) : (
+                    <p className="text-muted-foreground leading-relaxed whitespace-pre-line">
+                      {venue.description}
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Reviews */}
             {reviews.length > 0 && (
-              <div className="flex flex-col items-start w-full mt-5">
-                <div className="w-full p-5 border rounded-md border-border">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-base md:text-lg">
-                      Reviews
-                    </h3>
-                    <div className="flex items-center gap-1">
-                      <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                      <span className="font-semibold">
-                        {avgRating.toFixed(1)}
-                      </span>
-                      <span className="text-muted-foreground text-sm">
-                        ({totalReviews})
-                      </span>
-                    </div>
+              <div className="rounded-2xl border border-border/60 bg-card p-5 sm:p-6 mt-4 shadow-sm">
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="font-semibold text-base sm:text-lg text-foreground">
+                    Reviews
+                  </h3>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-yellow-400/10">
+                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-bold text-sm text-foreground">
+                      {avgRating.toFixed(1)}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      ({totalReviews})
+                    </span>
                   </div>
-                  {reviewSummary?.distribution && (
-                    <div className="space-y-1 mb-6">
-                      {[5, 4, 3, 2, 1].map((r) => {
-                        const count = reviewSummary.distribution[r] || 0;
-                        const pct =
-                          totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-                        return (
-                          <div
-                            key={r}
-                            className="flex items-center gap-2 text-sm"
-                          >
-                            <span className="w-4 text-right text-muted-foreground">
-                              {r}
-                            </span>
-                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                            <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-yellow-400 rounded-full"
-                                style={{ width: `${pct}%` }}
-                              />
-                            </div>
-                            <span className="w-6 text-muted-foreground">
-                              {count}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                  <div className="space-y-4">
-                    {reviews.slice(0, 5).map((review, i) => (
-                      <div key={i} className="pb-4 border-b last:border-0">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center">
-                              <span className="text-xs font-bold text-brand-600">
-                                {review.user_details?.name?.[0] || "U"}
-                              </span>
-                            </div>
-                            <span className="font-medium text-sm">
-                              {review.user_details?.name || "User"}
-                            </span>
-                          </div>
-                          <div className="flex">
-                            {[1, 2, 3, 4, 5].map((s) => (
-                              <Star
-                                key={s}
-                                className={`w-3.5 h-3.5 ${s <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground"}`}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                        {review.comment && (
-                          <p className="text-sm text-muted-foreground ml-10">
-                            {review.comment}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {user && (
-                    <button
-                      className="w-full mt-4 h-12 px-3 py-2 font-semibold text-sm border-brand-600 border text-brand-600 rounded-md bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                      onClick={handleBookNow}
-                      aria-label="Book venue and leave a review"
-                    >
-                      Book & Leave a Review
-                    </button>
-                  )}
                 </div>
+                {reviewSummary?.distribution && (
+                  <div className="space-y-1.5 mb-6">
+                    {[5, 4, 3, 2, 1].map((r) => {
+                      const count = reviewSummary.distribution[r] || 0;
+                      const pct =
+                        totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                      return (
+                        <div
+                          key={r}
+                          className="flex items-center gap-2 text-xs"
+                        >
+                          <span className="w-3 text-right text-muted-foreground font-medium">
+                            {r}
+                          </span>
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 shrink-0" />
+                          <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-yellow-400 rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="w-5 text-right text-muted-foreground">
+                            {count}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="space-y-0">
+                  {reviews.slice(0, 5).map((review, i) => (
+                    <div key={i} className="py-3.5 border-b border-border/40 last:border-0 first:pt-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center">
+                            <span className="text-xs font-bold text-brand-600">
+                              {review.user_details?.name?.[0] || "U"}
+                            </span>
+                          </div>
+                          <span className="font-medium text-sm text-foreground">
+                            {review.user_details?.name || "User"}
+                          </span>
+                        </div>
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Star
+                              key={s}
+                              className={`w-3.5 h-3.5 ${s <= review.rating ? "fill-yellow-400 text-yellow-400" : "text-muted-foreground/30"}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {review.comment && (
+                        <p className="text-sm text-muted-foreground ml-[42px] leading-relaxed">
+                          {review.comment}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {user && (
+                  <button
+                    className="w-full mt-4 h-11 px-3 py-2 font-semibold text-sm border-brand-600 border text-brand-600 rounded-xl bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    onClick={handleBookNow}
+                    aria-label="Book venue and leave a review"
+                  >
+                    Book & Leave a Review
+                  </button>
+                )}
               </div>
             )}
           </div>

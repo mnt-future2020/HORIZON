@@ -16,6 +16,19 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
+
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const TIME_PRESETS = [
   { label: "5–6 AM",  start: "05:00", end: "06:00" },
@@ -60,7 +73,7 @@ export default function CoachSettingsPage() {
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
   useEffect(() => { window.scrollTo(0, 0); }, []);
-  const [tab, setTab] = useState("availability");
+  const [tab, setTab] = useState(() => getInitParam("tab") || "availability");
 
   // ── Availability ──
   const [slots, setSlots] = useState([]);
@@ -186,7 +199,7 @@ export default function CoachSettingsPage() {
         {TABS.map(t => {
           const Icon = t.icon;
           return (
-            <button key={t.id} onClick={() => setTab(t.id)}
+            <button key={t.id} onClick={() => { setTab(t.id); replaceParams({ tab: t.id === "availability" ? null : t.id }); }}
               className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all ${tab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "text-muted-foreground hover:text-foreground"}`}>
               <Icon className="h-3.5 w-3.5" />
               {t.label}

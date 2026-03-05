@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate as useNav, useSearchParams } from "react-router-dom";
+import { Link, useNavigate as useNav } from "react-router-dom";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { coachingAPI, paymentAPI } from "@/lib/api";
@@ -18,6 +18,19 @@ import {
   CheckCircle, Users
 } from "lucide-react";
 import { CoachListingSkeleton } from "@/components/SkeletonLoader";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 
 const SPORTS = ["all", "football", "cricket", "badminton", "tennis", "basketball", "volleyball", "table_tennis", "swimming"];
 const COACH_PLACEHOLDER = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=400&q=80";
@@ -87,13 +100,11 @@ function CoachCard({ coach, onBook, delay = 0 }) {
 
 export default function CoachListingPage() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
   useScrollRestoration("coaching", !loading);
-  const [searchQ, setSearchQ] = useState(searchParams.get("q") || "");
-  const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "all");
+  const [searchQ, setSearchQ] = useState(() => getInitParam("q") || "");
+  const [sportFilter, setSportFilter] = useState(() => getInitParam("sport") || "all");
   const [selectedCoach, setSelectedCoach] = useState(null);
   const [coachSlots, setCoachSlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -129,11 +140,11 @@ export default function CoachListingPage() {
 
   // Sync filter state to URL so browser back/forward restores filters
   useEffect(() => {
-    const params = new URLSearchParams();
-    if (searchQ) params.set("q", searchQ);
-    if (sportFilter !== "all") params.set("sport", sportFilter);
-    setSearchParams(params, { replace: true });
-  }, [searchQ, sportFilter, setSearchParams]);
+    replaceParams({
+      q: searchQ || null,
+      sport: sportFilter !== "all" ? sportFilter : null,
+    });
+  }, [searchQ, sportFilter]);
 
   // Auto-select sport when slot changes (use slot's sports, fallback to coach sports)
   useEffect(() => {

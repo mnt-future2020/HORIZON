@@ -88,7 +88,18 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     if (!convoId) return;
     try {
       const res = await chatAPI.getMessages(convoId);
-      setMessages(res.data || []);
+      const msgs = res.data || [];
+      // Enrich reply_preview/reply_sender from referenced messages
+      const byId = {};
+      for (const m of msgs) byId[m.id] = m;
+      for (const m of msgs) {
+        if (m.reply_to && !m.reply_preview && byId[m.reply_to]) {
+          const ref = byId[m.reply_to];
+          m.reply_preview = (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "…");
+          m.reply_sender = ref.sender_name || "Unknown";
+        }
+      }
+      setMessages(msgs);
     } catch (err) {
       console.error("Failed to load messages:", err);
     }
@@ -146,12 +157,30 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
               (m) => typeof m.id === "string" && m.id.startsWith("temp-") && m.sender_id === user?.id
             );
             if (tempIdx !== -1) {
+              const temp = prev[tempIdx];
               const next = [...prev];
-              next[tempIdx] = data.message;
+              // Preserve reply data from temp message if WS payload doesn't include it
+              next[tempIdx] = {
+                ...data.message,
+                reply_preview: data.message.reply_preview || temp.reply_preview,
+                reply_sender: data.message.reply_sender || temp.reply_sender,
+              };
               return next;
             }
           }
-          return [...prev, data.message];
+          // Enrich reply data from existing messages if missing
+          const incoming = data.message;
+          if (incoming.reply_to && !incoming.reply_preview) {
+            const ref = prev.find((m) => m.id === incoming.reply_to);
+            if (ref) {
+              return [...prev, {
+                ...incoming,
+                reply_preview: (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "…"),
+                reply_sender: ref.sender_name || "Unknown",
+              }];
+            }
+          }
+          return [...prev, incoming];
         });
       }
       refreshConversations();
@@ -612,6 +641,15 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     }
   };
 
+  // Unified toggle: pin if not pinned, unpin if pinned
+  const handleTogglePin = async (msg) => {
+    if (msg.pinned) {
+      await handleUnpinMessage(msg);
+    } else {
+      await handlePinMessage(msg);
+    }
+  };
+
   const loadPinnedMessages = async () => {
     if (!activeConvo) return;
     try {
@@ -872,6 +910,7 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     msgSearchQuery,
     msgSearchResults,
     showPinned,
+    setShowPinned,
     pinnedMessages,
     showPollCreate,
     setShowPollCreate,
@@ -925,6 +964,7 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
     scrollToMessage,
     handlePinMessage,
     handleUnpinMessage,
+    handleTogglePin,
     loadPinnedMessages,
     handleCreatePoll,
     handleVotePoll,
