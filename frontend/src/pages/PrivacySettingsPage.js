@@ -68,6 +68,7 @@ export default function PrivacySettingsPage() {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const shouldReduceMotion = useReducedMotion();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [tab, setTab] = useState("consent");
   const [consents, setConsents] = useState([]);
   const [notifPrefs, setNotifPrefs] = useState({});

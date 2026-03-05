@@ -125,6 +125,7 @@ export default function VenueDiscovery() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const [venues, setVenues] = useState([]);
   const [cities, setCities] = useState([]);

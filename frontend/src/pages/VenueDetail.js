@@ -349,6 +349,7 @@ export default function VenueDetail() {
   const { id } = useParams();
   const { user } = useAuth();
   const { openCheckout } = useRazorpay();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [venue, setVenue] = useState(null);
   const [slots, setSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState(new Date());

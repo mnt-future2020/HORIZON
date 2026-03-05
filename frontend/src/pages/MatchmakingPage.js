@@ -775,6 +775,7 @@ function EmptyState({ icon: Icon, title, sub }) {
 export default function MatchmakingPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [tab, setTab] = useState(searchParams.get("tab") || "recommended");
   const [matches, setMatches] = useState([]);
   const [recommended, setRecommended] = useState([]);

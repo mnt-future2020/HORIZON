@@ -74,6 +74,7 @@ function BookmarksSkeleton() {
 export default function BookmarksPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // Data
   const [posts, setPosts] = useState([]);

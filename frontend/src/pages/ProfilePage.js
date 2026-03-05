@@ -30,7 +30,8 @@ import { CoachOrganizationsList } from "@/components/profile/CoachOrganizationsL
 export default function ProfilePage() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
-  
+  useEffect(() => { window.scrollTo(0, 0); }, []);
+
   // State
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);

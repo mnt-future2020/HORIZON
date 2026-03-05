@@ -58,6 +58,7 @@ const TABS = [
 export default function CoachSettingsPage() {
   const navigate = useNavigate();
   const { user, setUser } = useAuth();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [tab, setTab] = useState("availability");
 
   // ── Availability ──

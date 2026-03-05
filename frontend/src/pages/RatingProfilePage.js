@@ -211,6 +211,7 @@ export default function RatingProfilePage() {
   const { user } = useAuth();
   const { userId: paramId } = useParams();
   const targetId = paramId || user?.id;
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   const [certificate, setCertificate] = useState(null);
   const [verification, setVerification] = useState(null);

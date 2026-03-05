@@ -45,6 +45,7 @@ export default function PlayerCardPage() {
   const { userId } = useParams();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // State
   const [card, setCard] = useState(null);

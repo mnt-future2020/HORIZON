@@ -100,6 +100,7 @@ export default function PublicVenuePage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   const [venue, setVenue] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [reviewSummary, setReviewSummary] = useState(null);
