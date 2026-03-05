@@ -555,6 +555,9 @@ export default function VenueDetail() {
   }, [slots, selectedCourt, cart, dateStr]);
 
   const slotDuration = venue?.slot_duration_minutes || 60;
+  const minDurationSlots = Math.ceil(60 / slotDuration);
+
+  useEffect(() => { setDurationSlots(minDurationSlots); }, [minDurationSlots]);
 
   const maxDurationSlots = useMemo(() => {
     if (!selectedStartTime || !selectedCourt) return 1;
@@ -636,19 +639,19 @@ export default function VenueDetail() {
     setSelectedSport(sport);
     setSelectedCourt(null);
     setSelectedStartTime("");
-    setDurationSlots(1);
+    setDurationSlots(minDurationSlots);
   };
 
   const handleCourtChange = (turfNumber) => {
     const court = courtsForSport.find((c) => c.turf_number === turfNumber);
     setSelectedCourt(court || null);
     setSelectedStartTime("");
-    setDurationSlots(1);
+    setDurationSlots(minDurationSlots);
   };
 
   const handleStartTimeChange = (time) => {
     setSelectedStartTime(time);
-    setDurationSlots(1);
+    setDurationSlots(minDurationSlots);
   };
 
   // ─── Cart Functions ─────────────────────────────────────────────
@@ -693,7 +696,7 @@ export default function VenueDetail() {
     setCart((prev) => [...prev, newItem]);
     toast.success("Added to cart!");
     setSelectedStartTime("");
-    setDurationSlots(1);
+    setDurationSlots(minDurationSlots);
     setNumPlayers(1);
   };
 
@@ -1078,7 +1081,7 @@ export default function VenueDetail() {
                             if (d) {
                               setSelectedDate(d);
                               setSelectedStartTime("");
-                              setDurationSlots(1);
+                              setDurationSlots(minDurationSlots);
                               setShowCalendar(false);
                             }
                           }}
@@ -1091,6 +1094,38 @@ export default function VenueDetail() {
                     )}
                   </div>
 
+                  {/* Court Row */}
+                  {selectedSport && courtsForSport.length > 0 && (
+                    <div className="flex flex-col sm:flex-row sm:items-center px-4 sm:px-6 py-3.5 sm:py-4 gap-2 sm:gap-0">
+                      <span className="sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
+                        Court
+                      </span>
+                      <div className="flex-1">
+                        <Select
+                          value={
+                            selectedCourt
+                              ? String(selectedCourt.turf_number)
+                              : ""
+                          }
+                          onValueChange={(v) => handleCourtChange(Number(v))}
+                        >
+                          <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40">
+                            <SelectValue placeholder="--Select Court--" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {courtsForSport.map((c) => (
+                              <SelectItem
+                                key={c.turf_number}
+                                value={String(c.turf_number)}
+                              >
+                                {c.turf_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                   {/* Start Time Row */}
                   {selectedCourt && (
                     <div className="relative px-4 sm:px-6 py-3.5 sm:py-4" ref={timePickerRef}>
@@ -1145,38 +1180,6 @@ export default function VenueDetail() {
                       )}
                     </div>
                   )}
-                  {/* Court Row */}
-                  {selectedSport && courtsForSport.length > 0 && (
-                    <div className="flex flex-col sm:flex-row sm:items-center px-4 sm:px-6 py-3.5 sm:py-4 gap-2 sm:gap-0">
-                      <span className="sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
-                        Court
-                      </span>
-                      <div className="flex-1">
-                        <Select
-                          value={
-                            selectedCourt
-                              ? String(selectedCourt.turf_number)
-                              : ""
-                          }
-                          onValueChange={(v) => handleCourtChange(Number(v))}
-                        >
-                          <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40">
-                            <SelectValue placeholder="--Select Court--" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {courtsForSport.map((c) => (
-                              <SelectItem
-                                key={c.turf_number}
-                                value={String(c.turf_number)}
-                              >
-                                {c.turf_name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  )}
                   {/* Duration Row */}
                   <div className="flex items-center px-4 sm:px-6 py-3.5 sm:py-4">
                     <span className="w-24 sm:w-28 shrink-0 text-sm font-semibold text-foreground admin-section-label">
@@ -1188,14 +1191,14 @@ export default function VenueDetail() {
                         size="icon"
                         className="h-10 w-10 sm:h-9 sm:w-9 rounded-full border-border"
                         onClick={() =>
-                          setDurationSlots((d) => Math.max(1, d - 1))
+                          setDurationSlots((d) => Math.max(minDurationSlots, d - 1))
                         }
-                        disabled={durationSlots <= 1 || !selectedStartTime}
+                        disabled={durationSlots <= minDurationSlots || !selectedStartTime}
                       >
                         <Minus className="h-4 w-4" />
                       </Button>
                       <span className="font-display text-lg admin-value">
-                        {durationSlots * slotDuration} Mins
+                        {(() => { const mins = durationSlots * slotDuration; const h = Math.floor(mins / 60); const m = mins % 60; return h > 0 ? (m > 0 ? `${h} Hr ${m} Min` : `${h} Hr`) : `${mins} Min`; })()}
                       </span>
                       <Button
                         variant="outline"
@@ -1279,7 +1282,7 @@ export default function VenueDetail() {
                   <Button
                     className="w-full h-11 gap-2 bg-brand-600 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all uppercase tracking-wide"
                     onClick={addToCart}
-                    disabled={!selectedStartTime || !selectedCourt}
+                    disabled={!selectedStartTime || !selectedCourt || maxDurationSlots < minDurationSlots}
                   >
                     <ShoppingCart className="h-4 w-4" /> Add To Cart
                   </Button>

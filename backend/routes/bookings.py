@@ -43,6 +43,10 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
     booking_end_min = int(end_parts[0]) * 60 + int(end_parts[1])
     num_slots = max((booking_end_min - booking_start_min) // slot_duration, 1)
 
+    # Enforce minimum 1-hour booking
+    if (booking_end_min - booking_start_min) < 60:
+        raise HTTPException(400, "Minimum booking duration is 1 hour")
+
     # --- Multi-slot lock check ---
     redis_client = get_redis()
     if redis_client:
@@ -86,6 +90,9 @@ async def create_booking(input: BookingCreate, user=Depends(get_current_user)):
                     turf_price = t.get("price", base_price)
                     turf_name = t.get("name", turf_name)
                 idx += 1
+
+    # Prorate turf price for sub-hour slots
+    turf_price = round(turf_price * slot_duration / 60)
 
     rules = await db.pricing_rules.find(
         {"venue_id": input.venue_id, "is_active": True}, {"_id": 0}

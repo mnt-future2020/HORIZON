@@ -75,16 +75,11 @@ def apply_rule(price: int, rule: dict, date_str: str, slot_start: str, dow: int)
         vtype = rule.get("value_type", "percent")
         val = float(rule.get("value", 0))
         if rtype == "discount":
-            # Clamp percent to [0, 100] to prevent free/negative slots
-            if vtype == "percent":
-                val = min(max(val, 0), 100)
-                return max(round(price * (1 - val / 100)), 0)
-            return max(round(price - val), 0)
+            val = min(max(val, 0), 100)
+            return max(round(price * (1 - val / 100)), 0)
         elif rtype == "surge":
-            if vtype == "percent":
-                val = max(val, 0)
-                return round(price * (1 + val / 100))
-            return round(price + val)
+            val = max(val, 0)
+            return round(price * (1 + val / 100))
         return price
 
     # Legacy format (action.type = "multiplier" | "discount")
@@ -546,13 +541,14 @@ async def get_slots(venue_id: str, date: str, request: Request):
             turf_list.append((turf, f"Turf {turf}", "", base_price))
 
     for turf_num, turf_name, sport, turf_price in turf_list:
+        prorated_price = round(turf_price * duration / 60)
         current_min = opening_min
         while current_min + duration <= closing_min:
             start_h, start_m = divmod(current_min, 60)
             end_h, end_m = divmod(current_min + duration, 60)
             start = f"{start_h:02d}:{start_m:02d}"
             end = f"{end_h:02d}:{end_m:02d}"
-            slot_defs.append((start, end, turf_num, turf_name, sport, turf_price))
+            slot_defs.append((start, end, turf_num, turf_name, sport, prorated_price))
             current_min += duration
 
     lock_map = {}

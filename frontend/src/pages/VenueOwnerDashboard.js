@@ -531,12 +531,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const basePrice = selectedVenue?.base_price || 2000;
   const previewPrice = (rule) => {
     const val = parseFloat(rule.value) || 0;
-    const vtype = rule.value_type || "percent";
     if (rule.rule_type === "discount") {
-      return vtype === "percent" ? Math.max(Math.round(basePrice * (1 - val / 100)), 0) : Math.max(basePrice - val, 0);
+      return Math.max(Math.round(basePrice * (1 - val / 100)), 0);
     }
     if (rule.rule_type === "surge") {
-      return vtype === "percent" ? Math.round(basePrice * (1 + val / 100)) : basePrice + val;
+      return Math.round(basePrice * (1 + val / 100));
     }
     // legacy
     if (rule.action?.type === "multiplier") return Math.round(basePrice * (rule.action.value || 1));
@@ -1450,7 +1449,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 const isDiscount = r.rule_type === "discount" || (!r.rule_type && r.action?.type === "discount");
                 const schedType = r.schedule_type || "recurring";
                 const valLabel = r.rule_type
-                  ? (r.value_type === "percent" ? `${r.value}%` : `₹${r.value}`)
+                  ? `${r.value}%`
                   : (r.action?.type === "multiplier" ? `${r.action.value}x` : `-${Math.round((r.action?.value||0)*100)}%`);
                 const scheduleLabel = schedType === "one_time"
                   ? `${r.date_from || "?"} → ${r.date_to || "?"}, ${fmt12h(r.time_from)||""}–${fmt12h(r.time_to)||""}`
@@ -1473,17 +1472,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         </p>
                         {r.is_active && (
                           <p className="text-xs mt-1.5">
-                            {r.value_type === "amount" ? (
-                              <span className={`font-bold ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>
-                                ₹{r.value} {isDiscount ? "off" : "added to"} each turf's price
-                              </span>
-                            ) : (
-                              <>
-                                <span className="text-muted-foreground">e.g. ₹{basePrice} → </span>
-                                <span className={`font-bold ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>₹{effectivePrice}</span>
-                                <span className={`ml-1 text-[10px] ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>({diff > 0 ? "+" : ""}₹{diff})</span>
-                              </>
-                            )}
+                            <span className="text-muted-foreground">e.g. ₹{basePrice} → </span>
+                            <span className={`font-bold ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>₹{effectivePrice}</span>
+                            <span className={`ml-1 text-[10px] ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>({diff > 0 ? "+" : ""}₹{diff})</span>
                           </p>
                         )}
                       </div>
@@ -1531,20 +1522,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Value */}
                 <div>
                   <Label className="text-xs text-muted-foreground mb-2 block">
-                    {ruleForm.rule_type === "discount" ? "Discount" : "Surge"} Amount
+                    {ruleForm.rule_type === "discount" ? "Discount" : "Surge"} %
                   </Label>
-                  <div className="flex gap-2">
-                    <Input type="number" min="0" value={ruleForm.value}
+                  <div className="flex gap-2 items-center">
+                    <Input type="number" min="0" max="100" value={ruleForm.value}
                       onChange={e => setRuleForm(p => ({ ...p, value: Number(e.target.value) }))}
                       className="h-11 rounded-xl bg-secondary/20 border-border/40 flex-1" data-testid="rule-value-input" />
-                    <div className="flex rounded-xl border border-border overflow-hidden shrink-0">
-                      {[{ key: "percent", label: "%" }, { key: "amount", label: "₹" }].map(vt => (
-                        <button key={vt.key} onClick={() => setRuleForm(p => ({ ...p, value_type: vt.key }))}
-                          className={`px-3 py-2 text-sm admin-btn transition-all ${ruleForm.value_type === vt.key ? "bg-brand-600 text-white" : "bg-background text-muted-foreground hover:text-foreground"}`}>
-                          {vt.label}
-                        </button>
-                      ))}
-                    </div>
+                    <span className="text-lg font-semibold text-muted-foreground shrink-0">%</span>
                   </div>
                 </div>
 
@@ -1641,26 +1625,20 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {/* Live Preview */}
                 <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3" data-testid="rule-preview">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Price Preview</p>
-                  {ruleForm.value_type === "amount" ? (
-                    <p className={`text-base font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>
-                      ₹{parseFloat(ruleForm.value) || 0} {ruleForm.rule_type === "discount" ? "off" : "added to"} each turf's price
-                    </p>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground">e.g.</span>
-                      <span className="text-sm text-muted-foreground line-through">₹{basePrice}</span>
-                      <span className="text-muted-foreground">→</span>
-                      <span className={`text-lg font-display font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>₹{previewPrice(ruleForm)}</span>
-                      {(() => {
-                        const d = previewPrice(ruleForm) - basePrice;
-                        return d !== 0 && (
-                          <Badge className={`text-[10px] ${d < 0 ? "bg-brand-500/15 text-brand-400" : "bg-amber-500/15 text-amber-400"}`}>
-                            {d > 0 ? "+" : ""}₹{d}
-                          </Badge>
-                        );
-                      })()}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">e.g.</span>
+                    <span className="text-sm text-muted-foreground line-through">₹{basePrice}</span>
+                    <span className="text-muted-foreground">→</span>
+                    <span className={`text-lg font-display font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>₹{previewPrice(ruleForm)}</span>
+                    {(() => {
+                      const d = previewPrice(ruleForm) - basePrice;
+                      return d !== 0 && (
+                        <Badge className={`text-[10px] ${d < 0 ? "bg-brand-500/15 text-brand-400" : "bg-amber-500/15 text-amber-400"}`}>
+                          {d > 0 ? "+" : ""}₹{d}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
                 </div>
 
                 <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleSaveRule} data-testid="submit-rule-btn">
