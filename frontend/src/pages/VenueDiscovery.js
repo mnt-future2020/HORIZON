@@ -463,7 +463,7 @@ export default function VenueDiscovery() {
                       <SelectTrigger className="h-12 rounded-xl bg-secondary/20 border-border/40 admin-btn" data-testid="amenity-filter">
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg border border-border/40 shadow-md">
+                      <SelectContent className="rounded-lg border border-border/40 shadow-md max-h-60">
                         <SelectItem value="all" className="admin-btn">Any Amenity</SelectItem>
                         {allAmenities.map(a => <SelectItem key={a.amenity} value={a.amenity} className="admin-btn">{a.amenity} ({a.count})</SelectItem>)}
                       </SelectContent>

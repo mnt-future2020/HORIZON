@@ -181,6 +181,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [timeFilter, setTimeFilter] = useState(urlParams.get("time") || "all");
   const [sortOrder, setSortOrder] = useState(urlParams.get("sort") || "desc");
   const [bookingView, setBookingView] = useState(urlParams.get("bview") || "list");
+  const [bookingPage, setBookingPage] = useState(1);
+  const [bookingTotalPages, setBookingTotalPages] = useState(1);
+  const [bookingTotal, setBookingTotal] = useState(0);
+  const [bookingStats, setBookingStats] = useState({ total: 0, confirmed: 0, pending: 0, cancelled: 0, upcoming: 0 });
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const BOOKING_LIMIT = 10;
+  const bookingFilterRef = useRef(false);
   const [pricingView, setPricingView] = useState("rules");
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
@@ -269,17 +276,31 @@ function VenueOwnerDashboardContent({ defaultView }) {
     finally { setUpgrading(false); }
   };
 
+  const loadBookings = useCallback(async (p = 1, venue = selectedVenue) => {
+    setBookingsLoading(true);
+    try {
+      const params = { page: p, limit: BOOKING_LIMIT, sort_order: sortOrder };
+      if (venue) params.venue_id = venue.id;
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (timeFilter !== "all") params.time_filter = timeFilter;
+      const res = await bookingAPI.list(params);
+      const data = res.data || {};
+      setBookings(data.bookings || []);
+      setBookingTotalPages(data.pages || 1);
+      setBookingTotal(data.total || 0);
+      setBookingPage(data.page || p);
+      setBookingStats(data.stats || { total: 0, confirmed: 0, pending: 0, cancelled: 0, upcoming: 0 });
+    } catch { /* ignore */ }
+    finally { setBookingsLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, timeFilter, sortOrder, selectedVenue]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [vRes, bRes] = await Promise.all([
-        venueAPI.getOwnerVenues().catch(() => ({ data: [] })),
-        bookingAPI.list().catch(() => ({ data: [] })),
-      ]);
+      const vRes = await venueAPI.getOwnerVenues().catch(() => ({ data: [] }));
       const venueList = Array.isArray(vRes.data) ? vRes.data : [];
-      const bookingList = Array.isArray(bRes.data) ? bRes.data : [];
       setVenues(venueList);
-      setBookings(bookingList);
       if (venueList.length > 0) {
         const v = selectedVenue || venueList[0];
         setSelectedVenue(v);
@@ -289,6 +310,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
         ]);
         setAnalytics(aRes.data);
         setPricingRules(Array.isArray(pRes.data) ? pRes.data : []);
+        loadBookings(1, v);
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
@@ -300,6 +322,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Reload bookings when filters change (skip initial mount — loadData handles that)
+  useEffect(() => {
+    if (!bookingFilterRef.current) { bookingFilterRef.current = true; return; }
+    setBookingPage(1);
+    loadBookings(1);
+  }, [statusFilter, timeFilter, sortOrder, selectedVenue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync booking filters → URL (preserve tab + other params)
   useEffect(() => {
@@ -520,37 +549,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const filteredBookings = useMemo(() => {
-    let filtered = [...bookings];
-    if (selectedVenue) {
-      filtered = filtered.filter(b => b.venue_id === selectedVenue.id);
-    }
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(b => b.status === statusFilter);
-    }
-    if (timeFilter === "upcoming") {
-      filtered = filtered.filter(b => b.date >= today);
-    } else if (timeFilter === "past") {
-      filtered = filtered.filter(b => b.date < today);
-    }
-    filtered.sort((a, b) => {
-      const ad = a.date || "", bd = b.date || "", ast = a.start_time || "", bst = b.start_time || "";
-      return sortOrder === "desc" ? bd.localeCompare(ad) || bst.localeCompare(ast) : ad.localeCompare(bd) || ast.localeCompare(bst);
-    });
-    return filtered;
-  }, [bookings, selectedVenue, statusFilter, timeFilter, sortOrder, today]);
-
-  const bookingStats = useMemo(() => {
-    const venueBookings = selectedVenue ? bookings.filter(b => b.venue_id === selectedVenue.id) : bookings;
-    return {
-      total: venueBookings.length,
-      confirmed: venueBookings.filter(b => b.status === "confirmed").length,
-      pending: venueBookings.filter(b => ["pending", "payment_pending"].includes(b.status)).length,
-      cancelled: venueBookings.filter(b => b.status === "cancelled").length,
-      upcoming: venueBookings.filter(b => b.date >= today).length,
-    };
-  }, [bookings, selectedVenue, today]);
-
   const openBookingDetail = (booking) => {
     setSelectedBooking(booking);
     setBookingDetailOpen(true);
@@ -562,7 +560,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       toast.success("Booking cancelled");
       setBookingDetailOpen(false);
       setSelectedBooking(null);
-      loadData();
+      loadBookings(bookingPage);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to cancel");
     }
@@ -989,17 +987,21 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
 
               {/* Booking List */}
-              {filteredBookings.length === 0 ? (
+              {bookingsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                </div>
+              ) : bookings.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Calendar className="h-8 w-8 mx-auto mb-3" />
                   <p className="text-sm">{statusFilter !== "all" || timeFilter !== "all" ? "No bookings match your filters" : "No bookings yet"}</p>
                 </div>
               ) : (
                 <div className="-mx-3 sm:mx-0">
-                  <p className="text-xs text-muted-foreground mb-2 px-3 sm:px-0">{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</p>
+                  <p className="text-xs text-muted-foreground mb-2 px-3 sm:px-0">{bookingTotal} booking{bookingTotal !== 1 ? "s" : ""}</p>
                   <div className="divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
                   <AnimatePresence mode="popLayout">
-                    {filteredBookings.map((b, idx) => {
+                    {bookings.map((b, idx) => {
                       const sc = statusConfig[b.status] || statusConfig.pending;
                       const isPast = b.date < today;
                       return (
@@ -1038,6 +1040,45 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     })}
                   </AnimatePresence>
                   </div>
+                  {/* Pagination */}
+                  {bookingTotalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-3 sm:px-2 gap-3">
+                      <span className="admin-section-label text-[11px] sm:text-xs">
+                        {(bookingPage - 1) * BOOKING_LIMIT + 1}–{Math.min(bookingPage * BOOKING_LIMIT, bookingTotal)} of {bookingTotal}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button disabled={bookingPage <= 1} onClick={() => loadBookings(bookingPage - 1)}
+                          className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        {Array.from({ length: bookingTotalPages }, (_, i) => i + 1)
+                          .filter(p => p === 1 || p === bookingTotalPages || Math.abs(p - bookingPage) <= 1)
+                          .reduce((acc, p, idx, arr) => {
+                            if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, i) =>
+                            p === "..." ? (
+                              <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                            ) : (
+                              <button key={p} onClick={() => loadBookings(p)}
+                                className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${
+                                  p === bookingPage
+                                    ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
+                                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                }`}>
+                                {p}
+                              </button>
+                            )
+                          )}
+                        <button disabled={bookingPage >= bookingTotalPages} onClick={() => loadBookings(bookingPage + 1)}
+                          className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>

@@ -9,6 +9,7 @@ from database import db
 from tz import now_ist
 from auth import get_current_user
 import uuid
+import math
 
 router = APIRouter(prefix="/venue-finance", tags=["venue-finance"])
 
@@ -59,7 +60,8 @@ async def list_expenses(
     date_to: Optional[str] = Query(None),
     category: Optional[str] = Query(None),
     payment_mode: Optional[str] = Query(None),
-    limit: int = Query(200, le=500),
+    page: Optional[int] = Query(None, ge=1),
+    limit: int = Query(10, ge=1, le=100),
 ):
     """List venue expenses with optional filters."""
     if user.get("role") != "venue_owner":
@@ -77,8 +79,13 @@ async def list_expenses(
             date_q["$lte"] = date_to
         if date_q:
             q["date"] = date_q
+    if page is not None:
+        total = await db.venue_expenses.count_documents(q)
+        skip = (page - 1) * limit
+        expenses = await db.venue_expenses.find(q, {"_id": 0}).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+        return {"expenses": expenses, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
     expenses = []
-    async for e in db.venue_expenses.find(q, {"_id": 0}).sort("date", -1).limit(limit):
+    async for e in db.venue_expenses.find(q, {"_id": 0}).sort("date", -1).limit(200):
         expenses.append(e)
     return expenses
 
@@ -259,7 +266,8 @@ async def list_transactions(
     date_to: Optional[str] = Query(None),
     type: Optional[str] = Query(None),
     venue_id: Optional[str] = Query(None),
-    limit: int = Query(200, le=500),
+    page: Optional[int] = Query(None, ge=1),
+    limit: int = Query(10, ge=1, le=100),
 ):
     """Unified transaction ledger: booking income + expenses merged chronologically."""
     if user.get("role") != "venue_owner":
@@ -329,4 +337,8 @@ async def list_transactions(
             })
 
     transactions.sort(key=lambda x: x.get("date", ""), reverse=True)
-    return transactions[:limit]
+    if page is not None:
+        total = len(transactions)
+        skip = (page - 1) * limit
+        return {"transactions": transactions[skip:skip + limit], "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
+    return transactions[:200]

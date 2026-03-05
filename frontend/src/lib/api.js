@@ -115,7 +115,7 @@ export const venueAPI = {
 
 export const bookingAPI = {
   create: (data) => api.post("/bookings", data),
-  list: () => api.get("/bookings"),
+  list: (params) => api.get("/bookings", { params }),
   get: (id) => api.get(`/bookings/${id}`),
   cancel: (id) => api.post(`/bookings/${id}/cancel`),
   testConfirm: (id) => api.post(`/bookings/${id}/test-confirm`),

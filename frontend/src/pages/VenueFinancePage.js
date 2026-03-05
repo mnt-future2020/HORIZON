@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building } from "lucide-react";
+import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) {
@@ -63,6 +63,21 @@ export default function VenueFinancePage() {
   const [bankSaving, setBankSaving] = useState(false);
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
 
+  // ─── Pagination state ───
+  const FINANCE_LIMIT = 10;
+  const [txnPage, setTxnPage] = useState(1);
+  const [txnTotalPages, setTxnTotalPages] = useState(1);
+  const [txnTotal, setTxnTotal] = useState(0);
+  const [expPage, setExpPage] = useState(1);
+  const [expTotalPages, setExpTotalPages] = useState(1);
+  const [expTotal, setExpTotal] = useState(0);
+  const [invPage, setInvPage] = useState(1);
+  const [invTotalPages, setInvTotalPages] = useState(1);
+  const [invTotal, setInvTotal] = useState(0);
+  const [payoutPage, setPayoutPage] = useState(1);
+  const [payoutTotalPages, setPayoutTotalPages] = useState(1);
+  const [payoutTotal, setPayoutTotal] = useState(0);
+
   // ─── Venue filter state ───
   const [ownerVenues, setOwnerVenues] = useState([]);
   const [selectedVenueId, setSelectedVenueId] = useState(searchParams.get("venue") || "all");
@@ -83,35 +98,59 @@ export default function VenueFinancePage() {
       setFinanceSummaryData(res.data);
     } catch { setFinanceSummaryData(null); }
   }, [venueIdParam]);
-  const loadVenueExpenses = useCallback(async () => {
-    try { const res = await venueFinanceAPI.listExpenses(); setVenueExpenses(res.data || []); } catch { setVenueExpenses([]); }
-  }, []);
-  const loadVenueTransactions = useCallback(async (filters = {}) => {
+  const loadVenueExpenses = useCallback(async (p = 1) => {
     try {
-      const params = {};
+      const res = await venueFinanceAPI.listExpenses({ page: p, limit: FINANCE_LIMIT });
+      const data = res.data || {};
+      setVenueExpenses(data.expenses || []);
+      setExpTotalPages(data.pages || 1);
+      setExpTotal(data.total || 0);
+      setExpPage(data.page || p);
+    } catch { setVenueExpenses([]); }
+  }, []);
+  const loadVenueTransactions = useCallback(async (filters = {}, p = 1) => {
+    try {
+      const params = { page: p, limit: FINANCE_LIMIT };
       if (filters.date_from) params.date_from = filters.date_from;
       if (filters.date_to) params.date_to = filters.date_to;
       if (filters.type && filters.type !== "all") params.type = filters.type;
       if (venueIdParam) params.venue_id = venueIdParam;
       const res = await venueFinanceAPI.listTransactions(params);
-      setVenueTransactions(res.data || []);
+      const data = res.data || {};
+      setVenueTransactions(data.transactions || []);
+      setTxnTotalPages(data.pages || 1);
+      setTxnTotal(data.total || 0);
+      setTxnPage(data.page || p);
     } catch { setVenueTransactions([]); }
   }, [venueIdParam]);
-  const loadVenueInvoices = useCallback(async (params = {}) => {
-    try { const res = await venueFinanceAPI.listInvoices(params); setVenueInvoices(res.data || []); } catch { setVenueInvoices([]); }
+  const loadVenueInvoices = useCallback(async (params = {}, p = 1) => {
+    try {
+      const res = await venueFinanceAPI.listInvoices({ ...params, page: p, limit: FINANCE_LIMIT });
+      const data = res.data || {};
+      setVenueInvoices(data.invoices || []);
+      setInvTotalPages(data.pages || 1);
+      setInvTotal(data.total || 0);
+      setInvPage(data.page || p);
+    } catch { setVenueInvoices([]); }
   }, []);
   const loadGstSettings = useCallback(async () => {
     try { const res = await venueFinanceAPI.getGstSettings(); setGstSettings(res.data || { gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "VEN" }); } catch {}
   }, []);
-  const loadPayoutData = useCallback(async () => {
+  const loadPayoutData = useCallback(async (p = 1) => {
     try {
       const [summaryRes, payoutsRes, accountRes] = await Promise.allSettled([
         payoutAPI.mySummary(),
-        payoutAPI.myPayouts(),
+        payoutAPI.myPayouts({ page: p, limit: FINANCE_LIMIT }),
         payoutAPI.getLinkedAccount(),
       ]);
       if (summaryRes.status === "fulfilled") setPayoutSummary(summaryRes.value.data);
-      if (payoutsRes.status === "fulfilled") { const pd = payoutsRes.value.data; setMyPayouts(Array.isArray(pd) ? pd : pd?.settlements || []); }
+      if (payoutsRes.status === "fulfilled") {
+        const pd = payoutsRes.value.data;
+        setMyPayouts(pd?.settlements || (Array.isArray(pd) ? pd : []));
+        setPayoutTotalPages(pd?.pages || 1);
+        setPayoutTotal(pd?.total || 0);
+        setPayoutPage(pd?.page || p);
+      }
       if (accountRes.status === "fulfilled") { const ad = accountRes.value.data; setLinkedAccount(ad?.linked === false ? null : ad); }
     } catch {}
   }, []);
@@ -150,11 +189,11 @@ export default function VenueFinancePage() {
       if (editExpenseId) { await venueFinanceAPI.updateExpense(editExpenseId, expenseForm); toast.success("Expense updated"); }
       else { await venueFinanceAPI.createExpense(expenseForm); toast.success("Expense added"); }
       setAddExpenseOpen(false); setEditExpenseId(null);
-      loadVenueExpenses(); loadFinanceSummary();
+      loadVenueExpenses(expPage); loadFinanceSummary();
     } catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
   };
   const handleDeleteExpense = async (id) => {
-    try { await venueFinanceAPI.deleteExpense(id); toast.success("Expense deleted"); loadVenueExpenses(); loadFinanceSummary(); }
+    try { await venueFinanceAPI.deleteExpense(id); toast.success("Expense deleted"); loadVenueExpenses(expPage); loadFinanceSummary(); }
     catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
   };
   const openEditExpense = (exp) => {
@@ -172,15 +211,15 @@ export default function VenueFinancePage() {
       setShowCreateInvoice(false);
       setInvoiceForm({ client_name: "", client_phone: "", client_email: "", date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
       setInvoiceItems([{ description: "", qty: "1", rate: "" }]);
-      loadVenueInvoices({ month: invoiceMonth });
+      loadVenueInvoices({ month: invoiceMonth }, 1);
     } catch (err) { toast.error(err.response?.data?.detail || "Failed"); } finally { setInvoiceCreating(false); }
   };
   const handleMarkInvoicePaid = async (id) => {
-    try { await venueFinanceAPI.markInvoicePaid(id); toast.success("Marked as paid"); loadVenueInvoices({ month: invoiceMonth }); }
+    try { await venueFinanceAPI.markInvoicePaid(id); toast.success("Marked as paid"); loadVenueInvoices({ month: invoiceMonth, status: invoiceStatusFilter }, invPage); }
     catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
   };
   const handleDeleteInvoice = async (id) => {
-    try { await venueFinanceAPI.deleteInvoice(id); toast.success("Invoice deleted"); loadVenueInvoices({ month: invoiceMonth }); }
+    try { await venueFinanceAPI.deleteInvoice(id); toast.success("Invoice deleted"); loadVenueInvoices({ month: invoiceMonth, status: invoiceStatusFilter }, invPage); }
     catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
   };
   const handleViewInvoicePdf = async (inv) => {
@@ -376,7 +415,7 @@ export default function VenueFinancePage() {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button size="sm" className="w-full h-8 text-xs bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={() => loadVenueTransactions(transactionFilters)}>
+              <Button size="sm" className="w-full h-8 text-xs bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={() => { setTxnPage(1); loadVenueTransactions(transactionFilters, 1); }}>
                 <Filter className="h-3 w-3 mr-1" /> Apply
               </Button>
             </div>
@@ -401,6 +440,17 @@ export default function VenueFinancePage() {
                   </span>
                 </div>
               ))}
+              {/* Ledger Pagination */}
+              {txnTotalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                  <span className="admin-section-label text-[11px] sm:text-xs">{(txnPage - 1) * FINANCE_LIMIT + 1}–{Math.min(txnPage * FINANCE_LIMIT, txnTotal)} of {txnTotal}</span>
+                  <div className="flex items-center gap-1">
+                    <button disabled={txnPage <= 1} onClick={() => loadVenueTransactions(transactionFilters, txnPage - 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronLeft className="h-4 w-4" /></button>
+                    {Array.from({ length: txnTotalPages }, (_, i) => i + 1).filter(p => p === 1 || p === txnTotalPages || Math.abs(p - txnPage) <= 1).reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, []).map((p, i) => p === "..." ? <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span> : <button key={p} onClick={() => loadVenueTransactions(transactionFilters, p)} className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === txnPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>{p}</button>)}
+                    <button disabled={txnPage >= txnTotalPages} onClick={() => loadVenueTransactions(transactionFilters, txnPage + 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronRight className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-16 text-muted-foreground">
@@ -415,7 +465,7 @@ export default function VenueFinancePage() {
       {financeSubTab === "expenses" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">{venueExpenses.length} expense{venueExpenses.length !== 1 ? "s" : ""} recorded</p>
+            <p className="text-xs text-muted-foreground">{expTotal} expense{expTotal !== 1 ? "s" : ""} recorded</p>
             <Button size="sm" className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all text-xs h-8"
               onClick={() => { setEditExpenseId(null); setExpenseForm({ category: "maintenance", amount: "", date: new Date().toISOString().slice(0, 10), description: "", payment_mode: "cash", reference: "" }); setAddExpenseOpen(true); }}>
               <Plus className="h-3.5 w-3.5 mr-1" /> Add Expense
@@ -448,6 +498,17 @@ export default function VenueFinancePage() {
                   </div>
                 </div>
               ))}
+              {/* Expenses Pagination */}
+              {expTotalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                  <span className="admin-section-label text-[11px] sm:text-xs">{(expPage - 1) * FINANCE_LIMIT + 1}–{Math.min(expPage * FINANCE_LIMIT, expTotal)} of {expTotal}</span>
+                  <div className="flex items-center gap-1">
+                    <button disabled={expPage <= 1} onClick={() => loadVenueExpenses(expPage - 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronLeft className="h-4 w-4" /></button>
+                    {Array.from({ length: expTotalPages }, (_, i) => i + 1).filter(p => p === 1 || p === expTotalPages || Math.abs(p - expPage) <= 1).reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, []).map((p, i) => p === "..." ? <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span> : <button key={p} onClick={() => loadVenueExpenses(p)} className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === expPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>{p}</button>)}
+                    <button disabled={expPage >= expTotalPages} onClick={() => loadVenueExpenses(expPage + 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronRight className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-16 text-muted-foreground">
@@ -524,13 +585,13 @@ export default function VenueFinancePage() {
             <div className="flex items-center gap-2 flex-wrap">
               <div className="bg-muted/70 border border-border/40 p-1 rounded-2xl flex">
                 {["all", "sent", "paid", "draft"].map(s => (
-                  <button key={s} onClick={() => { setInvoiceStatusFilter(s); loadVenueInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined }); }}
+                  <button key={s} onClick={() => { setInvoiceStatusFilter(s); setInvPage(1); loadVenueInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined }, 1); }}
                     className={`min-h-[44px] px-3 sm:px-4 py-1.5 rounded-xl text-xs sm:text-sm font-semibold transition-all admin-btn active:scale-[0.97] ${invoiceStatusFilter === s ? "bg-background text-foreground shadow-md border border-border/50" : "text-muted-foreground hover:text-foreground"}`}>
                     {s.charAt(0).toUpperCase() + s.slice(1)}
                   </button>
                 ))}
               </div>
-              <input type="month" value={invoiceMonth} onChange={e => { setInvoiceMonth(e.target.value); loadVenueInvoices({ month: e.target.value, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }); }}
+              <input type="month" value={invoiceMonth} onChange={e => { setInvoiceMonth(e.target.value); setInvPage(1); loadVenueInvoices({ month: e.target.value, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }, 1); }}
                 className="bg-secondary/20 border border-border/40 rounded-xl px-2 py-1 text-xs text-foreground" />
             </div>
             <div className="flex items-center gap-2">
@@ -773,6 +834,17 @@ export default function VenueFinancePage() {
                   </div>
                 </motion.div>
               ))}
+              {/* Invoices Pagination */}
+              {invTotalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                  <span className="admin-section-label text-[11px] sm:text-xs">{(invPage - 1) * FINANCE_LIMIT + 1}–{Math.min(invPage * FINANCE_LIMIT, invTotal)} of {invTotal}</span>
+                  <div className="flex items-center gap-1">
+                    <button disabled={invPage <= 1} onClick={() => loadVenueInvoices({ month: invoiceMonth, status: invoiceStatusFilter }, invPage - 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronLeft className="h-4 w-4" /></button>
+                    {Array.from({ length: invTotalPages }, (_, i) => i + 1).filter(p => p === 1 || p === invTotalPages || Math.abs(p - invPage) <= 1).reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, []).map((p, i) => p === "..." ? <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span> : <button key={p} onClick={() => loadVenueInvoices({ month: invoiceMonth, status: invoiceStatusFilter }, p)} className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === invPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>{p}</button>)}
+                    <button disabled={invPage >= invTotalPages} onClick={() => loadVenueInvoices({ month: invoiceMonth, status: invoiceStatusFilter }, invPage + 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronRight className="h-4 w-4" /></button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -910,6 +982,17 @@ export default function VenueFinancePage() {
                     </div>
                   </motion.div>
                 ))}
+                {/* Payouts Pagination */}
+                {payoutTotalPages > 1 && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                    <span className="admin-section-label text-[11px] sm:text-xs">{(payoutPage - 1) * FINANCE_LIMIT + 1}–{Math.min(payoutPage * FINANCE_LIMIT, payoutTotal)} of {payoutTotal}</span>
+                    <div className="flex items-center gap-1">
+                      <button disabled={payoutPage <= 1} onClick={() => loadPayoutData(payoutPage - 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronLeft className="h-4 w-4" /></button>
+                      {Array.from({ length: payoutTotalPages }, (_, i) => i + 1).filter(pg => pg === 1 || pg === payoutTotalPages || Math.abs(pg - payoutPage) <= 1).reduce((acc, pg, idx, arr) => { if (idx > 0 && pg - arr[idx - 1] > 1) acc.push("..."); acc.push(pg); return acc; }, []).map((pg, i) => pg === "..." ? <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span> : <button key={pg} onClick={() => loadPayoutData(pg)} className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${pg === payoutPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>{pg}</button>)}
+                      <button disabled={payoutPage >= payoutTotalPages} onClick={() => loadPayoutData(payoutPage + 1)} className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"><ChevronRight className="h-4 w-4" /></button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
