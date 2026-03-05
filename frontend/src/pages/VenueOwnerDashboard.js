@@ -9,13 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, ResponsiveDialogTitle, ResponsiveDialogDescription } from "@/components/ui/responsive-dialog";
 import { Switch } from "@/components/ui/switch";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Building2, IndianRupee, TrendingUp, TrendingDown, Calendar, Plus, Trash2, BarChart2, BarChart3, Clock, ShieldAlert, Crown, CheckCircle, Pencil, Users, CreditCard, X, ChevronLeft, ChevronRight, Filter, History, CalendarDays, CircleDot, AlertCircle, ArrowUpDown, Star, MessageSquare, QrCode, ExternalLink, Copy, Check, Globe, ImagePlus, Upload, Brain, Zap, Camera, UserCheck, UserX, ClipboardList, Loader2, XCircle, Lightbulb } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { VenueOwnerDashboardSkeleton } from "@/components/SkeletonLoader";
 
 // Professional / venue owner imagery
 const OWNER_HERO = "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=800&q=80";
@@ -28,17 +29,17 @@ function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-bran
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
+      transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 25 }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-card rounded-[28px] p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
+      className="bg-card rounded-2xl sm:rounded-[28px] p-4 sm:p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="admin-label">{label}</div>
-        <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
-          <Icon className={`h-5 w-5 ${colorClass}`} />
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <div className="admin-label text-xs sm:text-sm">{label}</div>
+        <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
+          <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${colorClass}`} />
         </div>
       </div>
-      <div className="admin-value">{value}</div>
+      <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-foreground tracking-tight">{value}</div>
     </motion.div>
   );
 }
@@ -115,9 +116,9 @@ export default function VenueOwnerDashboard({ defaultView }) {
   if (user?.account_status === "pending") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="pending-approval-screen">
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-8 space-y-4">
-          <ShieldAlert className="h-12 w-12 text-amber-400 mx-auto" />
-          <h1 className="font-display text-xl admin-page-title">Account Pending Approval</h1>
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-6 sm:p-8 space-y-4">
+          <ShieldAlert className="h-10 w-10 sm:h-12 sm:w-12 text-amber-400 mx-auto" />
+          <h1 className="font-display text-lg sm:text-xl admin-page-title">Account Pending Approval</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             Your venue owner registration is being reviewed by the Horizon team. You'll receive a notification once approved.
           </p>
@@ -131,8 +132,8 @@ export default function VenueOwnerDashboard({ defaultView }) {
   if (user?.account_status === "rejected" || user?.account_status === "suspended") {
     return (
       <div className="max-w-lg mx-auto px-4 py-24 text-center" data-testid="account-blocked-screen">
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-8 space-y-4">
-          <ShieldAlert className="h-12 w-12 text-destructive mx-auto" />
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-6 sm:p-8 space-y-4">
+          <ShieldAlert className="h-10 w-10 sm:h-12 sm:w-12 text-destructive mx-auto" />
           <h1 className="font-display text-xl admin-page-title">Account {user.account_status === "rejected" ? "Not Approved" : "Suspended"}</h1>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {user.account_status === "rejected"
@@ -180,6 +181,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [timeFilter, setTimeFilter] = useState(urlParams.get("time") || "all");
   const [sortOrder, setSortOrder] = useState(urlParams.get("sort") || "desc");
   const [bookingView, setBookingView] = useState(urlParams.get("bview") || "list");
+  const [bookingPage, setBookingPage] = useState(1);
+  const [bookingTotalPages, setBookingTotalPages] = useState(1);
+  const [bookingTotal, setBookingTotal] = useState(0);
+  const [bookingStats, setBookingStats] = useState({ total: 0, confirmed: 0, pending: 0, cancelled: 0, upcoming: 0 });
+  const [bookingsLoading, setBookingsLoading] = useState(false);
+  const BOOKING_LIMIT = 10;
+  const bookingFilterRef = useRef(false);
   const [pricingView, setPricingView] = useState("rules");
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
@@ -268,17 +276,31 @@ function VenueOwnerDashboardContent({ defaultView }) {
     finally { setUpgrading(false); }
   };
 
+  const loadBookings = useCallback(async (p = 1, venue = selectedVenue) => {
+    setBookingsLoading(true);
+    try {
+      const params = { page: p, limit: BOOKING_LIMIT, sort_order: sortOrder };
+      if (venue) params.venue_id = venue.id;
+      if (statusFilter !== "all") params.status = statusFilter;
+      if (timeFilter !== "all") params.time_filter = timeFilter;
+      const res = await bookingAPI.list(params);
+      const data = res.data || {};
+      setBookings(data.bookings || []);
+      setBookingTotalPages(data.pages || 1);
+      setBookingTotal(data.total || 0);
+      setBookingPage(data.page || p);
+      setBookingStats(data.stats || { total: 0, confirmed: 0, pending: 0, cancelled: 0, upcoming: 0 });
+    } catch { /* ignore */ }
+    finally { setBookingsLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, timeFilter, sortOrder, selectedVenue]);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [vRes, bRes] = await Promise.all([
-        venueAPI.getOwnerVenues().catch(() => ({ data: [] })),
-        bookingAPI.list(1, 50).catch(() => ({ data: { bookings: [] } })),
-      ]);
+      const vRes = await venueAPI.getOwnerVenues().catch(() => ({ data: [] }));
       const venueList = Array.isArray(vRes.data) ? vRes.data : [];
-      const bookingList = Array.isArray(bRes.data?.bookings) ? bRes.data.bookings : [];
       setVenues(venueList);
-      setBookings(bookingList);
       if (venueList.length > 0) {
         const v = selectedVenue || venueList[0];
         setSelectedVenue(v);
@@ -288,6 +310,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
         ]);
         setAnalytics(aRes.data);
         setPricingRules(Array.isArray(pRes.data) ? pRes.data : []);
+        loadBookings(1, v);
       }
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
@@ -299,6 +322,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Reload bookings when filters change (skip initial mount — loadData handles that)
+  useEffect(() => {
+    if (!bookingFilterRef.current) { bookingFilterRef.current = true; return; }
+    setBookingPage(1);
+    loadBookings(1);
+  }, [statusFilter, timeFilter, sortOrder, selectedVenue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync booking filters → URL (preserve tab + other params)
   useEffect(() => {
@@ -519,37 +549,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
   const today = new Date().toISOString().split("T")[0];
 
-  const filteredBookings = useMemo(() => {
-    let filtered = [...bookings];
-    if (selectedVenue) {
-      filtered = filtered.filter(b => b.venue_id === selectedVenue.id);
-    }
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(b => b.status === statusFilter);
-    }
-    if (timeFilter === "upcoming") {
-      filtered = filtered.filter(b => b.date >= today);
-    } else if (timeFilter === "past") {
-      filtered = filtered.filter(b => b.date < today);
-    }
-    filtered.sort((a, b) => {
-      const ad = a.date || "", bd = b.date || "", ast = a.start_time || "", bst = b.start_time || "";
-      return sortOrder === "desc" ? bd.localeCompare(ad) || bst.localeCompare(ast) : ad.localeCompare(bd) || ast.localeCompare(bst);
-    });
-    return filtered;
-  }, [bookings, selectedVenue, statusFilter, timeFilter, sortOrder, today]);
-
-  const bookingStats = useMemo(() => {
-    const venueBookings = selectedVenue ? bookings.filter(b => b.venue_id === selectedVenue.id) : bookings;
-    return {
-      total: venueBookings.length,
-      confirmed: venueBookings.filter(b => b.status === "confirmed").length,
-      pending: venueBookings.filter(b => ["pending", "payment_pending"].includes(b.status)).length,
-      cancelled: venueBookings.filter(b => b.status === "cancelled").length,
-      upcoming: venueBookings.filter(b => b.date >= today).length,
-    };
-  }, [bookings, selectedVenue, today]);
-
   const openBookingDetail = (booking) => {
     setSelectedBooking(booking);
     setBookingDetailOpen(true);
@@ -561,7 +560,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       toast.success("Booking cancelled");
       setBookingDetailOpen(false);
       setSelectedBooking(null);
-      loadData();
+      loadBookings(bookingPage);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to cancel");
     }
@@ -575,36 +574,35 @@ function VenueOwnerDashboardContent({ defaultView }) {
     expired: { color: "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/20", label: "Expired" },
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>
-  );
+  if (loading) return <VenueOwnerDashboardSkeleton />;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6" data-testid="owner-dashboard">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-5 sm:py-8 pb-20 md:pb-6" data-testid="owner-dashboard"
+      style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 1.25rem)", paddingBottom: "max(env(safe-area-inset-bottom, 0px), 5rem)" }}>
       {/* Welcome Hero, Stats, Venue Selector — only on Dashboard home */}
       {!isManageView && (<>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-10 rounded-[28px] border border-border/40 bg-card/50 backdrop-blur-md overflow-hidden"
+        className="mb-4 sm:mb-10 -mx-3 sm:mx-0 rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 bg-card/50 backdrop-blur-md overflow-hidden"
       >
         <div className="grid md:grid-cols-3 gap-0">
           {/* Text Content */}
-          <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
-            <span className="admin-section-label text-muted-foreground">Venue Owner</span>
-            <h1 className="font-display text-3xl md:text-4xl admin-page-title mt-2 truncate">
+          <div className="md:col-span-2 p-4 sm:p-8 md:p-10 flex flex-col justify-center">
+            <span className="admin-section-label text-muted-foreground text-[10px] sm:text-xs">Venue Owner</span>
+            <h1 className="font-display text-lg sm:text-3xl md:text-4xl admin-page-title mt-1 sm:mt-2 truncate">
               Welcome, <span className="text-brand-600">{user?.name}</span>
             </h1>
-            <p className="text-muted-foreground font-semibold mt-3 text-base">
+            <p className="text-muted-foreground font-semibold mt-1.5 sm:mt-3 text-xs sm:text-base">
               Manage your venues, track revenue, and grow your sports business.
             </p>
-            <div className="flex items-center gap-3 mt-5">
+            <div className="flex items-center gap-3 mt-4 sm:mt-5">
               <Button
                 onClick={() => setCreateVenueOpen(true)}
-                className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-12 px-6 shrink-0 rounded-xl"
+                className="bg-brand-600 text-white shadow-md shadow-brand-600/20 active:scale-[0.98] font-semibold h-10 sm:h-12 px-4 sm:px-6 shrink-0 rounded-xl text-sm"
                 data-testid="create-venue-btn"
               >
-                <Plus className="h-5 w-5 mr-2" /> Add Venue
+                <Plus className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2" /> Add Venue
               </Button>
             </div>
           </div>
@@ -620,9 +618,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
         </div>
       </motion.div>
 
-      <Dialog open={createVenueOpen} onOpenChange={(o) => { setCreateVenueOpen(o); if (!o) setBaseTurf(null); }}>
-          <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[80vh] overflow-y-auto rounded-[28px]">
-            <DialogHeader><DialogTitle className="font-display">Create Venue</DialogTitle></DialogHeader>
+      <ResponsiveDialog open={createVenueOpen} onOpenChange={(o) => { setCreateVenueOpen(o); if (!o) setBaseTurf(null); }}>
+          <ResponsiveDialogContent className="sm:max-w-lg">
+            <ResponsiveDialogHeader><ResponsiveDialogTitle>Create Venue</ResponsiveDialogTitle></ResponsiveDialogHeader>
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
               <div><Label className="text-xs text-muted-foreground">Name *</Label>
                 <Input value={venueForm.name} onChange={e => setVenueForm(p => ({ ...p, name: e.target.value }))}
@@ -796,11 +794,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
               />
               <Button className="w-full bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all" onClick={handleCreateVenue} data-testid="submit-venue-btn">Create Venue</Button>
             </div>
-          </DialogContent>
-        </Dialog>
+          </ResponsiveDialogContent>
+        </ResponsiveDialog>
 
       {/* Stats - Athletic Stat Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-10">
         <StatCard
           icon={Building2}
           label="Total Venues"
@@ -839,21 +837,21 @@ function VenueOwnerDashboardContent({ defaultView }) {
       {analytics && (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mb-10">
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4">
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
               <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Total Revenue</div>
               <div className="text-xl sm:text-2xl font-display font-black text-brand-600 mt-1">{"\u20B9"}{totalRevenue.toLocaleString()}</div>
             </div>
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4">
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
               <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Confirmed</div>
               <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">{analytics.confirmed_bookings}</div>
             </div>
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4">
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
               <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">Cancelled</div>
               <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">{analytics.cancelled_bookings}</div>
             </div>
           </div>
           {analytics.daily_revenue?.length > 0 && (
-            <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
+            <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
               <h3 className="font-display admin-heading mb-4">Revenue Trend</h3>
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={analytics.daily_revenue}>
@@ -877,7 +875,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <div className="flex gap-2 items-center overflow-x-auto pb-1">
             {venues.map(v => (
               <button key={v.id} onClick={() => handleSelectVenue(v)}
-                className={`shrink-0 px-5 py-2.5 rounded-xl admin-btn text-xs uppercase tracking-wide transition-all border border-border/40 flex items-center gap-2 ${selectedVenue?.id === v.id ? "bg-brand-600/20 border-brand-600 text-brand-600" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"}`}>
+                className={`shrink-0 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl admin-btn text-[10px] sm:text-xs uppercase tracking-wide transition-all border border-border/40 flex items-center gap-1.5 sm:gap-2 min-h-[44px] active:scale-[0.97] ${selectedVenue?.id === v.id ? "bg-brand-600/20 border-brand-600 text-brand-600" : "bg-card/50 border-border/50 text-muted-foreground hover:border-brand-600/40 hover:text-brand-600"}`}>
                 {v.name}
                 {selectedVenue?.id === v.id && (
                   <span onClick={e => { e.stopPropagation(); openEditVenue(); }}
@@ -905,20 +903,23 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
       {isManageView && (
       <Tabs value={activeTab} onValueChange={setActiveTab} data-testid="owner-tabs">
-        <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar border-b border-border/40 pb-2 mb-6">
-          <TabsTrigger value="bookings" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-3" data-testid="tab-bookings">Bookings<TabsIndicator /></TabsTrigger>
-          <TabsTrigger value="slots" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-3" data-testid="tab-slots">
+        <div className="sticky top-0 z-20 -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6 bg-background/95 backdrop-blur-md">
+        <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-3 sm:space-x-6 md:space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar border-b border-border/40 pb-1 sm:pb-2">
+          <TabsTrigger value="bookings" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-bookings">Bookings<TabsIndicator /></TabsTrigger>
+          <TabsTrigger value="slots" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-slots">
             <CalendarDays className="h-3 w-3 mr-1" />Slots<TabsIndicator />
           </TabsTrigger>
-          <TabsTrigger value="reviews" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-3" data-testid="tab-reviews">
+          <TabsTrigger value="reviews" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-reviews">
             <Star className="h-3 w-3 mr-1" />Reviews<TabsIndicator />
           </TabsTrigger>
-          <TabsTrigger value="pricing" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-3" data-testid="tab-pricing">Pricing<TabsIndicator /></TabsTrigger>
-          <TabsTrigger value="checkin" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-3" data-testid="tab-checkin">
+          <TabsTrigger value="pricing" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-pricing">Pricing<TabsIndicator /></TabsTrigger>
+          <TabsTrigger value="checkin" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-checkin">
             <QrCode className="h-3 w-3 mr-1" />Check-in<TabsIndicator />
           </TabsTrigger>
-          <TabsTrigger value="plan" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-3" data-testid="tab-plan">Plan<TabsIndicator /></TabsTrigger>
+          <TabsTrigger value="plan" className="relative data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none admin-btn uppercase tracking-wider text-muted-foreground py-2.5 sm:py-3 text-[10px] sm:text-xs shrink-0 min-h-[44px]" data-testid="tab-plan">Plan<TabsIndicator /></TabsTrigger>
         </TabsList>
+        </div>
+        <div className="mb-4 sm:mb-6" />
 
         {/* Bookings - Enhanced with filters, detail view, and timeline */}
         <TabsContent value="bookings">
@@ -931,18 +932,18 @@ function VenueOwnerDashboardContent({ defaultView }) {
               { label: "Cancelled", value: bookingStats.cancelled, color: "text-destructive" },
               { label: "Upcoming", value: bookingStats.upcoming, color: "text-sky-400" },
             ].map(s => (
-              <div key={s.label} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
-                <div className={`text-lg font-display font-black ${s.color}`}>{s.value}</div>
+              <div key={s.label} className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center" data-testid={`booking-stat-${s.label.toLowerCase()}`}>
+                <div className={`text-base sm:text-lg font-display font-black ${s.color}`}>{s.value}</div>
                 <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">{s.label}</div>
               </div>
             ))}
           </div>
 
           {/* View Toggle: List / Timeline */}
-          <div className="flex gap-1.5 mb-4">
+          <div className="inline-flex bg-secondary/40 p-1 rounded-xl mb-4">
             {[{ key: "list", label: "List" }, { key: "timeline", label: "Timeline" }].map(v => (
               <button key={v.key} onClick={() => setBookingView(v.key)}
-                className={`transition-all ${bookingView === v.key ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"}`}>
+                className={`flex-1 px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${bookingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 {v.label}
               </button>
             ))}
@@ -960,13 +961,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <div className="flex gap-1.5 flex-wrap">
                   {["all", "upcoming", "past"].map(f => (
                     <button key={f} onClick={() => setTimeFilter(f)} data-testid={`time-filter-${f}`}
-                      className={`transition-all ${timeFilter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"}`}>
-                      {f === "all" ? "All Time" : f === "upcoming" ? "Upcoming" : "Past"}
+                      className={`transition-all min-h-[44px] active:scale-[0.97] ${timeFilter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-3 sm:px-5 py-1.5 sm:py-2 admin-btn text-xs" : "bg-card border border-border/40 text-muted-foreground rounded-full px-3 sm:px-5 py-1.5 sm:py-2 admin-btn text-xs hover:text-foreground"}`}>
+                      {f === "all" ? "All" : f === "upcoming" ? "Upcoming" : "Past"}
                     </button>
                   ))}
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
+                  <SelectTrigger className="w-[120px] sm:w-[150px] h-8 text-xs bg-secondary/50 border-border" data-testid="status-filter-select">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -986,25 +987,30 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
 
               {/* Booking List */}
-              {filteredBookings.length === 0 ? (
+              {bookingsLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                </div>
+              ) : bookings.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Calendar className="h-8 w-8 mx-auto mb-3" />
                   <p className="text-sm">{statusFilter !== "all" || timeFilter !== "all" ? "No bookings match your filters" : "No bookings yet"}</p>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground mb-2">{filteredBookings.length} booking{filteredBookings.length !== 1 ? "s" : ""}</p>
+                <div className="-mx-3 sm:mx-0">
+                  <p className="text-xs text-muted-foreground mb-2 px-3 sm:px-0">{bookingTotal} booking{bookingTotal !== 1 ? "s" : ""}</p>
+                  <div className="divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
                   <AnimatePresence mode="popLayout">
-                    {filteredBookings.map((b, idx) => {
+                    {bookings.map((b, idx) => {
                       const sc = statusConfig[b.status] || statusConfig.pending;
                       const isPast = b.date < today;
                       return (
                         <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                           transition={{ delay: idx * 0.02 }}
                           onClick={() => openBookingDetail(b)}
-                          className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-4 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
+                          className={`bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border sm:border-border/40 sm:shadow-sm p-3 sm:p-4 cursor-pointer transition-all hover:border-brand-600/30 active:scale-[0.97] group ${isPast ? "opacity-70" : ""}`}
                           data-testid={`booking-row-${b.id}`}>
-                          <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="admin-name text-sm text-foreground truncate">{b.host_name}</span>
@@ -1022,10 +1028,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                             </div>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                               <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
-                              <span className="flex items-center gap-1 capitalize"><CircleDot className="h-3 w-3" />{b.sport}</span>
+                              <span className="flex items-center gap-1 capitalize hidden sm:flex"><CircleDot className="h-3 w-3" />{b.sport}</span>
                             </div>
                             <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{b.total_amount}</span>
                           </div>
@@ -1033,6 +1039,46 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       );
                     })}
                   </AnimatePresence>
+                  </div>
+                  {/* Pagination */}
+                  {bookingTotalPages > 1 && (
+                    <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-3 sm:px-2 gap-3">
+                      <span className="admin-section-label text-[11px] sm:text-xs">
+                        {(bookingPage - 1) * BOOKING_LIMIT + 1}–{Math.min(bookingPage * BOOKING_LIMIT, bookingTotal)} of {bookingTotal}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button disabled={bookingPage <= 1} onClick={() => loadBookings(bookingPage - 1)}
+                          className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        {Array.from({ length: bookingTotalPages }, (_, i) => i + 1)
+                          .filter(p => p === 1 || p === bookingTotalPages || Math.abs(p - bookingPage) <= 1)
+                          .reduce((acc, p, idx, arr) => {
+                            if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                            acc.push(p);
+                            return acc;
+                          }, [])
+                          .map((p, i) =>
+                            p === "..." ? (
+                              <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                            ) : (
+                              <button key={p} onClick={() => loadBookings(p)}
+                                className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${
+                                  p === bookingPage
+                                    ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
+                                    : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                }`}>
+                                {p}
+                              </button>
+                            )
+                          )}
+                        <button disabled={bookingPage >= bookingTotalPages} onClick={() => loadBookings(bookingPage + 1)}
+                          className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </>
@@ -1080,9 +1126,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               return (
                                 <motion.div key={b.id} initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
                                   onClick={() => openBookingDetail(b)}
-                                  className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-3 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
+                                  className={`bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 cursor-pointer transition-all hover:border-brand-600/30 group ${isPast ? "opacity-70" : ""}`}
                                   data-testid={`history-booking-${b.id}`}>
-                                  <div className="flex items-center justify-between gap-2">
+                                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="text-xs font-bold">{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
@@ -1113,12 +1159,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
         </TabsContent>
 
         {/* Booking Detail Dialog */}
-        <Dialog open={bookingDetailOpen} onOpenChange={setBookingDetailOpen}>
-          <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px]">
-            <DialogHeader>
-              <DialogTitle className="font-display text-lg">Booking Details</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">Booking ID: {selectedBooking?.id?.slice(0, 8)}...</DialogDescription>
-            </DialogHeader>
+        <ResponsiveDialog open={bookingDetailOpen} onOpenChange={setBookingDetailOpen}>
+          <ResponsiveDialogContent className="sm:max-w-lg">
+            <ResponsiveDialogHeader>
+              <ResponsiveDialogTitle>Booking Details</ResponsiveDialogTitle>
+              <ResponsiveDialogDescription className="text-xs text-muted-foreground">Booking ID: {selectedBooking?.id?.slice(0, 8)}...</ResponsiveDialogDescription>
+            </ResponsiveDialogHeader>
             {selectedBooking && (
               <div className="space-y-4" data-testid="booking-detail-view">
                 {/* Status Banner */}
@@ -1137,7 +1183,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Booking Info Grid */}
-                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-info">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3" data-testid="booking-detail-info">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Venue</span>
@@ -1173,7 +1219,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Payment Details */}
-                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-payment">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3" data-testid="booking-detail-payment">
                   <div className="flex items-center gap-2 mb-1">
                     <CreditCard className="h-4 w-4 text-brand-600" />
                     <span className="admin-section-label">Payment</span>
@@ -1218,7 +1264,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* Split Payment Info */}
                 {selectedBooking.split_config && (
-                  <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3" data-testid="booking-detail-split">
+                  <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3" data-testid="booking-detail-split">
                     <div className="flex items-center gap-2 mb-1">
                       <Users className="h-4 w-4 text-violet-400" />
                       <span className="admin-section-label">Split Payment</span>
@@ -1252,7 +1298,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 )}
 
                 {/* Timestamps */}
-                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-2" data-testid="booking-detail-timestamps">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-2" data-testid="booking-detail-timestamps">
                   <div className="flex items-center gap-2 mb-1">
                     <History className="h-4 w-4 text-muted-foreground" />
                     <span className="admin-section-label">Timeline</span>
@@ -1280,8 +1326,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 )}
               </div>
             )}
-          </DialogContent>
-        </Dialog>
+          </ResponsiveDialogContent>
+        </ResponsiveDialog>
 
 
         {/* Slots Tab - Visual slot availability grid */}
@@ -1313,19 +1359,19 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     const r5 = venueReviews.filter(r => r.rating === 5).length;
                     return (
                       <>
-                        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
+                        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
                           <div className="flex items-center justify-center gap-1">
-                            <Star className="h-4 w-4 text-brand-600 fill-brand-600" />
-                            <span className="font-display font-black text-xl text-brand-600">{avg.toFixed(1)}</span>
+                            <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-brand-600 fill-brand-600" />
+                            <span className="font-display font-black text-lg sm:text-xl text-brand-600">{avg.toFixed(1)}</span>
                           </div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Avg Rating</div>
                         </div>
-                        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
-                          <div className="font-display font-black text-xl text-foreground">{venueReviews.length}</div>
+                        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
+                          <div className="font-display font-black text-lg sm:text-xl text-foreground">{venueReviews.length}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">Total</div>
                         </div>
-                        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3 text-center">
-                          <div className="font-display font-black text-xl text-brand-400">{r5}</div>
+                        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center">
+                          <div className="font-display font-black text-lg sm:text-xl text-brand-400">{r5}</div>
                           <div className="text-[10px] text-muted-foreground font-mono uppercase">5-Star</div>
                         </div>
                       </>
@@ -1334,9 +1380,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Review Cards */}
-                <div className="space-y-2">
+                <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
                   {venueReviews.map(r => (
-                    <div key={r.id} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4" data-testid={`owner-review-${r.id}`}>
+                    <div key={r.id} className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border sm:border-border/40 sm:shadow-sm p-3 sm:p-4 active:scale-[0.97] transition-transform" data-testid={`owner-review-${r.id}`}>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-brand-600/10 flex items-center justify-center text-xs font-bold text-brand-600">
@@ -1367,10 +1413,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
         {/* Pricing Rules - Enhanced P2 */}
         <TabsContent value="pricing">
           {/* View Toggle: Rules / AI */}
-          <div className="flex gap-1.5 mb-4">
+          <div className="inline-flex bg-secondary/40 p-1 rounded-xl mb-4">
             {[{ key: "rules", label: "Rules" }, { key: "analytics", label: "Analytics" }].map(v => (
               <button key={v.key} onClick={() => setPricingView(v.key)}
-                className={`transition-all ${pricingView === v.key ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"}`}>
+                className={`flex-1 px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${pricingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 {v.label}
               </button>
             ))}
@@ -1397,7 +1443,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
               <p className="text-xs mt-1">Add rules to set peak-hour surcharges or off-peak discounts</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-3">
               {pricingRules.map(r => {
                 const effectivePrice = previewPrice(r);
                 const diff = effectivePrice - basePrice;
@@ -1411,9 +1457,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   : `${r.conditions?.days?.length > 0 ? r.conditions.days.map(d => DAY_LABELS[d]).join(", ") : "Every day"}${r.conditions?.time_range ? `, ${fmt12h(r.conditions.time_range.start)}–${fmt12h(r.conditions.time_range.end)}` : ""}`;
                 return (
                   <motion.div key={r.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }}
-                    className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-4 border-l-4 ${r.is_active ? (isDiscount ? "border-l-brand-500" : "border-l-amber-500") : "border-l-muted-foreground/30 opacity-60"}`}
+                    className={`bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border sm:border-border/40 sm:shadow-sm p-3 sm:p-4 border-l-4 active:scale-[0.97] transition-transform ${r.is_active ? (isDiscount ? "border-l-brand-500" : "border-l-amber-500") : "border-l-muted-foreground/30 opacity-60"}`}
                     data-testid={`rule-card-${r.id}`}>
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start justify-between gap-2 sm:gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="admin-name text-sm text-foreground">{r.name}</span>
@@ -1454,11 +1500,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
           )}
 
           {/* Rule Create/Edit Dialog — redesigned */}
-          <Dialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
-            <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-[28px]">
-              <DialogHeader>
-                <DialogTitle className="font-display">{editingRule ? "Edit" : "Create"} Pricing Rule</DialogTitle>
-              </DialogHeader>
+          <ResponsiveDialog open={ruleDialogOpen} onOpenChange={setRuleDialogOpen}>
+            <ResponsiveDialogContent className="sm:max-w-md">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle>{editingRule ? "Edit" : "Create"} Pricing Rule</ResponsiveDialogTitle>
+              </ResponsiveDialogHeader>
               <div className="space-y-5">
 
                 {/* Name */}
@@ -1593,7 +1639,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
 
                 {/* Live Preview */}
-                <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-3" data-testid="rule-preview">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3" data-testid="rule-preview">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Price Preview</p>
                   {ruleForm.value_type === "amount" ? (
                     <p className={`text-base font-bold ${ruleForm.rule_type === "discount" ? "text-brand-400" : "text-amber-400"}`}>
@@ -1621,8 +1667,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   {editingRule ? "Update Rule" : "Create Rule"}
                 </Button>
               </div>
-            </DialogContent>
-          </Dialog>
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
           </>
           )}
 
@@ -1636,7 +1682,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
         <TabsContent value="plan" data-testid="plan-tab-content">
           {planData ? (
             <div className="space-y-6">
-              <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-5" data-testid="current-plan-card">
+              <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-5" data-testid="current-plan-card">
                 <div className="flex items-center gap-3 mb-4">
                   <Crown className="h-5 w-5 text-brand-600 shrink-0" />
                   <div className="min-w-0">
@@ -1654,10 +1700,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 {(planData.all_plans || []).map(plan => {
                   const isCurrent = plan.id === planData.current_plan?.id;
                   return (
-                    <div key={plan.id} className={`bg-card rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-brand-600" : "border-transparent hover:border-brand-600/30"}`}
+                    <div key={plan.id} className={`bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-5 border-2 transition-all ${isCurrent ? "border-brand-600" : "border-transparent hover:border-brand-600/30"}`}
                       data-testid={`plan-card-${plan.id}`}>
                       <div className="text-sm admin-name mb-1">{plan.name}</div>
-                      <div className="text-2xl font-display font-black text-brand-600 mb-3">
+                      <div className="text-xl sm:text-2xl font-display font-black text-brand-600 mb-3">
                         {!plan.price ? "Free" : `\u20B9${Number(plan.price).toLocaleString()}`}
                         {plan.price > 0 && <span className="text-xs text-muted-foreground font-normal">/mo</span>}
                       </div>
@@ -1701,14 +1747,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
       )}
 
       {/* Edit Venue Dialog */}
-      <Dialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
-        <DialogContent className="bg-card border-border max-w-[95vw] sm:max-w-lg max-h-[85vh] overflow-y-auto rounded-[28px]">
-          <DialogHeader>
-            <DialogTitle className="font-display">Edit Venue Details</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground pt-1">
+      <ResponsiveDialog open={editVenueOpen} onOpenChange={setEditVenueOpen}>
+        <ResponsiveDialogContent className="sm:max-w-lg">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Edit Venue Details</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription className="text-xs text-muted-foreground pt-1">
               Changes will be pushed <span className="text-brand-600 font-semibold">live</span> to all viewers of the public page instantly.
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
           <div className="space-y-3 pt-1">
             <div>
               <Label className="text-xs text-muted-foreground">Venue Name</Label>
@@ -1899,15 +1945,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       {/* Venue QR Code Dialog */}
-      <Dialog open={showVenueQR} onOpenChange={setShowVenueQR}>
-        <DialogContent className="sm:max-w-[95vw] sm:max-w-sm rounded-[28px]">
-          <DialogHeader>
-            <DialogTitle>Venue QR Code</DialogTitle>
-          </DialogHeader>
+      <ResponsiveDialog open={showVenueQR} onOpenChange={setShowVenueQR}>
+        <ResponsiveDialogContent className="sm:max-w-sm">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Venue QR Code</ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
           {selectedVenue?.slug && (
             <div className="flex flex-col items-center gap-4 py-4">
               <div className="p-4 bg-card rounded-xl shadow-inner">
@@ -1942,8 +1988,8 @@ function VenueOwnerDashboardContent({ defaultView }) {
               </div>
             </div>
           )}
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }
@@ -2036,10 +2082,10 @@ function VenueAnalyticsPanel({ venueId }) {
           <span className="text-foreground font-bold text-base">{totalBookings}</span>
           {" "}bookings in the {periodLabel}
         </p>
-        <div className="flex gap-1">
+        <div className="inline-flex bg-secondary/40 p-1 rounded-xl">
           {[{ label: "30d", days: 30 }, { label: "90d", days: 90 }, { label: "180d", days: 180 }, { label: "All", days: 0 }].map(p => (
             <button key={p.days} onClick={() => setPeriod(p.days)}
-              className={`transition-all ${period === p.days ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 rounded-full px-5 py-2 admin-btn" : "bg-card border border-border/40 text-muted-foreground rounded-full px-5 py-2 admin-btn hover:text-foreground"}`}>
+              className={`px-3 sm:px-4 py-1.5 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${period === p.days ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
               {p.label}
             </button>
           ))}
@@ -2074,12 +2120,12 @@ function VenueAnalyticsPanel({ venueId }) {
             icon: <Calendar className="h-4 w-4 text-purple-400" />,
           },
         ].map(s => (
-          <div key={s.label} className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 flex flex-col gap-1">
+          <div key={s.label} className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 flex flex-col gap-1">
             <div className="flex items-center gap-1.5">
               {s.icon}
               <p className="text-[10px] text-muted-foreground uppercase tracking-wide">{s.label}</p>
             </div>
-            <p className="font-display font-bold text-2xl text-foreground leading-none">{s.value}</p>
+            <p className="font-display font-bold text-xl sm:text-2xl text-foreground leading-none">{s.value}</p>
             <p className="text-[10px] text-muted-foreground">{s.sub}</p>
           </div>
         ))}
@@ -2089,7 +2135,7 @@ function VenueAnalyticsPanel({ venueId }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
         {/* Busiest Days */}
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3">
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="admin-heading text-sm">📅 Busiest Days</h3>
             {insights.turf_list?.length > 1 && (
@@ -2131,7 +2177,7 @@ function VenueAnalyticsPanel({ venueId }) {
         </div>
 
         {/* Busiest Hours */}
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-4 space-y-3">
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3">
           <h3 className="admin-heading text-sm">⏰ Busiest Hours</h3>
           {activeHourEntries.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">No bookings yet.</p>
@@ -2274,21 +2320,21 @@ function SlotAvailabilityPanel({ venueId }) {
 
       {/* Stats Bar */}
       <div className="flex flex-wrap gap-3">
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
-          <p className="font-display font-black text-lg">{stats.total}</p>
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
+          <p className="font-display font-black text-base sm:text-lg">{stats.total}</p>
           <p className="text-[10px] text-muted-foreground admin-section-label">Total</p>
         </div>
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
-          <p className="font-display font-black text-lg text-emerald-500">{stats.available}</p>
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
+          <p className="font-display font-black text-base sm:text-lg text-emerald-500">{stats.available}</p>
           <p className="text-[10px] text-muted-foreground admin-section-label">Available</p>
         </div>
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
-          <p className="font-display font-black text-lg text-red-500">{stats.booked}</p>
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
+          <p className="font-display font-black text-base sm:text-lg text-red-500">{stats.booked}</p>
           <p className="text-[10px] text-muted-foreground admin-section-label">Booked</p>
         </div>
         {stats.held > 0 && (
-          <div className="bg-card rounded-[28px] border border-border/40 shadow-sm px-4 py-2 text-center min-w-[70px]">
-            <p className="font-display font-black text-lg text-amber-500">{stats.held}</p>
+          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
+            <p className="font-display font-black text-base sm:text-lg text-amber-500">{stats.held}</p>
             <p className="text-[10px] text-muted-foreground admin-section-label">Held</p>
           </div>
         )}
@@ -2431,17 +2477,17 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
   return (
     <div className="space-y-6">
       {/* Mode tabs */}
-      <div className="flex gap-1 bg-secondary/30 p-1 rounded-lg w-fit">
+      <div className="inline-flex bg-secondary/40 p-1 rounded-xl overflow-x-auto hide-scrollbar">
         <button onClick={() => { setScanMode("camera"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs admin-btn transition-all ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <Camera className="h-3.5 w-3.5" />Camera Scan
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "camera" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <Camera className="h-3.5 w-3.5" /><span className="hidden sm:inline">Camera</span> Scan
         </button>
         <button onClick={() => { setScanMode("upload"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs admin-btn transition-all ${scanMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
-          <Upload className="h-3.5 w-3.5" />Upload QR
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "upload" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          <Upload className="h-3.5 w-3.5" /><span className="hidden sm:inline">Upload</span> QR
         </button>
         <button onClick={() => { setScanMode("attendance"); stopCamera(); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs admin-btn transition-all ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+          className={`flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-semibold transition-all min-h-[44px] shrink-0 active:scale-[0.97] ${scanMode === "attendance" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
           <ClipboardList className="h-3.5 w-3.5" />Attendance
           {todayBookings.length > 0 && (
             <span className="ml-0.5 h-4 min-w-[16px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center">
@@ -2453,13 +2499,13 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Camera */}
       {scanMode === "camera" && (
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
-              <Camera className="h-6 w-6 text-brand-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-600/10 flex items-center justify-center shrink-0">
+              <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
             </div>
             <div>
-              <h3 className="font-display admin-heading text-base">Scan Lobbian's QR Code</h3>
+              <h3 className="font-display admin-heading text-sm sm:text-base">Scan Lobbian's QR Code</h3>
               <p className="text-xs text-muted-foreground">
                 Point your camera at the Lobbian's phone to verify check-in at {venueName || "this venue"}.
               </p>
@@ -2494,13 +2540,13 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Upload QR Image */}
       {scanMode === "upload" && (
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-6">
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-brand-600/10 flex items-center justify-center">
-              <Upload className="h-6 w-6 text-brand-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-brand-600/10 flex items-center justify-center shrink-0">
+              <Upload className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
             </div>
             <div>
-              <h3 className="font-display admin-heading text-base">Upload QR Image</h3>
+              <h3 className="font-display admin-heading text-sm sm:text-base">Upload QR Image</h3>
               <p className="text-xs text-muted-foreground">Upload a screenshot or photo of the Lobbian's QR code.</p>
             </div>
           </div>
@@ -2556,14 +2602,14 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Attendance */}
       {scanMode === "attendance" && (
-        <div className="bg-card rounded-[28px] border border-border/40 shadow-sm p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
-                <ClipboardList className="h-5 w-5 text-brand-600" />
+        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-5">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-brand-600/10 flex items-center justify-center shrink-0">
+                <ClipboardList className="h-4 w-4 sm:h-5 sm:w-5 text-brand-600" />
               </div>
-              <div>
-                <h3 className="font-display admin-heading text-sm">Today's Attendance — {venueName}</h3>
+              <div className="min-w-0">
+                <h3 className="font-display admin-heading text-xs sm:text-sm truncate">Today's Attendance — {venueName}</h3>
                 <p className="text-[10px] text-muted-foreground">{today}</p>
               </div>
             </div>
@@ -2590,7 +2636,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
           ) : (
             <div className="space-y-2">
               {notCheckedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/50">
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/20 border border-border/50 active:scale-[0.97] transition-transform">
                   <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
                     <UserX className="h-4 w-4 text-amber-400" />
                   </div>
@@ -2607,7 +2653,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 </div>
               ))}
               {checkedIn.map(b => (
-                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20">
+                <div key={b.id} className="flex items-center gap-3 p-3 rounded-lg bg-brand-500/5 border border-brand-500/20 active:scale-[0.97] transition-transform">
                   <div className="w-8 h-8 rounded-full bg-brand-500/10 flex items-center justify-center shrink-0">
                     <UserCheck className="h-4 w-4 text-brand-400" />
                   </div>
@@ -2637,27 +2683,27 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
 
       {/* Result */}
       {scanMode !== "attendance" && result && (
-        <div className={`rounded-xl border-2 p-6 text-center ${
+        <div className={`rounded-xl border-2 p-4 sm:p-6 text-center ${
           result.error ? "border-destructive/50 bg-destructive/5"
             : result.already_checked_in ? "border-amber-500/50 bg-amber-500/5"
             : "border-brand-500/50 bg-brand-500/5"
         }`}>
           {result.error ? (
             <>
-              <XCircle className="h-12 w-12 mx-auto mb-3 text-destructive" />
-              <p className="font-display admin-heading text-lg text-destructive">Verification Failed</p>
+              <XCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-destructive" />
+              <p className="font-display admin-heading text-base sm:text-lg text-destructive">Verification Failed</p>
               <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
             </>
           ) : result.already_checked_in ? (
             <>
-              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-amber-400" />
-              <p className="font-display admin-heading text-lg text-amber-400">Already Checked In</p>
+              <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-amber-400" />
+              <p className="font-display admin-heading text-base sm:text-lg text-amber-400">Already Checked In</p>
               <p className="text-sm text-muted-foreground mt-1">{result.player_name} has already checked in.</p>
             </>
           ) : (
             <>
-              <CheckCircle className="h-12 w-12 mx-auto mb-3 text-brand-400" />
-              <p className="font-display admin-heading text-lg text-brand-400">Check-in Successful!</p>
+              <CheckCircle className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 text-brand-400" />
+              <p className="font-display admin-heading text-base sm:text-lg text-brand-400">Check-in Successful!</p>
               <p className="text-sm text-muted-foreground mt-2">
                 <span className="admin-name text-foreground">{result.player_name}</span> is checked in
               </p>

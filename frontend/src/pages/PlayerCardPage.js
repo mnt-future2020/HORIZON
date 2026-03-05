@@ -46,6 +46,7 @@ export default function PlayerCardPage() {
   const { userId } = useParams();
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   // State
   const [card, setCard] = useState(null);
@@ -548,7 +549,7 @@ export default function PlayerCardPage() {
                 transition={{ duration: 0.3, ease: "easeInOut" }}
               >
                 {/* Overall Score */}
-                <div className="px-5 pt-6 pb-2">
+                <div className="px-4 sm:px-5 pt-5 sm:pt-6 pb-2">
                   <OverallScoreSection
                     card={card}
                     isOwnProfile={isOwnProfile}
@@ -557,7 +558,7 @@ export default function PlayerCardPage() {
                 </div>
 
                 {/* Core Stats Grid */}
-                <div className="px-5 py-6">
+                <div className="px-4 sm:px-5 py-4 sm:py-6">
                   <div className="grid grid-cols-3 gap-0 border border-border/20 rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
                     {[
                       {
@@ -578,12 +579,12 @@ export default function PlayerCardPage() {
                     ].map((stat, i) => (
                       <div
                         key={stat.label}
-                        className={`py-7 px-2 flex flex-col items-center transition-colors duration-200 hover:shadow-lg cursor-default ${
+                        className={`py-5 sm:py-7 px-2 flex flex-col items-center transition-colors duration-200 hover:shadow-lg cursor-default ${
                           i < 2 ? "border-r border-border/20" : ""
                         } ${stat.highlight ? "bg-gradient-to-br from-brand-500/10 to-brand-600/5 hover:from-brand-500/20 hover:to-brand-600/10" : "bg-gradient-to-br from-secondary/10 to-secondary/5 hover:from-secondary/20 hover:to-secondary/10"}`}
                       >
                         <div
-                          className={`font-display text-2xl font-black tracking-tighter tabular-nums ${stat.highlight ? "text-brand-600" : "text-foreground"}`}
+                          className={`font-display text-xl sm:text-2xl font-black tracking-tighter tabular-nums ${stat.highlight ? "text-brand-600" : "text-foreground"}`}
                         >
                           {stat.value}
                         </div>
@@ -597,7 +598,7 @@ export default function PlayerCardPage() {
                   </div>
 
                   {/* W / L / D Row */}
-                  <div className="flex justify-center items-center gap-10 mt-6">
+                  <div className="flex justify-center items-center gap-3 sm:gap-10 mt-4 sm:mt-6">
                     {[
                       {
                         value: card.wins,
@@ -618,12 +619,12 @@ export default function PlayerCardPage() {
                         bgColor: "bg-muted-foreground/10",
                       },
                     ].map((s, i) => (
-                      <div key={s.label} className="flex items-center gap-6">
+                      <div key={s.label} className="flex items-center gap-3 sm:gap-6">
                         <div
-                          className={`text-center group px-4 py-3 rounded-xl ${s.bgColor} hover:scale-110 transition-all duration-300 cursor-default`}
+                          className={`text-center group px-3 sm:px-4 py-2.5 sm:py-3 rounded-xl ${s.bgColor} hover:scale-110 transition-all duration-300 cursor-default`}
                         >
                           <div
-                            className={`text-lg font-bold ${s.color} tabular-nums leading-none mb-1`}
+                            className={`text-base sm:text-lg font-bold ${s.color} tabular-nums leading-none mb-1`}
                           >
                             {s.value}
                           </div>
@@ -638,8 +639,8 @@ export default function PlayerCardPage() {
 
                   {/* Performance Rating */}
                   {card.avg_review_rating > 0 && (
-                    <div className="flex justify-center mt-10">
-                      <div className="flex flex-col items-center px-8 py-5 rounded-2xl bg-gradient-to-br from-brand-500/10 to-brand-600/5 border border-brand-500/20 hover:border-brand-500/40 hover:shadow-lg hover:shadow-brand-500/20 transition-all duration-300 cursor-default">
+                    <div className="flex justify-center mt-6 sm:mt-10">
+                      <div className="flex flex-col items-center px-6 sm:px-8 py-4 sm:py-5 rounded-2xl bg-gradient-to-br from-brand-500/10 to-brand-600/5 border border-brand-500/20 hover:border-brand-500/40 hover:shadow-lg hover:shadow-brand-500/20 transition-all duration-300 cursor-default">
                         <div className="flex items-center gap-1.5 mb-1.5">
                           <span className="font-display text-3xl font-black text-brand-600 leading-none">
                             {Number(card.avg_review_rating).toFixed(1)}
@@ -667,7 +668,7 @@ export default function PlayerCardPage() {
 
                 {/* Compatibility */}
                 {compatibility && compatibility.score > 0 && (
-                  <div className="mx-5 mb-6 p-6 rounded-2xl bg-gradient-to-br from-brand-500/10 to-brand-600/5 border border-brand-500/20 relative overflow-hidden hover:border-brand-500/40 hover:shadow-lg hover:shadow-brand-500/20 transition-all duration-300">
+                  <div className="mx-4 sm:mx-5 mb-5 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-brand-500/10 to-brand-600/5 border border-brand-500/20 relative overflow-hidden hover:border-brand-500/40 hover:shadow-lg hover:shadow-brand-500/20 transition-all duration-300">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500/10 rounded-full blur-3xl -z-10" />
                     <div className="flex items-center justify-between mb-4">
                       <div>
@@ -733,7 +734,7 @@ export default function PlayerCardPage() {
 
                 {/* Engagement */}
                 {engagementScore && engagementScore.score > 0 && (
-                  <div className="mx-5 mb-6 p-5 rounded-2xl border border-border/10 bg-secondary/5">
+                  <div className="mx-4 sm:mx-5 mb-5 sm:mb-6 p-4 sm:p-5 rounded-2xl border border-border/10 bg-secondary/5">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 rounded-xl bg-brand-500/10 flex items-center justify-center border border-brand-500/20 shrink-0">
                         <Zap className="h-5 w-5 text-brand-500 fill-brand-500/30" />
@@ -772,7 +773,7 @@ export default function PlayerCardPage() {
 
                 {/* Sports Mastery */}
                 {Object.keys(card.sports_played || {}).length > 0 && (
-                  <div className="mx-5 mb-6 p-5 rounded-2xl border border-border/20 bg-gradient-to-br from-secondary/10 to-secondary/5 hover:border-brand-500/30 hover:shadow-lg transition-all duration-300">
+                  <div className="mx-4 sm:mx-5 mb-5 sm:mb-6 p-4 sm:p-5 rounded-2xl border border-border/20 bg-gradient-to-br from-secondary/10 to-secondary/5 hover:border-brand-500/30 hover:shadow-lg transition-all duration-300">
                     <h4 className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground/70 mb-4 flex items-center gap-2">
                       <div className="h-1 w-1 rounded-full bg-brand-600" />
                       Sports Mastery

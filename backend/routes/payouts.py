@@ -10,6 +10,7 @@ from database import db
 from tz import now_ist
 from auth import get_current_user, require_admin, get_razorpay_client, get_platform_settings
 import uuid
+import math
 import re
 import hmac
 import hashlib
@@ -304,6 +305,8 @@ async def _get_unsettled_venue_items(owner_id: str, period_start: str = None, pe
 @router.get("/pending")
 async def list_pending_payouts(
     role: Optional[str] = None,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
     user=Depends(get_current_user),
 ):
     """Admin: List all users with pending (unsettled) payout amounts."""
@@ -359,7 +362,10 @@ async def list_pending_payouts(
 
     # Sort by net_amount descending
     results.sort(key=lambda x: x["net_amount"], reverse=True)
-    return results
+    total = len(results)
+    skip = (page - 1) * limit
+    paginated = results[skip:skip + limit]
+    return {"payouts": paginated, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
 
 
 @router.get("/pending/{user_id}")
@@ -804,7 +810,7 @@ async def list_settlements(
     skip = (page - 1) * limit
     settlements = await db.settlements.find(f, {"_id": 0, "line_items": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
 
-    return {"settlements": settlements, "total": total, "page": page, "limit": limit}
+    return {"settlements": settlements, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1)), "limit": limit}
 
 
 @router.get("/settlements/{settlement_id}")
@@ -895,7 +901,7 @@ async def my_payouts(
     skip = (page - 1) * limit
     settlements = await db.settlements.find(f, {"_id": 0, "line_items": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
 
-    return {"settlements": settlements, "total": total, "page": page, "limit": limit}
+    return {"settlements": settlements, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1)), "limit": limit}
 
 
 @router.get("/my-payouts/{settlement_id}")

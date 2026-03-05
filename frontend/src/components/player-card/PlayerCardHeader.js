@@ -27,7 +27,7 @@ export default function PlayerCardHeader({
 
       {/* Header Content */}
       <div className="px-4">
-        <div className="flex items-center gap-6 sm:gap-12 py-6">
+        <div className="flex items-center gap-4 sm:gap-12 py-4 sm:py-6">
           {/* Enhanced Avatar with Branded Ring */}
           <div className="relative shrink-0">
             <div
@@ -52,41 +52,42 @@ export default function PlayerCardHeader({
             )}
           </div>
 
-          {/* High-Contrast Stats */}
+          {/* Stats — 3 items on mobile (streak moves to name row), 4 on desktop */}
           <div className="flex-1 flex justify-around sm:justify-start sm:gap-12 items-center">
             <div className="flex flex-col items-center sm:items-start group cursor-default">
-              <span className="font-bold text-xl sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
+              <span className="font-bold text-lg sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
                 {card.post_count || 0}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                posts
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted-foreground/60 mt-0.5">
+                Posts
               </span>
             </div>
             <div className="flex flex-col items-center sm:items-start group cursor-pointer">
-              <span className="font-bold text-xl sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
+              <span className="font-bold text-lg sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
                 {card.followers_count || 0}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                followers
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted-foreground/60 mt-0.5">
+                Followers
               </span>
             </div>
             <div className="flex flex-col items-center sm:items-start group cursor-pointer">
-              <span className="font-bold text-xl sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
+              <span className="font-bold text-lg sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
                 {card.following_count || 0}
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                following
+              <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted-foreground/60 mt-0.5">
+                Following
               </span>
             </div>
 
+            {/* Streak — hidden on mobile (shown inline with name below), visible on sm+ */}
             {card.current_streak > 0 && (
-              <div className="flex flex-col items-center sm:items-start group">
-                <div className="flex items-center gap-1 font-black text-xl sm:text-2xl tracking-tighter tabular-nums text-[#FF6B00] group-hover:scale-110 transition-transform drop-shadow-[0_0_12px_rgba(255,107,0,0.3)]">
+              <div className="hidden sm:flex flex-col items-start group">
+                <div className="flex items-center gap-1 font-black text-2xl tracking-tighter tabular-nums text-[#FF6B00] group-hover:scale-110 transition-transform drop-shadow-[0_0_12px_rgba(255,107,0,0.3)]">
                   <Flame className="h-5 w-5 fill-[#FF6B00]/20" />
                   {card.current_streak}
                 </div>
                 <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6B00]/70">
-                  streak
+                  Streak
                 </span>
               </div>
             )}
@@ -95,10 +96,19 @@ export default function PlayerCardHeader({
 
         {/* Name & Bio - Optimized for Impact */}
         <div className="max-w-xl">
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
             <h1 className="font-bold text-lg sm:text-xl tracking-tight leading-none text-foreground">
               {card.name}
             </h1>
+            {/* Streak pill — mobile only, inline with name */}
+            {card.current_streak > 0 && (
+              <div className="sm:hidden flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF6B00]/10 border border-[#FF6B00]/20">
+                <Flame className="h-3 w-3 text-[#FF6B00] fill-[#FF6B00]/20" />
+                <span className="text-[10px] font-black text-[#FF6B00]">
+                  {card.current_streak}
+                </span>
+              </div>
+            )}
             {tier && (
               <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/20">
                 <Award className="h-3 w-3 text-brand-500" />
@@ -145,7 +155,7 @@ export default function PlayerCardHeader({
           )}
 
           {/* Premium Actions */}
-          <div className="flex gap-2 max-w-sm">
+          <div className="flex gap-2 sm:max-w-sm mt-1">
             {card.user_id !== currentUser?.id ? (
               <>
                 <Button

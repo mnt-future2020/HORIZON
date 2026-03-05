@@ -13,6 +13,7 @@ import uuid
 import io
 import logging
 import urllib.parse
+import math
 
 logger = logging.getLogger("horizon.venue_invoices")
 
@@ -158,7 +159,8 @@ async def list_invoices(
     month: Optional[str] = Query(None),
     client_id: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
-    limit: int = Query(100, le=200),
+    page: Optional[int] = Query(None, ge=1),
+    limit: int = Query(10, ge=1, le=100),
 ):
     """List invoices for this venue owner."""
     if user.get("role") != "venue_owner":
@@ -174,8 +176,13 @@ async def list_invoices(
         q["auto_generated"] = True
     elif source == "manual":
         q["auto_generated"] = {"$ne": True}
+    if page is not None:
+        total = await db.venue_invoices.count_documents(q)
+        skip = (page - 1) * limit
+        invoices = await db.venue_invoices.find(q, {"_id": 0}).sort("date", -1).skip(skip).limit(limit).to_list(limit)
+        return {"invoices": invoices, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
     invoices = []
-    async for inv in db.venue_invoices.find(q, {"_id": 0}).sort("date", -1).limit(limit):
+    async for inv in db.venue_invoices.find(q, {"_id": 0}).sort("date", -1).limit(100):
         invoices.append(inv)
     return invoices
 

@@ -7,12 +7,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { motion } from "framer-motion";
 import {
   MapPin, Swords, Calendar, Trophy, TrendingUp, Clock,
-  Star, Search, Play, ListOrdered, X, User, Loader2, Dumbbell,
+  Star, Play, ListOrdered, X, User, Loader2, Dumbbell,
   BarChart3, Target, Zap, Flame, Building2,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Input } from "@/components/ui/input";
 import BookingReceipt from "@/components/BookingReceipt";
+import { PlayerDashboardSkeleton } from "@/components/SkeletonLoader";
 
 const SPORT_HERO_IMAGES = {
   football:    "https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80",
@@ -47,11 +47,11 @@ function StatCard({ icon: Icon, label, value, colorClass = "text-brand-600", bgC
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
       whileHover={{ y: -4 }}
-      className="bg-card rounded-[28px] p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
+      className="bg-card rounded-[28px] p-4 sm:p-6 border border-border/40 shadow-sm flex flex-col justify-between transition-all duration-300"
     >
       <div className="flex items-center justify-between mb-4">
         <div className="admin-label">{label}</div>
-        <div className={`p-3 rounded-2xl ${bgClass} border border-border/40 flex items-center justify-center`}>
+        <div className={`p-2 sm:p-3 rounded-2xl ${bgClass} border border-border/40 flex items-center justify-center`}>
           <Icon className={`h-5 w-5 ${colorClass}`} />
         </div>
       </div>
@@ -74,7 +74,7 @@ function BookingCard({ booking, onClick, delay = 0 }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.3 }}
       onClick={onClick}
-      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-6 hover:bg-white/5 hover:shadow-md transition-all duration-200 cursor-pointer group"
+      className="rounded-[28px] bg-card border border-border/40 shadow-sm p-4 sm:p-6 hover:bg-white/5 hover:shadow-md transition-all duration-200 cursor-pointer group"
       data-testid={`booking-card-${booking.id}`}
     >
       <div className="flex items-center justify-between gap-4 mb-4">
@@ -94,13 +94,13 @@ function BookingCard({ booking, onClick, delay = 0 }) {
               Checked In
             </span>
           )}
-          <span className={`px-2.5 py-1 rounded-full text-[10px] font-medium admin-badge uppercase ${STATUS_STYLE[booking.status] || STATUS_STYLE.pending}`}>
+          <span className={`px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-full text-[11px] sm:text-[10px] font-medium admin-badge uppercase ${STATUS_STYLE[booking.status] || STATUS_STYLE.pending}`}>
             {booking.status}
           </span>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+      <div className="flex items-center gap-3 sm:gap-4 text-sm text-muted-foreground mb-4 flex-wrap">
         <span className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-brand-600" />
           {booking.date}
@@ -132,7 +132,6 @@ export default function PlayerDashboard() {
   const [bookings, setBookings] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [searchQ, setSearchQ] = useState("");
   const [waitlistEntries, setWaitlistEntries] = useState([]);
   const [leavingWaitlist, setLeavingWaitlist] = useState(null);
   const [venueRecs, setVenueRecs] = useState([]);
@@ -177,14 +176,10 @@ export default function PlayerDashboard() {
   const primarySport = stats?.sport_breakdown ? Object.entries(stats.sport_breakdown).sort((a, b) => b[1] - a[1])[0]?.[0] : null;
   const heroImage = SPORT_HERO_IMAGES[primarySport] || SPORT_HERO_IMAGES.default;
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-    </div>
-  );
+  if (loading) return <PlayerDashboardSkeleton />;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 md:px-6 py-8 pb-20 md:pb-6" data-testid="player-dashboard">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-6 sm:py-8 pb-20 md:pb-6" data-testid="player-dashboard">
 
       {/* ── Welcome Hero ──────────────────────────────────────────────────── */}
       <motion.div
@@ -193,9 +188,9 @@ export default function PlayerDashboard() {
         className="mb-10 rounded-[28px] bg-card border border-border/40 shadow-sm overflow-hidden"
       >
         <div className="grid md:grid-cols-3 gap-0">
-          <div className="md:col-span-2 p-8 md:p-10 flex flex-col justify-center">
+          <div className="md:col-span-2 p-4 sm:p-7 md:p-10 flex flex-col justify-center">
             <span className="admin-section-label mb-2">Dashboard</span>
-            <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight mt-1">
+            <h1 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight mt-1 [text-wrap:balance]">
               {getGreeting()},{" "}
               <span className="text-brand-600">{user?.name?.split(" ")[0]}</span>
             </h1>
@@ -207,13 +202,13 @@ export default function PlayerDashboard() {
             <div className="flex items-center gap-3 mt-6 flex-wrap">
               <button
                 onClick={() => navigate("/venues")}
-                className="flex items-center gap-2 px-6 h-11 bg-brand-600 hover:bg-brand-500 text-white rounded-xl admin-btn shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all duration-200 font-semibold text-sm"
+                className="flex items-center justify-center gap-2 px-6 h-12 sm:h-11 w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white rounded-xl admin-btn shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all duration-200 font-semibold text-sm"
               >
                 <Play className="h-4 w-4 fill-white" /> Find a Game
               </button>
               <button
                 onClick={() => navigate("/player-card/me")}
-                className="flex items-center gap-2 px-6 h-11 border border-brand-600/40 text-brand-600 rounded-xl admin-btn hover:bg-brand-600/10 transition-all duration-200 font-semibold text-sm"
+                className="flex items-center justify-center gap-2 px-6 h-12 sm:h-11 w-full sm:w-auto border border-brand-600/40 text-brand-600 rounded-xl admin-btn hover:bg-brand-600/10 transition-all duration-200 font-semibold text-sm"
               >
                 <User className="h-4 w-4" /> My Lobbian Card
               </button>
@@ -227,7 +222,7 @@ export default function PlayerDashboard() {
       </motion.div>
 
       {/* ── Stat Cards ────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-10">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5 sm:gap-4 mb-10">
         <StatCard icon={Trophy}     label="Skill Rating"  value={<span className={tier.color}>{user?.skill_rating || 1500}</span>} colorClass="text-brand-600"  bgClass="bg-brand-600/10"  delay={0} />
         <StatCard icon={TrendingUp} label="Games Played"  value={user?.total_games || 0}                                           colorClass="text-emerald-500" bgClass="bg-emerald-500/10" delay={0.08} />
         <StatCard icon={Star}       label="Win Rate"      value={user?.total_games ? `${Math.round((user.wins / user.total_games) * 100)}%` : "0%"} colorClass="text-amber-500"  bgClass="bg-amber-500/10"  delay={0.16} />
@@ -235,37 +230,6 @@ export default function PlayerDashboard() {
       </div>
 
       {/* ── Quick Venue Search ────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="mb-10 rounded-[28px] bg-card border border-border/40 shadow-sm p-6"
-        data-testid="quick-venue-search"
-      >
-        <p className="admin-section-label mb-4">Quick Search</p>
-        <form
-          onSubmit={(e) => { e.preventDefault(); navigate(`/venues?q=${encodeURIComponent(searchQ)}`); }}
-          className="flex gap-3"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search venue, area, or city…"
-              value={searchQ}
-              onChange={e => setSearchQ(e.target.value)}
-              className="pl-11 h-11 bg-secondary/20 border-border/40 rounded-xl text-sm"
-              data-testid="dashboard-search-input"
-            />
-          </div>
-          <button
-            type="submit"
-            className="h-11 px-5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl admin-btn shadow-md shadow-brand-600/20 active:scale-[0.98] transition-all"
-            data-testid="dashboard-search-btn"
-          >
-            <Search className="h-4 w-4" />
-          </button>
-        </form>
-      </motion.div>
 
       {/* ── Quick Actions ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mb-10">
@@ -284,7 +248,7 @@ export default function PlayerDashboard() {
             whileTap={{ scale: 0.98 }}
             onClick={() => navigate(a.to)}
             data-testid={`quick-action-${a.label.toLowerCase().replace(/\s/g, "-")}`}
-            className="relative rounded-[28px] overflow-hidden shadow-sm h-36 sm:h-40 group text-left"
+            className="relative rounded-[28px] overflow-hidden shadow-sm h-40 sm:h-40 group text-left"
           >
             <img
               src={QUICK_ACTION_IMAGES[a.label]}
@@ -293,7 +257,7 @@ export default function PlayerDashboard() {
               loading="lazy"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-black/10" />
-            <div className="relative h-full flex flex-col justify-end p-5">
+            <div className="relative h-full flex flex-col justify-end p-5 sm:p-5 pb-6 sm:pb-5">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-2 bg-white/15 backdrop-blur-sm border border-white/10">
                 <a.icon className="h-4 w-4 text-white" />
               </div>
@@ -314,7 +278,7 @@ export default function PlayerDashboard() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="rounded-[28px] bg-card border border-border/40 shadow-sm p-6"
+              className="rounded-[28px] bg-card border border-border/40 shadow-sm p-5 sm:p-6"
             >
               <div className="flex items-center gap-2 mb-4">
                 <div className="p-2 rounded-2xl bg-brand-600/10 border border-border/40">
@@ -322,27 +286,27 @@ export default function PlayerDashboard() {
                 </div>
                 <span className="admin-heading text-sm">Engagement</span>
               </div>
-              <div className="flex flex-col items-center mb-5">
-                <div className="relative w-24 h-24">
-                  <svg className="w-24 h-24 -rotate-90" viewBox="0 0 100 100">
+              <div className="flex flex-col items-center mb-5 text-center">
+                <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+                  <svg className="w-20 h-20 sm:w-24 sm:h-24 -rotate-90" viewBox="0 0 100 100">
                     <circle cx="50" cy="50" r="42" fill="none" stroke="currentColor" strokeWidth="6" className="text-muted-foreground/10" />
                     <circle cx="50" cy="50" r="42" fill="none" strokeWidth="6"
                       strokeDasharray={`${Math.min(engagementScore.score, 100) * 2.64} 264`}
                       strokeLinecap="round" className="text-brand-600 transition-all duration-700" />
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-display text-2xl font-bold text-brand-600">{engagementScore.score}</span>
+                    <span className="font-display text-xl sm:text-2xl font-bold text-brand-600">{engagementScore.score}</span>
                   </div>
                 </div>
                 <span className="mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium admin-badge bg-brand-600/10 text-brand-600 border border-brand-600/20">
                   {engagementScore.level}
                 </span>
               </div>
-              <div className="space-y-2.5">
+              <div className="space-y-3 sm:space-y-2.5">
                 {Object.entries(engagementScore.breakdown || {}).map(([key, val]) => (
                   <div key={key} className="flex items-center gap-2 text-[11px]">
                     <span className="admin-label capitalize w-20 truncate text-[11px]">{key}</span>
-                    <div className="flex-1 h-1.5 bg-secondary/50 rounded-full overflow-hidden">
+                    <div className="flex-1 h-2.5 sm:h-1.5 bg-secondary/50 rounded-full overflow-hidden">
                       <div className="h-full bg-brand-600/60 rounded-full" style={{ width: `${Math.min(val * 5, 100)}%` }} />
                     </div>
                     <span className="font-bold w-6 text-right text-foreground">{val}</span>
@@ -404,7 +368,7 @@ export default function PlayerDashboard() {
                     onClick={() => v.slug ? navigate(`/venue/${v.slug}`) : navigate(`/venues/${v.id}`)}
                     className="rounded-2xl border border-border/40 bg-secondary/20 overflow-hidden hover:shadow-md transition-all cursor-pointer group"
                   >
-                    <div className="relative h-28 sm:h-32 overflow-hidden">
+                    <div className="relative h-32 sm:h-32 overflow-hidden">
                       <img
                         src={v.images?.[0] ? mediaUrl(v.images[0]) : `/turf/unnamed (${(idx % 10) + 1}).png`}
                         alt={v.name}
@@ -419,11 +383,11 @@ export default function PlayerDashboard() {
                         </div>
                       )}
                     </div>
-                    <div className="p-3">
-                      <h4 className="font-semibold text-xs truncate group-hover:text-brand-600 transition-colors">{v.name}</h4>
+                    <div className="p-3 sm:p-3">
+                      <h4 className="font-semibold text-sm sm:text-xs truncate group-hover:text-brand-600 transition-colors">{v.name}</h4>
                       <div className="flex items-center gap-1 mt-1">
-                        <MapPin className="h-2.5 w-2.5 text-muted-foreground" />
-                        <span className="text-[10px] admin-label truncate">{v.area || v.city}</span>
+                        <MapPin className="h-3 w-3 sm:h-2.5 sm:w-2.5 text-muted-foreground" />
+                        <span className="text-[11px] sm:text-[10px] admin-label truncate">{v.area || v.city}</span>
                       </div>
                       {v.rec_reason && (
                         <span className="mt-1.5 inline-block text-[8px] px-1.5 py-0.5 rounded-full bg-brand-600/10 text-brand-600 border border-brand-600/20 capitalize font-medium">
@@ -502,15 +466,15 @@ export default function PlayerDashboard() {
           </div>
 
           {/* Mini stat boxes */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
               { label: "Total Bookings",  value: stats.total_bookings || 0,                       color: "text-brand-600" },
               { label: "Matches Played",  value: stats.total_matches || user?.total_games || 0,    color: "text-emerald-500" },
               { label: "Wins",            value: user?.wins || 0,                                  color: "text-amber-500" },
               { label: "Total Spent",     value: `₹${(stats.total_spent || 0).toLocaleString()}`,  color: "text-sky-500" },
             ].map((s, i) => (
-              <div key={i} className="text-center p-4 bg-secondary/20 rounded-2xl border border-border/40">
-                <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
+              <div key={i} className="text-center p-3 sm:p-4 bg-secondary/20 rounded-2xl border border-border/40">
+                <div className={`text-xl sm:text-2xl font-bold ${s.color}`}>{s.value}</div>
                 <div className="admin-label text-[10px] uppercase tracking-wide mt-1">{s.label}</div>
               </div>
             ))}
@@ -546,7 +510,7 @@ export default function PlayerDashboard() {
               <p className="admin-section-label mb-3 flex items-center gap-1.5">
                 <TrendingUp className="h-3.5 w-3.5" /> Monthly Activity
               </p>
-              <div className="h-36">
+              <div className="h-32 sm:h-36">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.monthly_bookings.slice(-6).map(m => ({ month: m.month?.slice(-2) || "", count: m.count || 0 }))}>
                     <XAxis dataKey="month" tick={{ fill: "#94A3B8", fontSize: 10 }} axisLine={false} tickLine={false} />
@@ -579,7 +543,7 @@ export default function PlayerDashboard() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: idx * 0.05 }}
-                className="flex items-center justify-between p-4 rounded-[28px] bg-card border border-brand-600/20 hover:bg-white/5 transition-colors"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-[28px] bg-card border border-brand-600/20 hover:bg-white/5 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-2xl bg-brand-600/10 border border-border/40 flex items-center justify-center">
@@ -587,7 +551,7 @@ export default function PlayerDashboard() {
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm text-foreground">{entry.venue_name || "Venue"}</h4>
-                    <div className="flex items-center gap-3 text-xs admin-label mt-1">
+                    <div className="flex items-center gap-2 flex-wrap text-xs admin-label mt-1">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {entry.date}</span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {fmt12h(entry.start_time)}</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-500 border border-purple-500/20 font-medium">
@@ -597,7 +561,8 @@ export default function PlayerDashboard() {
                   </div>
                 </div>
                 <button
-                  className="h-8 w-8 flex items-center justify-center rounded-xl border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/30 transition-colors"
+                  aria-label="Leave waitlist"
+                  className="h-11 w-11 flex items-center justify-center rounded-xl border border-border/40 text-muted-foreground hover:text-red-500 hover:border-red-500/30 transition-colors shrink-0 focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
                   onClick={() => handleLeaveWaitlist(entry.id)}
                   disabled={leavingWaitlist === entry.id}
                 >

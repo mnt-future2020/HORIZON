@@ -4,14 +4,25 @@ import { notificationAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { Bell, BellOff, Check, CheckCheck, Clock, MapPin, Zap, Loader2 } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  Check,
+  CheckCheck,
+  Clock,
+  MapPin,
+  Zap,
+  Loader2,
+} from "lucide-react";
 import { toast } from "sonner";
+import { NotificationsSkeleton } from "@/components/SkeletonLoader";
 
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const navigate = useNavigate();
+  useEffect(() => { window.scrollTo(0, 0); }, []);
 
   useEffect(() => {
     loadNotifications();
@@ -32,7 +43,7 @@ export default function NotificationsPage() {
     try {
       await notificationAPI.markRead(id);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
       );
     } catch {
       toast.error("Failed to mark as read");
@@ -52,7 +63,8 @@ export default function NotificationsPage() {
   const filtered = notifications.filter((n) => {
     if (filter === "unread") return !n.is_read;
     if (filter === "slot_available") return n.type === "slot_available";
-    if (filter === "booking") return n.type === "booking" || n.type === "booking_confirmed";
+    if (filter === "booking")
+      return n.type === "booking" || n.type === "booking_confirmed";
     return true;
   });
 
@@ -68,23 +80,23 @@ export default function NotificationsPage() {
 
   const getIcon = (type) => {
     switch (type) {
-      case "slot_available": return <MapPin className="h-4 w-4 text-green-400" />;
-      case "booking": case "booking_confirmed": return <Clock className="h-4 w-4 text-brand-400" />;
-      default: return <Zap className="h-4 w-4 text-amber-400" />;
+      case "slot_available":
+        return <MapPin className="h-4 w-4 text-green-400" />;
+      case "booking":
+      case "booking_confirmed":
+        return <Clock className="h-4 w-4 text-brand-400" />;
+      default:
+        return <Zap className="h-4 w-4 text-amber-400" />;
     }
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-      </div>
-    );
+    return <NotificationsSkeleton />;
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+      <div className=" mx-auto px-4 py-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -102,7 +114,11 @@ export default function NotificationsPage() {
             )}
           </div>
           {unreadCount > 0 && (
-            <Button variant="athletic-outline" size="sm" onClick={handleMarkAllRead}>
+            <Button
+              variant="athletic-outline"
+              size="sm"
+              onClick={handleMarkAllRead}
+            >
               <CheckCheck className="h-4 w-4 mr-2" />
               Mark All Read
             </Button>
@@ -146,7 +162,9 @@ export default function NotificationsPage() {
               No notifications
             </h3>
             <p className="text-sm text-muted-foreground/70 mt-2">
-              {filter !== "all" ? "Try a different filter" : "You're all caught up!"}
+              {filter !== "all"
+                ? "Try a different filter"
+                : "You're all caught up!"}
             </p>
           </motion.div>
         ) : (
@@ -197,7 +215,9 @@ export default function NotificationsPage() {
                         <div className="flex items-center gap-2">
                           <h4
                             className={`font-display font-bold text-sm ${
-                              notif.is_read ? "text-muted-foreground" : "text-foreground"
+                              notif.is_read
+                                ? "text-muted-foreground"
+                                : "text-foreground"
                             }`}
                           >
                             {notif.title}
@@ -210,10 +230,13 @@ export default function NotificationsPage() {
                           {notif.message}
                         </p>
                         <span className="text-[10px] text-muted-foreground/60 mt-1 block">
-                          {new Date(notif.created_at).toLocaleTimeString("en-IN", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+                          {new Date(notif.created_at).toLocaleTimeString(
+                            "en-IN",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            },
+                          )}
                         </span>
                       </div>
                       {!notif.is_read && (

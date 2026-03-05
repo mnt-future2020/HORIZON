@@ -35,7 +35,7 @@ export function BookingHistory({ bookings: initial, total }) {
   const loadMore = async () => {
     setLoadingMore(true);
     try {
-      const res = await bookingAPI.list(page + 1, 15);
+      const res = await bookingAPI.list({ page: page + 1, limit: 15 });
       const next = res.data?.bookings || [];
       setBookings((prev) => [...prev, ...next]);
       setPage((p) => p + 1);

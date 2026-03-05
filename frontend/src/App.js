@@ -95,11 +95,7 @@ function PageLoader() {
   return <div className="min-h-screen bg-background" />;
 }
 
-const VENUE_OWNER_ALLOWED_PATHS = [
-  "/feed",
-  "/chat",
-  "/profile",
-];
+const VENUE_OWNER_ALLOWED_PATHS = ["/feed", "/chat", "/profile"];
 
 function ProtectedRoute({ children, roles }) {
   const { user, loading } = useAuth();
@@ -252,10 +248,7 @@ function AppRouteDefinitions() {
   const { user } = useAuth();
   return (
     <Routes>
-      <Route
-        path="/"
-        element={<LandingPage />}
-      />
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/auth"
         element={user ? <Navigate to="/feed" /> : <AuthPage />}
@@ -523,7 +516,15 @@ function AppRouteDefinitions() {
 }
 
 // Pages that should render full-screen without the app shell (Navbar + Sidebar)
-const FULL_PAGE_PATHS = ["/", "/auth", "/about", "/contact", "/privacy-policy", "/terms", "/refund-policy"];
+const FULL_PAGE_PATHS = [
+  "/",
+  "/auth",
+  "/about",
+  "/contact",
+  "/privacy-policy",
+  "/terms",
+  "/refund-policy",
+];
 
 function AppRoutes() {
   const { user } = useAuth();
@@ -532,7 +533,9 @@ function AppRoutes() {
   const isFullPage = FULL_PAGE_PATHS.includes(location.pathname);
 
   return (
-    <div className={`bg-background flex flex-col ${isChat ? "h-screen overflow-hidden" : "min-h-screen"}`}>
+    <div
+      className={`bg-background flex flex-col ${isChat ? "h-screen overflow-hidden" : "min-h-screen"}`}
+    >
       {user && !isFullPage && <Navbar />}
       {!isFullPage && <DocVerificationPopup />}
       <Suspense fallback={<PageLoader />}>

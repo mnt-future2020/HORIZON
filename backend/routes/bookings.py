@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Query
+from typing import Optional
 from datetime import datetime, timedelta
 from database import db, get_redis, lock_key
 from auth import get_current_user, get_razorpay_client, get_platform_settings
@@ -12,6 +13,7 @@ import hashlib
 import logging
 import asyncio
 import re
+import math
 from invoice_utils import generate_venue_invoice
 try:
     from push_service import notify_booking_confirmed, notify_booking_cancelled
@@ -539,18 +541,64 @@ async def razorpay_webhook(request: Request):
 
 
 @router.get("/bookings")
-async def list_bookings(user=Depends(get_current_user), page: int = 1, limit: int = 15):
-    page = max(page, 1)
-    limit = min(max(limit, 1), 50)
-    skip = (page - 1) * limit
-
+async def list_bookings(
+    user=Depends(get_current_user),
+    page: Optional[int] = Query(None, ge=1),
+    limit: int = Query(15, ge=1, le=100),
+    status: Optional[str] = None,
+    time_filter: Optional[str] = None,
+    venue_id: Optional[str] = None,
+    sort_order: str = "desc",
+):
     if user["role"] == "venue_owner":
         venues = await db.venues.find({"owner_id": user["id"]}, {"id": 1, "_id": 0}).to_list(100)
         vids = [v["id"] for v in venues]
-        query = {"venue_id": {"$in": vids}}
+
+        if page is not None:
+            # Paginated response for venue owner dashboard
+            query = {"venue_id": {"$in": vids}}
+            if venue_id:
+                query["venue_id"] = venue_id
+            if status and status != "all":
+                query["status"] = status
+            today_str = now_ist().strftime("%Y-%m-%d")
+            if time_filter == "upcoming":
+                query["date"] = {"$gte": today_str}
+            elif time_filter == "past":
+                query["date"] = {"$lt": today_str}
+
+            sort_dir = -1 if sort_order == "desc" else 1
+            total = await db.bookings.count_documents(query)
+            skip = (page - 1) * limit
+            bookings = await db.bookings.find(query, {"_id": 0}).sort([("date", sort_dir), ("start_time", sort_dir)]).skip(skip).limit(limit).to_list(limit)
+
+            # Stats for the selected venue (unfiltered) for stat cards
+            stats_query = {"venue_id": venue_id} if venue_id else {"venue_id": {"$in": vids}}
+            stats_pipe = [
+                {"$match": stats_query},
+                {"$group": {
+                    "_id": None,
+                    "total": {"$sum": 1},
+                    "confirmed": {"$sum": {"$cond": [{"$eq": ["$status", "confirmed"]}, 1, 0]}},
+                    "pending": {"$sum": {"$cond": [{"$in": ["$status", ["pending", "payment_pending"]]}, 1, 0]}},
+                    "cancelled": {"$sum": {"$cond": [{"$eq": ["$status", "cancelled"]}, 1, 0]}},
+                    "upcoming": {"$sum": {"$cond": [{"$gte": ["$date", today_str]}, 1, 0]}},
+                }},
+            ]
+            stats_result = await db.bookings.aggregate(stats_pipe).to_list(1)
+            stats = stats_result[0] if stats_result else {"total": 0, "confirmed": 0, "pending": 0, "cancelled": 0, "upcoming": 0}
+            stats.pop("_id", None)
+
+            return {"bookings": bookings, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1)), "stats": stats}
+
+        # Non-paginated fallback (backward compat)
+        bookings = await db.bookings.find({"venue_id": {"$in": vids}}, {"_id": 0}).sort("date", -1).to_list(200)
+        return {"bookings": bookings, "total": len(bookings)}
     else:
         query = {"$or": [{"host_id": user["id"]}, {"players": user["id"]}]}
 
+    page = page or 1
+    skip = (page - 1) * limit
     total = await db.bookings.count_documents(query)
     bookings = await db.bookings.find(query, {"_id": 0}).sort("date", -1).skip(skip).limit(limit).to_list(limit)
     return {"bookings": bookings, "total": total, "page": page, "limit": limit, "pages": -(-total // limit)}

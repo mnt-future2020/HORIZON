@@ -42,7 +42,6 @@ import {
   Medal,
   Dumbbell,
   MessageCircle,
-  Search,
   Bookmark,
   Settings,
   ClipboardList,
@@ -249,22 +248,6 @@ export default function Navbar() {
           >
             <Logo size="md" />
           </Link>
-        </div>
-
-        {/* Center: Search Bar (Desktop & Tablet) */}
-        <div className="hidden sm:flex flex-1 max-w-md mx-4 lg:mx-8">
-          <div className="relative w-full group">
-            <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70 group-focus-within:text-brand-600 transition-colors duration-200"
-              aria-hidden="true"
-            />
-            <input
-              className="w-full bg-secondary/20 border border-border/40 rounded-full py-2.5 pl-10 pr-4 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 focus:bg-background outline-none transition-all duration-200 placeholder:text-muted-foreground/70 hover:border-border/60"
-              placeholder="Search athletes, teams, or results..."
-              type="text"
-              aria-label="Search"
-            />
-          </div>
         </div>
 
         {/* Right: Notifications + Profile */}

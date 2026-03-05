@@ -191,10 +191,16 @@ async def admin_activate_user(user_id: str, user=Depends(get_current_user)):
 
 
 @router.get("/admin/venues")
-async def admin_list_venues(user=Depends(get_current_user)):
+async def admin_list_venues(
+    user=Depends(get_current_user),
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=100),
+):
     await require_admin(user)
-    venues = await db.venues.find({}, {"_id": 0}).sort("created_at", -1).to_list(500)
-    return venues
+    total = await db.venues.count_documents({})
+    skip = (page - 1) * limit
+    venues = await db.venues.find({}, {"_id": 0}).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    return {"venues": venues, "total": total, "page": page, "pages": math.ceil(total / max(limit, 1))}
 
 
 @router.put("/admin/venues/{venue_id}/suspend")

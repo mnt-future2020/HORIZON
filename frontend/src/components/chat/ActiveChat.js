@@ -46,7 +46,6 @@ const ActiveChat = ({
   msgSearchResults,
   onScrollToMessage,
   onLongPress,
-  onReaction,
   onReply,
   onDelete,
   onPin,
@@ -268,7 +267,6 @@ const ActiveChat = ({
                           isMe={isMe}
                           showTail={showTail}
                           onLongPress={onLongPress}
-                          onReaction={onReaction}
                           onReply={onReply}
                           onDelete={onDelete}
                           onPin={onPin}

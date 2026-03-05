@@ -28,26 +28,26 @@ const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d
 
 function StatCard({ icon: Icon, label, value, sub, colorClass = "text-brand-600", bgClass = "bg-brand-600/10", index = 0 }) {
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-card rounded-[28px] p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
+      className="bg-card rounded-2xl sm:rounded-[28px] p-4 sm:p-6 lg:p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
     >
-      <div className="flex items-center justify-between mb-6 relative z-10">
-        <div className="admin-label">{label}</div>
-        <div className={`p-3 rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
-          <Icon className={`h-5 w-5 ${colorClass}`} />
+      <div className="flex items-center justify-between mb-3 sm:mb-6 relative z-10">
+        <div className="admin-label text-xs sm:text-sm">{label}</div>
+        <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${bgClass} flex items-center justify-center border border-border/40`}>
+          <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${colorClass}`} />
         </div>
       </div>
 
       <div className="relative z-10">
-        <div className="admin-value mb-2 flex items-baseline">
+        <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-foreground tracking-tight mb-1 sm:mb-2 flex items-baseline">
           {value}
         </div>
         {sub && (
-          <div className="admin-label flex items-center gap-1.5 mt-2 bg-secondary/20 py-1.5 px-3 rounded-full w-fit border border-border/40">
+          <div className="admin-label text-xs flex items-center gap-1.5 mt-1 sm:mt-2 bg-secondary/20 py-1 sm:py-1.5 px-2 sm:px-3 rounded-full w-fit border border-border/40">
             {sub}
           </div>
         )}
@@ -76,22 +76,22 @@ function RecentUserItem({ user: u, index }) {
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.5 + index * 0.05 }}
-      className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors group rounded-2xl"
+      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 hover:bg-white/5 transition-colors group rounded-xl sm:rounded-2xl gap-2 sm:gap-4"
     >
-      <div className="flex items-center gap-4">
-        <div className={`h-11 w-11 rounded-full flex items-center justify-center font-semibold text-base shrink-0 border border-white/5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        <div className={`h-9 w-9 sm:h-11 sm:w-11 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base shrink-0 border border-white/5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
           {u.name?.[0]?.toUpperCase()}
         </div>
-        <div>
-          <div className="admin-name">{u.name}</div>
-          <div className="admin-secondary truncate max-w-[150px] md:max-w-[200px]">{u.email}</div>
+        <div className="min-w-0">
+          <div className="admin-name text-sm sm:text-base truncate">{u.name}</div>
+          <div className="admin-secondary text-xs sm:text-sm truncate max-w-[180px] sm:max-w-[200px]">{u.email}</div>
         </div>
       </div>
-      <div className="flex items-center gap-3">
-        <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+      <div className="flex items-center gap-2 sm:gap-3 ml-12 sm:ml-0 shrink-0">
+        <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
           {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
         </Badge>
-        <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
+        <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
           {u.account_status}
         </Badge>
       </div>
@@ -106,8 +106,8 @@ function OverviewTab() {
   }, []);
   if (!data) return <AdminSkeleton />;
   return (
-    <div className="space-y-10" data-testid="admin-overview-tab">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className="space-y-8 sm:space-y-10" data-testid="admin-overview-tab">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         <StatCard icon={Users} label="Total Users" value={data.total_users} index={0} />
         <StatCard icon={Building2} label="Active Venues" value={data.active_venues} index={1} />
         <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} index={2} />
@@ -133,13 +133,13 @@ function OverviewTab() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1, duration: 0.5 }}
       >
-        <div className="flex items-center justify-between mb-6 px-2">
-          <h3 className="admin-section-label">Recent Registrations</h3>
-          <div className="h-[1px] flex-1 bg-border/40 ml-6" />
+        <div className="flex items-center justify-between mb-4 sm:mb-6 px-1 sm:px-2">
+          <h3 className="admin-section-label text-[11px] sm:text-xs">Recent Registrations</h3>
+          <div className="h-[1px] flex-1 bg-border/40 ml-4 sm:ml-6" />
         </div>
-        
-        <div className="bg-card border border-border/40 rounded-[28px] p-2 shadow-sm">
-          <div className="p-2 space-y-1">
+
+        <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-1.5 sm:p-2 shadow-sm">
+          <div className="p-1 sm:p-2 space-y-0.5 sm:space-y-1">
             {data.recent_users.map((u, i) => (
               <RecentUserItem key={u.id} user={u} index={i} />
             ))}
@@ -158,7 +158,7 @@ function UsersTab() {
   const [page, setPage] = useState(() => parseInt(searchParams.get("page") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
-  const LIMIT = 20;
+  const LIMIT = 10;
   const filterChangedRef = useRef(false);
   // Document viewer state
   const [docViewUserId, setDocViewUserId] = useState(null);
@@ -289,40 +289,53 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.03 }}
-      className="flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors rounded-2xl group"
+      className="flex flex-col md:flex-row md:items-center justify-between p-3 sm:p-4 hover:bg-secondary/30 transition-colors rounded-xl sm:rounded-2xl group gap-3"
     >
-      <div className="flex items-center gap-4 min-w-0">
-        <div className={`h-11 w-11 rounded-full flex items-center justify-center font-semibold text-base shrink-0 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+      {/* User info row */}
+      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+        <div className={`h-9 w-9 sm:h-11 sm:w-11 rounded-full flex items-center justify-center font-semibold text-sm sm:text-base shrink-0 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
           {u.name?.[0]?.toUpperCase()}
         </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-2.5 mb-0.5">
-            <h4 className="admin-name truncate">{u.name}</h4>
-            <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none px-2.5 ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+            <h4 className="admin-name text-sm sm:text-base truncate max-w-[140px] sm:max-w-none">{u.name}</h4>
+            <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none px-2 sm:px-2.5 text-[10px] sm:text-xs ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
               {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
             </Badge>
+            {/* Status indicator - inline on mobile */}
+            <div className="flex items-center gap-1 md:hidden">
+              <div className={`w-1.5 h-1.5 rounded-full ${
+                u.account_status === "active" ? "bg-green-500" :
+                u.account_status === "pending" ? "bg-amber-500" : "bg-red-500"
+              }`} />
+              <span className={`text-[10px] font-medium capitalize ${
+                u.account_status === "active" ? "text-green-600" :
+                u.account_status === "pending" ? "text-amber-600" : "text-red-500"
+              }`}>{u.account_status}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 admin-secondary">
-            <span className="truncate">{u.email}</span>
+          <div className="flex items-center gap-1.5 sm:gap-2 admin-secondary text-xs sm:text-sm">
+            <span className="truncate max-w-[120px] sm:max-w-none">{u.email}</span>
             {u.phone && (
               <>
-                <span className="opacity-40">•</span>
-                <span className="flex items-center gap-1"><Phone className="w-3 h-3" /> {u.phone}</span>
+                <span className="opacity-40 hidden sm:inline">•</span>
+                <span className="hidden sm:flex items-center gap-1"><Phone className="w-3 h-3" /> {u.phone}</span>
               </>
             )}
             {u.business_name && (
               <>
-                <span className="opacity-40">•</span>
-                <span className="flex items-center gap-1"><Building2 className="w-3 h-3" /> {u.business_name}</span>
+                <span className="opacity-40 hidden sm:inline">•</span>
+                <span className="hidden sm:flex items-center gap-1"><Building2 className="w-3 h-3" /> {u.business_name}</span>
               </>
             )}
           </div>
         </div>
       </div>
 
-      <div className="flex items-center gap-3 shrink-0">
-        {/* Status indicator */}
-        <div className="flex items-center gap-1.5">
+      {/* Actions row */}
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0 ml-12 md:ml-0 flex-wrap">
+        {/* Status indicator - desktop only */}
+        <div className="hidden md:flex items-center gap-1.5">
           <div className={`w-2 h-2 rounded-full ${
             u.account_status === "active" ? "bg-green-500" :
             u.account_status === "pending" ? "bg-amber-500" :
@@ -337,67 +350,68 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         </div>
 
         {u.role === "venue_owner" && u.subscription_plan && (
-          <span className="text-xs text-purple-600 font-medium bg-purple-500/10 px-2 py-0.5 rounded-md">{u.subscription_plan}</span>
+          <span className="text-[10px] sm:text-xs text-purple-600 font-medium bg-purple-500/10 px-2 py-0.5 rounded-md">{u.subscription_plan}</span>
         )}
 
         {/* Grouped action toolbar */}
-        <div className="flex items-center bg-secondary/30 rounded-xl overflow-hidden border border-border/30">
+        <div className="flex items-center bg-secondary/30 rounded-lg sm:rounded-xl overflow-hidden border border-border/30">
           {(u.role === "venue_owner" || u.role === "coach") && u.doc_verification_status && u.doc_verification_status !== "not_uploaded" && (
             <button
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-r border-border/30 ${
+              className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-1.5 text-[11px] sm:text-xs font-medium transition-colors border-r border-border/30 min-h-[36px] ${
                 u.doc_verification_status === "pending_review" ? "text-amber-600 hover:bg-amber-500/10" :
                 u.doc_verification_status === "verified" ? "text-brand-600 hover:bg-brand-600/10" :
                 "text-rose-500 hover:bg-rose-500/10"
               }`}
               onClick={() => onOpenDocs(u.id)}>
-              <FileText className="h-3.5 w-3.5" /> Docs
+              <FileText className="h-3.5 w-3.5" /> <span className="hidden xs:inline">Docs</span>
             </button>
           )}
 
           {u.account_status === "pending" && u.role !== "venue_owner" && u.role !== "coach" && (
             <>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-colors border-r border-border/30"
+              <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-colors border-r border-border/30 min-h-[36px]"
                 onClick={() => onAction(u.id, "approve")}>
-                <CheckCircle className="h-3.5 w-3.5" /> Approve
+                <CheckCircle className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Approve</span>
               </button>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors"
+              <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-rose-500 hover:bg-rose-500/10 transition-colors min-h-[36px]"
                 onClick={() => onAction(u.id, "reject")}>
-                <XCircle className="h-3.5 w-3.5" /> Reject
+                <XCircle className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Reject</span>
               </button>
             </>
           )}
 
           {u.account_status === "pending" && (u.role === "venue_owner" || u.role === "coach") && (
-            <span className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium ${u.doc_verification_status === "pending_review" ? "text-amber-600" : "text-blue-600"}`}>
+            <span className={`flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium min-h-[36px] ${u.doc_verification_status === "pending_review" ? "text-amber-600" : "text-blue-600"}`}>
               <Clock className="h-3.5 w-3.5" />
-              {u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}
+              <span className="hidden sm:inline">{u.doc_verification_status === "pending_review" ? "Docs Submitted" : "Awaiting Docs"}</span>
+              <span className="sm:hidden">{u.doc_verification_status === "pending_review" ? "Docs" : "Wait"}</span>
             </span>
           )}
 
           {u.account_status === "active" && (
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-500/10 transition-colors"
+            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-amber-600 hover:bg-amber-500/10 transition-colors min-h-[36px]"
               onClick={() => onAction(u.id, "suspend")}>
-              <Ban className="h-3.5 w-3.5" /> Suspend
+              <Ban className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Suspend</span>
             </button>
           )}
 
           {u.role === "coach" && u.account_status === "active" && (
-            <div className="flex items-center gap-2.5 px-3 py-1.5 border-l border-border/30">
-              <span className={`text-xs font-medium ${u.is_verified ? "text-brand-600" : "text-muted-foreground"}`}>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 px-2 sm:px-3 py-1.5 border-l border-border/30 min-h-[36px]">
+              <span className={`text-[11px] sm:text-xs font-medium hidden sm:inline ${u.is_verified ? "text-brand-600" : "text-muted-foreground"}`}>
                 {u.is_verified ? "Verified" : "Verify"}
               </span>
-              <Switch 
-                checked={u.is_verified} 
-                onCheckedChange={() => onVerify(u.id)} 
-                className="scale-75 origin-right data-[state=checked]:bg-brand-600" 
+              <Switch
+                checked={u.is_verified}
+                onCheckedChange={() => onVerify(u.id)}
+                className="scale-75 origin-right data-[state=checked]:bg-brand-600"
               />
             </div>
           )}
 
           {(u.account_status === "suspended" || u.account_status === "rejected") && (
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-colors"
+            <button className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-medium text-brand-600 hover:bg-brand-600/10 transition-colors min-h-[36px]"
               onClick={() => onAction(u.id, "activate")}>
-              <RotateCcw className="h-3.5 w-3.5" /> Activate
+              <RotateCcw className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Activate</span>
             </button>
           )}
         </div>
@@ -408,33 +422,33 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
 
   return (
     <div className="space-y-4" data-testid="admin-users-tab">
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => { setFilter(f); setPage(1); }} data-testid={`filter-${f}`}
-            className={`px-5 py-2 rounded-full admin-btn transition-all duration-300 active:scale-95 ${
-              filter === f 
-                ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" 
+            className={`px-3 sm:px-5 py-2 rounded-full admin-btn transition-all duration-300 active:scale-95 text-[11px] sm:text-xs min-h-[36px] ${
+              filter === f
+                ? "bg-brand-600 text-white shadow-md shadow-brand-600/20"
                 : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
             }`}>
-            {f === "all" ? "All Users" : f === "pending" ? "Pending Approval" : f === "player" ? "Lobbian" : f.replace("_", " ")}
+            {f === "all" ? "All" : f === "pending" ? "Pending" : f === "player" ? "Lobbian" : f.replace("_", " ")}
           </button>
         ))}
       </div>
       {loading ? (
         <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 text-brand-600 animate-spin" /></div>
       ) : users.length === 0 ? (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-card border border-border/40 rounded-[28px] p-20 text-center flex flex-col items-center justify-center min-h-[300px]"
+          className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-12 sm:p-20 text-center flex flex-col items-center justify-center min-h-[200px] sm:min-h-[300px]"
         >
-          <div className="p-6 rounded-3xl bg-secondary/30 mb-6">
-            <Users className="h-10 w-10 text-muted-foreground/30" />
+          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-secondary/30 mb-4 sm:mb-6">
+            <Users className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground/30" />
           </div>
-          <div className="text-muted-foreground text-sm font-medium">No users found matching this filter</div>
+          <div className="text-muted-foreground text-xs sm:text-sm font-medium">No users found matching this filter</div>
         </motion.div>
       ) : (
-        <div className="bg-card border border-border/40 rounded-[28px] p-2 shadow-sm">
+        <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-1.5 sm:p-2 shadow-sm">
           <div className="divide-y divide-border/30">
             {users.map((u, i) => (
               <UserItem
@@ -452,11 +466,11 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-8 px-2">
-          <span className="admin-section-label">
-            Showing {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, totalUsers)} of {totalUsers} users
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+          <span className="admin-section-label text-[11px] sm:text-xs">
+            {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, totalUsers)} of {totalUsers}
           </span>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             <button
               disabled={page <= 1}
               onClick={() => load(page - 1)}
@@ -465,7 +479,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
               <ChevronLeft className="h-4 w-4" />
             </button>
             {Array.from({ length: totalPages }, (_, i) => i + 1)
-              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 2)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
               .reduce((acc, p, idx, arr) => {
                 if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
                 acc.push(p);
@@ -643,22 +657,41 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.05 }}
       whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="bg-card rounded-[28px] p-6 mb-4 shadow-sm group relative overflow-hidden transition-all duration-300"
+      className="bg-card rounded-2xl sm:rounded-[28px] p-4 sm:p-6 mb-3 sm:mb-4 shadow-sm group relative overflow-hidden transition-all duration-300"
     >
-      <div className="flex items-start gap-6 relative z-10">
-        {/* Venue Thumbnail */}
-        <div className="w-24 h-24 rounded-2xl overflow-hidden shrink-0 bg-muted/20">
-          {mainImage ? (
-            <img src={mediaUrl(mainImage)} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-brand-600/5">
-              <Building2 className="h-8 w-8 text-brand-600/30" />
+      <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6 relative z-10">
+        {/* Venue Thumbnail + mobile header */}
+        <div className="flex items-center gap-3 sm:block">
+          <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-xl sm:rounded-2xl overflow-hidden shrink-0 bg-muted/20">
+            {mainImage ? (
+              <img src={mediaUrl(mainImage)} alt={v.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-brand-600/5">
+                <Building2 className="h-6 w-6 sm:h-8 sm:w-8 text-brand-600/30" />
+              </div>
+            )}
+          </div>
+          {/* Mobile: name + badges inline with thumbnail */}
+          <div className="sm:hidden flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h4 className="admin-name text-sm truncate">{v.name}</h4>
+              <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none text-[10px] px-2 ${
+                v.badge === "bookable" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-600"
+              }`}>
+                {v.badge === "bookable" ? "Bookable" : "Enquiry"}
+              </Badge>
             </div>
-          )}
+            <p className="text-xs text-muted-foreground font-medium line-clamp-1 opacity-80">{v.address}{v.address && ", "}{v.city}</p>
+          </div>
+          {/* Mobile: toggle */}
+          <div className="sm:hidden flex items-center gap-2 shrink-0">
+            <Switch checked={v.status === "active"} onCheckedChange={() => onToggle(v.id, v.status)} />
+          </div>
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
+          {/* Desktop: name + badges */}
+          <div className="hidden sm:flex items-center gap-3 mb-2">
             <h4 className="admin-name truncate">{v.name}</h4>
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none ${
@@ -677,43 +710,43 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
               )}
             </div>
           </div>
-          
-          <p className="text-xs text-muted-foreground font-medium mb-4 line-clamp-1 opacity-80">{v.address}{v.address && ", "}{v.city}</p>
-          
-          <div className="flex items-center gap-2 flex-wrap">
+
+          <p className="hidden sm:block text-xs text-muted-foreground font-medium mb-4 line-clamp-1 opacity-80">{v.address}{v.address && ", "}{v.city}</p>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             {v.sports?.map(sport => (
-              <span key={sport} className="admin-badge bg-secondary/20 text-muted-foreground py-1 px-3 rounded-full border border-border/40">
+              <span key={sport} className="admin-badge bg-secondary/20 text-muted-foreground py-0.5 sm:py-1 px-2 sm:px-3 rounded-full border border-border/40 text-[10px] sm:text-xs">
                 {sport}
               </span>
             ))}
-            <div className="h-4 w-[1px] bg-border/40 mx-1" />
-            <span className="admin-label opacity-60 flex items-center gap-1">
-              <Crown className="w-3 h-3" /> {v.turfs} Turfs
+            <div className="h-3 sm:h-4 w-[1px] bg-border/40 mx-0.5 sm:mx-1" />
+            <span className="admin-label opacity-60 flex items-center gap-1 text-[10px] sm:text-sm">
+              <Crown className="w-3 h-3" /> {v.turfs}
             </span>
-            <span className="admin-label opacity-60 flex items-center gap-1">
-              <CalendarCheck className="w-3 h-3" /> {v.total_bookings} Bookings
+            <span className="admin-label opacity-60 flex items-center gap-1 text-[10px] sm:text-sm">
+              <CalendarCheck className="w-3 h-3" /> {v.total_bookings}
             </span>
             {v.contact_phone && (
-              <span className="admin-label opacity-60 flex items-center gap-1">
+              <span className="admin-label opacity-60 hidden sm:flex items-center gap-1">
                 <Phone className="w-3 h-3" /> {v.contact_phone}
               </span>
             )}
           </div>
         </div>
 
-        {/* Actions Section */}
-        <div className="flex flex-col items-end justify-between self-stretch gap-4 shrink-0">
+        {/* Actions Section - desktop */}
+        <div className="hidden sm:flex flex-col items-end justify-between self-stretch gap-4 shrink-0">
           <div className="flex items-center gap-3">
             <span className={`admin-btn capitalize ${v.status === "active" ? "text-brand-600" : "text-rose-500"}`}>
               {v.status === "active" ? "Live" : "Inactive"}
             </span>
             <Switch checked={v.status === "active"} onCheckedChange={() => onToggle(v.id, v.status)} />
           </div>
-          
+
           {!v.owner_id && (
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               className="h-9 px-4 admin-btn rounded-full border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all shadow-sm"
               onClick={() => onAssign(v)}
             >
@@ -721,6 +754,18 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             </Button>
           )}
         </div>
+
+        {/* Mobile: assign owner button */}
+        {!v.owner_id && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="sm:hidden w-full h-9 admin-btn rounded-xl border-border/40 bg-card hover:bg-brand-600/10 hover:text-brand-600 hover:border-brand-600/30 transition-all"
+            onClick={() => onAssign(v)}
+          >
+            <UserPlus className="h-3.5 w-3.5 mr-2" /> Assign Owner
+          </Button>
+        )}
       </div>
     </motion.div>
   );
@@ -729,6 +774,10 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
 function VenuesTab() {
   const [venues, setVenues] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalVenues, setTotalVenues] = useState(0);
+  const LIMIT = 10;
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
   const SPORTS_OPTIONS = ["Football", "Cricket", "Badminton", "Basketball", "Tennis", "Volleyball", "Table Tennis"];
@@ -744,9 +793,15 @@ function VenuesTab() {
   const [useOwnerPhone, setUseOwnerPhone] = useState(false);
   const [confirmAssign, setConfirmAssign] = useState(false);
 
-  const load = useCallback(() => {
+  const load = useCallback((p = 1) => {
     setLoading(true);
-    adminAPI.venues().then(r => setVenues(r.data || [])).catch(() => {}).finally(() => setLoading(false));
+    adminAPI.venues({ page: p, limit: LIMIT }).then(r => {
+      const data = r.data || {};
+      setVenues(data.venues || []);
+      setTotalPages(data.pages || 1);
+      setTotalVenues(data.total || 0);
+      setPage(data.page || p);
+    }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { load(); }, [load]);
@@ -756,7 +811,7 @@ function VenuesTab() {
       if (currentStatus === "active") await adminAPI.suspendVenue(venueId);
       else await adminAPI.activateVenue(venueId);
       toast.success(`Venue ${currentStatus === "active" ? "suspended" : "activated"}`);
-      load();
+      load(page);
     } catch { toast.error("Failed to update venue"); }
   };
 
@@ -768,7 +823,7 @@ function VenuesTab() {
       toast.success("Venue created (Enquiry mode)");
       setShowCreateDialog(false);
       setVenueForm({ name: "", description: "", address: "", city: "", sports: ["football"], turfs: 1, contact_phone: "", images: [] });
-      load();
+      load(1);
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to create venue"); }
     finally { setCreating(false); }
   };
@@ -808,7 +863,7 @@ function VenuesTab() {
       toast.success("Owner assigned! Venue is now bookable.");
       setAssignDialog(null);
       setConfirmAssign(false);
-      load();
+      load(page);
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to assign owner"); }
     finally { setAssigning(false); }
   };
@@ -816,13 +871,13 @@ function VenuesTab() {
   if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" /></div>;
   return (
     <div className="space-y-3" data-testid="admin-venues-tab">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3">
         <div>
-          <h2 className="admin-heading">Venues</h2>
-          <p className="admin-label mt-1">{venues.length} Facilities Managed</p>
+          <h2 className="admin-heading text-base sm:text-lg">Venues</h2>
+          <p className="admin-label mt-0.5 sm:mt-1 text-xs">{totalVenues} Managed</p>
         </div>
-        <Button size="sm" className="gap-2 h-10 px-5 admin-btn rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 hover:bg-brand-500 active:scale-95 bg-brand-600 text-white" onClick={() => setShowCreateDialog(true)}>
-          <Plus className="h-4 w-4" /> Add New Venue
+        <Button size="sm" className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-3 sm:px-5 admin-btn rounded-full shadow-lg shadow-brand-600/20 transition-all hover:scale-105 hover:bg-brand-500 active:scale-95 bg-brand-600 text-white text-[11px] sm:text-xs" onClick={() => setShowCreateDialog(true)}>
+          <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Add New</span> Venue
         </Button>
       </div>
 
@@ -837,6 +892,52 @@ function VenuesTab() {
           />
         ))}
       </div>
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+          <span className="admin-section-label text-[11px] sm:text-xs">
+            {(page - 1) * LIMIT + 1}–{Math.min(page * LIMIT, totalVenues)} of {totalVenues}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page <= 1}
+              onClick={() => load(page - 1)}
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter(p => p === 1 || p === totalPages || Math.abs(p - page) <= 1)
+              .reduce((acc, p, idx, arr) => {
+                if (idx > 0 && p - arr[idx - 1] > 1) acc.push("...");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "..." ? (
+                  <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                ) : (
+                  <button key={p} onClick={() => load(p)}
+                    className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${
+                      p === page
+                        ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                    }`}>
+                    {p}
+                  </button>
+                )
+              )}
+            <button
+              disabled={page >= totalPages}
+              onClick={() => load(page + 1)}
+              className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Create Venue Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -901,18 +1002,18 @@ function VenuesTab() {
               <Label className="admin-section-label ml-1">Number of Turfs</Label>
               <Input type="number" value={venueForm.turfs} onChange={e => setVenueForm(p => ({ ...p, turfs: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <div>
-                <Label className="admin-section-label ml-1">Opening Hour</Label>
-                <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
+                <Label className="admin-section-label ml-1 text-[10px] sm:text-xs">Open</Label>
+                <Input type="number" min={0} max={23} value={venueForm.opening_hour} onChange={e => setVenueForm(p => ({ ...p, opening_hour: Number(e.target.value) }))} className="mt-1.5 h-10 sm:h-11 rounded-xl bg-secondary/20 border-border/40 px-3 sm:px-4 font-medium text-sm" />
               </div>
               <div>
-                <Label className="admin-section-label ml-1">Closing Hour</Label>
-                <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
+                <Label className="admin-section-label ml-1 text-[10px] sm:text-xs">Close</Label>
+                <Input type="number" min={0} max={23} value={venueForm.closing_hour} onChange={e => setVenueForm(p => ({ ...p, closing_hour: Number(e.target.value) }))} className="mt-1.5 h-10 sm:h-11 rounded-xl bg-secondary/20 border-border/40 px-3 sm:px-4 font-medium text-sm" />
               </div>
               <div>
-                <Label className="admin-section-label ml-1">Slot (min)</Label>
-                <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))} className="mt-1.5 h-11 rounded-xl bg-secondary/20 border-border/40 px-4 font-medium" />
+                <Label className="admin-section-label ml-1 text-[10px] sm:text-xs">Slot (min)</Label>
+                <Input type="number" value={venueForm.slot_duration_minutes} onChange={e => setVenueForm(p => ({ ...p, slot_duration_minutes: Number(e.target.value) }))} className="mt-1.5 h-10 sm:h-11 rounded-xl bg-secondary/20 border-border/40 px-3 sm:px-4 font-medium text-sm" />
               </div>
             </div>
             <div>
@@ -1147,21 +1248,21 @@ function SettingsTab() {
   ];
 
   return (
-    <div className="space-y-8 max-w-4xl pb-10" data-testid="admin-settings-tab">
+    <div className="space-y-6 sm:space-y-8 max-w-4xl pb-10" data-testid="admin-settings-tab">
       {/* Sub-tab Navigation */}
-      <div className="flex items-center gap-2 p-1.5 glass-premium rounded-2xl w-fit mb-8 border border-white/5">
+      <div className="flex items-center gap-1.5 sm:gap-2 p-1 sm:p-1.5 glass-premium rounded-xl sm:rounded-2xl w-full sm:w-fit mb-6 sm:mb-8 border border-white/5 overflow-x-auto hide-scrollbar">
         {subTabs.map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveSubTab(tab.id)}
-            className={`flex items-center gap-2.5 px-5 py-2.5 rounded-xl admin-btn transition-all duration-300 ${
+            className={`flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-xl admin-btn transition-all duration-300 min-h-[36px] shrink-0 ${
               activeSubTab === tab.id
                 ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20 active:scale-95"
                 : "text-muted-foreground hover:text-foreground hover:bg-white/5"
             }`}
           >
-            <tab.icon className={`w-3.5 h-3.5 ${activeSubTab === tab.id ? "text-white" : "text-muted-foreground"}`} />
-            {tab.label}
+            <tab.icon className={`w-4 h-4 sm:w-3.5 sm:h-3.5 ${activeSubTab === tab.id ? "text-white" : "text-muted-foreground"}`} />
+            <span className="hidden sm:inline">{tab.label}</span>
           </button>
         ))}
       </div>
@@ -1176,18 +1277,18 @@ function SettingsTab() {
           className="min-h-[400px]"
         >
           {activeSubTab === "payments" && (
-            <section className="space-y-8 max-w-3xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                  <CreditCard className="h-6 w-6 text-brand-600" />
+            <section className="space-y-6 sm:space-y-8 max-w-3xl">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                  <CreditCard className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="admin-heading">Payment Gateway</h3>
-                  <p className="admin-label mt-0.5">Global Transaction Settings</p>
+                  <h3 className="admin-heading text-base sm:text-lg">Payment Gateway</h3>
+                  <p className="admin-label mt-0.5 text-xs">Global Transaction Settings</p>
                 </div>
               </div>
-              
-              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+
+              <div className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-white/5 shadow-xl space-y-5 sm:space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Provider</Label>
@@ -1260,15 +1361,15 @@ function SettingsTab() {
           )}
 
           {activeSubTab === "storage" && (
-            <section className="space-y-8 max-w-3xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                  <Cloud className="h-6 w-6 text-brand-600" />
+            <section className="space-y-6 sm:space-y-8 max-w-3xl">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                  <Cloud className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                 </div>
                 <div>
-                  <div className="flex items-center gap-3">
-                    <h3 className="admin-heading">Cloud Storage</h3>
-                    <Badge className={`admin-badge border-none ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                  <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                    <h3 className="admin-heading text-base sm:text-lg">Cloud Storage</h3>
+                    <Badge className={`admin-badge border-none text-[10px] sm:text-xs ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
                       {s3Configured ? "Connected" : "Not Linked"}
                     </Badge>
                   </div>
@@ -1276,7 +1377,7 @@ function SettingsTab() {
                 </div>
               </div>
 
-              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6 group">
+              <div className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-white/5 shadow-xl space-y-5 sm:space-y-6 group">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Access Key ID</Label>
@@ -1365,18 +1466,18 @@ function SettingsTab() {
           )}
 
           {activeSubTab === "whatsapp" && (
-            <section className="space-y-8 max-w-3xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                  <MessageCircle className="h-6 w-6 text-brand-600" />
+            <section className="space-y-6 sm:space-y-8 max-w-3xl">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                  <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="admin-heading">WhatsApp Business</h3>
-                  <p className="admin-label mt-0.5">Automated Enquiry Messaging</p>
+                  <h3 className="admin-heading text-base sm:text-lg">WhatsApp Business</h3>
+                  <p className="admin-label mt-0.5 text-xs">Automated Enquiry Messaging</p>
                 </div>
               </div>
 
-              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+              <div className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-white/5 shadow-xl space-y-5 sm:space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
                     <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-2 block">Phone Number ID</Label>
@@ -1424,17 +1525,17 @@ function SettingsTab() {
           )}
 
           {activeSubTab === "platform" && (
-            <section className="space-y-12">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-8">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                      <Percent className="h-6 w-6 text-brand-600" />
+            <section className="space-y-8 sm:space-y-12">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+                <div className="space-y-6 sm:space-y-8">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                      <Percent className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                     </div>
-                    <h3 className="admin-heading">Revenue Share</h3>
+                    <h3 className="admin-heading text-base sm:text-lg">Revenue Share</h3>
                   </div>
-                  
-                  <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+
+                  <div className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-white/5 shadow-xl space-y-5 sm:space-y-6">
                     {[
                       { label: "Bookings", key: "booking_commission_pct", icon: CalendarCheck },
                       { label: "Coaching", key: "coaching_commission_pct", icon: GraduationCap },
@@ -1463,30 +1564,30 @@ function SettingsTab() {
                   </div>
                 </div>
 
-                <div className="space-y-8">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                      <Crown className="h-6 w-6 text-brand-600" />
+                <div className="space-y-6 sm:space-y-8">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                      <Crown className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                     </div>
-                    <h3 className="admin-heading">Service Limits</h3>
+                    <h3 className="admin-heading text-base sm:text-lg">Service Limits</h3>
                   </div>
-                  <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl flex items-center justify-center">
-                    <p className="text-sm font-medium text-muted-foreground text-center px-4">Subscription plan quotas are configured in the section below.</p>
+                  <div className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-white/5 shadow-xl flex items-center justify-center">
+                    <p className="text-xs sm:text-sm font-medium text-muted-foreground text-center px-4">Subscription plan quotas are configured in the section below.</p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-8">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                    <Crown className="h-6 w-6 text-brand-600" />
+              <div className="space-y-6 sm:space-y-8">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                    <Crown className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                   </div>
-                  <h3 className="admin-heading">SaaS Subscription Models</h3>
+                  <h3 className="admin-heading text-base sm:text-lg">SaaS Subscription Models</h3>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                   {settings.subscription_plans.map((plan, idx) => (
-                    <div key={plan.id} className="glass-premium rounded-[32px] p-6 border border-white/5 shadow-xl space-y-6 relative overflow-hidden group">
+                    <div key={plan.id} className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-6 border border-white/5 shadow-xl space-y-4 sm:space-y-6 relative overflow-hidden group">
                       <div className="flex items-center justify-between relative z-10">
                         <span className="text-sm font-medium tracking-tight text-brand-600">{plan.name}</span>
                         <Badge className="text-xs font-medium uppercase tracking-wide bg-brand-600/10 text-brand-600 border-none py-1 px-2 rounded-full transition-colors hover:bg-brand-600 hover:text-white pointer-events-none">{plan.id}</Badge>
@@ -1532,18 +1633,18 @@ function SettingsTab() {
           )}
 
           {activeSubTab === "security" && (
-            <section className="space-y-8 max-w-xl">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="p-3 rounded-2xl bg-brand-600/10 shadow-inner">
-                  <ShieldCheck className="h-6 w-6 text-brand-600" />
+            <section className="space-y-6 sm:space-y-8 max-w-xl">
+              <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-brand-600/10 shadow-inner">
+                  <ShieldCheck className="h-5 w-5 sm:h-6 sm:w-6 text-brand-600" />
                 </div>
                 <div>
-                  <h3 className="admin-heading">Access Security</h3>
-                  <p className="admin-label mt-0.5">Admin Credentials & Auth</p>
+                  <h3 className="admin-heading text-base sm:text-lg">Access Security</h3>
+                  <p className="admin-label mt-0.5 text-xs">Admin Credentials & Auth</p>
                 </div>
               </div>
 
-              <div className="glass-premium rounded-[32px] p-8 border border-white/5 shadow-xl space-y-6">
+              <div className="glass-premium rounded-2xl sm:rounded-[32px] p-4 sm:p-8 border border-white/5 shadow-xl space-y-5 sm:space-y-6">
                 <div>
                   <Label className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-4 block">Reset Alpha Credentials</Label>
                   <div className="flex gap-2">
@@ -1570,11 +1671,11 @@ function SettingsTab() {
       </AnimatePresence>
 
       {/* Global Save */}
-      <div className="pt-8 border-t border-white/5">
-        <Button 
-          onClick={saveSettings} 
-          disabled={saving} 
-          className="w-full h-14 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm tracking-wide rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
+      <div className="pt-6 sm:pt-8 border-t border-white/5">
+        <Button
+          onClick={saveSettings}
+          disabled={saving}
+          className="w-full h-12 sm:h-14 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm tracking-wide rounded-full shadow-2xl shadow-brand-600/40 transition-all hover:scale-[1.01] active:scale-95 group"
         >
           {saving ? (
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -1602,21 +1703,49 @@ function PayoutsTab() {
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [detailDialog, setDetailDialog] = useState(null); // settlement object or null
   const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  // Pagination state
+  const [pendingPage, setPendingPage] = useState(1);
+  const [pendingTotalPages, setPendingTotalPages] = useState(1);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const LIMIT = 10;
 
   // Load data
+  const loadPending = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const res = await payoutAPI.pending({ page: p, limit: LIMIT });
+      const data = res.data || {};
+      setPendingPayouts(data.payouts || []);
+      setPendingTotalPages(data.pages || 1);
+      setPendingTotal(data.total || 0);
+      setPendingPage(data.page || p);
+    } catch { toast.error("Failed to load pending payouts"); }
+    finally { setLoading(false); }
+  }, []);
+
+  const loadHistory = useCallback(async (p = 1) => {
+    setLoading(true);
+    try {
+      const res = await payoutAPI.settlements({ page: p, limit: LIMIT });
+      const sData = res.data || {};
+      setSettlements(sData.settlements || []);
+      setHistoryTotalPages(sData.pages || Math.ceil((sData.total || 0) / LIMIT) || 1);
+      setHistoryTotal(sData.total || 0);
+      setHistoryPage(sData.page || p);
+    } catch { toast.error("Failed to load settlements"); }
+    finally { setLoading(false); }
+  }, []);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [pendingRes, settlementsRes] = await Promise.all([
-        payoutAPI.pending(),
-        payoutAPI.settlements(),
-      ]);
-      setPendingPayouts(pendingRes.data || []);
-      const sData = settlementsRes.data;
-      setSettlements(Array.isArray(sData) ? sData : sData?.settlements || []);
-    } catch { toast.error("Failed to load payouts"); }
+      await Promise.all([loadPending(1), loadHistory(1)]);
+    } catch {}
     finally { setLoading(false); }
-  }, []);
+  }, [loadPending, loadHistory]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1636,7 +1765,8 @@ function PayoutsTab() {
     try {
       await payoutAPI.createSettlement({ user_id: userId });
       toast.success("Payout processed successfully");
-      load();
+      loadPending(pendingPage);
+      loadHistory(1);
     } catch (err) { toast.error(err?.response?.data?.detail || "Failed to process payout"); }
     finally { setProcessing(null); }
   };
@@ -1647,7 +1777,8 @@ function PayoutsTab() {
     try {
       const res = await payoutAPI.bulkSettle();
       toast.success(`Processed ${res.data?.processed || 0} payouts`);
-      load();
+      loadPending(1);
+      loadHistory(1);
     } catch (err) { toast.error(err?.response?.data?.detail || "Bulk process failed"); }
     finally { setBulkProcessing(false); }
   };
@@ -1688,37 +1819,37 @@ function PayoutsTab() {
       {/* Header with stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={IndianRupee} label="Total Settled" value={`₹${totalSettledAmount.toLocaleString()}`} index={0} />
-        <StatCard icon={Clock} label="Pending Payouts" value={pendingPayouts.length} sub={`₹${totalPendingAmount.toLocaleString()}`} index={1} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
+        <StatCard icon={Clock} label="Pending Payouts" value={pendingTotal} sub={`₹${totalPendingAmount.toLocaleString()}`} index={1} colorClass="text-amber-500" bgClass="bg-amber-500/10" />
         <StatCard icon={CheckCircle} label="Completed" value={settlements.filter(s => s.status === "completed").length} index={2} />
         <StatCard icon={CreditCard} label="Active Accounts" value={settlements.length > 0 ? "—" : "0"} index={3} />
       </div>
 
       {/* Sub-tab navigation + search */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto hide-scrollbar">
           {subTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => { setSubTab(tab.id); setSearchQuery(""); }}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full admin-btn transition-all ${
+              className={`inline-flex items-center gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 rounded-full admin-btn transition-all shrink-0 min-h-[36px] ${
                 subTab === tab.id
                   ? "bg-brand-600 text-white shadow-lg shadow-brand-600/20"
                   : "bg-secondary/50 text-muted-foreground hover:bg-secondary"
               }`}
             >
               <tab.icon className={`w-3.5 h-3.5 ${subTab === tab.id ? "text-white" : "text-muted-foreground"}`} />
-              {tab.label}
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="pl-9 h-10 w-48 rounded-full text-sm"
+              className="pl-9 h-9 sm:h-10 w-full sm:w-48 rounded-full text-sm"
             />
           </div>
           {subTab === "pending" && pendingPayouts.length > 0 && (
@@ -1726,10 +1857,11 @@ function PayoutsTab() {
               size="sm"
               onClick={handleBulkProcess}
               disabled={bulkProcessing}
-              className="gap-2 h-10 px-5 admin-btn rounded-full bg-brand-600 hover:bg-brand-500 text-white"
+              className="gap-1.5 sm:gap-2 h-9 sm:h-10 px-3 sm:px-5 admin-btn rounded-full bg-brand-600 hover:bg-brand-500 text-white shrink-0 text-[11px] sm:text-xs"
             >
               {bulkProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <IndianRupee className="h-4 w-4" />}
-              Process All
+              <span className="hidden sm:inline">Process All</span>
+              <span className="sm:hidden">All</span>
             </Button>
           )}
         </div>
@@ -1745,19 +1877,19 @@ function PayoutsTab() {
                 <p className="text-sm font-medium">All payouts are settled!</p>
               </div>
             ) : (
-              <div className="bg-card border border-border/40 rounded-[28px] overflow-hidden shadow-sm">
+              <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm min-w-[700px]">
                     <thead>
                       <tr className="border-b border-border/40">
-                        <th className="text-left p-4 admin-th">User</th>
-                        <th className="text-left p-4 admin-th">Role</th>
-                        <th className="text-right p-4 admin-th">Items</th>
-                        <th className="text-right p-4 admin-th">Gross</th>
-                        <th className="text-right p-4 admin-th">Commission</th>
-                        <th className="text-right p-4 admin-th">Net Payout</th>
-                        <th className="text-left p-4 admin-th">Bank</th>
-                        <th className="text-right p-4 admin-th">Action</th>
+                        <th className="text-left p-3 sm:p-4 admin-th">User</th>
+                        <th className="text-left p-3 sm:p-4 admin-th">Role</th>
+                        <th className="text-right p-3 sm:p-4 admin-th">Items</th>
+                        <th className="text-right p-3 sm:p-4 admin-th">Gross</th>
+                        <th className="text-right p-3 sm:p-4 admin-th hidden sm:table-cell">Commission</th>
+                        <th className="text-right p-3 sm:p-4 admin-th">Net</th>
+                        <th className="text-left p-3 sm:p-4 admin-th">Bank</th>
+                        <th className="text-right p-3 sm:p-4 admin-th">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1769,29 +1901,29 @@ function PayoutsTab() {
                           transition={{ delay: i * 0.03 }}
                           className="border-b border-border/20 hover:bg-white/5 transition-colors"
                         >
-                          <td className="p-4 font-medium text-foreground">{p.user_name || "—"}</td>
-                          <td className="p-4">
-                            <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${roleColors[p.user_role] || "bg-secondary text-muted-foreground"}`}>
-                              {p.user_role === "venue_owner" ? "Venue Owner" : p.user_role}
+                          <td className="p-3 sm:p-4 font-medium text-foreground text-xs sm:text-sm">{p.user_name || "—"}</td>
+                          <td className="p-3 sm:p-4">
+                            <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${roleColors[p.user_role] || "bg-secondary text-muted-foreground"}`}>
+                              {p.user_role === "venue_owner" ? "Owner" : p.user_role}
                             </Badge>
                           </td>
-                          <td className="p-4 text-right text-muted-foreground">{p.pending_items_count || 0}</td>
-                          <td className="p-4 text-right font-medium">₹{(p.gross_amount || 0).toLocaleString()}</td>
-                          <td className="p-4 text-right text-muted-foreground">₹{(p.commission_amount || 0).toLocaleString()}</td>
-                          <td className="p-4 text-right font-medium text-brand-600">₹{(p.net_amount || 0).toLocaleString()}</td>
-                          <td className="p-4">
+                          <td className="p-3 sm:p-4 text-right text-muted-foreground text-xs sm:text-sm">{p.pending_items_count || 0}</td>
+                          <td className="p-3 sm:p-4 text-right font-medium text-xs sm:text-sm">₹{(p.gross_amount || 0).toLocaleString()}</td>
+                          <td className="p-3 sm:p-4 text-right text-muted-foreground text-xs sm:text-sm hidden sm:table-cell">₹{(p.commission_amount || 0).toLocaleString()}</td>
+                          <td className="p-3 sm:p-4 text-right font-medium text-brand-600 text-xs sm:text-sm">₹{(p.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-3 sm:p-4">
                             {p.has_linked_account ? (
-                              <Badge variant="outline" className="admin-badge px-3 py-1 rounded-full border-none bg-green-500/10 text-green-600">Linked</Badge>
+                              <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-green-500/10 text-green-600 text-[10px] sm:text-xs">Linked</Badge>
                             ) : (
-                              <Badge variant="outline" className="admin-badge px-3 py-1 rounded-full border-none bg-red-500/10 text-red-600">Not Linked</Badge>
+                              <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-red-500/10 text-red-600 text-[10px] sm:text-xs">No</Badge>
                             )}
                           </td>
-                          <td className="p-4 text-right">
+                          <td className="p-3 sm:p-4 text-right">
                             <Button
                               size="sm"
                               onClick={() => handleProcessPayout(p.user_id)}
                               disabled={processing === p.user_id || !p.has_linked_account}
-                              className="gap-1.5 h-9 px-4 admin-btn rounded-full bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-50"
+                              className="gap-1 h-8 sm:h-9 px-3 sm:px-4 admin-btn rounded-full bg-brand-600 hover:bg-brand-500 text-white disabled:opacity-50 text-[11px] sm:text-xs"
                             >
                               {processing === p.user_id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <IndianRupee className="h-3.5 w-3.5" />}
                               Pay
@@ -1801,6 +1933,37 @@ function PayoutsTab() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+            {/* Pending Pagination */}
+            {pendingTotalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                <span className="admin-section-label text-[11px] sm:text-xs">
+                  {(pendingPage - 1) * LIMIT + 1}–{Math.min(pendingPage * LIMIT, pendingTotal)} of {pendingTotal}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button disabled={pendingPage <= 1} onClick={() => loadPending(pendingPage - 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: pendingTotalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === pendingTotalPages || Math.abs(p - pendingPage) <= 1)
+                    .reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, [])
+                    .map((p, i) =>
+                      p === "..." ? (
+                        <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                      ) : (
+                        <button key={p} onClick={() => loadPending(p)}
+                          className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === pendingPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button disabled={pendingPage >= pendingTotalPages} onClick={() => loadPending(pendingPage + 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )}
@@ -1816,18 +1979,18 @@ function PayoutsTab() {
                 <p className="text-sm font-medium">No settlements yet</p>
               </div>
             ) : (
-              <div className="bg-card border border-border/40 rounded-[28px] overflow-hidden shadow-sm">
+              <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm min-w-[650px]">
                     <thead>
                       <tr className="border-b border-border/40">
-                        <th className="text-left p-4 admin-th">Date</th>
-                        <th className="text-left p-4 admin-th">Payee</th>
-                        <th className="text-left p-4 admin-th">Role</th>
-                        <th className="text-right p-4 admin-th">Amount</th>
-                        <th className="text-left p-4 admin-th">Status</th>
-                        <th className="text-left p-4 admin-th">Transfer ID</th>
-                        <th className="text-right p-4 admin-th">Details</th>
+                        <th className="text-left p-3 sm:p-4 admin-th">Date</th>
+                        <th className="text-left p-3 sm:p-4 admin-th">Payee</th>
+                        <th className="text-left p-3 sm:p-4 admin-th hidden sm:table-cell">Role</th>
+                        <th className="text-right p-3 sm:p-4 admin-th">Amount</th>
+                        <th className="text-left p-3 sm:p-4 admin-th">Status</th>
+                        <th className="text-left p-3 sm:p-4 admin-th hidden md:table-cell">Transfer ID</th>
+                        <th className="text-right p-3 sm:p-4 admin-th"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1839,26 +2002,26 @@ function PayoutsTab() {
                           transition={{ delay: i * 0.03 }}
                           className="border-b border-border/20 hover:bg-white/5 transition-colors"
                         >
-                          <td className="p-4 text-muted-foreground text-xs">{s.created_at ? new Date(s.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }) : "—"}</td>
-                          <td className="p-4 font-medium text-foreground">{s.user_name || "—"}</td>
-                          <td className="p-4">
-                            <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${roleColors[s.user_role] || "bg-secondary text-muted-foreground"}`}>
-                              {s.user_role === "venue_owner" ? "Venue Owner" : s.user_role}
+                          <td className="p-3 sm:p-4 text-muted-foreground text-[11px] sm:text-xs whitespace-nowrap">{s.created_at ? new Date(s.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : "—"}</td>
+                          <td className="p-3 sm:p-4 font-medium text-foreground text-xs sm:text-sm">{s.user_name || "—"}</td>
+                          <td className="p-3 sm:p-4 hidden sm:table-cell">
+                            <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${roleColors[s.user_role] || "bg-secondary text-muted-foreground"}`}>
+                              {s.user_role === "venue_owner" ? "Owner" : s.user_role}
                             </Badge>
                           </td>
-                          <td className="p-4 text-right font-medium text-brand-600">₹{(s.net_amount || 0).toLocaleString()}</td>
-                          <td className="p-4">
-                            <Badge variant="outline" className={`admin-badge px-3 py-1 rounded-full border-none ${statusColors[s.status] || "bg-secondary text-muted-foreground"}`}>
+                          <td className="p-3 sm:p-4 text-right font-medium text-brand-600 text-xs sm:text-sm">₹{(s.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-3 sm:p-4">
+                            <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${statusColors[s.status] || "bg-secondary text-muted-foreground"}`}>
                               {s.status}
                             </Badge>
                           </td>
-                          <td className="p-4 text-xs text-muted-foreground font-mono">{s.razorpay_transfer_id || "—"}</td>
-                          <td className="p-4 text-right">
+                          <td className="p-3 sm:p-4 text-[10px] sm:text-xs text-muted-foreground font-mono hidden md:table-cell truncate max-w-[120px]">{s.razorpay_transfer_id || "—"}</td>
+                          <td className="p-3 sm:p-4 text-right">
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => setDetailDialog(s)}
-                              className="h-8 px-3 text-xs rounded-full"
+                              className="h-8 w-8 p-0 rounded-full"
                             >
                               <Eye className="h-3.5 w-3.5" />
                             </Button>
@@ -1867,6 +2030,37 @@ function PayoutsTab() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              </div>
+            )}
+            {/* History Pagination */}
+            {historyTotalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-2 gap-3">
+                <span className="admin-section-label text-[11px] sm:text-xs">
+                  {(historyPage - 1) * LIMIT + 1}–{Math.min(historyPage * LIMIT, historyTotal)} of {historyTotal}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button disabled={historyPage <= 1} onClick={() => loadHistory(historyPage - 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  {Array.from({ length: historyTotalPages }, (_, i) => i + 1)
+                    .filter(p => p === 1 || p === historyTotalPages || Math.abs(p - historyPage) <= 1)
+                    .reduce((acc, p, idx, arr) => { if (idx > 0 && p - arr[idx - 1] > 1) acc.push("..."); acc.push(p); return acc; }, [])
+                    .map((p, i) =>
+                      p === "..." ? (
+                        <span key={`dots-${i}`} className="px-1 text-muted-foreground/50 text-xs">...</span>
+                      ) : (
+                        <button key={p} onClick={() => loadHistory(p)}
+                          className={`h-9 min-w-[36px] px-2 rounded-xl admin-btn transition-all ${p === historyPage ? "bg-brand-600 text-white shadow-lg shadow-brand-600/30" : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"}`}>
+                          {p}
+                        </button>
+                      )
+                    )}
+                  <button disabled={historyPage >= historyTotalPages} onClick={() => loadHistory(historyPage + 1)}
+                    className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground disabled:opacity-30 disabled:pointer-events-none transition-all">
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             )}
@@ -1887,16 +2081,16 @@ function PayoutsTab() {
 
       {/* Settlement Detail Dialog */}
       <Dialog open={!!detailDialog} onOpenChange={() => setDetailDialog(null)}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg rounded-[28px]">
+        <DialogContent className="max-w-[95vw] sm:max-w-lg rounded-2xl sm:rounded-[28px]">
           <DialogHeader>
-            <DialogTitle className="admin-heading">Settlement Details</DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground">
+            <DialogTitle className="admin-heading text-base sm:text-lg">Settlement Details</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm text-muted-foreground truncate">
               {detailDialog?.id}
             </DialogDescription>
           </DialogHeader>
           {detailDialog && (
-            <div className="space-y-4 mt-2">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="space-y-3 sm:space-y-4 mt-2">
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 text-sm">
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">Payee</p>
                   <p className="font-medium">{detailDialog.user_name}</p>
@@ -1966,21 +2160,21 @@ export default function SuperAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-transparent pb-20 md:pb-8" data-testid="super-admin-dashboard">
-      <div className="w-full py-6 flex flex-col gap-8 items-start">
+      <div className="w-full py-4 sm:py-6 flex flex-col gap-6 sm:gap-8 items-start">
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="w-full">
 
           {/* Page Header */}
-          <div className="mb-8">
-            <h1 className="admin-page-title mb-1">Admin Console</h1>
-            <p className="text-sm text-muted-foreground">Horizon Platform Management</p>
+          <div className="mb-5 sm:mb-8">
+            <h1 className="text-xl sm:text-2xl font-display font-medium tracking-tight text-foreground mb-0.5 sm:mb-1">Admin Console</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Horizon Platform Management</p>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex-1 flex flex-col min-w-0" data-testid="admin-tabs">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-6">
-              <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
+            <div className="flex items-center justify-between border-b border-border/40 pb-1 sm:pb-2 mb-4 sm:mb-6">
+              <TabsList className="bg-transparent h-auto p-0 rounded-none space-x-4 sm:space-x-8 flex items-center w-full justify-start overflow-x-auto hide-scrollbar">
                 {["overview", "users", "venues", "payouts", "settings"].map((tab) => (
-                  <TabsTrigger key={tab} value={tab} 
-                    className="relative pb-2 admin-btn text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0" 
+                  <TabsTrigger key={tab} value={tab}
+                    className="relative pb-2 admin-btn text-xs sm:text-sm text-muted-foreground hover:text-foreground data-[state=active]:text-brand-600 data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-none bg-transparent shadow-none transition-colors capitalize px-0 min-h-[36px] shrink-0"
                     data-testid={`tab-${tab}`}>
                     {tab}
                     <TabsIndicator />
@@ -1988,7 +2182,7 @@ export default function SuperAdminDashboard() {
                 ))}
               </TabsList>
             </div>
-            
+
             <TabsContent value="overview" className="mt-0 outline-none w-full"><OverviewTab /></TabsContent>
             <TabsContent value="users" className="mt-0 outline-none w-full"><UsersTab /></TabsContent>
             <TabsContent value="venues" className="mt-0 outline-none w-full"><VenuesTab /></TabsContent>
