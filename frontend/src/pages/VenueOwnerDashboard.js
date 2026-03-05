@@ -1006,8 +1006,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 >
                   {v.label}
                 </button>
-              </div>
+              ))}
+            </div>
 
+            {/* ── List View ── */}
+            {bookingView === "list" && (
+              <>
               {/* Booking List */}
               {bookingsLoading ? (
                 <div className="flex items-center justify-center py-12">
