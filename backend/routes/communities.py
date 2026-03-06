@@ -1025,8 +1025,10 @@ async def get_conversations(user=Depends(get_current_user)):
         other_id = next((p for p in c.get("participants", []) if p != user["id"]), None)
         if other_id:
             other = await db.users.find_one(
-                {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1}
+                {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1, "role": 1}
             )
+            if other and other.get("role") == "super_admin":
+                continue  # Hide conversations with super_admin
             c["other_user"] = other or {"id": other_id, "name": "Unknown", "avatar": ""}
         # Decrypt last_message preview
         if c.get("last_message"):
@@ -1062,8 +1064,10 @@ async def get_unified_conversations(user=Depends(get_current_user)):
         other_id = next((p for p in c.get("participants", []) if p != user["id"]), None)
         if other_id:
             other = await db.users.find_one(
-                {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1, "current_streak": 1}
+                {"id": other_id}, {"_id": 0, "id": 1, "name": 1, "avatar": 1, "role": 1, "current_streak": 1}
             )
+            if other and other.get("role") == "super_admin":
+                continue  # Hide conversations with super_admin
             c["other_user"] = other or {"id": other_id, "name": "Unknown", "avatar": ""}
         if c.get("last_message"):
             c["last_message"] = decrypt_message(c["last_message"], c["id"])
@@ -1121,6 +1125,8 @@ async def start_conversation(request: Request, user=Depends(get_current_user)):
     other = await db.users.find_one({"id": other_id})
     if not other:
         raise HTTPException(404, "User not found")
+    if other.get("role") == "super_admin":
+        raise HTTPException(403, "Cannot start a conversation with an admin account")
 
     # Check for existing conversation
     existing = await db.conversations.find_one({

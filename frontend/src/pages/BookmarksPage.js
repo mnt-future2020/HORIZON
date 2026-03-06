@@ -49,7 +49,7 @@ import {
 function BookmarksSkeleton() {
   return (
     <div className="min-h-screen bg-transparent pb-24 md:pb-8 px-3 sm:px-4 md:px-6 lg:px-8">
-      <div className="w-full max-w-[960px] mx-auto py-4 sm:py-6">
+      <div className="w-full max-w-[1280px] mx-auto py-4 sm:py-6">
         <div className="flex items-center gap-3 mb-6">
           <SkeletonBox className="h-10 w-10 rounded-xl" />
           <div className="flex-1">
@@ -64,7 +64,7 @@ function BookmarksSkeleton() {
           <SkeletonBox className="h-11 w-11 rounded-xl" />
         </div>
         {/* Grid skeleton */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
           {[...Array(6)].map((_, i) => (
             <SkeletonBox key={i} className="aspect-square rounded-2xl" />
           ))}
@@ -313,7 +313,7 @@ export default function BookmarksPage() {
       className="min-h-screen bg-transparent pb-24 md:pb-8 px-3 sm:px-4 md:px-6 lg:px-8"
       style={{ touchAction: "manipulation" }}
     >
-      <div className="w-full max-w-[960px] mx-auto py-4 sm:py-6">
+      <div className="w-full max-w-[1280px] mx-auto py-4 sm:py-6">
         {/* ═══════════════════════ HEADER ═══════════════════════ */}
         <div className="flex items-center gap-3 sm:gap-4 mb-5 sm:mb-6">
           <button
@@ -493,7 +493,7 @@ export default function BookmarksPage() {
 
         {/* ═══════════════════ GRID VIEW ════════════════════════ */}
         {viewMode === "grid" && filteredPosts.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-1.5 sm:gap-2 md:gap-3">
             {filteredPosts.map((post, idx) => (
               <motion.div
                 key={post.id}
@@ -556,12 +556,6 @@ export default function BookmarksPage() {
                   <BookmarkMinus className="h-4 w-4" />
                 </button>
 
-                {/* Multi-content badge */}
-                {post.media_url && post.content && (
-                  <div className="absolute top-2 left-2 bg-black/40 backdrop-blur-sm rounded-md px-1.5 py-0.5">
-                    <FileText className="h-3 w-3 text-white" />
-                  </div>
-                )}
               </motion.div>
             ))}
           </div>
@@ -605,10 +599,10 @@ export default function BookmarksPage() {
                               <User className="h-3 w-3 text-muted-foreground" />
                             )}
                           </div>
-                          <span className="font-bold text-xs sm:text-sm text-foreground truncate">
+                          <span className="admin-name text-xs sm:text-sm truncate">
                             {post.user_name}
                           </span>
-                          <span className="text-[10px] sm:text-[11px] text-muted-foreground flex items-center gap-1">
+                          <span className="admin-secondary text-[10px] sm:text-[11px] flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             {timeAgo(post.created_at)}
                           </span>

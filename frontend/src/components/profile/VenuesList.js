@@ -44,10 +44,10 @@ function VenueCard({ venue, analytics, reviewSummary }) {
     <div className="rounded-xl bg-gradient-to-br from-card via-card to-muted/10 border border-border shadow-sm p-5 hover:border-brand-400 dark:hover:border-brand-600 hover:shadow-lg hover:shadow-brand-500/10 hover:-translate-y-0.5 transition-all duration-300">
       <div className="flex items-center justify-between mb-3">
         <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-base text-foreground mb-1.5 truncate">
+          <div className="admin-name text-sm sm:text-base mb-1.5 truncate">
             {venue.name}
           </div>
-          <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5">
+          <div className="admin-secondary text-xs sm:text-sm flex items-center gap-1.5">
             <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
             {venue.city}
             {venue.area && `, ${venue.area}`}

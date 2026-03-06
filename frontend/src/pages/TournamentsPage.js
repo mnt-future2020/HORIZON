@@ -32,6 +32,7 @@ import {
   Radio,
   X,
   Zap,
+  ArrowUpDown,
 } from "lucide-react";
 import { TournamentsSkeleton } from "@/components/SkeletonLoader";
 
@@ -180,11 +181,11 @@ function TournamentCard({ t, user, onRegister, onClick, index }) {
         </div>
 
         {/* Tournament name */}
-        <h3 className="text-base font-bold text-foreground leading-snug truncate">
+        <h3 className="admin-name text-sm sm:text-base leading-snug truncate">
           {t.name}
         </h3>
         {t.description && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+          <p className="admin-secondary text-xs sm:text-sm mt-0.5 line-clamp-1">
             {t.description}
           </p>
         )}
@@ -267,6 +268,7 @@ export default function TournamentsPage() {
   const [showMyOnly, setShowMyOnly] = useState(
     searchParams.get("mine") === "1",
   );
+  const [sortOrder, setSortOrder] = useState(searchParams.get("sort") || "newest");
   const [showFilters, setShowFilters] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -297,8 +299,9 @@ export default function TournamentsPage() {
     if (filterSport) p.set("sport", filterSport);
     if (filterStatus) p.set("status", filterStatus);
     if (showMyOnly) p.set("mine", "1");
+    if (sortOrder !== "newest") p.set("sort", sortOrder);
     setSearchParams(p, { replace: true });
-  }, [searchQuery, filterSport, filterStatus, showMyOnly, setSearchParams]);
+  }, [searchQuery, filterSport, filterStatus, showMyOnly, sortOrder, setSearchParams]);
 
   useEffect(() => {
     const loadLive = async () => {
@@ -384,10 +387,16 @@ export default function TournamentsPage() {
   const canCreate = ["venue_owner", "super_admin", "coach"].includes(
     user?.role,
   );
-  const filtered = tournaments.filter(
-    (t) =>
-      !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+  const filtered = tournaments
+    .filter(
+      (t) =>
+        !searchQuery || t.name.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+    .sort((a, b) => {
+      const aT = new Date(a.created_at || 0).getTime();
+      const bT = new Date(b.created_at || 0).getTime();
+      return sortOrder === "newest" ? bT - aT : aT - bT;
+    });
   const activeFilterCount = [
     filterSport,
     filterStatus,
@@ -452,6 +461,17 @@ export default function TournamentsPage() {
               {activeFilterCount}
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setSortOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+          className={`h-11 w-11 flex items-center justify-center rounded-xl border transition-all shrink-0 ${
+            sortOrder === "oldest"
+              ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+              : "bg-card border-border/40 text-muted-foreground hover:text-foreground"
+          }`}
+          title={sortOrder === "newest" ? "Newest first" : "Oldest first"}
+        >
+          <ArrowUpDown className="w-4 h-4" />
         </button>
       </div>
 

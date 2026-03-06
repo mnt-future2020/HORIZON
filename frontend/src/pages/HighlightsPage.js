@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Video, Upload, Sparkles, Clock, Share2, Trash2, Eye,
   ChevronRight, Loader2, CheckCircle, AlertTriangle, Copy, Link2, X,
-  Zap, Target, Trophy, Flag
+  Zap, Target, Trophy, Flag, ArrowUpDown
 } from "lucide-react";
 
 const SIGNIFICANCE_ICONS = {
@@ -182,10 +182,10 @@ function HighlightCard({ highlight, onAnalyze, onView, onDelete }) {
             <Video className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div className="min-w-0">
-            <h4 className="font-bold text-sm sm:text-base truncate">{highlight.title}</h4>
+            <h4 className="admin-name text-sm sm:text-base truncate">{highlight.title}</h4>
             <div className="flex items-center gap-2 mt-0.5">
               <StatusBadge status={highlight.status} />
-              <span className="text-[10px] text-muted-foreground">
+              <span className="admin-secondary text-[10px]">
                 {new Date(highlight.created_at).toLocaleDateString()}
               </span>
             </div>
@@ -339,7 +339,7 @@ function AnalysisDialog({ highlight, open, onClose, baseUrl }) {
                       <span className="text-xs font-mono font-bold text-primary">{m.timestamp}</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm">{m.description}</p>
+                      <p className="admin-name text-sm">{m.description}</p>
                       <div className="mt-1">
                         <MomentBadge significance={m.significance} />
                       </div>
@@ -378,6 +378,7 @@ export default function HighlightsPage() {
   const { user } = useAuth();
   const [highlights, setHighlights] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortOrder, setSortOrder] = useState("newest");
   const [viewingHighlight, setViewingHighlight] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const baseUrl = window.location.origin;
@@ -429,9 +430,24 @@ export default function HighlightsPage() {
       <UploadSection onUpload={loadHighlights} />
 
       <div className="mt-8">
-        <h3 className="font-display font-bold text-base sm:text-lg mb-4">
-          Your Highlights ({highlights.length})
-        </h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-display font-bold text-base sm:text-lg">
+            Your Highlights ({highlights.length})
+          </h3>
+          {highlights.length > 1 && (
+            <button
+              onClick={() => setSortOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+              className={`h-9 w-9 rounded-xl flex items-center justify-center border transition-all ${
+                sortOrder === "oldest"
+                  ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                  : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
+              }`}
+              title={sortOrder === "newest" ? "Newest first" : "Oldest first"}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         {loading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : highlights.length === 0 ? (
@@ -443,7 +459,11 @@ export default function HighlightsPage() {
         ) : (
           <div className="space-y-3">
             <AnimatePresence>
-              {highlights.map(h => (
+              {[...highlights].sort((a, b) => {
+                const aT = new Date(a.created_at || 0).getTime();
+                const bT = new Date(b.created_at || 0).getTime();
+                return sortOrder === "newest" ? bT - aT : aT - bT;
+              }).map(h => (
                 <HighlightCard key={h.id} highlight={h}
                   onAnalyze={handleAnalyze}
                   onView={(hl) => setViewingHighlight(hl)}

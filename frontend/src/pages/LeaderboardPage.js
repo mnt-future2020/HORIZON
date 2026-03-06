@@ -151,7 +151,7 @@ export default function LeaderboardPage() {
                       {p.name?.[0]?.toUpperCase()}
                     </div>
                     <div className="min-w-0">
-                      <div className="text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
+                      <div className="admin-name text-sm sm:text-base truncate flex items-center gap-1.5">
                         {p.name}
                         {isMe && <Badge variant="outline" className="text-[8px] h-4 px-1 border-primary/30 text-primary">You</Badge>}
                       </div>
@@ -160,7 +160,7 @@ export default function LeaderboardPage() {
                           {tier.label}
                         </Badge>
                         {p.sports?.slice(0, 2).map(s => (
-                          <span key={s} className="text-[10px] text-muted-foreground capitalize">{s}</span>
+                          <span key={s} className="admin-secondary text-[10px] sm:text-xs capitalize">{s}</span>
                         ))}
                       </div>
                     </div>

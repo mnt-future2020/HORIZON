@@ -943,65 +943,78 @@ function VenueOwnerDashboardContent({ defaultView }) {
           {/* Bookings - Enhanced with filters, detail view, and timeline */}
           <TabsContent value="bookings">
             {/* Quick Stats Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-5">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-5">
               {[
-                {
-                  label: "Total",
-                  value: bookingStats.total,
-                  color: "text-foreground",
-                },
-                {
-                  label: "Confirmed",
-                  value: bookingStats.confirmed,
-                  color: "text-brand-400",
-                },
-                {
-                  label: "Pending",
-                  value: bookingStats.pending,
-                  color: "text-amber-400",
-                },
-                {
-                  label: "Cancelled",
-                  value: bookingStats.cancelled,
-                  color: "text-destructive",
-                },
-                {
-                  label: "Upcoming",
-                  value: bookingStats.upcoming,
-                  color: "text-sky-400",
-                },
-              ].map((s) => (
-                <div
+                { label: "Total",     value: bookingStats.total,     colorClass: "text-brand-600",  bgClass: "bg-brand-600/10",  icon: BarChart3 },
+                { label: "Confirmed", value: bookingStats.confirmed,  colorClass: "text-brand-600",  bgClass: "bg-brand-600/10",  icon: CheckCircle },
+                { label: "Pending",   value: bookingStats.pending,    colorClass: "text-amber-500",  bgClass: "bg-amber-500/10",  icon: Clock },
+                { label: "Cancelled", value: bookingStats.cancelled,  colorClass: "text-red-500",    bgClass: "bg-red-500/10",    icon: XCircle },
+                { label: "Upcoming",  value: bookingStats.upcoming,   colorClass: "text-brand-600",  bgClass: "bg-brand-600/10",  icon: Calendar },
+              ].map((s, i) => (
+                <StatCard
                   key={s.label}
-                  className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-2.5 sm:p-3 text-center"
+                  icon={s.icon}
+                  label={s.label}
+                  value={s.value}
+                  index={i}
+                  colorClass={s.colorClass}
+                  bgClass={s.bgClass}
                   data-testid={`booking-stat-${s.label.toLowerCase()}`}
-                >
-                  <div
-                    className={`text-base sm:text-lg font-display font-black ${s.color}`}
-                  >
-                    {s.value}
-                  </div>
-                  <div className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest">
-                    {s.label}
-                  </div>
-                </div>
+                />
               ))}
             </div>
 
-            {/* View Toggle: List / Timeline */}
-            <div className="inline-flex bg-secondary/40 p-1 rounded-xl mb-4">
-              {[
-                { key: "list", label: "List" },
-                { key: "timeline", label: "Timeline" },
-              ].map((v) => (
-                <button
-                  key={v.key}
-                  onClick={() => setBookingView(v.key)}
-                  className={`flex-1 px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${bookingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-                >
-                  {v.label}
-                </button>
-              ))}
+            {/* View Toggle + Filters row */}
+            <div className="flex flex-wrap items-center gap-2 mb-4">
+              <div className="inline-flex bg-secondary/40 p-1 rounded-xl">
+                {[
+                  { key: "list", label: "List" },
+                  { key: "timeline", label: "Timeline" },
+                ].map((v) => (
+                  <button
+                    key={v.key}
+                    onClick={() => setBookingView(v.key)}
+                    className={`px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${bookingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40 text-sm w-auto min-w-[130px]">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={timeFilter} onValueChange={setTimeFilter}>
+                <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40 text-sm w-auto min-w-[120px]">
+                  <SelectValue placeholder="All Time" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="past">Past</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <button
+                onClick={() => setSortOrder((s) => (s === "desc" ? "asc" : "desc"))}
+                className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                  sortOrder === "asc"
+                    ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                    : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
+                }`}
+                title={sortOrder === "desc" ? "Newest first" : "Oldest first"}
+              >
+                <ArrowUpDown className="h-4 w-4" />
+              </button>
             </div>
 
             {/* ── List View ── */}
@@ -1034,27 +1047,27 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           <div className="flex items-start justify-between gap-2 sm:gap-3 mb-2">
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <span className="admin-name text-sm text-foreground truncate">{b.host_name}</span>
+                                <span className="admin-name text-sm sm:text-base truncate">{b.host_name}</span>
                                 {b.payment_mode === "split" && (
                                   <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">
                                     <Users className="h-2.5 w-2.5 mr-0.5" />Split
                                   </Badge>
                                 )}
                               </div>
-                              <span className="text-xs text-muted-foreground">{b.venue_name} - Turf #{b.turf_number}</span>
+                              <span className="admin-secondary text-xs sm:text-sm">{b.venue_name} - Turf #{b.turf_number}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide ${sc.color}`}>{sc.label}</span>
                               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                             </div>
                           </div>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
                             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                               <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
                               <span className="flex items-center gap-1 capitalize hidden sm:flex"><CircleDot className="h-3 w-3" />{b.sport}</span>
                             </div>
-                            <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
+                            <span className="font-semibold text-brand-600 text-sm sm:text-base">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
                           </div>
                         </motion.div>
                       );
@@ -1132,13 +1145,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           <div className="flex items-center justify-between mb-3">
                             <div className="flex items-center gap-2">
                               <div className={`w-2 h-2 rounded-full ${isToday ? "bg-brand-600 animate-pulse" : isPast ? "bg-muted-foreground/40" : "bg-sky-400"}`} />
-                              <span className="text-sm font-bold text-foreground">
+                              <span className="admin-name text-sm sm:text-base">
                                 {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                               </span>
                               <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
                             </div>
                             {totalAmount > 0 && (
-                              <span className="text-xs font-bold text-brand-600">{"\u20B9"}{totalAmount.toLocaleString()}</span>
+                              <span className="font-semibold text-brand-600 text-sm sm:text-base">{"\u20B9"}{totalAmount.toLocaleString()}</span>
                             )}
                           </div>
                           <div className="space-y-2 pl-4 border-l-2 border-border/50 ml-1">
@@ -1152,15 +1165,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
                                     <div className="min-w-0 flex-1">
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-xs font-bold">{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
-                                        <span className="text-xs text-muted-foreground">Turf #{b.turf_number}</span>
-                                        <span className="text-xs text-muted-foreground capitalize">{b.sport}</span>
+                                        <span className="admin-name text-xs sm:text-sm">{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
+                                        <span className="admin-secondary text-xs">Turf #{b.turf_number}</span>
+                                        <span className="admin-secondary text-xs capitalize">{b.sport}</span>
                                         {b.payment_mode === "split" && <Badge variant="outline" className="text-[10px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
                                       </div>
-                                      <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
+                                      <div className="admin-secondary text-xs sm:text-sm mt-0.5">{b.host_name} - {b.venue_name}</div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-sm font-bold text-brand-600">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
+                                      <span className="font-semibold text-brand-600 text-sm sm:text-base">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
                                       <span className={`inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide ${sc.color}`}>{sc.label}</span>
                                       <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                                     </div>
@@ -1207,32 +1220,32 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3" data-testid="booking-detail-info">
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Venue</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Venue</span>
                       <p className="text-sm admin-name mt-0.5">{selectedBooking.venue_name}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Host</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Host</span>
                       <p className="text-sm admin-name mt-0.5">{selectedBooking.host_name}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Date</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Date</span>
                       <p className="text-sm admin-name mt-0.5">{selectedBooking.date}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Time</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Time</span>
                       <p className="text-sm admin-name mt-0.5">{fmt12h(selectedBooking.start_time)} - {fmt12h(selectedBooking.end_time)}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Turf</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Turf</span>
                       <p className="text-sm admin-name mt-0.5">{selectedBooking.turf_name || `#${selectedBooking.turf_number}`}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Sport</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Sport</span>
                       <p className="text-sm admin-name mt-0.5 capitalize">{selectedBooking.sport}</p>
                     </div>
                     {selectedBooking.num_players && (
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Lobbians</span>
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground">Lobbians</span>
                         <p className="text-sm admin-name mt-0.5">{selectedBooking.num_players}</p>
                       </div>
                     )}
@@ -1255,27 +1268,27 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <p className="text-sm admin-name mt-0.5">{"\u20B9"}{selectedBooking.total_amount?.toLocaleString()} <span className="text-[10px] text-muted-foreground">(-₹{selectedBooking.commission_amount || 0} commission)</span></p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Payment Mode</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Payment Mode</span>
                       <p className="text-sm admin-name mt-0.5 capitalize">{selectedBooking.payment_mode}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Gateway</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Gateway</span>
                       <p className="text-sm admin-name mt-0.5 capitalize">{selectedBooking.payment_gateway || "N/A"}</p>
                     </div>
                   </div>
                   {selectedBooking.payment_details && (
                     <div className="pt-2 border-t border-border/50">
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Paid At</span>
+                      <span className="text-xs uppercase tracking-wider text-muted-foreground">Paid At</span>
                       <p className="text-xs text-foreground mt-0.5">{selectedBooking.payment_details.paid_at ? new Date(selectedBooking.payment_details.paid_at).toLocaleString() : "N/A"}</p>
                       {selectedBooking.payment_details.razorpay_payment_id && (
                         <>
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2 block">Payment ID</span>
+                          <span className="text-xs uppercase tracking-wider text-muted-foreground mt-2 block">Payment ID</span>
                           <p className="text-xs text-foreground mt-0.5 font-mono">{selectedBooking.payment_details.razorpay_payment_id}</p>
                         </>
                       )}
                       {(selectedBooking.payment_details.test_payment_id || selectedBooking.payment_details.mock_payment_id) && (
                         <>
-                          <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground mt-2 block">Test ID</span>
+                          <span className="text-xs uppercase tracking-wider text-muted-foreground mt-2 block">Test ID</span>
                           <p className="text-xs text-foreground mt-0.5 font-mono">{selectedBooking.payment_details.test_payment_id || selectedBooking.payment_details.mock_payment_id}</p>
                         </>
                       )}
@@ -1292,15 +1305,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     </div>
                     <div className="grid grid-cols-3 gap-3">
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Per Share</span>
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground">Per Share</span>
                         <p className="text-sm admin-name mt-0.5">{"\u20B9"}{selectedBooking.split_config.per_share}</p>
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Total Shares</span>
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground">Total Shares</span>
                         <p className="text-sm admin-name mt-0.5">{selectedBooking.split_config.total_shares}</p>
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Paid</span>
+                        <span className="text-xs uppercase tracking-wider text-muted-foreground">Paid</span>
                         <p className="text-sm admin-name mt-0.5">
                           <span className={selectedBooking.split_config.shares_paid >= selectedBooking.split_config.total_shares ? "text-brand-400" : "text-amber-400"}>
                             {selectedBooking.split_config.shares_paid}
@@ -1762,7 +1775,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 <div className="flex items-center gap-3 mb-4">
                   <Crown className="h-5 w-5 text-brand-600 shrink-0" />
                   <div className="min-w-0">
-                    <h3 className="text-sm sm:text-base admin-heading truncate">Current Plan: <span className="text-brand-600">{planData.current_plan?.name}</span></h3>
+                    <h3 className="font-display text-sm sm:text-base admin-heading truncate">Current Plan: <span className="text-brand-600">{planData.current_plan?.name}</span></h3>
                     <p className="text-xs text-muted-foreground">{planData.venues_used} / {planData.venues_limit} venues used</p>
                   </div>
                 </div>
@@ -1771,7 +1784,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 </div>
               </div>
 
-              <h3 className="text-sm admin-heading">Available Plans</h3>
+              <h3 className="font-display text-sm admin-heading">Available Plans</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {(planData.all_plans || []).map(plan => {
                   const isCurrent = plan.id === planData.current_plan?.id;
@@ -2071,7 +2084,7 @@ function VenueAnalyticsPanel({ venueId }) {
                 {s.label}
               </p>
             </div>
-            <p className="font-display font-bold text-xl sm:text-2xl text-foreground leading-none">
+            <p className="font-display font-black text-xl sm:text-2xl text-foreground leading-none">
               {s.value}
             </p>
             <p className="text-[10px] text-muted-foreground">{s.sub}</p>
@@ -2084,7 +2097,7 @@ function VenueAnalyticsPanel({ venueId }) {
         {/* Busiest Days */}
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="admin-heading text-sm">📅 Busiest Days</h3>
+            <h3 className="font-display admin-heading text-sm">📅 Busiest Days</h3>
             {insights.turf_list?.length > 1 && (
               <select
                 value={selectedTurf}
@@ -2137,7 +2150,7 @@ function VenueAnalyticsPanel({ venueId }) {
 
         {/* Busiest Hours */}
         <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4 space-y-3">
-          <h3 className="admin-heading text-sm">⏰ Busiest Hours</h3>
+          <h3 className="font-display admin-heading text-sm">⏰ Busiest Hours</h3>
           {activeHourEntries.length === 0 ? (
             <p className="text-xs text-muted-foreground py-4 text-center">
               No bookings yet.
@@ -2175,7 +2188,7 @@ function VenueAnalyticsPanel({ venueId }) {
       {/* Insights */}
       {insights.insights?.length > 0 && (
         <div className="space-y-2">
-          <h3 className="admin-heading text-sm flex items-center gap-2">
+          <h3 className="font-display admin-heading text-sm flex items-center gap-2">
             <Lightbulb className="h-4 w-4 text-amber-400" />
             Insights
           </h3>
@@ -2367,45 +2380,23 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
 
       {/* Stats Bar */}
       {slots.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <div className="bg-card rounded-2xl border border-border/40 px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0">
-              <CalendarDays className="h-4 w-4 text-muted-foreground" />
-            </div>
-            <div>
-              <p className="text-xl font-black font-display leading-none">{stats.total}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Total</p>
-            </div>
-          </div>
-          <div className="bg-card rounded-2xl border border-emerald-500/20 px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            </div>
-            <div>
-              <p className="text-xl font-black font-display leading-none text-emerald-500">{stats.available}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Available</p>
-            </div>
-          </div>
-          <div className="bg-card rounded-2xl border border-red-500/20 px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
-              <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-            </div>
-            <div>
-              <p className="text-xl font-black font-display leading-none text-red-500">{stats.booked}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Booked</p>
-            </div>
-          </div>
-          <div className="bg-card rounded-2xl border border-border/40 px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0">
-              <div className="w-full h-1.5 rounded-full bg-secondary mx-2 overflow-hidden">
-                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${availPct}%` }} />
-              </div>
-            </div>
-            <div>
-              <p className="text-xl font-black font-display leading-none">{availPct}<span className="text-sm font-semibold">%</span></p>
-              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Free</p>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          {[
+            { label: "Total",     value: stats.total,         icon: CalendarDays, colorClass: "text-brand-600",   bgClass: "bg-brand-600/10"   },
+            { label: "Available", value: stats.available,     icon: CheckCircle,  colorClass: "text-emerald-500", bgClass: "bg-emerald-500/10" },
+            { label: "Booked",    value: stats.booked,        icon: Clock,        colorClass: "text-red-500",     bgClass: "bg-red-500/10"     },
+            { label: "Free",      value: `${availPct}%`,      icon: BarChart2,    colorClass: "text-brand-600",   bgClass: "bg-brand-600/10"   },
+          ].map((s, i) => (
+            <StatCard
+              key={s.label}
+              icon={s.icon}
+              label={s.label}
+              value={s.value}
+              index={i}
+              colorClass={s.colorClass}
+              bgClass={s.bgClass}
+            />
+          ))}
         </div>
       )}
 

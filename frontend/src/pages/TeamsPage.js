@@ -7,6 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Shield,
@@ -19,9 +26,11 @@ import {
   Crown,
   LogOut,
   Swords,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { TeamsSkeleton } from "@/components/SkeletonLoader";
+import { getSportIcon } from "@/lib/venue-constants";
 
 /* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
 function replaceParams(updates) {
@@ -45,6 +54,7 @@ export default function TeamsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(() => getInitParam("q") || "");
   const [sportFilter, setSportFilter] = useState(() => getInitParam("sport") || "");
+  const [sortOrder, setSortOrder] = useState(() => getInitParam("sort") || "newest");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState({
@@ -90,8 +100,15 @@ export default function TeamsPage() {
       tab: tab !== "discover" ? tab : null,
       q: search || null,
       sport: sportFilter || null,
+      sort: sortOrder !== "newest" ? sortOrder : null,
     });
-  }, [tab, search, sportFilter]);
+  }, [tab, search, sportFilter, sortOrder]);
+
+  const sortedTeams = [...teams].sort((a, b) => {
+    const aT = new Date(a.created_at || 0).getTime();
+    const bT = new Date(b.created_at || 0).getTime();
+    return sortOrder === "newest" ? bT - aT : aT - bT;
+  });
 
   const handleCreate = async () => {
     if (!form.name.trim()) {
@@ -206,6 +223,17 @@ export default function TeamsPage() {
                 className="pl-9 h-11 bg-secondary/20 border-border/40 rounded-xl"
               />
             </div>
+            <button
+              onClick={() => setSortOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+              className={`h-11 w-11 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                sortOrder === "oldest"
+                  ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                  : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
+              }`}
+              title={sortOrder === "newest" ? "Newest first" : "Oldest first"}
+            >
+              <ArrowUpDown className="h-4 w-4" />
+            </button>
             <div className="flex gap-1 flex-wrap overflow-x-auto pb-1">
               <button
                 onClick={() => setSportFilter("")}
@@ -213,15 +241,19 @@ export default function TeamsPage() {
               >
                 All
               </button>
-              {sports.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSportFilter(sportFilter === s ? "" : s)}
-                  className={`px-3.5 py-2.5 min-h-[40px] rounded-full text-xs admin-btn capitalize transition-all focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 ${sportFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"}`}
-                >
-                  {s}
-                </button>
-              ))}
+              {sports.map((s) => {
+                const SI = getSportIcon(s);
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setSportFilter(sportFilter === s ? "" : s)}
+                    className={`flex items-center gap-1.5 px-3.5 py-2.5 min-h-[40px] rounded-full text-xs admin-btn capitalize transition-all focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-1 ${sportFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground"}`}
+                  >
+                    <SI className="h-3.5 w-3.5 shrink-0" />
+                    {s.replace("-", " ")}
+                  </button>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -229,7 +261,7 @@ export default function TeamsPage() {
         {/* Team Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence mode="popLayout">
-            {(tab === "discover" ? teams : myTeams).map((t, idx) => (
+            {(tab === "discover" ? sortedTeams : myTeams).map((t, idx) => (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -252,15 +284,15 @@ export default function TeamsPage() {
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm sm:text-base truncate">{t.name}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                    <h3 className="admin-name text-sm sm:text-base truncate">{t.name}</h3>
+                    <p className="admin-secondary text-xs sm:text-sm mt-0.5 line-clamp-1">
                       {t.description || `${t.sport} team`}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <Badge variant="sport" className="text-[10px] capitalize">
                         {t.sport}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="admin-secondary text-[10px]">
                         {t.player_count || 0}/{t.max_players} Lobbians
                       </span>
                     </div>
@@ -370,7 +402,7 @@ export default function TeamsPage() {
           </AnimatePresence>
         </div>
 
-        {(tab === "discover" ? teams : myTeams).length === 0 && (
+        {(tab === "discover" ? sortedTeams : myTeams).length === 0 && (
           <div className="text-center py-12 px-4 sm:py-20">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="admin-heading text-muted-foreground">
@@ -432,19 +464,27 @@ export default function TeamsPage() {
                     <Label className="text-xs text-muted-foreground admin-label">
                       Sport *
                     </Label>
-                    <select
+                    <Select
                       value={form.sport}
-                      onChange={(e) =>
-                        setForm((p) => ({ ...p, sport: e.target.value }))
+                      onValueChange={(val) =>
+                        setForm((p) => ({ ...p, sport: val }))
                       }
-                      className="mt-1 w-full h-11 rounded-xl border border-border/40 bg-secondary/20 px-3 py-2 text-sm"
                     >
-                      {sports.map((s) => (
-                        <option key={s} value={s} className="capitalize">
-                          {s}
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger className="mt-1 h-11 rounded-xl border-border/40 bg-secondary/20 focus:ring-brand-600/50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sports.map((s) => (
+                          <SelectItem
+                            key={s}
+                            value={s}
+                            className="capitalize focus:bg-brand-600 focus:text-white"
+                          >
+                            {s}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground admin-label">

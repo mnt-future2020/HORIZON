@@ -151,7 +151,7 @@ function RecordCard({ record }) {
           </Badge>
         )}
       </div>
-      <div className="font-semibold text-sm text-foreground">{record.title || record.type || "Untitled"}</div>
+      <div className="admin-name text-sm sm:text-base">{record.title || record.type || "Untitled"}</div>
       {record.source_name && (
         <div className="text-xs text-muted-foreground">
           Source: <span className="text-foreground/80 font-medium">{record.source_name}</span>
@@ -198,12 +198,15 @@ function SourceBreakdown({ recordsBySource }) {
     <div className="bg-card border border-border rounded-xl shadow-sm p-6">
       <h3 className="font-display font-bold text-foreground mb-4 text-lg">Source Breakdown</h3>
       <div className="space-y-2">
-        {Object.entries(recordsBySource).map(([source, count]) => (
+        {(Array.isArray(recordsBySource)
+          ? recordsBySource.map((item) => [item.source_name, item.count])
+          : Object.entries(recordsBySource)
+        ).map(([source, count]) => (
           <div
             key={source}
             className="flex items-center justify-between py-3 border-b border-border last:border-0"
           >
-            <span className="text-sm font-medium text-foreground">{source}</span>
+            <span className="admin-name text-sm sm:text-base">{source}</span>
             <span className="text-sm font-display font-bold text-muted-foreground tabular-nums">{count}</span>
           </div>
         ))}

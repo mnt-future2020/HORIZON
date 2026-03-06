@@ -45,14 +45,12 @@ import {
   ThumbsDown,
   ChevronDown,
   Shield,
-  CircleDot,
-  Feather,
-  Disc,
-  Volleyball,
   Medal,
+  ArrowUpDown,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MatchmakingSkeleton } from "@/components/SkeletonLoader";
+import { getSportIcon } from "@/lib/venue-constants";
 
 /* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
 function replaceParams(updates) {
@@ -67,14 +65,6 @@ function getInitParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
 
-const SPORT_ICON = {
-  football: CircleDot,
-  cricket: Swords,
-  badminton: Feather,
-  tennis: Target,
-  basketball: Disc,
-  volleyball: Volleyball,
-};
 const SPORTS = ["football", "cricket", "badminton", "tennis", "basketball"];
 
 const STATUS_STYLE = {
@@ -121,7 +111,7 @@ function MatchCard({
   const sportLabel = match.sport
     ?.replace("_", " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
-  const SportIcon = SPORT_ICON[match.sport] || Medal;
+  const SportIcon = getSportIcon(match.sport);
 
   const players = (match.players_joined || []).map((id, i) => ({
     id,
@@ -236,10 +226,10 @@ function MatchCard({
                         {p.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-xs font-medium text-foreground flex-1 truncate hover:text-brand-600 transition-colors">
+                    <span className="admin-name text-xs sm:text-sm flex-1 truncate hover:text-brand-600 transition-colors">
                       {p.name}
                     </span>
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                    <span className="admin-secondary text-[10px] flex items-center gap-0.5">
                       <Star className="h-3 w-3 text-amber-500" />
                       {p.rating}
                     </span>
@@ -352,11 +342,11 @@ function MercenaryCard({
       {/* Header */}
       <div className="flex items-start justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2 sm:gap-2.5">
-          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-purple-500/10 flex items-center justify-center shrink-0">
-            <Target className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-purple-500" />
+          <div className="h-10 w-10 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl bg-brand-600/10 flex items-center justify-center shrink-0">
+            <Target className="h-4.5 w-4.5 sm:h-5 sm:w-5 text-brand-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-sm text-foreground truncate">
+            <h3 className="admin-name text-sm sm:text-base truncate">
               {post.position_needed}
             </h3>
             <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 sm:gap-2 flex-wrap">
@@ -367,7 +357,7 @@ function MercenaryCard({
                 </span>
               </span>
               <span className="capitalize flex items-center gap-1">
-                {(() => { const SI = SPORT_ICON[post.sport] || Medal; return <SI className="h-3 w-3" />; })()}
+                {(() => { const SI = getSportIcon(post.sport); return <SI className="h-3 w-3" />; })()}
                 {post.sport}
               </span>
             </p>
@@ -416,8 +406,8 @@ function MercenaryCard({
                   {a.name?.[0]}
                 </div>
                 <div>
-                  <div className="text-xs font-medium">{a.name}</div>
-                  <div className="text-[10px] text-muted-foreground flex items-center gap-1">
+                  <div className="admin-name text-xs sm:text-sm">{a.name}</div>
+                  <div className="admin-secondary text-[10px] flex items-center gap-1">
                     <Star className="h-2.5 w-2.5" />
                     {a.skill_rating}
                   </div>
@@ -458,7 +448,7 @@ function MercenaryCard({
               >
                 <div className="flex items-center gap-2">
                   <UserCheck className="h-3.5 w-3.5 text-brand-600" />
-                  <span className="text-xs font-medium">{a.name}</span>
+                  <span className="admin-name text-xs sm:text-sm">{a.name}</span>
                 </div>
                 <span
                   className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
@@ -810,6 +800,7 @@ export default function MatchmakingPage() {
   const [autoSport, setAutoSport] = useState(() => getInitParam("autoSport") || "football");
   const [filterSport, setFilterSport] = useState(() => getInitParam("sport") || "all");
   const [filterArea, setFilterArea] = useState(() => getInitParam("area") || "all");
+  const [sortMatchOrder, setSortMatchOrder] = useState(() => getInitParam("sort") || "newest");
   const [expandedMatchId, setExpandedMatchId] = useState(() => getInitParam("expanded") || null);
   const [areas, setAreas] = useState([]);
 
@@ -821,8 +812,15 @@ export default function MatchmakingPage() {
       area: filterArea !== "all" ? filterArea : null,
       autoSport: autoSport !== "football" ? autoSport : null,
       expanded: expandedMatchId || null,
+      sort: sortMatchOrder !== "newest" ? sortMatchOrder : null,
     });
-  }, [tab, filterSport, filterArea, autoSport, expandedMatchId]);
+  }, [tab, filterSport, filterArea, autoSport, expandedMatchId, sortMatchOrder]);
+
+  const sortedMatches = [...matches].sort((a, b) => {
+    const aT = new Date(a.created_at || 0).getTime();
+    const bT = new Date(b.created_at || 0).getTime();
+    return sortMatchOrder === "newest" ? bT - aT : aT - bT;
+  });
   const [form, setForm] = useState({
     sport: "football",
     date: "",
@@ -1070,6 +1068,12 @@ export default function MatchmakingPage() {
     ...mercenaries,
   ];
 
+  const sortedMercenaries = [...allMercenaryPosts].sort((a, b) => {
+    const aT = new Date(a.created_at || 0).getTime();
+    const bT = new Date(b.created_at || 0).getTime();
+    return sortMatchOrder === "newest" ? bT - aT : aT - bT;
+  });
+
   const [allMatches, setAllMatches] = useState([]);
   useEffect(() => {
     matchAPI
@@ -1197,7 +1201,7 @@ export default function MatchmakingPage() {
                           <SelectContent>
                             {SPORTS.map((s) => (
                               <SelectItem key={s} value={s}>
-                                {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
+                                {(() => { const SI = getSportIcon(s); return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                                 {s.charAt(0).toUpperCase() + s.slice(1)}
                               </SelectItem>
                             ))}
@@ -1542,7 +1546,7 @@ export default function MatchmakingPage() {
                           : "bg-secondary/30 border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
                       }`}
                     >
-                      {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
+                      {(() => { const SI = getSportIcon(s); return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                       {s.charAt(0).toUpperCase() + s.slice(1)}
                     </button>
                   ))}
@@ -1652,7 +1656,7 @@ export default function MatchmakingPage() {
                       <SelectItem value="all">All Sports</SelectItem>
                       {SPORTS.map((s) => (
                         <SelectItem key={s} value={s}>
-                          {(() => { const SI = SPORT_ICON[s] || Medal; return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
+                          {(() => { const SI = getSportIcon(s); return <SI className="h-3.5 w-3.5 inline-block mr-1" />; })()}
                           {s.charAt(0).toUpperCase() + s.slice(1)}
                         </SelectItem>
                       ))}
@@ -1685,11 +1689,22 @@ export default function MatchmakingPage() {
                     Clear filters
                   </button>
                 )}
+                <button
+                  onClick={() => setSortMatchOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+                  className={`h-10 w-10 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+                    sortMatchOrder === "oldest"
+                      ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                      : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
+                  }`}
+                  title={sortMatchOrder === "newest" ? "Newest first" : "Oldest first"}
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </button>
               </div>
 
               {loading ? (
                 <MatchmakingSkeleton />
-              ) : matches.length === 0 ? (
+              ) : sortedMatches.length === 0 ? (
                 <EmptyState
                   icon={Swords}
                   title="No open games"
@@ -1702,9 +1717,9 @@ export default function MatchmakingPage() {
               ) : (
                 <div className="space-y-3 sm:space-y-4">
                   <span className="admin-section-label">
-                    {matches.length} open game{matches.length !== 1 ? "s" : ""}
+                    {sortedMatches.length} open game{sortedMatches.length !== 1 ? "s" : ""}
                   </span>
-                  {matches.map((m, i) => (
+                  {sortedMatches.map((m, i) => (
                     <MatchCard
                       key={m.id}
                       match={m}
@@ -1784,7 +1799,7 @@ export default function MatchmakingPage() {
             >
               {loading ? (
                 <MatchmakingSkeleton />
-              ) : allMercenaryPosts.length === 0 ? (
+              ) : sortedMercenaries.length === 0 ? (
                 <EmptyState
                   icon={Users}
                   title="No mercenary posts"
@@ -1792,11 +1807,24 @@ export default function MatchmakingPage() {
                 />
               ) : (
                 <div className="space-y-3 sm:space-y-4">
-                  <span className="admin-section-label">
-                    {allMercenaryPosts.length} open post
-                    {allMercenaryPosts.length !== 1 ? "s" : ""}
-                  </span>
-                  {allMercenaryPosts.map((m, i) => (
+                  <div className="flex items-center justify-between">
+                    <span className="admin-section-label">
+                      {sortedMercenaries.length} open post
+                      {sortedMercenaries.length !== 1 ? "s" : ""}
+                    </span>
+                    <button
+                      onClick={() => setSortMatchOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+                      className={`h-9 w-9 rounded-xl flex items-center justify-center border transition-all ${
+                        sortMatchOrder === "oldest"
+                          ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                          : "bg-card border-border/40 text-muted-foreground hover:border-brand-600/30 hover:text-foreground"
+                      }`}
+                      title={sortMatchOrder === "newest" ? "Newest first" : "Oldest first"}
+                    >
+                      <ArrowUpDown className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {sortedMercenaries.map((m, i) => (
                     <MercenaryCard
                       key={m.id}
                       post={m}

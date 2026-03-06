@@ -178,10 +178,10 @@ function BookingCard({ booking, onClick }) {
       onClick={onClick}
     >
       <div className="flex-1 min-w-0">
-        <div className="font-display font-bold text-base text-foreground mb-1.5 truncate">
+        <div className="admin-name text-sm sm:text-base mb-1.5 truncate">
           {booking.venue_name}
         </div>
-        <div className="text-xs text-muted-foreground font-medium space-y-0.5">
+        <div className="admin-secondary text-xs sm:text-sm space-y-0.5">
           <div>{booking.date}</div>
           <div>
             {fmt12h(booking.start_time)} - {fmt12h(booking.end_time)} • {booking.sport}

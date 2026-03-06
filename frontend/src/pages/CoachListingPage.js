@@ -55,7 +55,7 @@ function CoachCard({ coach, onBook, delay = 0 }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-medium text-base sm:text-base md:text-lg text-foreground truncate group-hover:text-brand-600 transition-colors">
+            <h3 className="admin-name text-sm sm:text-base md:text-lg truncate group-hover:text-brand-600 transition-colors">
               {coach.name}
             </h3>
             {coach.avg_rating > 0 && (
@@ -66,14 +66,14 @@ function CoachCard({ coach, onBook, delay = 0 }) {
             )}
           </div>
           {coach.coaching_bio && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{coach.coaching_bio}</p>
+            <p className="admin-secondary text-xs sm:text-sm line-clamp-2 mb-2">{coach.coaching_bio}</p>
           )}
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             {coach.coaching_sports?.map(s => (
               <Badge key={s} variant="secondary" className="text-[10px] capitalize">{s.replace("_", " ")}</Badge>
             ))}
             {coach.city && (
-              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1 admin-secondary text-xs sm:text-sm">
                 <MapPin className="h-3 w-3" />{coach.city}
               </span>
             )}

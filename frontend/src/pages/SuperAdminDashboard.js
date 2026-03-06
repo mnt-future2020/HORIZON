@@ -232,9 +232,9 @@ function OverviewTab() {
 }
 
 function UsersTab() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState(null);
   const [filter, setFilter] = useState(() => getInitParam("filter") || "all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(() => parseInt(getInitParam("page") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -489,8 +489,16 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
   );
 }
 
+  if (users === null) return <AdminUsersSkeleton />;
+
   return (
-    <div className="space-y-4" data-testid="admin-users-tab">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+      className="space-y-4"
+      data-testid="admin-users-tab"
+    >
       <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
         {["all", "pending", "player", "venue_owner", "coach"].map(f => (
           <button key={f} onClick={() => { setFilter(f); filterRef.current = f; setPage(1); load(1); }} data-testid={`filter-${f}`}
@@ -503,35 +511,35 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
           </button>
         ))}
       </div>
-      {loading ? (
-        <AdminUsersSkeleton />
-      ) : users.length === 0 ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-12 sm:p-20 text-center flex flex-col items-center justify-center min-h-[200px] sm:min-h-[300px]"
-        >
-          <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-secondary/30 mb-4 sm:mb-6">
-            <Users className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground/30" />
+      <div className={`transition-opacity duration-200 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
+        {users.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-12 sm:p-20 text-center flex flex-col items-center justify-center min-h-[200px] sm:min-h-[300px]"
+          >
+            <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-secondary/30 mb-4 sm:mb-6">
+              <Users className="h-8 w-8 sm:h-10 sm:w-10 text-muted-foreground/30" />
+            </div>
+            <div className="text-muted-foreground text-xs sm:text-sm font-medium">No users found matching this filter</div>
+          </motion.div>
+        ) : (
+          <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-1.5 sm:p-2 shadow-sm">
+            <div className="divide-y divide-border/30">
+              {users.map((u, i) => (
+                <UserItem
+                  key={u.id}
+                  user={u}
+                  index={i}
+                  onAction={handleAction}
+                  onVerify={handleVerify}
+                  onOpenDocs={openDocViewer}
+                />
+              ))}
+            </div>
           </div>
-          <div className="text-muted-foreground text-xs sm:text-sm font-medium">No users found matching this filter</div>
-        </motion.div>
-      ) : (
-        <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-1.5 sm:p-2 shadow-sm">
-          <div className="divide-y divide-border/30">
-            {users.map((u, i) => (
-              <UserItem
-                key={u.id}
-                user={u}
-                index={i}
-                onAction={handleAction}
-                onVerify={handleVerify}
-                onOpenDocs={openDocViewer}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -712,7 +720,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         </DialogContent>
       </Dialog>
 
-    </div>
+    </motion.div>
   );
 }
 
