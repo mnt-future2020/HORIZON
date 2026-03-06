@@ -1389,7 +1389,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
         {/* Slots Tab - Visual slot availability grid */}
         <TabsContent value="slots">
-          {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} />}
+          {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} onOpenBooking={openBookingDetail} />}
         </TabsContent>
 
         {/* Reviews Tab */}
@@ -2193,12 +2193,43 @@ function VenueAnalyticsPanel({ venueId }) {
 }
 
 // ─── Slot Availability Panel ────────────────────────────────────────────────
-function SlotAvailabilityPanel({ venueId }) {
+function SlotAvailabilityPanel({ venueId, onOpenBooking }) {
   const [slotDate, setSlotDate] = useState(
     new Date().toISOString().split("T")[0],
   );
   const [slots, setSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [loadingBookingSlot, setLoadingBookingSlot] = useState(null);
+
+  const handleBookedSlotClick = async (slot) => {
+    if (!onOpenBooking || slot.status !== "booked") return;
+    const key = `${slot.start_time}-${slot.turf_number}`;
+    setLoadingBookingSlot(key);
+    try {
+      const res = await bookingAPI.list({
+        venue_id: venueId,
+        date: slotDate,
+        turf_number: slot.turf_number,
+        status: "confirmed",
+        limit: 20,
+        page: 1,
+      });
+      // Find the booking whose time range covers this slot
+      const clickedTime = slot.start_time;
+      const booking = (res.data?.bookings || []).find(b =>
+        b.start_time <= clickedTime && b.end_time > clickedTime
+      );
+      if (booking) {
+        onOpenBooking(booking);
+      } else {
+        toast.info("Booking details not found for this slot");
+      }
+    } catch {
+      toast.error("Failed to load booking details");
+    } finally {
+      setLoadingBookingSlot(null);
+    }
+  };
 
   const loadSlots = useCallback(async () => {
     if (!venueId) return;
@@ -2449,11 +2480,19 @@ function SlotAvailabilityPanel({ venueId }) {
                       on_hold: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
                       locked_by_you: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
                     }[status] || "bg-emerald-500/15 text-emerald-600";
+                    const isBookedSlot = status === "booked";
+                    const slotKey = `${time.start_time}-${turf.turf_number}`;
                     return (
                       <div
-                        key={`${time.start_time}-${turf.turf_number}`}
-                        className={`relative group px-2 py-3 border-b border-r border-border/40 last:border-r-0 flex flex-col items-center justify-center gap-1 ${cellBg}`}
+                        key={slotKey}
+                        onClick={isBookedSlot ? () => handleBookedSlotClick({ ...slot, start_time: time.start_time, turf_number: turf.turf_number }) : undefined}
+                        className={`relative group px-2 py-3 border-b border-r border-border/40 last:border-r-0 flex flex-col items-center justify-center gap-1 ${cellBg} ${isBookedSlot ? "cursor-pointer hover:bg-red-500/10 transition-colors" : ""}`}
                       >
+                        {loadingBookingSlot === slotKey && (
+                          <div className="absolute inset-0 bg-background/60 flex items-center justify-center z-20 rounded">
+                            <Loader2 className="h-4 w-4 animate-spin text-red-500" />
+                          </div>
+                        )}
                         {/* Instant custom tooltip */}
                         <div className={`pointer-events-none absolute left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150 delay-300 group-hover:delay-300 whitespace-nowrap ${rowIdx === 0 ? "top-full mt-2" : "bottom-full mb-2"}`}>
                           <div className="bg-gray-900 text-white text-xs font-medium rounded-lg px-3 py-2 shadow-xl flex flex-col gap-0.5">

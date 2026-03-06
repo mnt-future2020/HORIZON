@@ -556,6 +556,9 @@ async def list_bookings(
     time_filter: Optional[str] = None,
     venue_id: Optional[str] = None,
     sort_order: str = "desc",
+    date: Optional[str] = None,
+    start_time: Optional[str] = None,
+    turf_number: Optional[int] = None,
 ):
     if user["role"] == "venue_owner":
         venues = await db.venues.find({"owner_id": user["id"]}, {"id": 1, "_id": 0}).to_list(100)
@@ -568,11 +571,18 @@ async def list_bookings(
                 query["venue_id"] = venue_id
             if status and status != "all":
                 query["status"] = status
+            if date:
+                query["date"] = date
+            if start_time:
+                query["start_time"] = start_time
+            if turf_number is not None:
+                query["turf_number"] = turf_number
             today_str = now_ist().strftime("%Y-%m-%d")
-            if time_filter == "upcoming":
-                query["date"] = {"$gte": today_str}
-            elif time_filter == "past":
-                query["date"] = {"$lt": today_str}
+            if not date:
+                if time_filter == "upcoming":
+                    query["date"] = {"$gte": today_str}
+                elif time_filter == "past":
+                    query["date"] = {"$lt": today_str}
 
             sort_dir = -1 if sort_order == "desc" else 1
             total = await db.bookings.count_documents(query)
