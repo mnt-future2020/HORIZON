@@ -240,6 +240,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [bookingPage, setBookingPage] = useState(1);
   const [bookingTotalPages, setBookingTotalPages] = useState(1);
   const [bookingTotal, setBookingTotal] = useState(0);
+  const [slotRefreshKey, setSlotRefreshKey] = useState(0);
   const [bookingStats, setBookingStats] = useState({ total: 0, confirmed: 0, pending: 0, cancelled: 0, upcoming: 0 });
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const BOOKING_LIMIT = 10;
@@ -609,6 +610,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
       setBookingDetailOpen(false);
       setSelectedBooking(null);
       loadBookings(bookingPage);
+      setSlotRefreshKey((k) => k + 1);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to cancel");
     }
@@ -1389,7 +1391,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
         {/* Slots Tab - Visual slot availability grid */}
         <TabsContent value="slots">
-          {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} onOpenBooking={openBookingDetail} />}
+          {selectedVenue && <SlotAvailabilityPanel venueId={selectedVenue.id} onOpenBooking={openBookingDetail} refreshKey={slotRefreshKey} />}
         </TabsContent>
 
         {/* Reviews Tab */}
@@ -2193,7 +2195,7 @@ function VenueAnalyticsPanel({ venueId }) {
 }
 
 // ─── Slot Availability Panel ────────────────────────────────────────────────
-function SlotAvailabilityPanel({ venueId, onOpenBooking }) {
+function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
   const [slotDate, setSlotDate] = useState(
     new Date().toISOString().split("T")[0],
   );
@@ -2242,7 +2244,7 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking }) {
     } finally {
       setLoadingSlots(false);
     }
-  }, [venueId, slotDate]);
+  }, [venueId, slotDate, refreshKey]);
 
   useEffect(() => {
     loadSlots();
