@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
   GraduationCap, Search, MapPin, IndianRupee, Users,
-  Calendar, Clock, Loader2, CheckCircle
+  Calendar, Clock, Loader2, CheckCircle, ArrowUpDown
 } from "lucide-react";
 
 const SPORTS = ["all", "football", "cricket", "badminton", "tennis", "basketball", "volleyball", "table_tennis", "swimming"];
@@ -32,13 +32,13 @@ function AcademyCard({ academy, onSelect, delay = 0 }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h3 className="font-display text-lg font-black text-foreground truncate group-hover:text-primary transition-colors">
+            <h3 className="admin-name text-base sm:text-lg truncate group-hover:text-primary transition-colors">
               {academy.name}
             </h3>
             <Badge variant="secondary" className="text-[10px] capitalize shrink-0">{academy.sport}</Badge>
           </div>
           {academy.description && (
-            <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{academy.description}</p>
+            <p className="admin-secondary text-xs sm:text-sm line-clamp-2 mb-2">{academy.description}</p>
           )}
           <div className="flex items-center gap-3 flex-wrap text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -59,7 +59,7 @@ function AcademyCard({ academy, onSelect, delay = 0 }) {
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">Coach: <span className="font-bold text-foreground">{academy.coach_name}</span></span>
+        <span className="admin-secondary text-xs">Coach: <span className="admin-name text-xs sm:text-sm">{academy.coach_name}</span></span>
         <Badge variant={slots > 0 ? "default" : "destructive"} className="text-[10px]">
           {slots > 0 ? `${slots} slots available` : "Full"}
         </Badge>
@@ -75,6 +75,7 @@ export default function AcademyDiscoveryPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState(searchParams.get("q") || "");
   const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "all");
+  const [sortOrder, setSortOrder] = useState(searchParams.get("sort") || "newest");
   const [selected, setSelected] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
   const [enrolledIds, setEnrolledIds] = useState(new Set());
@@ -97,19 +98,26 @@ export default function AcademyDiscoveryPage() {
     const params = new URLSearchParams();
     if (search) params.set("q", search);
     if (sportFilter !== "all") params.set("sport", sportFilter);
+    if (sortOrder !== "newest") params.set("sort", sortOrder);
     setSearchParams(params, { replace: true });
-  }, [search, sportFilter, setSearchParams]);
+  }, [search, sportFilter, sortOrder, setSearchParams]);
 
-  const filtered = academies.filter(a => {
-    if (search) {
-      const q = search.toLowerCase();
-      return a.name?.toLowerCase().includes(q) ||
-        a.sport?.toLowerCase().includes(q) ||
-        a.location?.toLowerCase().includes(q) ||
-        a.coach_name?.toLowerCase().includes(q);
-    }
-    return true;
-  });
+  const filtered = academies
+    .filter(a => {
+      if (search) {
+        const q = search.toLowerCase();
+        return a.name?.toLowerCase().includes(q) ||
+          a.sport?.toLowerCase().includes(q) ||
+          a.location?.toLowerCase().includes(q) ||
+          a.coach_name?.toLowerCase().includes(q);
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      const aT = new Date(a.created_at || 0).getTime();
+      const bT = new Date(b.created_at || 0).getTime();
+      return sortOrder === "newest" ? bT - aT : aT - bT;
+    });
 
   const handleEnroll = async () => {
     if (!selected) return;
@@ -174,13 +182,26 @@ export default function AcademyDiscoveryPage() {
             placeholder="Search academies, coaches, sports..."
             className="pl-10 bg-background border-border" />
         </div>
-        <div className="flex gap-1 overflow-x-auto pb-1">
-          {SPORTS.map(s => (
-            <button key={s} onClick={() => setSportFilter(s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize whitespace-nowrap transition-colors ${
-                sportFilter === s ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
-              }`}>{s === "all" ? "All Sports" : s.replace("_", " ")}</button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 overflow-x-auto pb-1">
+            {SPORTS.map(s => (
+              <button key={s} onClick={() => setSportFilter(s)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold capitalize whitespace-nowrap transition-colors ${
+                  sportFilter === s ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground hover:text-foreground"
+                }`}>{s === "all" ? "All Sports" : s.replace("_", " ")}</button>
+            ))}
+          </div>
+          <button
+            onClick={() => setSortOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+            className={`h-9 w-9 rounded-xl flex items-center justify-center border transition-all shrink-0 ${
+              sortOrder === "oldest"
+                ? "bg-primary/10 border-primary/30 text-primary"
+                : "bg-card border-border/40 text-muted-foreground hover:text-foreground"
+            }`}
+            title={sortOrder === "newest" ? "Newest first" : "Oldest first"}
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
         </div>
       </div>
 

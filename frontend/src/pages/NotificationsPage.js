@@ -26,6 +26,7 @@ import {
   MapPin,
   Zap,
   Loader2,
+  ArrowUpDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationsSkeleton } from "@/components/SkeletonLoader";
@@ -34,6 +35,7 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState(() => getInitParam("filter") || "all");
+  const [sortOrder, setSortOrder] = useState(() => getInitParam("sort") || "newest");
   const navigate = useNavigate();
   useEffect(() => { window.scrollTo(0, 0); }, []);
 
@@ -73,13 +75,19 @@ export default function NotificationsPage() {
     }
   };
 
-  const filtered = notifications.filter((n) => {
-    if (filter === "unread") return !n.is_read;
-    if (filter === "slot_available") return n.type === "slot_available";
-    if (filter === "booking")
-      return n.type === "booking" || n.type === "booking_confirmed";
-    return true;
-  });
+  const filtered = notifications
+    .filter((n) => {
+      if (filter === "unread") return !n.is_read;
+      if (filter === "slot_available") return n.type === "slot_available";
+      if (filter === "booking")
+        return n.type === "booking" || n.type === "booking_confirmed";
+      return true;
+    })
+    .sort((a, b) => {
+      const aT = new Date(a.created_at || 0).getTime();
+      const bT = new Date(b.created_at || 0).getTime();
+      return sortOrder === "newest" ? bT - aT : aT - bT;
+    });
 
   // Group by date
   const grouped = {};
@@ -159,6 +167,21 @@ export default function NotificationsPage() {
               {f.label}
             </button>
           ))}
+          <button
+            onClick={() => {
+              const next = sortOrder === "newest" ? "oldest" : "newest";
+              setSortOrder(next);
+              replaceParams({ sort: next === "newest" ? null : next });
+            }}
+            className={`min-h-[44px] w-11 rounded-full flex items-center justify-center border transition-all active:scale-[0.97] ${
+              sortOrder === "oldest"
+                ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
+                : "bg-card border-border/40 text-muted-foreground hover:text-foreground"
+            }`}
+            title={sortOrder === "newest" ? "Newest first" : "Oldest first"}
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
         </motion.div>
 
         {/* Notification List */}
@@ -225,7 +248,7 @@ export default function NotificationsPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <h4
-                            className={`font-display font-bold text-sm ${
+                            className={`admin-name text-sm ${
                               notif.is_read
                                 ? "text-muted-foreground"
                                 : "text-foreground"
@@ -237,10 +260,10 @@ export default function NotificationsPage() {
                             <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0" />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                        <p className="admin-secondary text-xs sm:text-sm mt-1 line-clamp-2">
                           {notif.message}
                         </p>
-                        <span className="text-[10px] text-muted-foreground/60 mt-1 block">
+                        <span className="admin-secondary text-[10px] mt-1 block">
                           {new Date(notif.created_at).toLocaleTimeString(
                             "en-IN",
                             {

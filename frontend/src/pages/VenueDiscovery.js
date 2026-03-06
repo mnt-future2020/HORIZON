@@ -86,7 +86,7 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
       {/* Info */}
       <div className="p-3 sm:p-5 flex flex-col flex-grow">
         <div className="flex items-center gap-2 mb-1 sm:mb-2">
-          <h3 className="admin-heading text-xs sm:text-base truncate group-hover:text-brand-600 uppercase tracking-tighter transition-colors duration-300"
+          <h3 className="admin-name text-sm sm:text-base truncate group-hover:text-brand-600 uppercase tracking-tighter transition-colors duration-300"
             data-testid={`venue-name-${venue.id}`}>
             {venue.name}
           </h3>

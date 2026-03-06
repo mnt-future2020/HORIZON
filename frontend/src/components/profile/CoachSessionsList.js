@@ -44,10 +44,10 @@ function SessionCard({ session }) {
   return (
     <div className="rounded-xl bg-gradient-to-br from-card via-card to-muted/10 border border-border shadow-sm p-5 flex items-center justify-between hover:border-brand-400 dark:hover:border-brand-600 hover:shadow-lg hover:shadow-brand-500/10 hover:-translate-y-0.5 transition-all duration-300">
       <div className="flex-1 min-w-0">
-        <div className="font-display font-bold text-base text-foreground mb-1.5 truncate">
+        <div className="admin-name text-sm sm:text-base mb-1.5 truncate">
           {session.student_name || session.player_name || "Lobbian"}
         </div>
-        <div className="text-xs text-muted-foreground font-medium space-y-0.5">
+        <div className="admin-secondary text-xs sm:text-sm space-y-0.5">
           <div>
             {session.sport} • {session.date}
             {session.start_time && ` • ${fmt12h(session.start_time)}`}

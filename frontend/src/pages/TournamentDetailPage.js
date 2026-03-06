@@ -642,7 +642,7 @@ export default function TournamentDetailPage() {
                             idx + 1
                           )}
                         </td>
-                        <td className="p-3.5 font-bold truncate max-w-[140px] text-foreground">
+                        <td className="p-3.5 admin-name text-sm sm:text-base truncate max-w-[140px]">
                           {s.name}
                         </td>
                         <td className="p-3.5 text-center font-medium">
@@ -733,13 +733,13 @@ export default function TournamentDetailPage() {
                   {idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold truncate text-foreground flex items-center gap-2">
+                  <p className="admin-name text-sm sm:text-base truncate flex items-center gap-2">
                     {p.name}
                     {p.user_id === tournament.organizer_id && (
                       <Crown className="w-3.5 h-3.5 text-amber-500" />
                     )}
                   </p>
-                  <p className="text-[11px] font-medium text-muted-foreground/60 mt-0.5">
+                  <p className="admin-secondary text-xs sm:text-sm mt-0.5">
                     Rating {p.rating || 1500}
                   </p>
                 </div>
@@ -767,7 +767,7 @@ export default function TournamentDetailPage() {
               <p className="text-[11px] font-bold text-muted-foreground/60 uppercase mb-1">
                 Organizer
               </p>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="admin-name text-sm sm:text-base">
                 {tournament.organizer_name}
               </p>
             </div>
@@ -791,7 +791,7 @@ export default function TournamentDetailPage() {
               <p className="text-[11px] font-bold text-muted-foreground/60 uppercase mb-1">
                 Max Players
               </p>
-              <p className="text-sm font-semibold text-foreground">
+              <p className="admin-name text-sm sm:text-base">
                 {tournament.max_participants}
               </p>
             </div>
@@ -800,7 +800,7 @@ export default function TournamentDetailPage() {
                 <p className="text-[11px] font-bold text-muted-foreground/60 uppercase mb-1">
                   Reg. Deadline
                 </p>
-                <p className="text-sm font-semibold text-foreground">
+                <p className="admin-name text-sm sm:text-base">
                   {new Date(
                     tournament.registration_deadline,
                   ).toLocaleDateString("en-IN")}

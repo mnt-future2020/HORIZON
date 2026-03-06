@@ -5061,6 +5061,29 @@ export default function CoachDashboard({ defaultView }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
+              if (!deleteTarget) return;
+              if (deleteTarget.type === "expense") handleDeleteExpense(deleteTarget.id);
+              else if (deleteTarget.type === "invoice") handleDeleteInvoice(deleteTarget.id);
+              else if (deleteTarget.type === "org_player") handleRemoveOrgPlayer(deleteTarget.orgId, deleteTarget.id);
+              else if (deleteTarget.type === "org_staff") handleRemoveOrgStaff(deleteTarget.orgId, deleteTarget.id);
+              setDeleteTarget(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -5407,29 +5430,6 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
           )}
         </motion.div>
       )}
-
-      {/* Delete Confirmation Modal */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <span className="font-semibold text-foreground">{deleteTarget?.name}</span>. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => {
-              if (!deleteTarget) return;
-              if (deleteTarget.type === "expense") handleDeleteExpense(deleteTarget.id);
-              else if (deleteTarget.type === "invoice") handleDeleteInvoice(deleteTarget.id);
-              else if (deleteTarget.type === "org_player") handleRemoveOrgPlayer(deleteTarget.orgId, deleteTarget.id);
-              else if (deleteTarget.type === "org_staff") handleRemoveOrgStaff(deleteTarget.orgId, deleteTarget.id);
-              setDeleteTarget(null);
-            }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

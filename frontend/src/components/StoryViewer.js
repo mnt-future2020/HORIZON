@@ -564,8 +564,8 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
 
         {/* ─── Bottom section ─── */}
         <div className="absolute bottom-0 left-0 right-0 z-10 px-4 pb-4 flex flex-col gap-3" data-ignore-tap>
-          {/* Reply bar (not for own stories) */}
-          {!isOwnStory && (
+          {/* Reply bar (not for own stories or super_admin) */}
+          {!isOwnStory && user?.role !== "super_admin" && (
             <div className="flex items-center gap-2">
               <div className="flex-1 relative">
                 <input

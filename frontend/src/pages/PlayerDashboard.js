@@ -550,8 +550,8 @@ export default function PlayerDashboard() {
                     <ListOrdered className="h-5 w-5 text-brand-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-sm text-foreground">{entry.venue_name || "Venue"}</h4>
-                    <div className="flex items-center gap-2 flex-wrap text-xs admin-label mt-1">
+                    <h4 className="admin-name text-sm sm:text-base">{entry.venue_name || "Venue"}</h4>
+                    <div className="flex items-center gap-2 flex-wrap admin-secondary text-xs sm:text-sm mt-1">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {entry.date}</span>
                       <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {fmt12h(entry.start_time)}</span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] bg-purple-500/10 text-purple-500 border border-purple-500/20 font-medium">
