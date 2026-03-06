@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, teamAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
+import { getSportIcon } from "@/lib/venue-constants";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -50,7 +51,6 @@ import {
   Filter,
   History,
   CalendarDays,
-  CircleDot,
   AlertCircle,
   ArrowUpDown,
   Star,
@@ -1065,7 +1065,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                               <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{b.date}</span>
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
-                              <span className="flex items-center gap-1 capitalize hidden sm:flex"><CircleDot className="h-3 w-3" />{b.sport}</span>
+                              <span className="flex items-center gap-1 capitalize hidden sm:flex">{(() => { const SI = getSportIcon(b.sport); return <SI className="h-3 w-3" />; })()}{b.sport}</span>
                             </div>
                             <span className="font-semibold text-brand-600 text-sm sm:text-base">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
                           </div>
@@ -1167,7 +1167,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                       <div className="flex items-center gap-2 flex-wrap">
                                         <span className="admin-name text-xs sm:text-sm">{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
                                         <span className="admin-secondary text-xs">Turf #{b.turf_number}</span>
-                                        <span className="admin-secondary text-xs capitalize">{b.sport}</span>
+                                        <span className="admin-secondary text-xs capitalize flex items-center gap-1">{(() => { const SI = getSportIcon(b.sport); return <SI className="h-3 w-3" />; })()}{b.sport}</span>
                                         {b.payment_mode === "split" && <Badge variant="outline" className="text-[10px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
                                       </div>
                                       <div className="admin-secondary text-xs sm:text-sm mt-0.5">{b.host_name} - {b.venue_name}</div>
@@ -1241,7 +1241,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     </div>
                     <div>
                       <span className="text-xs uppercase tracking-wider text-muted-foreground">Sport</span>
-                      <p className="text-sm admin-name mt-0.5 capitalize">{selectedBooking.sport}</p>
+                      <p className="text-sm admin-name mt-0.5 capitalize flex items-center gap-1.5">{(() => { const SI = getSportIcon(selectedBooking.sport); return <SI className="h-3.5 w-3.5" />; })()}{selectedBooking.sport}</p>
                     </div>
                     {selectedBooking.num_players && (
                       <div>
@@ -2440,7 +2440,7 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
                   className="bg-secondary/70 backdrop-blur-sm px-3 py-3 text-center border-b border-r border-border/50 last:border-r-0"
                 >
                   <p className="text-sm font-bold text-foreground truncate">{t.turf_name}</p>
-                  <p className="text-xs text-muted-foreground capitalize mt-0.5">{t.sport}</p>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5 flex items-center gap-1">{(() => { const SI = getSportIcon(t.sport); return <SI className="h-3 w-3" />; })()}{t.sport}</p>
                 </div>
               ))}
 
