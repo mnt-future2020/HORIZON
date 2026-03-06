@@ -615,15 +615,15 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
   const statusConfig = {
     confirmed: {
-      color: "bg-brand-500/15 text-brand-400 border-brand-500/20",
+      color: "bg-brand-500/15 text-brand-600 border-brand-500/30",
       label: "Confirmed",
     },
     pending: {
-      color: "bg-amber-500/15 text-amber-400 border-amber-500/20",
+      color: "bg-amber-500/15 text-amber-600 border-amber-500/30",
       label: "Pending",
     },
     payment_pending: {
-      color: "bg-sky-500/15 text-sky-400 border-sky-500/20",
+      color: "bg-sky-500/15 text-sky-600 border-sky-500/30",
       label: "Awaiting Payment",
     },
     cancelled: {
@@ -1041,7 +1041,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               <span className="text-xs text-muted-foreground">{b.venue_name} - Turf #{b.turf_number}</span>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
-                              <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
+                              <span className={`inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide ${sc.color}`}>{sc.label}</span>
                               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                             </div>
                           </div>
@@ -1158,7 +1158,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
                                       <span className="text-sm font-bold text-brand-600">{"\u20B9"}{b.total_amount}</span>
-                                      <Badge className={`text-[10px] border ${sc.color}`}>{sc.label}</Badge>
+                                      <span className={`inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide ${sc.color}`}>{sc.label}</span>
                                       <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                                     </div>
                                   </div>
@@ -1519,10 +1519,10 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="admin-name text-sm text-foreground">{r.name}</span>
-                          <Badge className={`text-[10px] border ${isDiscount ? "bg-brand-500/15 text-brand-400 border-brand-500/20" : "bg-amber-500/15 text-amber-400 border-amber-500/20"}`}>
-                            {isDiscount ? <><Tag className="h-3 w-3 inline-block mr-0.5" /> Offer</> : <><Zap className="h-3 w-3 inline-block mr-0.5" /> Peak</>} {valLabel} {isDiscount ? "off" : "extra"}
-                          </Badge>
-                          {schedType === "one_time" && <Badge className="text-[10px] bg-purple-500/15 text-purple-400 border border-purple-500/20">One-time</Badge>}
+                          <span className={`inline-flex items-center gap-1 rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide ${isDiscount ? "bg-brand-500/15 text-brand-600 border-brand-500/30" : "bg-amber-500/15 text-amber-600 border-amber-500/30"}`}>
+                            {isDiscount ? <><Tag className="h-3 w-3" /> Offer</> : <><Zap className="h-3 w-3" /> Peak</>} {valLabel} {isDiscount ? "off" : "extra"}
+                          </span>
+                          {schedType === "one_time" && <span className="inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide bg-purple-500/15 text-purple-600 border-purple-500/30">One-time</span>}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
                           <Clock className="h-3 w-3 shrink-0" />{scheduleLabel}
@@ -1538,7 +1538,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <div className="flex items-center gap-2 shrink-0">
                         <Switch checked={r.is_active !== false} onCheckedChange={() => handleToggleRule(r.id)} data-testid={`toggle-rule-${r.id}`} />
                         <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => openEditRule(r)} data-testid={`edit-rule-${r.id}`}><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setDeleteTarget({ id: r.id, type: "pricing_rule", name: r.name || "pricing rule" })} data-testid={`delete-rule-${r.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => setDeleteTarget({ id: r.id, type: "pricing_rule", name: r.name || "pricing rule" })} data-testid={`delete-rule-${r.id}`}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </div>
                   </motion.div>
@@ -2245,153 +2245,202 @@ function SlotAvailabilityPanel({ venueId }) {
     locked_by_you: "Held",
   };
 
+  const today = new Date().toISOString().split("T")[0];
+  const isToday = slotDate === today;
+  const displayDate = new Date(slotDate + "T00:00:00").toLocaleDateString("en-IN", {
+    weekday: "short", day: "numeric", month: "short", year: "numeric",
+  });
+
+  const availPct = stats.total ? Math.round((stats.available / stats.total) * 100) : 0;
+
   return (
     <div className="space-y-5">
       {/* Header + Date Nav */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h3 className="font-display admin-heading text-base sm:text-lg">
-            Slot Availability
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            View turf availability for any date
-          </p>
+          <h3 className="font-display admin-heading text-base sm:text-lg">Slot Availability</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Real-time turf availability for any date</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => shiftDate(-1)}
-            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-colors"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <Input
-            type="date"
-            value={slotDate}
-            onChange={(e) => setSlotDate(e.target.value)}
-            className="w-40 h-11 rounded-xl bg-secondary/20 border-border/40 text-xs"
-          />
-          <button
-            onClick={() => shiftDate(1)}
-            className="h-9 w-9 flex items-center justify-center rounded-xl border border-border hover:bg-secondary transition-colors"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+          {!isToday && (
+            <button
+              onClick={() => setSlotDate(today)}
+              className="h-9 px-3 text-xs font-semibold rounded-xl border border-brand-600/40 text-brand-600 bg-brand-600/5 hover:bg-brand-600/10 transition-colors"
+            >
+              Today
+            </button>
+          )}
+          <div className="flex items-center bg-secondary/40 border border-border/50 rounded-xl overflow-hidden">
+            <button
+              onClick={() => shiftDate(-1)}
+              className="h-10 w-9 flex items-center justify-center hover:bg-secondary transition-colors border-r border-border/50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <Input
+              type="date"
+              value={slotDate}
+              onChange={(e) => setSlotDate(e.target.value)}
+              className="w-36 h-10 rounded-none border-0 bg-transparent text-xs text-center font-medium focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <button
+              onClick={() => shiftDate(1)}
+              className="h-10 w-9 flex items-center justify-center hover:bg-secondary transition-colors border-l border-border/50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats Bar */}
-      <div className="flex flex-wrap gap-3">
-        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-          <p className="font-display font-black text-base sm:text-lg">
-            {stats.total}
-          </p>
-          <p className="text-[10px] text-muted-foreground admin-section-label">
-            Total
-          </p>
-        </div>
-        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-          <p className="font-display font-black text-base sm:text-lg text-emerald-500">
-            {stats.available}
-          </p>
-          <p className="text-[10px] text-muted-foreground admin-section-label">
-            Available
-          </p>
-        </div>
-        <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-          <p className="font-display font-black text-base sm:text-lg text-red-500">
-            {stats.booked}
-          </p>
-          <p className="text-[10px] text-muted-foreground admin-section-label">
-            Booked
-          </p>
-        </div>
-        {stats.held > 0 && (
-          <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm px-3 sm:px-4 py-2 text-center min-w-[60px] sm:min-w-[70px]">
-            <p className="font-display font-black text-base sm:text-lg text-amber-500">
-              {stats.held}
-            </p>
-            <p className="text-[10px] text-muted-foreground admin-section-label">
-              Held
-            </p>
+      {slots.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="bg-card rounded-2xl border border-border/40 px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xl font-black font-display leading-none">{stats.total}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Total</p>
+            </div>
           </div>
-        )}
-      </div>
+          <div className="bg-card rounded-2xl border border-emerald-500/20 px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+            </div>
+            <div>
+              <p className="text-xl font-black font-display leading-none text-emerald-500">{stats.available}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Available</p>
+            </div>
+          </div>
+          <div className="bg-card rounded-2xl border border-red-500/20 px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-red-500/10 flex items-center justify-center shrink-0">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            </div>
+            <div>
+              <p className="text-xl font-black font-display leading-none text-red-500">{stats.booked}</p>
+              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Booked</p>
+            </div>
+          </div>
+          <div className="bg-card rounded-2xl border border-border/40 px-4 py-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-secondary/60 flex items-center justify-center shrink-0">
+              <div className="w-full h-1.5 rounded-full bg-secondary mx-2 overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${availPct}%` }} />
+              </div>
+            </div>
+            <div>
+              <p className="text-xl font-black font-display leading-none">{availPct}<span className="text-sm font-semibold">%</span></p>
+              <p className="text-xs text-muted-foreground mt-0.5 uppercase tracking-wider">Free</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       {loadingSlots ? (
-        <div className="flex items-center justify-center py-16 gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-brand-600" />
-          <span className="text-sm text-muted-foreground">
-            Loading slots...
-          </span>
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+          <span className="text-sm text-muted-foreground">Loading slots…</span>
         </div>
       ) : slots.length === 0 ? (
-        <div className="text-center py-16">
-          <CalendarDays className="h-10 w-10 mx-auto mb-3 text-muted-foreground/40" />
-          <p className="text-sm admin-label text-muted-foreground">
-            No slots for this date
-          </p>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            Try selecting a different date
-          </p>
+        <div className="text-center py-20 border border-dashed border-border/50 rounded-2xl">
+          <CalendarDays className="h-10 w-10 mx-auto mb-3 text-muted-foreground/30" />
+          <p className="text-sm font-semibold text-muted-foreground">No slots for this date</p>
+          <p className="text-xs text-muted-foreground/50 mt-1">Try selecting a different date</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <div
-            className="inline-grid min-w-full"
-            style={{
-              gridTemplateColumns: `80px repeat(${turfs.length}, minmax(100px, 1fr))`,
-            }}
-          >
-            {/* Header row */}
-            <div className="sticky left-0 z-10 bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-[10px] admin-section-label text-muted-foreground border-b border-r border-border admin-th">
-              Time
+        <div className="rounded-2xl border border-border/50 overflow-hidden shadow-sm">
+          {/* Date label bar */}
+          <div className="bg-secondary/40 px-4 py-2.5 border-b border-border/40 flex items-center justify-between">
+            <span className="text-xs font-semibold text-foreground/70">{displayDate}</span>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />Open</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" />Booked</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" />Held</span>
             </div>
-            {turfs.map((t) => (
-              <div
-                key={t.turf_number}
-                className="bg-secondary/80 backdrop-blur-sm px-3 py-2.5 text-center border-b border-r border-border last:border-r-0"
-              >
-                <p className="text-xs admin-name truncate">{t.turf_name}</p>
-                <p className="text-[10px] text-muted-foreground capitalize">
-                  {t.sport}
-                </p>
+          </div>
+          <div className="overflow-x-auto">
+            <div
+              className="inline-grid min-w-full"
+              style={{
+                gridTemplateColumns: `88px repeat(${turfs.length}, minmax(120px, 1fr))`,
+              }}
+            >
+              {/* Header row */}
+              <div className="sticky left-0 z-10 bg-secondary/70 backdrop-blur-sm px-3 py-3 text-xs font-bold uppercase tracking-widest text-muted-foreground border-b border-r border-border/50">
+                Time
               </div>
-            ))}
-
-            {/* Data rows */}
-            {timeSlots.map((time) => (
-              <>
+              {turfs.map((t) => (
                 <div
-                  key={time.start_time}
-                  className="sticky left-0 z-10 bg-card px-3 py-2 text-xs font-mono text-muted-foreground border-b border-r border-border/50 flex items-center"
+                  key={t.turf_number}
+                  className="bg-secondary/70 backdrop-blur-sm px-3 py-3 text-center border-b border-r border-border/50 last:border-r-0"
                 >
-                  {fmt12h(time.start_time)}
+                  <p className="text-sm font-bold text-foreground truncate">{t.turf_name}</p>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5">{t.sport}</p>
                 </div>
-                {turfs.map((turf) => {
-                  const slot =
-                    slotMap[`${time.start_time}-${turf.turf_number}`];
-                  const status = slot?.status || "available";
-                  const style = statusStyles[status] || statusStyles.available;
-                  return (
-                    <div
-                      key={`${time.start_time}-${turf.turf_number}`}
-                      className={`px-2 py-2 text-center border-b border-r border-border/50 last:border-r-0 ${style}`}
-                      title={`${turf.turf_name} | ${fmt12h(time.start_time)} - ${fmt12h(time.end_time)} | ${statusLabels[status] || status} | ₹${slot?.price || 0}`}
-                    >
-                      <div className="text-[11px] admin-label">
-                        {statusLabels[status] || status}
-                      </div>
-                      {slot?.price != null && (
-                        <div className="text-[10px] opacity-60">
-                          ₹{slot.price}
+              ))}
+
+              {/* Data rows */}
+              {timeSlots.map((time, rowIdx) => (
+                <>
+                  <div
+                    key={time.start_time}
+                    className={`sticky left-0 z-10 px-3 py-3 border-b border-r border-border/40 flex flex-col justify-center ${rowIdx % 2 === 0 ? "bg-card" : "bg-secondary/10"}`}
+                  >
+                    <span className="text-sm font-semibold text-foreground/80 font-mono leading-none">
+                      {fmt12h(time.start_time).replace(/ (AM|PM)$/, "")}
+                    </span>
+                    <span className="text-xs text-muted-foreground/60 font-mono mt-0.5">
+                      {fmt12h(time.start_time).match(/(AM|PM)$/)?.[0]}
+                    </span>
+                  </div>
+                  {turfs.map((turf) => {
+                    const slot = slotMap[`${time.start_time}-${turf.turf_number}`];
+                    const status = slot?.status || "available";
+                    const cellBg = {
+                      available: rowIdx % 2 === 0 ? "bg-card" : "bg-secondary/10",
+                      booked: "bg-red-500/5",
+                      on_hold: "bg-amber-500/5",
+                      locked_by_you: "bg-amber-500/5",
+                    }[status] || (rowIdx % 2 === 0 ? "bg-card" : "bg-secondary/10");
+                    const badgeStyle = {
+                      available: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+                      booked: "bg-red-500/15 text-red-600 dark:text-red-400",
+                      on_hold: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                      locked_by_you: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+                    }[status] || "bg-emerald-500/15 text-emerald-600";
+                    return (
+                      <div
+                        key={`${time.start_time}-${turf.turf_number}`}
+                        className={`relative group px-2 py-3 border-b border-r border-border/40 last:border-r-0 flex flex-col items-center justify-center gap-1 ${cellBg}`}
+                      >
+                        {/* Instant custom tooltip */}
+                        <div className={`pointer-events-none absolute left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150 delay-300 group-hover:delay-300 whitespace-nowrap ${rowIdx === 0 ? "top-full mt-2" : "bottom-full mb-2"}`}>
+                          <div className="bg-gray-900 text-white text-xs font-medium rounded-lg px-3 py-2 shadow-xl flex flex-col gap-0.5">
+                            <span className="font-semibold text-white">{turf.turf_name}</span>
+                            <span className="text-white/60">{fmt12h(time.start_time)} – {fmt12h(time.end_time)}</span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${badgeStyle}`}>{statusLabels[status] || status}</span>
+                              {slot?.price != null && <span className="text-white/70 font-mono">₹{slot.price}</span>}
+                            </div>
+                          </div>
+                          <div className={`absolute left-1/2 -translate-x-1/2 border-4 border-transparent ${rowIdx === 0 ? "bottom-full border-b-gray-900" : "top-full border-t-gray-900"}`} />
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </>
-            ))}
+                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${badgeStyle}`}>
+                          {statusLabels[status] || status}
+                        </span>
+                        {slot?.price != null && (
+                          <span className="text-xs text-muted-foreground/70 font-mono">
+                            ₹{slot.price}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </>
+              ))}
+            </div>
           </div>
         </div>
       )}

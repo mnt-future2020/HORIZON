@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Footer from "@/components/Footer";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock, Tag } from "lucide-react";
+import { Search, MapPin, Star, IndianRupee, SlidersHorizontal, X, ChevronRight, Users, Zap, Building2, ArrowUpDown, Navigation, Loader2, Trophy, Car, Clock } from "lucide-react";
 import { toast } from "sonner";
 import Logo from "@/components/Logo";
 import { VenueDiscoverySkeleton } from "@/components/SkeletonLoader";
@@ -80,11 +80,6 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
               {venue.sports[0].replace("_", " ")}
             </div>
           )}
-          {venue.has_active_offer && (
-            <div className="admin-badge px-2 py-1 sm:px-3 rounded-full border-none bg-red-500/10 text-red-600 flex items-center gap-1">
-              <Tag className="h-3 w-3" /> OFFER
-            </div>
-          )}
         </div>
       </div>
 
@@ -96,7 +91,7 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
             {venue.name}
           </h3>
           {venue.badge === "bookable" && (
-            <Badge className="text-[10px] px-1.5 py-0 shrink-0 bg-brand-600/100/20 text-brand-400 border border-brand-500/30">Bookable</Badge>
+            <Badge className="text-[10px] px-2 py-0.5 shrink-0 bg-brand-600 text-white border border-brand-500 font-semibold">Bookable</Badge>
           )}
           {venue.badge === "enquiry" && (
             <Badge className="admin-badge px-3 py-1 rounded-full border-none bg-amber-500/10 text-amber-600">Enquiry</Badge>
@@ -344,6 +339,7 @@ export default function VenueDiscovery() {
       )}
 
       {/* Spacer between navbar and search header */}
+      {!user && <div className="h-16" />}
       <div className="h-1 sm:h-4 bg-secondary/20" />
 
       {/* Search Hero */}
@@ -385,7 +381,7 @@ export default function VenueDiscovery() {
                 </button>
               )}
             </div>
-            <Button variant="outline" size="icon" aria-label={filtersOpen ? "Close filters" : "Open filters"} className={`h-10 w-10 sm:h-13 sm:w-13 shrink-0 relative rounded-xl sm:rounded-2xl border transition-all shadow-sm ${filtersOpen ? "border-brand-600 bg-brand-600/10 text-brand-600" : "border-border/30 bg-secondary/30 text-muted-foreground hover:text-brand-600 hover:border-brand-400"}`}
+            <Button variant="outline" size="icon" aria-label={filtersOpen ? "Close filters" : "Open filters"} className={`h-10 w-10 sm:h-13 sm:w-13 shrink-0 relative rounded-xl sm:rounded-2xl border transition-all shadow-sm ${filtersOpen ? "border-brand-600 bg-brand-600 text-white" : "border-border/50 bg-card text-foreground hover:bg-card hover:text-brand-600 hover:border-brand-400"}`}
               onClick={() => setFiltersOpen(!filtersOpen)} data-testid="filters-toggle">
               <SlidersHorizontal className="h-5 w-5" />
               {activeFilterCount > 0 && (

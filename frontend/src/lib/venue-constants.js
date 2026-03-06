@@ -1,14 +1,4 @@
 import {
-  Dribbble,
-  CircleDot,
-  Feather,
-  Target,
-  Trophy,
-  Volleyball,
-  TableProperties,
-  Swords,
-  Waves,
-  SquareSlash,
   Car,
   Zap,
   ShieldCheck,
@@ -21,7 +11,20 @@ import {
   AlertCircle,
   Users,
   CheckCircle2,
+  Trophy,
 } from "lucide-react";
+import {
+  MdSportsSoccer,
+  MdSportsCricket,
+  MdSportsBasketball,
+  MdSportsTennis,
+  MdSportsVolleyball,
+  MdSportsHockey,
+  MdSportsKabaddi,
+  MdPool,
+  MdSportsScore,
+} from "react-icons/md";
+import { GiShuttlecock, GiPingPongBat, GiTennisRacket } from "react-icons/gi";
 
 // ── Sport Suggestions ───────────────────────────────────────────────
 export const SPORT_SUGGESTIONS = [
@@ -88,21 +91,29 @@ export const SPORT_COLORS = {
   pickleball: "bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300",
 };
 
-// ── Sport Icons (Lucide components) ─────────────────────────────────
+// ── Sport Icons (react-icons — sport-specific) ──────────────────────
 export const SPORT_ICONS = {
-  football: Dribbble,
-  cricket: CircleDot,
-  badminton: Feather,
-  basketball: Dribbble,
-  tennis: Target,
-  table_tennis: TableProperties,
-  "table tennis": TableProperties,
-  volleyball: Volleyball,
-  hockey: Swords,
-  kabaddi: Trophy,
-  swimming: Waves,
-  pickleball: SquareSlash,
+  football: MdSportsSoccer,
+  cricket: MdSportsCricket,
+  badminton: GiShuttlecock,
+  basketball: MdSportsBasketball,
+  tennis: MdSportsTennis,
+  table_tennis: GiPingPongBat,
+  "table tennis": GiPingPongBat,
+  volleyball: MdSportsVolleyball,
+  hockey: MdSportsHockey,
+  kabaddi: MdSportsKabaddi,
+  swimming: MdPool,
+  pickleball: GiTennisRacket,
 };
+
+// ── Fallback sport icon for custom/unknown sports ───────────────────
+export const SPORT_ICON_FALLBACK = MdSportsScore;
+
+export function getSportIcon(key) {
+  if (!key) return SPORT_ICON_FALLBACK;
+  return SPORT_ICONS[key] || SPORT_ICONS[key.replace(/ /g, "_")] || SPORT_ICON_FALLBACK;
+}
 
 // ── Amenity Icons (Lucide components) ───────────────────────────────
 export const AMENITY_ICON_MAP = {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Plus, X, Check, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { SPORT_SUGGESTIONS, SPORT_ICONS, getSportLabel } from "@/lib/venue-constants";
+import { SPORT_SUGGESTIONS, getSportIcon, getSportLabel } from "@/lib/venue-constants";
 
 export default function SportChipSelector({ selected = [], onChange }) {
   const [customInput, setCustomInput] = useState("");
@@ -44,7 +44,7 @@ export default function SportChipSelector({ selected = [], onChange }) {
         {SPORT_SUGGESTIONS.map((sport) => {
           const key = sport.toLowerCase();
           const isSelected = normalizedSelected.includes(key);
-          const IconComp = SPORT_ICONS[key];
+          const IconComp = getSportIcon(key);
 
           return (
             <button
@@ -63,11 +63,9 @@ export default function SportChipSelector({ selected = [], onChange }) {
                   <Check className="w-3.5 h-3.5 text-brand-600" />
                 </div>
               )}
-              {IconComp && (
-                <IconComp
-                  className={`w-5 h-5 ${isSelected ? "text-brand-600" : "text-muted-foreground"}`}
-                />
-              )}
+              <IconComp
+                className={`w-5 h-5 ${isSelected ? "text-brand-600" : "text-muted-foreground"}`}
+              />
               <span className="text-center leading-tight">{sport}</span>
             </button>
           );

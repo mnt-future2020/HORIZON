@@ -1074,7 +1074,9 @@ function LiveTabContent({
                 <span
                   className={`${activeLiveId === lm.id ? "text-red-500" : "text-brand-600"} tabular-nums mx-1 bg-secondary/30 rounded px-1.5 py-0.5`}
                 >
-                  {lm.home?.score} — {lm.away?.score}
+                  {typeof lm.home?.score === "object" ? `${lm.home.score.runs ?? 0}/${lm.home.score.wickets ?? 0}` : (lm.home?.score ?? 0)}
+                  {" — "}
+                  {typeof lm.away?.score === "object" ? `${lm.away.score.runs ?? 0}/${lm.away.score.wickets ?? 0}` : (lm.away?.score ?? 0)}
                 </span>
                 <span className="truncate flex-1 text-right">
                   {lm.away?.name}
@@ -1144,11 +1146,11 @@ function LiveTabContent({
 
               <div className="flex flex-col items-center px-4">
                 <span className="text-5xl md:text-7xl font-black text-foreground tabular-nums tracking-tighter drop-shadow-sm">
-                  {displayData.home?.score ?? 0}
+                  {typeof displayData.home?.score === "object" ? `${displayData.home.score.runs ?? 0}/${displayData.home.score.wickets ?? 0}` : (displayData.home?.score ?? 0)}
                   <span className="text-muted-foreground/30 font-light mx-2 text-3xl md:text-5xl">
                     :
                   </span>
-                  {displayData.away?.score ?? 0}
+                  {typeof displayData.away?.score === "object" ? `${displayData.away.score.runs ?? 0}/${displayData.away.score.wickets ?? 0}` : (displayData.away?.score ?? 0)}
                 </span>
               </div>
 

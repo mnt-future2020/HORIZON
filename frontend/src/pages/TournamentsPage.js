@@ -550,7 +550,13 @@ export default function TournamentsPage() {
                     {lm.home?.name}
                   </p>
                   <p className="text-xl font-black text-red-500 tabular-nums shrink-0 px-2">
-                    {lm.home?.score} — {lm.away?.score}
+                    {typeof lm.home?.score === "object"
+                      ? `${lm.home.score.runs ?? 0}/${lm.home.score.wickets ?? 0}`
+                      : lm.home?.score ?? 0}
+                    {" — "}
+                    {typeof lm.away?.score === "object"
+                      ? `${lm.away.score.runs ?? 0}/${lm.away.score.wickets ?? 0}`
+                      : lm.away?.score ?? 0}
                   </p>
                   <p className="text-sm font-semibold truncate flex-1 text-right">
                     {lm.away?.name}

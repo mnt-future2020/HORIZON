@@ -38,9 +38,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import LandingHeader from "@/components/landing/LandingHeader";
 import {
   SPORT_LABELS,
-  SPORT_COLORS,
-  SPORT_ICONS,
+  getSportIcon,
   getAmenityIcon,
+  getSportLabel,
 } from "@/lib/venue-constants";
 import { sanitizeHtml, isHtmlContent } from "@/lib/sanitize";
 
@@ -62,6 +62,8 @@ export default function PublicVenuePage() {
   const [wsStatus, setWsStatus] = useState("connecting");
   const [justUpdated, setJustUpdated] = useState(false);
   const [descExpanded, setDescExpanded] = useState(false);
+  const [pricingSport, setPricingSport] = useState(null); // sport key for price chart modal
+  const [pricingRules, setPricingRules] = useState([]);
 
   const wsRef = useRef(null);
   const venueIdRef = useRef(null);
@@ -78,14 +80,16 @@ export default function PublicVenuePage() {
         setVenue(res.data);
         venueIdRef.current = res.data.id;
         try {
-          const [reviewsRes, summaryRes] = await Promise.all([
+          const [reviewsRes, summaryRes, rulesRes] = await Promise.all([
             venueAPI.getReviews(res.data.id),
             venueAPI.getReviewSummary(res.data.id),
+            venueAPI.getPricingRules(res.data.id),
           ]);
           setReviews(reviewsRes.data || []);
           setReviewSummary(summaryRes.data || null);
+          setPricingRules((rulesRes.data || []).filter(r => r.is_active));
         } catch {
-          // Reviews optional
+          // Reviews/rules optional
         }
       } catch {
         setError("Venue not found");
@@ -388,36 +392,8 @@ export default function PublicVenuePage() {
               </div>
             </div>
 
-            {/* Action Buttons — right col (hidden on mobile, shown in sticky bar) */}
-            <div className="hidden md:flex z-10 w-full col-span-3 md:col-span-1 mt-3 md:mt-0">
-              <div className="flex flex-col w-full gap-2.5">
-                <button
-                  className="w-full h-12 px-3 py-2 font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-500 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
-                  onClick={handleBookNow}
-                  aria-label={user ? "Book this venue now" : "Log in to book this venue"}
-                >
-                  {user ? "Book Now" : "Login to Book"}
-                </button>
-                <div className="flex gap-2">
-                  <button
-                    className="flex items-center justify-center flex-1 h-11 gap-2 font-semibold border border-border cursor-pointer hover:bg-secondary rounded-xl transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                    onClick={handleShare}
-                    aria-label={copied ? "Link copied" : "Share this venue"}
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
-                    <span className="text-sm">{copied ? "Copied!" : "Share"}</span>
-                  </button>
-                  <button
-                    className="flex items-center justify-center flex-1 h-11 gap-2 font-semibold text-sm border border-brand-600 text-brand-600 rounded-xl bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
-                    onClick={() => setShowQR(true)}
-                    aria-label="Show QR code for this venue"
-                  >
-                    <QrCode className="w-4 h-4" />
-                    <span>QR Code</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            {/* Spacer — action buttons moved to sidebar */}
+            <div className="hidden md:block md:col-span-1" />
           </div>
         </div>
 
@@ -556,6 +532,35 @@ export default function PublicVenuePage() {
                   </div>
                 )}
               </div>
+
+              {/* Action Buttons */}
+              <div className="hidden md:flex flex-col w-full gap-2.5">
+                <button
+                  className="w-full h-12 px-3 py-2 font-semibold text-white rounded-xl bg-brand-600 hover:bg-brand-500 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2"
+                  onClick={handleBookNow}
+                  aria-label={user ? "Book this venue now" : "Log in to book this venue"}
+                >
+                  {user ? "Book Now" : "Login to Book"}
+                </button>
+                <div className="flex gap-2">
+                  <button
+                    className="flex items-center justify-center flex-1 h-11 gap-2 font-semibold border border-border cursor-pointer hover:bg-secondary rounded-xl transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    onClick={handleShare}
+                    aria-label={copied ? "Link copied" : "Share this venue"}
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                    <span className="text-sm">{copied ? "Copied!" : "Share"}</span>
+                  </button>
+                  <button
+                    className="flex items-center justify-center flex-1 h-11 gap-2 font-semibold text-sm border border-brand-600 text-brand-600 rounded-xl bg-background hover:bg-brand-50 cursor-pointer transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600"
+                    onClick={() => setShowQR(true)}
+                    aria-label="Show QR code for this venue"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span>QR Code</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -574,26 +579,20 @@ export default function PublicVenuePage() {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {venue.sports.map((s) => {
-                    const SportIcon =
-                      SPORT_ICONS[s] || SPORT_ICONS[s.replace(/ /g, "_")];
-                    const colorCls = SPORT_COLORS[s] || SPORT_COLORS[s.replace(/ /g, "_")] || "bg-gray-100 text-gray-700";
+                    const SportIcon = getSportIcon(s);
                     return (
                       <div
                         key={s}
                         role="button"
                         tabIndex={0}
+                        onClick={() => setPricingSport(s)}
+                        onKeyDown={(e) => e.key === "Enter" && setPricingSport(s)}
                         className="flex flex-col items-center gap-2 w-[72px] sm:w-20 py-3 rounded-2xl border border-border/40 bg-background cursor-pointer hover:border-brand-600/50 hover:shadow-md transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 group"
                       >
                         <div
-                          className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110 ${colorCls}`}
+                          className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center transition-transform duration-200 group-hover:scale-110 bg-brand-600/10 text-brand-600"
                         >
-                          {SportIcon ? (
-                            <SportIcon className="w-5 h-5" />
-                          ) : (
-                            <span className="text-base font-bold">
-                              {(SPORT_LABELS[s] || s).charAt(0)}
-                            </span>
-                          )}
+                          <SportIcon className="w-5 h-5" />
                         </div>
                         <span className="text-[11px] sm:text-xs font-medium text-muted-foreground text-center leading-tight capitalize">
                           {SPORT_LABELS[s] || s}
@@ -787,6 +786,160 @@ export default function PublicVenuePage() {
         {/* Bottom spacing */}
         <div className="pb-10" />
       </div>
+
+      {/* Sport Price Chart Modal */}
+      <Dialog open={!!pricingSport} onOpenChange={(open) => !open && setPricingSport(null)}>
+        <DialogContent className="sm:max-w-md rounded-2xl p-0 overflow-hidden">
+          {pricingSport && (() => {
+            const SportIcon = getSportIcon(pricingSport);
+            const sportName = getSportLabel(pricingSport);
+            const basePrice = venue.base_price || 2000;
+            const duration = venue.slot_duration_minutes || 60;
+
+            // Find courts for this sport from turf_config
+            const courts = [];
+            if (venue.turf_config?.length) {
+              venue.turf_config.forEach((tc) => {
+                const tcSport = (tc.sport || "").toLowerCase().replace(/ /g, "_");
+                const pSport = pricingSport.toLowerCase().replace(/ /g, "_");
+                if (tcSport === pSport || tcSport === pricingSport.toLowerCase()) {
+                  (tc.turfs || []).forEach((t) => {
+                    courts.push({ name: t.name || "Court", price: t.price || basePrice });
+                  });
+                }
+              });
+            }
+            // If no turf_config match, show venue-level pricing
+            if (courts.length === 0) {
+              courts.push({ name: venue.name || "Court", price: basePrice });
+            }
+
+            // Day labels for rule display
+            const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+            // Format relevant pricing rules
+            const relevantRules = pricingRules.map((rule) => {
+              const isDiscount = rule.rule_type === "discount";
+              const pct = rule.value || 0;
+              const label = isDiscount ? `${pct}% Off` : `${pct}% Surge`;
+
+              let schedule = "";
+              if (rule.schedule_type === "one_time") {
+                const from = rule.date_from || "";
+                const to = rule.date_to || "";
+                schedule = from === to ? from : `${from} – ${to}`;
+                if (rule.time_from && rule.time_to) schedule += `, ${rule.time_from} – ${rule.time_to}`;
+              } else {
+                const days = rule.conditions?.days;
+                if (days?.length && days.length < 7) {
+                  schedule = days.map(d => DAY_NAMES[d] || d).join(", ");
+                } else {
+                  schedule = "Every day";
+                }
+                const tr = rule.conditions?.time_range;
+                if (tr?.start && tr?.end) schedule += `, ${tr.start} – ${tr.end}`;
+              }
+
+              return { name: rule.name, label, schedule, isDiscount };
+            });
+
+            return (
+              <div>
+                {/* Header */}
+                <div className="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-border/40">
+                  <div className="w-10 h-10 rounded-xl bg-brand-600/10 flex items-center justify-center">
+                    <SportIcon className="w-5 h-5 text-brand-600" />
+                  </div>
+                  <div>
+                    <DialogHeader className="p-0">
+                      <DialogTitle className="text-lg font-bold capitalize">{sportName}</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {duration} min per slot · {formatTime(venue.opening_hour)} – {formatTime(venue.closing_hour)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Disclaimer */}
+                <div className="px-6 py-3 bg-secondary/30 border-b border-border/40">
+                  <p className="text-[11px] text-muted-foreground">
+                    Pricing is subject to change and is controlled by the venue
+                  </p>
+                </div>
+
+                {/* Court pricing table */}
+                <div className="px-6 py-4 overflow-y-auto max-h-72">
+                  <div className="space-y-3">
+                    {courts.map((court, i) => (
+                      <div key={i} className="rounded-xl border border-border/40 overflow-hidden">
+                        <div className="bg-secondary/20 px-4 py-2.5 border-b border-border/30">
+                          <p className="text-sm font-semibold text-foreground">{court.name}</p>
+                        </div>
+                        <div className="divide-y divide-border/30">
+                          {/* Base price row */}
+                          <div className="flex items-center justify-between px-4 py-3">
+                            <span className="text-sm text-muted-foreground">
+                              {pricingRules.length > 0 ? "Base Price" : "All Days"}
+                            </span>
+                            <div className="text-right">
+                              <span className="text-sm font-bold text-foreground">
+                                ₹{court.price}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground ml-1">
+                                / hour
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Pricing rules applied to this court */}
+                          {relevantRules.map((rule, ri) => {
+                            const pct = pricingRules[ri]?.value || 0;
+                            const isDiscount = rule.isDiscount;
+                            const adjustedPrice = isDiscount
+                              ? Math.round(court.price * (1 - pct / 100))
+                              : Math.round(court.price * (1 + pct / 100));
+                            return (
+                              <div key={ri} className="flex items-center justify-between px-4 py-3">
+                                <div className="min-w-0 flex-1 mr-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm text-foreground font-medium truncate">{rule.name}</span>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isDiscount ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"}`}>
+                                      {rule.label}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-muted-foreground mt-0.5">{rule.schedule}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className={`text-sm font-bold ${isDiscount ? "text-green-600" : "text-red-600"}`}>
+                                    ₹{adjustedPrice}
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground ml-1">
+                                    / hour
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 pb-6">
+                  <Button
+                    onClick={() => { setPricingSport(null); handleBookNow(); }}
+                    className="w-full h-12 bg-brand-600 text-white hover:bg-brand-500 rounded-xl font-semibold"
+                  >
+                    {user ? "Book Now" : "Login to Book"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code Dialog */}
       <Dialog open={showQR} onOpenChange={setShowQR}>

@@ -14,7 +14,7 @@ function replaceParams(updates) {
 function getInitParam(key) {
   return new URLSearchParams(window.location.search).get(key);
 }
-import { socialAPI, chatAPI } from "@/lib/api";
+import { socialAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,8 +26,7 @@ import {
   User,
   ArrowLeft,
   Send,
-  Share2,
-  Loader2,
+Loader2,
   Search,
   X,
   ChevronDown,
@@ -45,14 +44,6 @@ import {
   SkeletonText,
 } from "@/components/SkeletonLoader";
 
-const REACTION_EMOJI = {
-  fire: "\uD83D\uDD25",
-  trophy: "\uD83C\uDFC6",
-  clap: "\uD83D\uDC4F",
-  heart: "\u2764\uFE0F",
-  100: "\uD83D\uDCAF",
-  muscle: "\uD83D\uDCAA",
-};
 
 /* ─── Skeleton ─────────────────────────────────────────────────── */
 function BookmarksSkeleton() {
@@ -111,16 +102,6 @@ export default function BookmarksPage() {
   const [commentInputs, setCommentInputs] = useState({});
   const [commentPages, setCommentPages] = useState({});
 
-  // Reaction picker
-  const [reactionPickerPost, setReactionPickerPost] = useState(null);
-  const reactionPickerRef = useRef(null);
-
-  // Share
-  const [sharePost, setSharePost] = useState(null);
-  const [shareSearch, setShareSearch] = useState("");
-  const [shareUsers, setShareUsers] = useState([]);
-  const [shareSending, setShareSending] = useState(null);
-
   // Double-tap
   const [doubleTapHeart, setDoubleTapHeart] = useState(null);
   const lastTap = useRef({});
@@ -141,9 +122,6 @@ export default function BookmarksPage() {
     if (days < 30) return `${Math.floor(days / 7)}w`;
     return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
-
-  const totalReactions = (reactions) =>
-    Object.values(reactions || {}).reduce((s, v) => s + v, 0);
 
   /* ─── Filtered & Sorted Posts ─────────────────────────────────── */
   const filteredPosts = useMemo(() => {
@@ -254,26 +232,6 @@ export default function BookmarksPage() {
     }
   };
 
-  const handleReaction = async (postId, reaction) => {
-    const post = posts.find((p) => p.id === postId);
-    const prev = post?.my_reaction;
-    const updater = (p) => {
-      if (p.id !== postId) return p;
-      const reactions = { ...(p.reactions || {}) };
-      if (prev) reactions[prev] = Math.max(0, (reactions[prev] || 0) - 1);
-      if (prev !== reaction) reactions[reaction] = (reactions[reaction] || 0) + 1;
-      return { ...p, my_reaction: prev === reaction ? null : reaction, reactions };
-    };
-    setPosts((ps) => ps.map(updater));
-    if (activePost?.id === postId) setActivePost(updater);
-    setReactionPickerPost(null);
-    try {
-      await socialAPI.react(postId, reaction);
-    } catch {
-      toast.error("Failed to react");
-    }
-  };
-
   /* ─── Comments ───────────────────────────────────────────────── */
   const loadComments = async (postId) => {
     if (comments[postId]) return;
@@ -325,31 +283,6 @@ export default function BookmarksPage() {
     }
   };
 
-  /* ─── Share ──────────────────────────────────────────────────── */
-  const openShare = async (post) => {
-    setSharePost(post);
-    setShareSearch("");
-    try {
-      const res = await chatAPI.conversations();
-      setShareUsers((res.data || []).map((c) => c.other_user).filter(Boolean));
-    } catch {
-      setShareUsers([]);
-    }
-  };
-
-  const handleShareSend = async (targetUserId) => {
-    if (!sharePost || shareSending) return;
-    setShareSending(targetUserId);
-    try {
-      await chatAPI.send(targetUserId, { content: `Check out this post! \uD83D\uDC49 /feed?post=${sharePost.id}` });
-      toast.success("Shared!");
-      setSharePost(null);
-    } catch {
-      toast.error("Failed to share");
-    }
-    setShareSending(null);
-  };
-
   /* ─── Open Detail ────────────────────────────────────────────── */
   const openPostDetail = (post) => {
     setActivePost(post);
@@ -358,29 +291,17 @@ export default function BookmarksPage() {
 
   /* ─── Effects ────────────────────────────────────────────────── */
   useEffect(() => {
-    const handler = (e) => {
-      if (reactionPickerRef.current && !reactionPickerRef.current.contains(e.target))
-        setReactionPickerPost(null);
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, []);
-
-  useEffect(() => {
     if (showSearch) searchInputRef.current?.focus();
   }, [showSearch]);
 
   // Escape to close modal
   useEffect(() => {
     const handler = (e) => {
-      if (e.key === "Escape") {
-        if (sharePost) setSharePost(null);
-        else if (activePost) setActivePost(null);
-      }
+      if (e.key === "Escape" && activePost) setActivePost(null);
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [activePost, sharePost]);
+  }, [activePost]);
 
   if (loading) return <BookmarksSkeleton />;
 
@@ -649,15 +570,14 @@ export default function BookmarksPage() {
         {/* ═══════════════════ LIST VIEW ════════════════════════ */}
         {viewMode === "list" && filteredPosts.length > 0 && (
           <div className="space-y-3 sm:space-y-4">
-            <AnimatePresence>
+            <AnimatePresence mode="popLayout">
               {filteredPosts.map((post, idx) => (
                 <motion.div
                   key={post.id}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -80, scale: 0.96 }}
-                  transition={{ delay: idx * 0.02 }}
-                  layout
+                  exit={{ opacity: 0 }}
+                  transition={{ delay: idx * 0.02, duration: 0.15 }}
                   className="bg-card rounded-[20px] sm:rounded-[24px] overflow-hidden border border-border/40 shadow-sm hover:shadow-md transition-all cursor-pointer"
                   onClick={() => openPostDetail(post)}
                 >
@@ -757,230 +677,173 @@ export default function BookmarksPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-3 sm:p-4"
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center backdrop-blur-md sm:p-4"
             onClick={() => setActivePost(null)}
           >
             <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              initial={{ scale: 0.95, opacity: 0, y: 40 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.92, opacity: 0, y: 20 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="bg-card w-full max-w-2xl max-h-[90vh] rounded-3xl overflow-hidden border border-border/40 shadow-2xl flex flex-col"
+              exit={{ scale: 0.95, opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 28, stiffness: 350 }}
+              className="bg-card w-full sm:max-w-[420px] max-h-[85vh] sm:rounded-2xl rounded-t-2xl overflow-hidden border border-border/30 shadow-2xl flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/30 flex-shrink-0">
-                <div className="flex items-center gap-3">
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/20 flex-shrink-0">
+                <div className="flex items-center gap-2.5">
                   <div
-                    className="h-10 w-10 rounded-full bg-secondary/30 flex items-center justify-center cursor-pointer overflow-hidden border border-border/20"
+                    className="h-8 w-8 rounded-full bg-secondary/30 flex items-center justify-center cursor-pointer overflow-hidden border border-border/20"
                     onClick={() => { setActivePost(null); navigate(`/player-card/${activePost.user_id}`); }}
                   >
                     {activePost.user_avatar ? (
                       <img src={mediaUrl(activePost.user_avatar)} alt="" className="h-full w-full object-cover" />
                     ) : (
-                      <User className="h-5 w-5 text-muted-foreground" />
+                      <User className="h-4 w-4 text-muted-foreground" />
                     )}
                   </div>
                   <div>
                     <span
-                      className="font-display font-bold text-sm cursor-pointer hover:text-brand-600 transition-colors"
+                      className="font-display font-bold text-xs cursor-pointer hover:text-brand-600 transition-colors block leading-tight"
                       onClick={() => { setActivePost(null); navigate(`/player-card/${activePost.user_id}`); }}
                     >
                       {activePost.user_name}
                     </span>
-                    <div className="text-[11px] text-muted-foreground">{timeAgo(activePost.created_at)}</div>
+                    <span className="text-[10px] text-muted-foreground leading-tight">{timeAgo(activePost.created_at)}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleUnsave(activePost.id)}
-                    className="h-9 w-9 rounded-xl flex items-center justify-center text-brand-600 hover:bg-brand-600/10 transition-all"
-                    title="Unsave"
-                  >
-                    <Bookmark className="h-5 w-5 fill-current text-brand-600" />
-                  </button>
-                  <button
-                    onClick={() => setActivePost(null)}
-                    className="h-9 w-9 rounded-xl flex items-center justify-center hover:bg-secondary/50 transition-all"
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setActivePost(null)}
+                  className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-secondary/50 transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               </div>
 
-              {/* Modal Content */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                {/* Post content — fixed */}
-                <div className="flex-shrink-0">
-                {/* Double-tap area */}
-                <div className="relative select-none" onClick={() => handleDoubleTap(activePost.id)}>
-                  {activePost.content && (
-                    <div className="px-5 sm:px-6 pt-4 pb-3">
-                      <p className="text-[15px] leading-relaxed whitespace-pre-wrap text-foreground/90">
-                        {activePost.content}
-                      </p>
-                    </div>
-                  )}
-                  {activePost.media_url && (
-                    <div className="w-full overflow-hidden bg-black/5">
-                      <img
-                        src={mediaUrl(activePost.media_url)}
-                        alt=""
-                        className="w-full h-auto block object-contain"
-                        style={{ maxHeight: "500px" }}
-                        draggable={false}
-                      />
-                    </div>
-                  )}
-                  <AnimatePresence>
-                    {doubleTapHeart === activePost.id && (
-                      <motion.div
-                        initial={{ scale: 0, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 1.5, opacity: 0 }}
-                        transition={{ duration: 0.4 }}
-                        className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                      >
-                        <Heart className="h-20 w-20 fill-red-500 text-red-500 drop-shadow-lg" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Reaction summary */}
-                {totalReactions(activePost.reactions) > 0 && (
-                  <div className="flex items-center gap-1.5 px-5 sm:px-6 mt-3 text-[11px] text-muted-foreground">
-                    {Object.entries(activePost.reactions || {})
-                      .filter(([, v]) => v > 0)
-                      .sort(([, a], [, b]) => b - a)
-                      .slice(0, 4)
-                      .map(([k, v]) => (
-                        <span key={k} className="flex items-center gap-0.5">
-                          <span className="text-sm">{REACTION_EMOJI[k]}</span>
-                          <span className="font-bold">{v}</span>
-                        </span>
-                      ))}
+              {/* Fixed: Post content + actions */}
+              <div className="flex-shrink-0">
+                {activePost.content && (
+                  <div className="px-4 pt-3 pb-2">
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground/90 line-clamp-4">
+                      {activePost.content}
+                    </p>
                   </div>
                 )}
 
-                {/* Actions */}
-                <div className="px-4 sm:px-6 py-3 flex items-center justify-between border-t border-b border-border/30 mt-3 bg-muted/5">
-                  <div className="flex items-center gap-4 sm:gap-5">
-                    <button
-                      className="flex items-center gap-1.5 group transition-colors min-h-[44px]"
-                      onClick={() => handleLike(activePost.id)}
-                    >
-                      <Heart
-                        className={`h-5 w-5 transition-colors group-hover:text-brand-600 ${activePost.liked_by_me ? "fill-pink-500 text-pink-500" : "text-muted-foreground"}`}
-                      />
-                      <span className={`font-bold text-xs ${activePost.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
-                        {activePost.likes_count || 0}
-                      </span>
-                    </button>
-
-                    <div className="relative" ref={reactionPickerRef}>
-                      <button
-                        onClick={() => setReactionPickerPost(reactionPickerPost === activePost.id ? null : activePost.id)}
-                        className={`text-base transition-transform hover:scale-110 min-h-[44px] flex items-center ${activePost.my_reaction ? "text-brand-600" : "text-muted-foreground"}`}
-                      >
-                        {activePost.my_reaction ? REACTION_EMOJI[activePost.my_reaction] : "+"}
-                      </button>
-                      <AnimatePresence>
-                        {reactionPickerPost === activePost.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.9, y: 5 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9 }}
-                            className="absolute bottom-full left-0 mb-1 flex gap-1 p-1.5 rounded-xl bg-card border-2 border-border shadow-lg z-10"
-                          >
-                            {Object.entries(REACTION_EMOJI).map(([key, emoji]) => (
-                              <button
-                                key={key}
-                                onClick={() => handleReaction(activePost.id, key)}
-                                className={`h-9 w-9 rounded-full flex items-center justify-center text-lg hover:bg-secondary/50 transition-transform hover:scale-110 ${activePost.my_reaction === key ? "bg-brand-600/10 ring-2 ring-brand-600" : ""}`}
-                              >
-                                {emoji}
-                              </button>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-
-                    <button
-                      className="flex items-center gap-1.5 text-muted-foreground hover:text-brand-600 transition-colors min-h-[44px]"
-                      onClick={() => openShare(activePost)}
-                    >
-                      <Share2 className="h-5 w-5" />
-                    </button>
+                {activePost.media_url && (
+                  <div
+                    className="relative mx-4 mt-2 rounded-xl overflow-hidden bg-black/5 cursor-pointer"
+                    onClick={() => handleDoubleTap(activePost.id)}
+                  >
+                    <img
+                      src={mediaUrl(activePost.media_url)}
+                      alt=""
+                      className="w-full h-52 object-cover block"
+                      draggable={false}
+                    />
+                    <AnimatePresence>
+                      {doubleTapHeart === activePost.id && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 1.5, opacity: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                        >
+                          <Heart className="h-14 w-14 fill-red-500 text-red-500 drop-shadow-lg" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </div>
+                )}
 
-                  <div className="flex items-center gap-2">
-                    {activePost.user_id !== user?.id && (
-                      <button
-                        className="text-muted-foreground hover:text-brand-600 transition-colors min-h-[44px] flex items-center"
-                        onClick={() => { setActivePost(null); navigate(`/chat?user=${activePost.user_id}`); }}
-                        title="Message"
-                      >
-                        <MessageSquare className="h-5 w-5" />
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <div className="px-4 py-2.5 flex items-center gap-4">
+                  <button
+                    className="flex items-center gap-1.5 group transition-colors"
+                    onClick={() => handleLike(activePost.id)}
+                  >
+                    <Heart
+                      className={`h-[18px] w-[18px] transition-all group-hover:scale-110 ${activePost.liked_by_me ? "fill-pink-500 text-pink-500" : "text-muted-foreground group-hover:text-pink-500"}`}
+                    />
+                    <span className={`font-bold text-xs tabular-nums ${activePost.liked_by_me ? "text-pink-500" : "text-muted-foreground"}`}>
+                      {activePost.likes_count || 0}
+                    </span>
+                  </button>
 
-                </div>
-                {/* Comments Section — scrollable */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
-                  <h4 className="font-bold text-sm text-foreground mb-4 flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4 text-brand-600" />
-                    Comments ({activePost.comments_count || 0})
-                  </h4>
-                  {(comments[activePost.id] || []).length === 0 && (
-                    <p className="text-xs text-muted-foreground/60 text-center py-4">No comments yet</p>
-                  )}
-                  {(comments[activePost.id] || []).map((c) => (
-                    <div key={c.id} className="flex items-start gap-2.5 mb-3">
-                      <div
-                        className="h-7 w-7 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden cursor-pointer"
-                        onClick={() => { setActivePost(null); navigate(`/player-card/${c.user_id}`); }}
-                      >
-                        {c.user_avatar ? (
-                          <img src={mediaUrl(c.user_avatar)} alt="" className="h-7 w-7 rounded-full object-cover" />
-                        ) : (
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-1.5">
-                          <span
-                            className="font-bold text-xs cursor-pointer hover:text-brand-600 transition-colors"
-                            onClick={() => { setActivePost(null); navigate(`/player-card/${c.user_id}`); }}
-                          >
-                            {c.user_name}
-                          </span>
-                          <span className="text-[10px] text-muted-foreground">{timeAgo(c.created_at)}</span>
-                        </div>
-                        <p className="text-sm text-foreground/80 mt-0.5">{c.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {commentPages[activePost.id]?.hasMore && (
+                  <button
+                    className="text-brand-600 hover:scale-110 transition-all"
+                    onClick={() => handleUnsave(activePost.id)}
+                    title="Unsave"
+                  >
+                    <Bookmark className="h-[18px] w-[18px] fill-brand-600 text-brand-600" />
+                  </button>
+
+                  {activePost.user_id !== user?.id && (
                     <button
-                      className="text-xs font-semibold text-brand-600 hover:text-brand-700 hover:underline py-1 mb-2 disabled:opacity-50"
-                      onClick={() => loadMoreComments(activePost.id)}
-                      disabled={commentPages[activePost.id]?.loading}
+                      className="text-muted-foreground hover:text-brand-600 transition-all hover:scale-110"
+                      onClick={() => { setActivePost(null); navigate(`/chat?user=${activePost.user_id}`); }}
+                      title="Message"
                     >
-                      {commentPages[activePost.id]?.loading ? "Loading..." : "Load more comments"}
+                      <MessageSquare className="h-[18px] w-[18px]" />
                     </button>
                   )}
                 </div>
+
+                <div className="px-4">
+                  <div className="border-t border-border/20" />
+                </div>
+                <h4 className="font-bold text-[11px] uppercase tracking-wider text-muted-foreground/70 px-4 pt-2.5 pb-2 flex items-center gap-1.5">
+                  <MessageSquare className="h-3 w-3" />
+                  Comments ({activePost.comments_count || 0})
+                </h4>
+              </div>
+
+              {/* Scrollable: Comments only — capped height */}
+              <div className="overflow-y-auto overscroll-contain px-4 pb-2" style={{ maxHeight: "160px" }}>
+                {(comments[activePost.id] || []).length === 0 && (
+                  <p className="text-[11px] text-muted-foreground/50 text-center py-3">No comments yet</p>
+                )}
+                {(comments[activePost.id] || []).map((c) => (
+                  <div key={c.id} className="flex items-start gap-2 mb-2.5">
+                    <div
+                      className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden cursor-pointer"
+                      onClick={() => { setActivePost(null); navigate(`/player-card/${c.user_id}`); }}
+                    >
+                      {c.user_avatar ? (
+                        <img src={mediaUrl(c.user_avatar)} alt="" className="h-6 w-6 rounded-full object-cover" />
+                      ) : (
+                        <User className="h-3 w-3 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-1.5">
+                        <span
+                          className="font-bold text-[11px] cursor-pointer hover:text-brand-600 transition-colors"
+                          onClick={() => { setActivePost(null); navigate(`/player-card/${c.user_id}`); }}
+                        >
+                          {c.user_name}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">{timeAgo(c.created_at)}</span>
+                      </div>
+                      <p className="text-xs text-foreground/75 mt-0.5 leading-relaxed">{c.content}</p>
+                    </div>
+                  </div>
+                ))}
+                {commentPages[activePost.id]?.hasMore && (
+                  <button
+                    className="text-[11px] font-semibold text-brand-600 hover:text-brand-700 hover:underline py-1 disabled:opacity-50"
+                    onClick={() => loadMoreComments(activePost.id)}
+                    disabled={commentPages[activePost.id]?.loading}
+                  >
+                    {commentPages[activePost.id]?.loading ? "Loading..." : "Load more"}
+                  </button>
+                )}
               </div>
 
               {/* Comment Input — pinned bottom */}
-              <div className="flex gap-2 sm:gap-3 p-4 sm:p-5 border-t border-border/30 flex-shrink-0 bg-card">
+              <div className="flex gap-2 px-4 py-3 border-t border-border/20 flex-shrink-0 bg-card">
                 <Input
-                  placeholder="Write a comment..."
-                  className="h-10 sm:h-11 rounded-full text-sm bg-muted border-border/40 focus-visible:ring-brand-600/50"
+                  placeholder="Add a comment..."
+                  className="h-9 rounded-full text-xs bg-muted/50 border-border/30 focus-visible:ring-brand-600/30"
                   name="comment"
                   autoComplete="off"
                   value={commentInputs[activePost.id] || ""}
@@ -990,78 +853,13 @@ export default function BookmarksPage() {
                   onKeyDown={(e) => e.key === "Enter" && handleComment(activePost.id)}
                 />
                 <button
-                  className="h-10 w-10 sm:h-11 sm:w-11 flex-shrink-0 bg-brand-600 text-white rounded-full flex items-center justify-center hover:bg-brand-700 transition-colors disabled:opacity-50"
+                  className="h-9 w-9 flex-shrink-0 bg-brand-600 text-white rounded-full flex items-center justify-center hover:bg-brand-700 transition-colors disabled:opacity-40"
                   onClick={() => handleComment(activePost.id)}
                   disabled={!commentInputs[activePost.id]?.trim()}
                   aria-label="Send comment"
                 >
-                  <Send className="h-4 w-4" />
+                  <Send className="h-3.5 w-3.5" />
                 </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ═══════════════ SHARE MODAL ═══════════════════════════ */}
-      <AnimatePresence>
-        {sharePost && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={() => setSharePost(null)}
-          >
-            <motion.div
-              initial={{ y: 100, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 100, opacity: 0 }}
-              className="bg-card w-full sm:max-w-md sm:rounded-3xl rounded-t-3xl max-h-[70vh] overflow-hidden border border-border/40 shadow-2xl"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-4 sm:p-5 border-b border-border/30">
-                <h3 className="font-display font-bold text-base">Share Post</h3>
-                <button
-                  onClick={() => setSharePost(null)}
-                  className="h-8 w-8 rounded-full hover:bg-secondary/50 flex items-center justify-center transition-colors"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              <div className="p-4 sm:p-5 overflow-y-auto max-h-[50vh]">
-                {shareUsers.length === 0 ? (
-                  <p className="text-center text-sm text-muted-foreground py-8">
-                    No conversations yet. Start a chat first!
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    {shareUsers
-                      .filter((u) => !shareSearch || u.name?.toLowerCase().includes(shareSearch.toLowerCase()))
-                      .map((u) => (
-                        <button
-                          key={u.id}
-                          onClick={() => handleShareSend(u.id)}
-                          disabled={shareSending === u.id}
-                          className="w-full flex items-center gap-3 p-3 rounded-2xl hover:bg-secondary/50 active:bg-secondary/70 transition-all touch-manipulation"
-                        >
-                          <div className="h-10 w-10 rounded-full bg-secondary/30 overflow-hidden border border-border/20 flex items-center justify-center flex-shrink-0">
-                            {u.avatar ? (
-                              <img src={mediaUrl(u.avatar)} alt="" className="h-full w-full object-cover" />
-                            ) : (
-                              <User className="h-5 w-5 text-muted-foreground" />
-                            )}
-                          </div>
-                          <span className="font-bold text-sm flex-1 text-left truncate">{u.name}</span>
-                          {shareSending === u.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-brand-600" />
-                          ) : (
-                            <Send className="h-4 w-4 text-brand-600" />
-                          )}
-                        </button>
-                      ))}
-                  </div>
-                )}
               </div>
             </motion.div>
           </motion.div>
