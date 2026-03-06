@@ -560,7 +560,7 @@ async def create_settlement(request: Request, user=Depends(get_current_user)):
             try:
                 transfer = rzp.transfer.create({
                     "account": linked["razorpay_account_id"],
-                    "amount": net * 100,  # paise
+                    "amount": int(round(net * 100)),  # paise — must be integer
                     "currency": "INR",
                     "notes": {
                         "settlement_id": settlement_id,
@@ -569,8 +569,8 @@ async def create_settlement(request: Request, user=Depends(get_current_user)):
                     },
                 })
                 settlement["razorpay_transfer_id"] = transfer.get("id")
-                settlement["transfer_status"] = transfer.get("status", "processing")
-                settlement["status"] = "completed" if transfer.get("status") == "processed" else "processing"
+                settlement["transfer_status"] = "processing"
+                settlement["status"] = "processing"  # webhook is source of truth
                 logger.info(f"Razorpay transfer created: {transfer.get('id')} for settlement {settlement_id}")
             except Exception as e:
                 logger.error(f"Razorpay transfer failed: {e}")
@@ -738,13 +738,13 @@ async def _process_single_settlement(admin_user, linked, target, items):
         try:
             transfer = rzp.transfer.create({
                 "account": linked["razorpay_account_id"],
-                "amount": net * 100,
+                "amount": int(round(net * 100)),  # paise — must be integer
                 "currency": "INR",
                 "notes": {"settlement_id": settlement_id, "user_id": target["id"], "type": "bulk_payout"},
             })
             settlement["razorpay_transfer_id"] = transfer.get("id")
-            settlement["transfer_status"] = transfer.get("status", "processing")
-            settlement["status"] = "completed" if transfer.get("status") == "processed" else "processing"
+            settlement["transfer_status"] = "processing"
+            settlement["status"] = "processing"  # webhook is source of truth
         except Exception as e:
             settlement["status"] = "failed"
             settlement["failed_reason"] = str(e)
@@ -962,7 +962,8 @@ async def razorpay_transfer_webhook(request: Request):
         expected = hmac.new(webhook_secret.encode(), body, hashlib.sha256).hexdigest()
         if not hmac.compare_digest(expected, signature):
             asyncio.create_task(update_webhook_log(log_id, "signature_mismatch"))
-            raise HTTPException(400, "Invalid webhook signature")
+            logger.warning(f"Transfer webhook signature mismatch for {log_id}")
+            return {"ok": True}
 
     payload = raw_payload
     event = payload.get("event", "")
