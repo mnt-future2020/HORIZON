@@ -343,6 +343,14 @@ async def list_pending_payouts(
         commission = sum(i["commission"] for i in items)
         net = sum(i["net"] for i in items)
 
+        # Subtract pending deductions
+        pending_deds = await db.payout_deductions.find(
+            {"venue_owner_id": u["id"], "deduction_status": "pending"},
+            {"_id": 0, "venue_clawback_amount": 1}
+        ).to_list(100)
+        total_deductions = sum(d["venue_clawback_amount"] for d in pending_deds)
+        net_after_deductions = net - total_deductions
+
         if net <= 0 and not items:
             continue
 
@@ -356,7 +364,9 @@ async def list_pending_payouts(
             "pending_items_count": len(items),
             "gross_amount": gross,
             "commission_amount": commission,
-            "net_amount": net,
+            "net_amount": net_after_deductions,
+            "net_before_deductions": net,
+            "pending_deductions": total_deductions,
             "oldest_unsettled_date": min((i["date"] for i in items), default="") if items else "",
         })
 
@@ -865,19 +875,12 @@ async def my_payout_summary(user=Depends(get_current_user)):
     ).to_list(100)
     total_pending_deductions = sum(d["venue_clawback_amount"] for d in pending_deductions)
 
-    # Fetch ALL deductions (pending + applied) to subtract from total earned
-    all_deductions = await db.payout_deductions.find(
-        {"venue_owner_id": user_id},
-        {"_id": 0, "venue_clawback_amount": 1}
-    ).to_list(1000)
-    total_all_deductions = sum(d["venue_clawback_amount"] for d in all_deductions)
-
     return {
         "linked_account_status": linked["status"] if linked else "not_linked",
         "bank_account": linked.get("bank_account") if linked else None,
         "bank_account_verified": linked.get("bank_account_verified", False) if linked else False,
         "razorpay_account_status": linked.get("razorpay_account_status") if linked else None,
-        "total_earned": total_gross + pending_gross - total_all_deductions,
+        "total_earned": total_settled + pending_net - total_pending_deductions,
         "total_commission": total_commission + pending_commission,
         "total_settled": total_settled,
         "pending_settlement": pending_net - total_pending_deductions,

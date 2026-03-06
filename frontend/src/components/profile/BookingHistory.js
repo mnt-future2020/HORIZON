@@ -114,9 +114,41 @@ export function BookingHistory({ bookings: initial, total }) {
             <p className="text-sm text-muted-foreground">
               Are you sure you want to cancel this booking at <span className="font-semibold text-foreground">{cancelConfirm?.venue_name}</span>?
             </p>
-            <p className="text-xs text-muted-foreground">
-              Refund policy: 100% if 24h+ before slot, 50% if 4-24h, 0% if less than 4h.
-            </p>
+            {(() => {
+              const slotDate = cancelConfirm?.date;
+              const slotTime = cancelConfirm?.start_time;
+              let hoursLeft = null;
+              if (slotDate && slotTime) {
+                const [h, m] = slotTime.split(":").map(Number);
+                const slotDt = new Date(slotDate);
+                slotDt.setHours(h, m, 0, 0);
+                hoursLeft = Math.max(0, (slotDt - new Date()) / 3600000);
+              }
+              const tier = hoursLeft === null ? null : hoursLeft >= 24 ? "full" : hoursLeft >= 4 ? "half" : "none";
+              const hoursLabel = hoursLeft !== null ? `${Math.floor(hoursLeft)}h ${Math.round((hoursLeft % 1) * 60)}m left` : null;
+              return (
+                <div className="bg-secondary/50 rounded-xl p-3 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold text-foreground">Refund Policy</p>
+                    {hoursLabel && <span className="text-[10px] font-medium text-muted-foreground">{hoursLabel}</span>}
+                  </div>
+                  <div className="space-y-1">
+                    <div className={`flex justify-between text-xs rounded-lg px-2 py-1 ${tier === "full" ? "bg-emerald-500/10 ring-1 ring-emerald-500/30" : ""}`}>
+                      <span className={tier === "full" ? "text-foreground font-medium" : "text-muted-foreground"}>24h+ before slot</span>
+                      <span className={`font-medium text-emerald-500`}>100% refund</span>
+                    </div>
+                    <div className={`flex justify-between text-xs rounded-lg px-2 py-1 ${tier === "half" ? "bg-amber-500/10 ring-1 ring-amber-500/30" : ""}`}>
+                      <span className={tier === "half" ? "text-foreground font-medium" : "text-muted-foreground"}>4–24h before slot</span>
+                      <span className={`font-medium text-amber-500`}>50% refund</span>
+                    </div>
+                    <div className={`flex justify-between text-xs rounded-lg px-2 py-1 ${tier === "none" ? "bg-destructive/10 ring-1 ring-destructive/30" : ""}`}>
+                      <span className={tier === "none" ? "text-foreground font-medium" : "text-muted-foreground"}>Less than 4h</span>
+                      <span className={`font-medium text-destructive`}>No refund</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             <div className="flex gap-2 pt-2">
               <Button variant="outline" className="flex-1 rounded-xl" onClick={() => setCancelConfirm(null)} disabled={cancelling}>
                 Keep Booking

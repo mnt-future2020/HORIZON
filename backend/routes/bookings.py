@@ -795,6 +795,12 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
         venue_doc = await db.venues.find_one({"id": booking["venue_id"]}, {"_id": 0, "owner_id": 1})
         owner_id = (venue_doc or {}).get("owner_id")
         if owner_id and refund_amount > 0:
+            # Venue clawback = refund minus platform's commission share
+            # e.g., ₹2000 booking, 5% commission (₹100), 50% refund:
+            #   player_refund = ₹1000, commission_refund = ₹50, venue_clawback = ₹950
+            commission_on_booking = booking.get("commission_amount", 0)
+            commission_refund = round(commission_on_booking * refund_pct / 100)
+            venue_clawback = refund_amount - commission_refund
             deduction = {
                 "id": str(uuid.uuid4()),
                 "venue_owner_id": owner_id,
@@ -802,9 +808,10 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
                 "booking_id": booking_id,
                 "original_settlement_id": booking["settlement_id"],
                 "booking_amount": booking.get("total_amount", 0),
-                "commission_amount": booking.get("commission_amount", 0),
+                "commission_amount": commission_on_booking,
                 "player_refund_amount": refund_amount,
-                "venue_clawback_amount": refund_amount,
+                "venue_clawback_amount": venue_clawback,
+                "commission_refund_amount": commission_refund,
                 "refund_pct": refund_pct,
                 "deduction_status": "pending",
                 "applied_settlement_id": None,
@@ -814,14 +821,14 @@ async def cancel_booking(booking_id: str, user=Depends(get_current_user)):
             asyncio.create_task(log_finance_event(
                 "deduction_created", user["id"], owner_id,
                 booking_id=booking_id, settlement_id=booking["settlement_id"],
-                amount=refund_amount,
+                amount=venue_clawback,
             ))
             await db.notifications.insert_one({
                 "id": str(uuid.uuid4()),
                 "user_id": owner_id,
                 "type": "booking_clawback",
                 "title": "Booking Cancelled — Deduction Applied",
-                "message": f"Booking on {booking['date']} {booking['start_time']} was cancelled. ₹{refund_amount:,} will be adjusted in your next payout.",
+                "message": f"Booking on {booking['date']} {booking['start_time']} was cancelled. ₹{venue_clawback:,} will be adjusted in your next payout.",
                 "is_read": False,
                 "created_at": now_ist().isoformat(),
             })

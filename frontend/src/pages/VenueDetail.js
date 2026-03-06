@@ -40,6 +40,7 @@ import {
   Send,
   Phone,
   ChevronLeft,
+  ChevronRight,
   Minus,
   Plus,
   ShoppingCart,
@@ -380,6 +381,7 @@ export default function VenueDetail() {
   const [splitCount, setSplitCount] = useState(10);
 
   const [confirmResults, setConfirmResults] = useState([]);
+  const [receiptIdx, setReceiptIdx] = useState(0);
   const [payStep, setPayStep] = useState(null);
   const [copied, setCopied] = useState(false);
 
@@ -842,6 +844,7 @@ export default function VenueDetail() {
                 }
                 if (successBookings.length > 0) {
                   setConfirmResults(successBookings);
+                  setReceiptIdx(0);
                   setPayStep("done");
                   setBookingDialog(true);
                   setCart([]);
@@ -1388,13 +1391,26 @@ export default function VenueDetail() {
           {(payStep === "done" || (confirmResults.length > 0 && !payStep)) &&
             confirmResults.length > 0 && (
               <div className="space-y-4">
-                {confirmResults.map((b) => (
-                  <BookingReceipt key={b.id} booking={b} />
-                ))}
                 {confirmResults.length > 1 && (
-                  <div className="flex justify-between items-center px-2">
+                  <div className="flex items-center justify-between">
+                    <button onClick={() => setReceiptIdx(i => Math.max(0, i - 1))} disabled={receiptIdx <= 0}
+                      className="h-8 w-8 rounded-full flex items-center justify-center bg-secondary/50 hover:bg-secondary disabled:opacity-30 disabled:pointer-events-none transition-all">
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <span className="text-xs font-semibold text-muted-foreground">
+                      {receiptIdx + 1} / {confirmResults.length} bookings
+                    </span>
+                    <button onClick={() => setReceiptIdx(i => Math.min(confirmResults.length - 1, i + 1))} disabled={receiptIdx >= confirmResults.length - 1}
+                      className="h-8 w-8 rounded-full flex items-center justify-center bg-secondary/50 hover:bg-secondary disabled:opacity-30 disabled:pointer-events-none transition-all">
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+                <BookingReceipt booking={confirmResults[receiptIdx]} />
+                {confirmResults.length > 1 && (
+                  <div className="flex justify-between items-center px-2 pt-2 border-t border-border/40">
                     <span className="text-sm uppercase tracking-wide text-muted-foreground admin-label">
-                      Total
+                      Total ({confirmResults.length} bookings)
                     </span>
                     <span className="font-display admin-value text-2xl text-brand-600">
                       ₹{confirmTotal}

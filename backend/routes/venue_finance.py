@@ -154,7 +154,7 @@ async def finance_summary(
 
     if not venue_ids:
         return {
-            "total_income": 0, "commission_pct": 0, "commission_total": 0,
+            "total_income": 0, "total_bookings": 0, "commission_pct": 0, "commission_total": 0,
             "net_income": 0, "total_expenses": 0, "expenses_by_category": {},
             "net_profit": 0, "income_by_sport": {}, "income_by_venue": {},
             "monthly_trend": [], "current_month": {"income": 0, "expenses": 0, "net": 0},
@@ -162,6 +162,7 @@ async def finance_summary(
 
     # ── Income from confirmed/completed bookings ──
     total_income = 0
+    total_bookings = 0
     income_by_sport = {}
     income_by_venue = {}
 
@@ -171,6 +172,7 @@ async def finance_summary(
     ):
         amt = b.get("total_amount", 0)
         total_income += amt
+        total_bookings += 1
 
         sport = (b.get("sport") or "other").replace("_", " ").title()
         income_by_sport[sport] = income_by_sport.get(sport, 0) + amt
@@ -183,7 +185,7 @@ async def finance_summary(
     settings = await db.platform_settings.find_one({"key": "platform"})
     commission_pct = 10
     if settings:
-        commission_pct = settings.get("venue_commission_pct", settings.get("coaching_commission_pct", 10))
+        commission_pct = settings.get("booking_commission_pct", settings.get("venue_commission_pct", 10))
     commission_total = round(total_income * commission_pct / 100, 2)
     net_income = round(total_income - commission_total, 2)
 
@@ -215,12 +217,14 @@ async def finance_summary(
         month_label = d.strftime("%b %Y")
 
         m_income = 0
+        m_bookings = 0
         async for b in db.bookings.find(
             {"venue_id": {"$in": venue_ids}, "status": {"$in": ["confirmed", "completed"]},
              "date": {"$regex": f"^{month_key}"}},
             {"total_amount": 1, "_id": 0}
         ):
             m_income += b.get("total_amount", 0)
+            m_bookings += 1
 
         m_expenses = 0
         async for e in db.venue_expenses.find(
@@ -230,8 +234,8 @@ async def finance_summary(
             m_expenses += e.get("amount", 0)
 
         monthly_trend.append({
-            "month": month_label, "income": m_income,
-            "expenses": m_expenses, "net": round(m_income - m_expenses, 2),
+            "month": month_label, "income": m_income, "bookings": m_bookings,
+            "expenses": m_expenses, "net": round(m_income * (1 - commission_pct / 100) - m_expenses, 2),
         })
 
         if month_key == current_month_key:
@@ -240,6 +244,7 @@ async def finance_summary(
 
     return {
         "total_income": total_income,
+        "total_bookings": total_bookings,
         "commission_pct": commission_pct,
         "commission_total": commission_total,
         "net_income": net_income,
@@ -252,7 +257,7 @@ async def finance_summary(
         "current_month": {
             "income": current_month_income,
             "expenses": current_month_expenses,
-            "net": round(current_month_income - current_month_expenses, 2),
+            "net": round(current_month_income * (1 - commission_pct / 100) - current_month_expenses, 2),
         },
     }
 
@@ -275,6 +280,12 @@ async def list_transactions(
 
     owner_id = user["id"]
     transactions = []
+
+    # Get commission percentage
+    settings = await db.platform_settings.find_one({"key": "platform"})
+    commission_pct = 10
+    if settings:
+        commission_pct = settings.get("booking_commission_pct", settings.get("venue_commission_pct", 10))
 
     def date_in_range(date_str):
         if not date_str:
@@ -299,22 +310,42 @@ async def list_transactions(
 
         if venue_ids:
             async for b in db.bookings.find(
-                {"venue_id": {"$in": venue_ids}, "status": {"$in": ["confirmed", "completed"]}},
+                {"venue_id": {"$in": venue_ids}, "status": {"$in": ["confirmed", "completed", "cancelled"]}},
                 {"_id": 0, "id": 1, "host_name": 1, "total_amount": 1, "date": 1,
-                 "sport": 1, "venue_id": 1, "start_time": 1, "end_time": 1, "created_at": 1}
+                 "sport": 1, "venue_id": 1, "start_time": 1, "end_time": 1, "created_at": 1,
+                 "status": 1, "cancelled_at": 1, "refund_status": 1, "refund_amount": 1}
             ).sort("date", -1).limit(200):
                 if not date_in_range(b.get("date", "")):
                     continue
                 vname = venue_names.get(b.get("venue_id", ""), "Venue")
                 sport = (b.get("sport") or "").replace("_", " ").title()
+                # Booking income entry (net after commission)
+                gross = b.get("total_amount", 0)
+                net = round(gross * (1 - commission_pct / 100))
+                is_cancelled = b.get("status") == "cancelled"
+                host = b.get("host_name", "")
+                desc = f"{vname} — {sport} ({b.get('date', '')})"
                 transactions.append({
                     "id": b["id"], "type": "income", "category": "venue_booking",
-                    "client_name": b.get("host_name", ""),
-                    "description": f"{vname} — {sport} ({b.get('date', '')})",
-                    "amount": b.get("total_amount", 0), "payment_mode": "razorpay",
+                    "client_name": host,
+                    "description": desc,
+                    "amount": net, "gross_amount": gross, "payment_mode": "razorpay",
                     "date": b.get("date", ""), "source": "online",
+                    "status": b.get("status", "confirmed"),
                     "created_at": b.get("created_at", ""),
                 })
+                # Cancellation deduction entry
+                if is_cancelled:
+                    transactions.append({
+                        "id": f"{b['id']}_cancel", "type": "deduction", "category": "booking_cancelled",
+                        "client_name": host,
+                        "description": desc,
+                        "amount": net, "payment_mode": "razorpay",
+                        "date": b.get("cancelled_at", b.get("date", ""))[:10] if b.get("cancelled_at") else b.get("date", ""),
+                        "source": "cancellation",
+                        "status": "cancelled",
+                        "created_at": b.get("cancelled_at", ""),
+                    })
 
     # ── Expense transactions ──
     if type != "income":
@@ -335,6 +366,12 @@ async def list_transactions(
                 "date": e.get("date", ""), "source": "expense",
                 "created_at": e.get("created_at", ""),
             })
+
+    # Post-filter by type
+    if type == "cancelled":
+        transactions = [t for t in transactions if t.get("status") == "cancelled"]
+    elif type == "income":
+        transactions = [t for t in transactions if t.get("type") == "income" and t.get("status") != "cancelled"]
 
     transactions.sort(key=lambda x: x.get("date", ""), reverse=True)
     if page is not None:

@@ -39,14 +39,15 @@ import { AdminSkeleton, AdminUsersSkeleton, AdminVenuesSkeleton, AdminSettingsSk
 
 const cleanPhone = (v) => { let d = v.replace(/\D/g, ""); if (d.length > 10 && d.startsWith("91")) d = d.slice(2); return d.slice(0, 10); };
 
-function StatCard({ icon: Icon, label, value, sub, colorClass = "text-brand-600", bgClass = "bg-brand-600/10", index = 0 }) {
+function StatCard({ icon: Icon, label, value, sub, colorClass = "text-brand-600", bgClass = "bg-brand-600/10", index = 0, onClick }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, duration: 0.4, ease: "easeOut" }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="bg-card rounded-2xl sm:rounded-[28px] p-4 sm:p-6 lg:p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300"
+      onClick={onClick}
+      className={`bg-card rounded-2xl sm:rounded-[28px] p-4 sm:p-6 lg:p-7 border border-border/40 shadow-sm overflow-hidden relative group h-full flex flex-col justify-between transition-all duration-300 ${onClick ? "cursor-pointer" : ""}`}
     >
       <div className="flex items-center justify-between mb-3 sm:mb-6 relative z-10">
         <div className="admin-label text-xs sm:text-sm">{label}</div>
@@ -114,23 +115,90 @@ function RecentUserItem({ user: u, index }) {
 
 function OverviewTab() {
   const [data, setData] = useState(null);
+  const [bookingsDialog, setBookingsDialog] = useState(false);
+  const [earningsDialog, setEarningsDialog] = useState(false);
   useEffect(() => {
     adminAPI.dashboard().then(r => setData(r.data)).catch(() => toast.error("Failed to load dashboard"));
   }, []);
   if (!data) return <AdminSkeleton />;
+
+  const bbs = data.bookings_by_status || {};
+  const statusLabels = { confirmed: "Confirmed", completed: "Completed", cancelled: "Cancelled", pending: "Pending", payment_pending: "Payment Pending", expired: "Expired" };
+  const statusColors = { confirmed: "text-emerald-500", completed: "text-blue-500", cancelled: "text-red-500", pending: "text-amber-500", payment_pending: "text-sky-500", expired: "text-zinc-400" };
+  const statusBg = { confirmed: "bg-emerald-500/10", completed: "bg-blue-500/10", cancelled: "bg-red-500/10", pending: "bg-amber-500/10", payment_pending: "bg-sky-500/10", expired: "bg-zinc-500/10" };
+
+  const earningsBreakdown = [
+    { label: "Booking Share", pct: `${data.commission_pct}%`, revenue: data.total_revenue, earnings: data.platform_earnings || 0, color: "text-brand-600", bg: "bg-brand-600/10" },
+    { label: "Coaching Share", pct: `${data.coaching_commission_pct || 10}%`, revenue: data.coaching_revenue || 0, earnings: data.coaching_earnings || 0, color: "text-blue-500", bg: "bg-blue-500/10" },
+    { label: "Tournament Share", pct: `${data.tournament_commission_pct || 10}%`, revenue: data.tournament_revenue || 0, earnings: data.tournament_earnings || 0, color: "text-purple-500", bg: "bg-purple-500/10" },
+  ];
+
   return (
     <div className="space-y-8 sm:space-y-10" data-testid="admin-overview-tab">
+      {/* Bookings Breakdown Dialog */}
+      <Dialog open={bookingsDialog} onOpenChange={setBookingsDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Bookings Breakdown</DialogTitle>
+            <DialogDescription>Total bookings by status</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            {Object.entries(bbs).sort((a, b) => b[1] - a[1]).map(([status, count]) => (
+              <div key={status} className={`flex items-center justify-between p-3 rounded-xl ${statusBg[status] || "bg-secondary/20"}`}>
+                <span className={`text-sm font-semibold ${statusColors[status] || "text-muted-foreground"}`}>
+                  {statusLabels[status] || status.replace("_", " ")}
+                </span>
+                <span className="text-lg font-bold font-display">{count}</span>
+              </div>
+            ))}
+            {Object.keys(bbs).length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No bookings yet</p>}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/40 mt-3">
+              <span className="text-sm font-bold">Total</span>
+              <span className="text-lg font-bold font-display">{data.total_bookings}</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Earnings Breakdown Dialog */}
+      <Dialog open={earningsDialog} onOpenChange={setEarningsDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Earnings Breakdown</DialogTitle>
+            <DialogDescription>Platform earnings by source</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            {earningsBreakdown.map((e) => (
+              <div key={e.label} className={`p-3 rounded-xl ${e.bg}`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`text-sm font-semibold ${e.color}`}>{e.label}</span>
+                  <span className="text-xs text-muted-foreground">{e.pct} commission</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">Revenue: {"\u20B9"}{e.revenue.toLocaleString()}</span>
+                  <span className="text-lg font-bold font-display">{"\u20B9"}{e.earnings.toLocaleString()}</span>
+                </div>
+              </div>
+            ))}
+            <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border/40">
+              <span className="text-sm font-bold">Total Earnings</span>
+              <span className="text-lg font-bold font-display text-brand-600">{"\u20B9"}{(data.total_platform_earnings || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
         <StatCard icon={Users} label="Total Users" value={data.total_users} index={0} />
         <StatCard icon={Building2} label="Active Venues" value={data.active_venues} index={1} />
-        <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} index={2} />
+        <StatCard icon={CalendarCheck} label="Total Bookings" value={data.total_bookings} index={2} onClick={() => setBookingsDialog(true)} />
         <StatCard icon={IndianRupee} label="Booking Revenue" value={`\u20B9${data.total_revenue.toLocaleString()}`} index={3} />
-        
+
         <StatCard icon={Percent} label="Booking Share" value={`${data.commission_pct}%`} sub={`\u20B9${(data.platform_earnings || 0).toLocaleString()}`} index={4} />
         <StatCard icon={GraduationCap} label="Coach Revenue" value={`\u20B9${(data.coaching_revenue || 0).toLocaleString()}`} sub={`${data.coaching_commission_pct || 10}% = \u20B9${(data.coaching_earnings || 0).toLocaleString()}`} index={5} />
         <StatCard icon={Trophy} label="Tournament" value={`\u20B9${(data.tournament_revenue || 0).toLocaleString()}`} sub={`${data.tournament_commission_pct || 10}% = \u20B9${(data.tournament_earnings || 0).toLocaleString()}`} index={6} />
-        
-        <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} index={7} />
+
+        <StatCard icon={Crown} label="Total Earnings" value={`\u20B9${(data.total_platform_earnings || 0).toLocaleString()}`} index={7} onClick={() => setEarningsDialog(true)} />
         <StatCard 
           icon={Clock} 
           label="Pending Approvals" 
@@ -1901,7 +1969,12 @@ function PayoutsTab() {
                           <td className="p-3 sm:p-4 text-right text-muted-foreground text-xs sm:text-sm">{p.pending_items_count || 0}</td>
                           <td className="p-3 sm:p-4 text-right font-medium text-xs sm:text-sm">₹{(p.gross_amount || 0).toLocaleString()}</td>
                           <td className="p-3 sm:p-4 text-right text-muted-foreground text-xs sm:text-sm hidden sm:table-cell">₹{(p.commission_amount || 0).toLocaleString()}</td>
-                          <td className="p-3 sm:p-4 text-right font-medium text-brand-600 text-xs sm:text-sm">₹{(p.net_amount || 0).toLocaleString()}</td>
+                          <td className="p-3 sm:p-4 text-right text-xs sm:text-sm">
+                            <span className="font-medium text-brand-600">₹{(p.net_amount || 0).toLocaleString()}</span>
+                            {p.pending_deductions > 0 && (
+                              <span className="block text-[10px] text-red-500">-₹{p.pending_deductions.toLocaleString()} ded.</span>
+                            )}
+                          </td>
                           <td className="p-3 sm:p-4">
                             {p.has_linked_account ? (
                               <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-green-500/10 text-green-600 text-[10px] sm:text-xs">Linked</Badge>
@@ -2104,6 +2177,9 @@ function PayoutsTab() {
               <div className="bg-secondary/30 rounded-2xl p-4 space-y-2 text-sm">
                 <div className="flex justify-between"><span className="text-muted-foreground">Gross Amount</span><span className="font-medium">₹{(detailDialog.gross_amount || 0).toLocaleString()}</span></div>
                 <div className="flex justify-between"><span className="text-muted-foreground">Commission ({detailDialog.commission_pct || 10}%)</span><span className="font-medium text-red-500">-₹{(detailDialog.commission_amount || 0).toLocaleString()}</span></div>
+                {detailDialog.total_deductions > 0 && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Deductions (refunds)</span><span className="font-medium text-red-500">-₹{(detailDialog.total_deductions || 0).toLocaleString()}</span></div>
+                )}
                 <div className="border-t border-border/40 pt-2 flex justify-between"><span className="font-medium">Net Payout</span><span className="font-medium text-brand-600">₹{(detailDialog.net_amount || 0).toLocaleString()}</span></div>
               </div>
               {detailDialog.razorpay_transfer_id && (

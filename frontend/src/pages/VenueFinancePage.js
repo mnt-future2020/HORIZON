@@ -10,16 +10,17 @@ import { ResponsiveDialog, ResponsiveDialogContent, ResponsiveDialogHeader, Resp
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
-import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, AlertTriangle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, MessageSquare, Phone, Building, ChevronLeft, ChevronRight } from "lucide-react";
+import { IndianRupee, TrendingUp, Calendar, Plus, Trash2, Clock, CheckCircle, Pencil, Filter, ArrowUpRight, ArrowDownRight, AlertCircle, AlertTriangle, Eye, Receipt, Wallet, Download, Banknote, Loader2, X, Phone, Building, ChevronLeft, ChevronRight } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
-function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10" }) {
+function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-brand-600", bgClass = "bg-brand-600/10", onClick }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.08, type: "spring", stiffness: 300, damping: 25 }}
       whileHover={{ y: -4, boxShadow: "0 8px 30px -8px rgba(0,0,0,0.12)", transition: { duration: 0.2 } }}
-      className="bg-card rounded-2xl sm:rounded-[28px] p-3 sm:p-5 border border-border/40 shadow-sm hover:shadow-md flex flex-col justify-between transition-all duration-300 group"
+      className={`bg-card rounded-2xl sm:rounded-[28px] p-3 sm:p-5 border border-border/40 shadow-sm hover:shadow-md flex flex-col justify-between transition-all duration-300 group ${onClick ? "cursor-pointer" : ""}`}
+      onClick={onClick}
     >
       <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="admin-label text-[11px] sm:text-xs leading-tight">{label}</div>
@@ -39,6 +40,8 @@ export default function VenueFinancePage() {
   // ─── Finance state ───
   const [financeSubTab, setFinanceSubTab] = useState(searchParams.get("subtab") || "overview");
   const [financeSummaryData, setFinanceSummaryData] = useState(null);
+  const [summaryLoading, setSummaryLoading] = useState(true);
+  const [tabLoading, setTabLoading] = useState(false);
   const [venueExpenses, setVenueExpenses] = useState([]);
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [editExpenseId, setEditExpenseId] = useState(null);
@@ -49,13 +52,21 @@ export default function VenueFinancePage() {
   const [invoiceMonth, setInvoiceMonth] = useState(new Date().toISOString().slice(0, 7));
   const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all");
   const [showCreateInvoice, setShowCreateInvoice] = useState(false);
-  const [invoiceForm, setInvoiceForm] = useState({ client_name: "", client_phone: "", client_email: "", date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
+  const [invoiceForm, setInvoiceForm] = useState({ client_name: "", client_phone: "", venue_id: "", date: new Date().toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
   const [invoiceItems, setInvoiceItems] = useState([{ description: "", qty: "1", rate: "" }]);
   const [invoiceCreating, setInvoiceCreating] = useState(false);
+  // Booking-aware invoice fields
+  const [invSlots, setInvSlots] = useState([]);
+  const [invSport, setInvSport] = useState("");
+  const [invCourt, setInvCourt] = useState("");
+  const [invStartTime, setInvStartTime] = useState("");
+  const [invDuration, setInvDuration] = useState(1);
+  const [invBookingDate, setInvBookingDate] = useState(new Date().toISOString().slice(0, 10));
   const [gstSettings, setGstSettings] = useState({ gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "VEN" });
   const [showGSTSettings, setShowGSTSettings] = useState(false);
   const [gstSaving, setGstSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [showMonthlyBookings, setShowMonthlyBookings] = useState(false);
 
   // ─── Payout state ───
   const [payoutSummary, setPayoutSummary] = useState(null);
@@ -64,6 +75,7 @@ export default function VenueFinancePage() {
   const [bankForm, setBankForm] = useState({ account_number: "", ifsc_code: "", beneficiary_name: "", bank_name: "", business_type: "individual", phone: "", email: "" });
   const [bankSaving, setBankSaving] = useState(false);
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
+  const [showEarningsBreakdown, setShowEarningsBreakdown] = useState(false);
   const [myDeductions, setMyDeductions] = useState([]);
   const [pendingDeductionsTotal, setPendingDeductionsTotal] = useState(0);
 
@@ -95,12 +107,14 @@ export default function VenueFinancePage() {
   const venueIdParam = selectedVenueId !== "all" ? selectedVenueId : undefined;
 
   const loadFinanceSummary = useCallback(async () => {
+    setSummaryLoading(true);
     try {
       const params = {};
       if (venueIdParam) params.venue_id = venueIdParam;
       const res = await venueFinanceAPI.financeSummary(params);
       setFinanceSummaryData(res.data);
     } catch { setFinanceSummaryData(null); }
+    finally { setSummaryLoading(false); }
   }, [venueIdParam]);
   const loadVenueExpenses = useCallback(async (p = 1) => {
     try {
@@ -113,6 +127,7 @@ export default function VenueFinancePage() {
     } catch { setVenueExpenses([]); }
   }, []);
   const loadVenueTransactions = useCallback(async (filters = {}, p = 1) => {
+    setTabLoading(true);
     try {
       const params = { page: p, limit: FINANCE_LIMIT };
       if (filters.date_from) params.date_from = filters.date_from;
@@ -126,6 +141,7 @@ export default function VenueFinancePage() {
       setTxnTotal(data.total || 0);
       setTxnPage(data.page || p);
     } catch { setVenueTransactions([]); }
+    finally { setTabLoading(false); }
   }, [venueIdParam]);
   const loadVenueInvoices = useCallback(async (params = {}, p = 1) => {
     try {
@@ -175,15 +191,90 @@ export default function VenueFinancePage() {
     })();
   }, []);
 
-  // Load all data on mount & when selected venue changes
+  // Fetch slots when venue+date selected in invoice form
+  useEffect(() => {
+    if (!invoiceForm.venue_id || !invBookingDate) { setInvSlots([]); return; }
+    (async () => {
+      try {
+        const res = await venueAPI.getSlots(invoiceForm.venue_id, invBookingDate);
+        setInvSlots(res.data?.slots || []);
+      } catch { setInvSlots([]); }
+    })();
+  }, [invoiceForm.venue_id, invBookingDate]);
+
+  // Derive sports, courts, times from slots
+  const invSelectedVenue = ownerVenues.find(v => v.id === invoiceForm.venue_id);
+  const invSports = [...new Set((invSelectedVenue?.turf_config || []).map(tc => tc.sport))];
+  const invCourts = invSlots.filter(s => !invSport || s.sport === invSport).reduce((acc, s) => {
+    if (!acc.find(c => c.turf_number === s.turf_number)) acc.push({ turf_number: s.turf_number, turf_name: s.turf_name, sport: s.sport });
+    return acc;
+  }, []);
+  const invTimes = invSlots.filter(s => invCourt && s.turf_number === Number(invCourt)).map(s => ({ time: s.start_time, end: s.end_time, price: s.price, original_price: s.original_price, has_offer: s.has_offer, status: s.status }));
+  const invSlotDuration = invSelectedVenue?.slot_duration_minutes || 60;
+  const invMinSlots = Math.ceil(60 / invSlotDuration);
+  // Max consecutive available slots from selected start
+  const invMaxSlots = (() => {
+    if (!invStartTime || !invCourt) return invMinSlots;
+    const courtSlots = invSlots.filter(s => s.turf_number === Number(invCourt)).sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const idx = courtSlots.findIndex(s => s.start_time === invStartTime);
+    if (idx < 0) return invMinSlots;
+    let count = 0;
+    for (let i = idx; i < courtSlots.length; i++) {
+      if (courtSlots[i].status !== "available") break;
+      count++;
+    }
+    return Math.max(count, invMinSlots);
+  })();
+  // Calculate total price for selected slots
+  const invTotalPrice = (() => {
+    if (!invStartTime || !invCourt) return 0;
+    const courtSlots = invSlots.filter(s => s.turf_number === Number(invCourt)).sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const idx = courtSlots.findIndex(s => s.start_time === invStartTime);
+    if (idx < 0) return 0;
+    let total = 0;
+    for (let i = idx; i < idx + invDuration && i < courtSlots.length; i++) total += courtSlots[i].price;
+    return total;
+  })();
+  const invOriginalPrice = (() => {
+    if (!invStartTime || !invCourt) return 0;
+    const courtSlots = invSlots.filter(s => s.turf_number === Number(invCourt)).sort((a, b) => a.start_time.localeCompare(b.start_time));
+    const idx = courtSlots.findIndex(s => s.start_time === invStartTime);
+    if (idx < 0) return 0;
+    let total = 0;
+    for (let i = idx; i < idx + invDuration && i < courtSlots.length; i++) total += courtSlots[i].original_price || courtSlots[i].price;
+    return total;
+  })();
+  const invEndTime = (() => {
+    if (!invStartTime) return "";
+    const [h, m] = invStartTime.split(":").map(Number);
+    const endMin = h * 60 + m + invSlotDuration * invDuration;
+    return `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
+  })();
+
+  // Auto-populate invoice items when booking fields change
+  useEffect(() => {
+    if (!invStartTime || !invCourt || !invSport || !invoiceForm.venue_id) return;
+    const court = invCourts.find(c => c.turf_number === Number(invCourt));
+    const courtName = court?.turf_name || `Court ${invCourt}`;
+    const sportLabel = invSport.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const durationMins = invSlotDuration * invDuration;
+    const durationLabel = durationMins >= 60 ? `${durationMins / 60}hr` : `${durationMins}min`;
+    const desc = `${sportLabel} - ${courtName} (${invBookingDate}, ${invStartTime}-${invEndTime}, ${durationLabel})`;
+    setInvoiceItems([{ description: desc, qty: "1", rate: String(invTotalPrice) }]);
+  }, [invStartTime, invCourt, invSport, invDuration, invTotalPrice]);
+
+  // Load summary always (stat cards), other data lazily per active tab
   useEffect(() => {
     loadFinanceSummary();
-    loadVenueExpenses();
-    loadVenueInvoices({ month: invoiceMonth });
-    loadVenueTransactions();
-    loadGstSettings();
-    loadPayoutData();
-  }, [loadFinanceSummary, loadVenueExpenses, loadVenueInvoices, loadVenueTransactions, loadGstSettings, loadPayoutData, invoiceMonth]);
+  }, [loadFinanceSummary]);
+
+  useEffect(() => {
+    if (financeSubTab === "overview") { /* summary already loaded */ }
+    else if (financeSubTab === "transactions") loadVenueTransactions();
+    else if (financeSubTab === "expenses") loadVenueExpenses();
+    else if (financeSubTab === "invoices") { loadVenueInvoices({ month: invoiceMonth }); loadGstSettings(); }
+    else if (financeSubTab === "payouts") loadPayoutData();
+  }, [financeSubTab, loadVenueTransactions, loadVenueExpenses, loadVenueInvoices, loadGstSettings, loadPayoutData, invoiceMonth]);
 
   // Sync subtab + venue → URL
   useEffect(() => {
@@ -219,7 +310,7 @@ export default function VenueFinancePage() {
       await venueFinanceAPI.createInvoice({ ...invoiceForm, items: invoiceItems.filter(i => i.description), gst_rate: gstSettings.gst_rate });
       toast.success("Invoice created");
       setShowCreateInvoice(false);
-      setInvoiceForm({ client_name: "", client_phone: "", client_email: "", date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
+      setInvoiceForm({ client_name: "", client_phone: "", venue_id: "", date: new Date().toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
       setInvoiceItems([{ description: "", qty: "1", rate: "" }]);
       loadVenueInvoices({ month: invoiceMonth }, 1);
     } catch (err) { toast.error(err.response?.data?.detail || "Failed"); } finally { setInvoiceCreating(false); }
@@ -239,10 +330,6 @@ export default function VenueFinancePage() {
   const handleDownloadInvoicePdf = async (inv) => {
     try { const res = await venueFinanceAPI.getInvoicePdf(inv.id); const blob = new Blob([res.data], { type: "application/pdf" }); const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `invoice-${inv.invoice_no}.pdf`; a.click(); }
     catch { toast.error("Failed to download PDF"); }
-  };
-  const handleSendInvoiceWhatsapp = async (inv) => {
-    try { const res = await venueFinanceAPI.sendInvoiceWhatsapp(inv.id); if (res.data?.wa_link) window.open(res.data.wa_link, "_blank"); toast.success("Opening WhatsApp..."); }
-    catch { toast.error("Failed"); }
   };
   const handleSaveGstSettings = async () => {
     setGstSaving(true);
@@ -282,20 +369,57 @@ export default function VenueFinancePage() {
       </div>
 
       {/* P&L Summary Cards */}
-      {financeSummaryData && (
+      {summaryLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-          <StatCard icon={IndianRupee} label="Total Revenue" value={`₹${(financeSummaryData.total_income || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="bg-card rounded-2xl sm:rounded-[28px] p-3 sm:p-5 border border-border/40 shadow-sm animate-pulse">
+              <div className="flex items-center justify-between mb-3">
+                <div className="h-3 w-20 bg-muted rounded" />
+                <div className="h-9 w-9 bg-muted rounded-xl" />
+              </div>
+              <div className="h-7 w-24 bg-muted rounded" />
+            </div>
+          ))}
+        </div>
+      ) : financeSummaryData ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+          <StatCard icon={CheckCircle} label="Total Bookings" value={financeSummaryData.total_bookings || 0} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} onClick={() => setShowMonthlyBookings(true)} />
           <StatCard icon={TrendingUp} label="Net Profit" value={`₹${(financeSummaryData.net_profit || 0).toLocaleString()}`} colorClass={financeSummaryData.net_profit >= 0 ? "text-emerald-500" : "text-red-500"} bgClass={financeSummaryData.net_profit >= 0 ? "bg-emerald-500/10" : "bg-red-500/10"} index={1} />
           <StatCard icon={Wallet} label="Expenses" value={`₹${(financeSummaryData.total_expenses || 0).toLocaleString()}`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
           <StatCard icon={Calendar} label="This Month" value={`₹${(financeSummaryData.current_month?.net || 0).toLocaleString()}`} colorClass="text-sky-500" bgClass="bg-sky-500/10" index={3} />
         </div>
-      )}
+      ) : null}
+
+      {/* Monthly Bookings Dialog */}
+      <ResponsiveDialog open={showMonthlyBookings} onOpenChange={setShowMonthlyBookings}>
+        <ResponsiveDialogContent className="sm:max-w-md">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle className="text-base font-bold">Monthly Bookings</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription className="text-xs text-muted-foreground">Booking count per month (last 6 months)</ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <div className="space-y-2 mt-2">
+            {(financeSummaryData?.monthly_trend || []).slice().reverse().map((m) => (
+              <div key={m.month} className="flex items-center justify-between bg-secondary/30 rounded-xl px-4 py-2.5">
+                <span className="text-sm font-medium">{m.month}</span>
+                <span className="text-sm font-bold text-brand-600">{m.bookings || 0} bookings</span>
+              </div>
+            ))}
+            {(!financeSummaryData?.monthly_trend || financeSummaryData.monthly_trend.length === 0) && (
+              <p className="text-xs text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+          <div className="flex justify-between items-center pt-3 border-t border-border/40 mt-2">
+            <span className="text-sm font-semibold">Total</span>
+            <span className="text-sm font-black text-brand-600">{financeSummaryData?.total_bookings || 0} bookings</span>
+          </div>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       {/* Commission banner */}
       {financeSummaryData?.commission_pct > 0 && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl sm:rounded-[28px] px-4 py-3 flex items-center gap-2.5 text-xs font-medium text-amber-600 dark:text-amber-400">
           <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-          Platform commission: {financeSummaryData.commission_pct}% on booking revenue (₹{(financeSummaryData.commission_total || 0).toLocaleString()})
+          Platform commission: {financeSummaryData.commission_pct}% on booking revenue
         </div>
       )}
 
@@ -415,12 +539,13 @@ export default function VenueFinancePage() {
             </div>
             <div>
               <Label className="text-[10px] text-muted-foreground uppercase tracking-wide admin-label">Type</Label>
-              <Select value={transactionFilters.type} onValueChange={v => setTransactionFilters(f => ({ ...f, type: v }))}>
+              <Select value={transactionFilters.type} onValueChange={v => { setTransactionFilters(f => ({ ...f, type: v })); setTxnPage(1); loadVenueTransactions({ ...transactionFilters, type: v }, 1); }}>
                 <SelectTrigger className="mt-1 bg-secondary/20 border-border/40 rounded-xl text-xs h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All</SelectItem>
                   <SelectItem value="income">Income</SelectItem>
                   <SelectItem value="expense">Expense</SelectItem>
+                  <SelectItem value="cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -431,21 +556,37 @@ export default function VenueFinancePage() {
             </div>
           </div>
 
-          {venueTransactions.length > 0 ? (
+          {tabLoading ? (
+            <div className="space-y-2">
+              {[0, 1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-card rounded-2xl border border-border/40 shadow-sm p-4 flex items-center gap-3 animate-pulse">
+                  <div className="h-8 w-8 rounded-full bg-muted shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-muted rounded" />
+                    <div className="h-3 w-48 bg-muted rounded" />
+                  </div>
+                  <div className="h-5 w-16 bg-muted rounded" />
+                </div>
+              ))}
+            </div>
+          ) : venueTransactions.length > 0 ? (
             <div className="-mx-3 sm:mx-0 divide-y divide-border/40 sm:divide-y-0 sm:space-y-2">
               {venueTransactions.map(txn => (
                 <div key={txn.id} className="bg-card rounded-none sm:rounded-2xl sm:rounded-[28px] border-0 sm:border border-border/40 shadow-none sm:shadow-sm p-4 flex items-center gap-3 active:scale-[0.97] transition-transform">
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${txn.type === "income" ? "bg-brand-600/10" : "bg-destructive/10"}`}>
-                    {txn.type === "income" ? <ArrowUpRight className="h-4 w-4 text-brand-600" /> : <ArrowDownRight className="h-4 w-4 text-destructive" />}
+                  <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${txn.type === "deduction" ? "bg-red-500/10" : txn.type === "income" ? "bg-brand-600/10" : "bg-destructive/10"}`}>
+                    {txn.type === "income" ? <ArrowUpRight className="h-4 w-4 text-brand-600" /> : <ArrowDownRight className={`h-4 w-4 ${txn.type === "deduction" ? "text-red-500" : "text-destructive"}`} />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                      <span className="admin-name text-sm truncate">{txn.type === "income" ? (txn.client_name || txn.description) : txn.description || txn.category}</span>
-                      <Badge className={`text-[10px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>{txn.type}</Badge>
+                      <span className="admin-name text-sm truncate">{txn.client_name || txn.description}</span>
+                      <Badge className={`text-[10px] ${txn.type === "deduction" ? "bg-red-500/10 text-red-500" : txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>
+                        {txn.type === "deduction" ? "cancelled" : txn.type}
+                      </Badge>
+                      {txn.type === "income" && txn.status === "cancelled" && <Badge className="text-[10px] bg-amber-500/10 text-amber-500">refunded</Badge>}
                     </div>
-                    <p className="text-xs text-muted-foreground capitalize">{txn.date} · {txn.category?.replace("_", " ")}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{txn.date} · {txn.description}</p>
                   </div>
-                  <span className={`font-black text-sm shrink-0 ${txn.type === "income" ? "text-brand-600" : "text-destructive"}`}>
+                  <span className={`font-black text-sm shrink-0 ${txn.type === "deduction" ? "text-red-500" : txn.type === "income" ? "text-brand-600" : "text-destructive"}`}>
                     {txn.type === "income" ? "+" : "-"}₹{(txn.amount || 0).toLocaleString()}
                   </span>
                 </div>
@@ -677,6 +818,15 @@ export default function VenueFinancePage() {
               </ResponsiveDialogHeader>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
+                  {ownerVenues.length > 0 && (
+                    <div className="col-span-2">
+                      <Label className="text-xs text-muted-foreground admin-label">Venue</Label>
+                      <Select value={invoiceForm.venue_id} onValueChange={v => { setInvoiceForm(f => ({ ...f, venue_id: v })); setInvSport(""); setInvCourt(""); setInvStartTime(""); setInvDuration(invMinSlots); }}>
+                        <SelectTrigger className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl"><SelectValue placeholder="Select venue" /></SelectTrigger>
+                        <SelectContent>{ownerVenues.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="col-span-2 sm:col-span-1">
                     <Label className="text-xs text-muted-foreground admin-label">Client Name *</Label>
                     <Input value={invoiceForm.client_name} onChange={e => setInvoiceForm(f => ({ ...f, client_name: e.target.value }))} placeholder="Client name" className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl" />
@@ -685,23 +835,77 @@ export default function VenueFinancePage() {
                     <Label className="text-xs text-muted-foreground admin-label">Client Phone</Label>
                     <Input value={invoiceForm.client_phone} onChange={e => setInvoiceForm(f => ({ ...f, client_phone: e.target.value }))} placeholder="+91..." className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl" />
                   </div>
+
+                  {/* Booking-aware fields */}
+                  {invoiceForm.venue_id && (
+                    <>
+                      <div>
+                        <Label className="text-xs text-muted-foreground admin-label">Booking Date</Label>
+                        <Input type="date" value={invBookingDate} onChange={e => { setInvBookingDate(e.target.value); setInvStartTime(""); }} className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl" />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground admin-label">Sport</Label>
+                        <Select value={invSport} onValueChange={v => { setInvSport(v); setInvCourt(""); setInvStartTime(""); setInvDuration(invMinSlots); }}>
+                          <SelectTrigger className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl"><SelectValue placeholder="Select sport" /></SelectTrigger>
+                          <SelectContent>{invSports.map(s => <SelectItem key={s} value={s}>{s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      {invSport && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Court / Turf</Label>
+                          <Select value={invCourt} onValueChange={v => { setInvCourt(v); setInvStartTime(""); setInvDuration(invMinSlots); }}>
+                            <SelectTrigger className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl"><SelectValue placeholder="Select court" /></SelectTrigger>
+                            <SelectContent>{invCourts.filter(c => c.sport === invSport).map(c => <SelectItem key={c.turf_number} value={String(c.turf_number)}>{c.turf_name}</SelectItem>)}</SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {invCourt && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Start Time</Label>
+                          <Select value={invStartTime} onValueChange={v => { setInvStartTime(v); setInvDuration(invMinSlots); }}>
+                            <SelectTrigger className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl"><SelectValue placeholder="Select time" /></SelectTrigger>
+                            <SelectContent>
+                              {invTimes.filter(t => t.status === "available").map(t => (
+                                <SelectItem key={t.time} value={t.time}>
+                                  {t.time}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      {invStartTime && (
+                        <div>
+                          <Label className="text-xs text-muted-foreground admin-label">Duration</Label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <button type="button" onClick={() => setInvDuration(d => Math.max(invMinSlots, d - 1))} disabled={invDuration <= invMinSlots} className="h-11 w-11 rounded-xl bg-secondary/20 border border-border/40 flex items-center justify-center text-lg font-bold disabled:opacity-30">-</button>
+                            <span className="text-sm font-bold w-20 text-center">{invSlotDuration * invDuration} min</span>
+                            <button type="button" onClick={() => setInvDuration(d => Math.min(invMaxSlots, d + 1))} disabled={invDuration >= invMaxSlots} className="h-11 w-11 rounded-xl bg-secondary/20 border border-border/40 flex items-center justify-center text-lg font-bold disabled:opacity-30">+</button>
+                          </div>
+                          {invTotalPrice > 0 && (
+                            <div className="mt-2 text-sm">
+                              {invOriginalPrice > invTotalPrice ? (
+                                <span><span className="line-through text-muted-foreground">₹{invOriginalPrice.toLocaleString()}</span> <span className="font-bold text-brand-600">₹{invTotalPrice.toLocaleString()}</span></span>
+                              ) : (
+                                <span className="font-bold text-brand-600">₹{invTotalPrice.toLocaleString()}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   <div>
                     <Label className="text-xs text-muted-foreground admin-label">Invoice Date</Label>
                     <Input type="date" value={invoiceForm.date} onChange={e => setInvoiceForm(f => ({ ...f, date: e.target.value }))} className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl" />
-                  </div>
-                  <div>
-                    <Label className="text-xs text-muted-foreground admin-label">Due Date</Label>
-                    <Input type="date" value={invoiceForm.due_date} onChange={e => setInvoiceForm(f => ({ ...f, due_date: e.target.value }))} className="mt-1 h-11 bg-secondary/20 border-border/40 rounded-xl" />
                   </div>
                 </div>
 
                 {/* Line items */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
+                  <div className="mb-2">
                     <Label className="text-xs text-muted-foreground">Items</Label>
-                    <button type="button" onClick={() => setInvoiceItems(prev => [...prev, { description: "", qty: "1", rate: "" }])} className="text-xs admin-btn text-brand-600 flex items-center gap-1 hover:underline">
-                      <Plus className="h-3 w-3" /> Add Row
-                    </button>
                   </div>
                   <div className="rounded-2xl sm:rounded-[28px] border border-border overflow-hidden">
                     <div className="grid grid-cols-12 bg-muted/50 px-3 py-2 text-[10px] admin-section-label text-muted-foreground admin-th">
@@ -813,7 +1017,7 @@ export default function VenueFinancePage() {
                         {inv.auto_generated && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">AUTO</span>}
                       </div>
                       <p className="text-sm font-medium">{inv.client_name}</p>
-                      <p className="text-xs text-muted-foreground">{inv.date} · Due {inv.due_date}</p>
+                      <p className="text-xs text-muted-foreground">{inv.date}</p>
                       {inv.items?.length > 0 && <p className="text-xs text-muted-foreground mt-0.5 truncate">{inv.items.map(i => i.description).filter(Boolean).join(" · ")}</p>}
                     </div>
                     <div className="text-right shrink-0">
@@ -827,9 +1031,6 @@ export default function VenueFinancePage() {
                     </button>
                     <button onClick={() => handleDownloadInvoicePdf(inv)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-muted/50 hover:bg-muted text-xs admin-btn text-muted-foreground hover:text-foreground transition-colors active:scale-[0.95]">
                       <Download className="h-3 w-3" /> Download
-                    </button>
-                    <button onClick={() => handleSendInvoiceWhatsapp(inv)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-green-500/10 hover:bg-green-500/20 text-xs admin-btn text-green-600 transition-colors active:scale-[0.95]">
-                      <MessageSquare className="h-3 w-3" /> WhatsApp
                     </button>
                     {inv.status !== "paid" && (
                       <button onClick={() => handleMarkInvoicePaid(inv.id)} className="flex items-center gap-1 px-2.5 min-h-[44px] sm:min-h-0 py-1 rounded-lg bg-brand-600/10 hover:bg-brand-600/20 text-xs admin-btn text-brand-600 transition-colors active:scale-[0.95]">
@@ -958,15 +1159,45 @@ export default function VenueFinancePage() {
           {/* Payout Summary Cards */}
           {payoutSummary && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-              <StatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} />
+              <StatCard icon={IndianRupee} label="Total Earned" value={`₹${(payoutSummary.total_earned || 0).toLocaleString()}`} colorClass="text-brand-600" bgClass="bg-brand-600/10" index={0} onClick={() => setShowEarningsBreakdown(true)} />
               <StatCard icon={CheckCircle} label="Total Settled" value={`₹${(payoutSummary.total_settled || 0).toLocaleString()}`} colorClass="text-emerald-500" bgClass="bg-emerald-500/10" index={1} />
               <StatCard icon={Clock} label="Pending" value={`₹${(payoutSummary.pending_settlement || 0).toLocaleString()}`} colorClass="text-amber-500" bgClass="bg-amber-500/10" index={2} />
               <StatCard icon={Banknote} label="Last Payout" value={payoutSummary.last_payout_amount ? `₹${payoutSummary.last_payout_amount.toLocaleString()}` : "—"} colorClass="text-sky-500" bgClass="bg-sky-500/10" index={3} />
             </div>
           )}
 
+          {/* Total Earned Breakdown Dialog */}
+          <ResponsiveDialog open={showEarningsBreakdown} onOpenChange={setShowEarningsBreakdown}>
+            <ResponsiveDialogContent className="sm:max-w-sm">
+              <ResponsiveDialogHeader>
+                <ResponsiveDialogTitle className="text-base font-bold">Total Earned Breakdown</ResponsiveDialogTitle>
+                <ResponsiveDialogDescription className="text-xs text-muted-foreground">How your total earnings are calculated</ResponsiveDialogDescription>
+              </ResponsiveDialogHeader>
+              {payoutSummary && (
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between py-2 px-3 bg-emerald-500/5 rounded-xl">
+                    <span className="text-sm text-muted-foreground">Settled Payouts</span>
+                    <span className="text-sm font-bold text-emerald-600">+₹{(payoutSummary.total_settled || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-amber-500/5 rounded-xl">
+                    <span className="text-sm text-muted-foreground">Pending (net)</span>
+                    <span className="text-sm font-bold text-amber-600">+₹{(payoutSummary.pending_settlement_before_deductions || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="flex items-center justify-between py-2 px-3 bg-red-500/5 rounded-xl">
+                    <span className="text-sm text-muted-foreground">Deductions (all)</span>
+                    <span className="text-sm font-bold text-red-500">-₹{(payoutSummary.total_deductions || 0).toLocaleString()}</span>
+                  </div>
+                  <div className="border-t border-border/40 pt-3 flex items-center justify-between px-3">
+                    <span className="text-sm font-bold">Total Earned</span>
+                    <span className="text-lg font-black text-brand-600">₹{(payoutSummary.total_earned || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+            </ResponsiveDialogContent>
+          </ResponsiveDialog>
+
           {/* Pending Deductions Warning */}
-          {myDeductions.length > 0 && (
+          {myDeductions.length > 0 && pendingDeductionsTotal > 0 && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4 space-y-2">
               <div className="flex items-center gap-2 text-amber-600">
                 <AlertTriangle className="h-4 w-4" />

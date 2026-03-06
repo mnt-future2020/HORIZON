@@ -72,6 +72,7 @@ import {
   XCircle,
   Lightbulb,
   Tag,
+  RotateCcw,
 } from "lucide-react";
 import {
   BarChart,
@@ -1051,7 +1052,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
                               <span className="flex items-center gap-1 capitalize hidden sm:flex"><CircleDot className="h-3 w-3" />{b.sport}</span>
                             </div>
-                            <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{b.total_amount}</span>
+                            <span className="font-bold text-brand-600 text-sm">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
                           </div>
                         </motion.div>
                       );
@@ -1123,7 +1124,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     {Object.entries(grouped).map(([date, dateBookings]) => {
                       const isPast = date < today;
                       const isToday = date === today;
-                      const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? b.total_amount : 0), 0);
+                      const totalAmount = dateBookings.reduce((sum, b) => sum + (b.status === "confirmed" ? (b.total_amount - (b.commission_amount || 0)) : 0), 0);
                       return (
                         <div key={date} data-testid={`history-date-${date}`}>
                           <div className="flex items-center justify-between mb-3">
@@ -1157,7 +1158,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                       <div className="text-xs text-muted-foreground mt-0.5">{b.host_name} - {b.venue_name}</div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
-                                      <span className="text-sm font-bold text-brand-600">{"\u20B9"}{b.total_amount}</span>
+                                      <span className="text-sm font-bold text-brand-600">{"\u20B9"}{(b.total_amount - (b.commission_amount || 0)).toLocaleString()}</span>
                                       <span className={`inline-flex items-center rounded-full border-2 px-3 py-1 text-xs font-bold uppercase tracking-wide ${sc.color}`}>{sc.label}</span>
                                       <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-brand-600 transition-colors" />
                                     </div>
@@ -1244,12 +1245,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Total Amount</span>
-                      <p className="text-lg font-display font-black text-brand-600 mt-0.5">{"\u20B9"}{selectedBooking.total_amount}</p>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Your Earnings</span>
+                      <p className="text-lg font-display font-black text-brand-600 mt-0.5">{"\u20B9"}{(selectedBooking.total_amount - (selectedBooking.commission_amount || 0)).toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Commission</span>
-                      <p className="text-sm admin-name mt-0.5">{"\u20B9"}{selectedBooking.commission_amount || 0}</p>
+                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Booking Amount</span>
+                      <p className="text-sm admin-name mt-0.5">{"\u20B9"}{selectedBooking.total_amount?.toLocaleString()} <span className="text-[10px] text-muted-foreground">(-₹{selectedBooking.commission_amount || 0} commission)</span></p>
                     </div>
                     <div>
                       <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Payment Mode</span>
@@ -1325,15 +1326,53 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     <span className="text-muted-foreground">Created</span>
                     <span className="text-foreground">{selectedBooking.created_at ? new Date(selectedBooking.created_at).toLocaleString() : "N/A"}</span>
                   </div>
-                  {selectedBooking.expires_at && (
+                  {selectedBooking.status === "confirmed" && selectedBooking.paid_at ? (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Confirmed At</span>
+                      <span className="text-foreground">{new Date(selectedBooking.paid_at).toLocaleString()}</span>
+                    </div>
+                  ) : selectedBooking.expires_at && ["pending", "payment_pending"].includes(selectedBooking.status) ? (
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Expires</span>
                       <span className={`${new Date(selectedBooking.expires_at) < new Date() ? "text-destructive" : "text-foreground"}`}>
                         {new Date(selectedBooking.expires_at).toLocaleString()}
                       </span>
                     </div>
-                  )}
+                  ) : null}
                 </div>
+
+                {/* Refund Breakdown (cancelled bookings) */}
+                {selectedBooking.status === "cancelled" && selectedBooking.refund_pct > 0 && (
+                  <div className="bg-red-500/5 rounded-2xl sm:rounded-[28px] border border-red-500/20 p-3 sm:p-4 space-y-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <RotateCcw className="h-4 w-4 text-red-500" />
+                      <span className="admin-section-label text-red-500">Refund Breakdown</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Refund Tier</span>
+                        <p className="text-sm font-bold text-red-500 mt-0.5">{selectedBooking.refund_pct}%</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Refund Status</span>
+                        <p className="text-sm admin-name mt-0.5 capitalize">{selectedBooking.refund_status || "N/A"}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Player Refund</span>
+                        <p className="text-sm admin-name mt-0.5">{"\u20B9"}{(selectedBooking.refund_amount || 0).toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Your Deduction</span>
+                        <p className="text-sm font-bold text-red-500 mt-0.5">-{"\u20B9"}{(selectedBooking.refund_amount - Math.round((selectedBooking.commission_amount || 0) * selectedBooking.refund_pct / 100)).toLocaleString()}</p>
+                      </div>
+                    </div>
+                    {selectedBooking.cancelled_at && (
+                      <div className="pt-2 border-t border-red-500/10 text-xs text-muted-foreground">
+                        Cancelled at {new Date(selectedBooking.cancelled_at).toLocaleString()}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Actions */}
                 {["confirmed", "pending", "payment_pending"].includes(selectedBooking.status) && (

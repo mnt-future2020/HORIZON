@@ -20,6 +20,10 @@ async def admin_dashboard(user=Depends(get_current_user)):
     total_users = await db.users.count_documents({"role": {"$ne": "super_admin"}})
     total_venues = await db.venues.count_documents({})
     total_bookings = await db.bookings.count_documents({})
+    booking_status_agg = await db.bookings.aggregate([
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+    ]).to_list(20)
+    bookings_by_status = {s["_id"]: s["count"] for s in booking_status_agg if s["_id"]}
     pending_owners = await db.users.count_documents({"role": "venue_owner", "account_status": "pending"})
     pending_coaches = await db.users.count_documents({"role": "coach", "account_status": "pending"})
     active_venues = await db.venues.count_documents({"status": "active"})
@@ -80,7 +84,8 @@ async def admin_dashboard(user=Depends(get_current_user)):
 
     return {
         "total_users": total_users, "total_venues": total_venues,
-        "total_bookings": total_bookings, "pending_owners": pending_owners, "pending_coaches": pending_coaches,
+        "total_bookings": total_bookings, "bookings_by_status": bookings_by_status,
+        "pending_owners": pending_owners, "pending_coaches": pending_coaches,
         "active_venues": active_venues, "total_revenue": total_revenue,
         "commission_pct": commission_pct, "platform_earnings": platform_earnings,
         "coaching_revenue": coaching_revenue, "coaching_earnings": coaching_earnings,

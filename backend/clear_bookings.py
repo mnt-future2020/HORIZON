@@ -51,6 +51,10 @@ async def clear():
     r = await db.settlements.delete_many({})
     print(f"settlements:            deleted {r.deleted_count}")
 
+    # 5b. Drop payout deductions
+    r = await db.payout_deductions.delete_many({})
+    print(f"payout_deductions:      deleted {r.deleted_count}")
+
     # 6. Reset venues.total_bookings → 0
     r = await db.venues.update_many({}, {"$set": {"total_bookings": 0}})
     print(f"venues.total_bookings:  reset {r.modified_count} venues to 0")

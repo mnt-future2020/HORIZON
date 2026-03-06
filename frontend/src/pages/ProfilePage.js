@@ -123,7 +123,7 @@ export default function ProfilePage() {
     // Rule 1.4: Promise.all for independent operations - parallel data loading
     if (role === "player") {
       const playerStatsPromise = analyticsAPI.player().catch(() => ({ data: null }));
-      const bookingsPromise = bookingAPI.list(1, 15).catch(() => ({ data: { bookings: [] } }));
+      const bookingsPromise = bookingAPI.list({ page: 1, limit: 15 }).catch(() => ({ data: { bookings: [] } }));
       const careerPromise = user.id ? careerAPI.getCareer(user.id).catch(() => ({ data: null })) : Promise.resolve({ data: null });
       const playerCardPromise = user.id ? playerCardAPI.getCard(user.id).catch(() => ({ data: null })) : Promise.resolve({ data: null });
 
@@ -139,7 +139,7 @@ export default function ProfilePage() {
         .finally(() => setCareerLoading(false));
     } else if (role === "venue_owner") {
       const venuesPromise = venueAPI.getOwnerVenues();
-      const bookingsPromise = bookingAPI.list(1, 15);
+      const bookingsPromise = bookingAPI.list({ page: 1, limit: 15 });
 
       Promise.all([venuesPromise, bookingsPromise])
         .then(async ([vRes, bRes]) => {
