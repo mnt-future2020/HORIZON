@@ -518,18 +518,19 @@ async def get_slots(venue_id: str, date: str, request: Request):
     ).to_list(100)
     duration = venue.get("slot_duration_minutes", 60)
 
-    # Build booked_set handling multi-slot bookings (a booking may span multiple base slots)
-    booked_set = set()
+    # Build booked_map: "time-turf" -> {id, start, end} for multi-slot bookings
+    booked_map = {}
     for b in bookings:
         turf = b.get("turf_number", 1)
         b_start_parts = b["start_time"].split(":")
         b_end_parts = b["end_time"].split(":")
         b_start_min = int(b_start_parts[0]) * 60 + int(b_start_parts[1])
         b_end_min = int(b_end_parts[0]) * 60 + int(b_end_parts[1])
+        info = {"id": b.get("id", ""), "start": b["start_time"], "end": b["end_time"]}
         current = b_start_min
         while current < b_end_min:
             h, m = divmod(current, 60)
-            booked_set.add(f"{h:02d}:{m:02d}-{turf}")
+            booked_map[f"{h:02d}:{m:02d}-{turf}"] = info
             current += duration
 
     try:
@@ -584,10 +585,10 @@ async def get_slots(venue_id: str, date: str, request: Request):
 
     slots = []
     for start, end, turf_num, turf_name, sport, turf_price in slot_defs:
-        is_booked = f"{start}-{turf_num}" in booked_set
-        slot_lock_key = f"{start}-{turf_num}"
-        locked_by = lock_map.get(slot_lock_key)
-        if is_booked:
+        slot_key = f"{start}-{turf_num}"
+        booked_info = booked_map.get(slot_key)
+        locked_by = lock_map.get(slot_key)
+        if booked_info:
             status = "booked"
         elif locked_by and locked_by == current_uid:
             status = "locked_by_you"
@@ -601,7 +602,7 @@ async def get_slots(venue_id: str, date: str, request: Request):
         for rule in rules:
             price = apply_rule(price, rule, date, start, dow)
 
-        slots.append({
+        s = {
             "start_time": start, "end_time": end, "turf_number": turf_num,
             "turf_name": turf_name, "sport": sport,
             "price": price,
@@ -609,7 +610,12 @@ async def get_slots(venue_id: str, date: str, request: Request):
             "has_offer": price < original_price,
             "status": status,
             "locked_by": locked_by if locked_by and locked_by != current_uid else None,
-        })
+        }
+        if booked_info:
+            s["booking_id"] = booked_info["id"]
+            s["booking_start"] = booked_info["start"]
+            s["booking_end"] = booked_info["end"]
+        slots.append(s)
     return {"venue_id": venue_id, "date": date, "slots": slots}
 
 

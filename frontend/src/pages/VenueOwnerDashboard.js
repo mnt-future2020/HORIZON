@@ -2497,7 +2497,7 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking }) {
                         <div className={`pointer-events-none absolute left-1/2 -translate-x-1/2 z-50 opacity-0 group-hover:opacity-100 transition-opacity duration-150 delay-300 group-hover:delay-300 whitespace-nowrap ${rowIdx === 0 ? "top-full mt-2" : "bottom-full mb-2"}`}>
                           <div className="bg-gray-900 text-white text-xs font-medium rounded-lg px-3 py-2 shadow-xl flex flex-col gap-0.5">
                             <span className="font-semibold text-white">{turf.turf_name}</span>
-                            <span className="text-white/60">{fmt12h(time.start_time)} – {fmt12h(time.end_time)}</span>
+                            <span className="text-white/60">{fmt12h(slot?.booking_start || time.start_time)} – {fmt12h(slot?.booking_end || time.end_time)}</span>
                             <div className="flex items-center gap-2 mt-0.5">
                               <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${badgeStyle}`}>{statusLabels[status] || status}</span>
                               {slot?.price != null && <span className="text-white/70 font-mono">₹{slot.price}</span>}
