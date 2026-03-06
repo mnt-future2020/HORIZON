@@ -261,7 +261,7 @@ export default function VenueFinancePage() {
     const durationLabel = durationMins >= 60 ? `${durationMins / 60}hr` : `${durationMins}min`;
     const desc = `${sportLabel} - ${courtName} (${invBookingDate}, ${invStartTime}-${invEndTime}, ${durationLabel})`;
     setInvoiceItems([{ description: desc, qty: "1", rate: String(invTotalPrice) }]);
-  }, [invStartTime, invCourt, invSport, invDuration, invTotalPrice]);
+  }, [invStartTime, invCourt, invSport, invDuration, invTotalPrice, invBookingDate, invCourts, invEndTime, invSlotDuration, invoiceForm.venue_id]);
 
   // Load summary always (stat cards), other data lazily per active tab
   useEffect(() => {
