@@ -380,6 +380,13 @@
   animation: countSlideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* Prevent Radix UI Select from shifting layout when toggling body overflow */
+body[data-scroll-locked] {
+  overflow: auto !important;
+  margin-right: 0px !important;
+  padding-right: 0px !important;
+}
+
 /* Hide scrollbar utility */
 .hide-scrollbar {
   -ms-overflow-style: none;
