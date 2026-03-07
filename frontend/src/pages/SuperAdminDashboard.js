@@ -232,9 +232,9 @@ function OverviewTab() {
 }
 
 function UsersTab() {
-  const [users, setUsers] = useState(null);
+  const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState(() => getInitParam("filter") || "all");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(() => parseInt(getInitParam("page") || "1", 10));
   const [totalPages, setTotalPages] = useState(1);
   const [totalUsers, setTotalUsers] = useState(0);
@@ -354,10 +354,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.03 }}
+    <div
       className="flex flex-col md:flex-row md:items-center justify-between p-3 sm:p-4 hover:bg-secondary/30 transition-colors rounded-xl sm:rounded-2xl group gap-3"
     >
       {/* User info row */}
@@ -485,17 +482,12 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-  if (users === null) return <AdminUsersSkeleton />;
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
+    <div
       className="space-y-4"
       data-testid="admin-users-tab"
     >
@@ -512,7 +504,9 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         ))}
       </div>
       <div className={`transition-opacity duration-200 ${loading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
-        {users.length === 0 ? (
+        {users.length === 0 && loading ? (
+          <div className="bg-card border border-border/40 rounded-2xl sm:rounded-[28px] p-1.5 sm:p-2 shadow-sm min-h-[300px]" />
+        ) : users.length === 0 ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -720,7 +714,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         </DialogContent>
       </Dialog>
 
-    </motion.div>
+    </div>
   );
 }
 
@@ -2253,11 +2247,15 @@ export default function SuperAdminDashboard() {
               </TabsList>
             </div>
 
-            <TabsContent value="overview" className="mt-0 outline-none w-full"><OverviewTab /></TabsContent>
-            <TabsContent value="users" className="mt-0 outline-none w-full"><UsersTab /></TabsContent>
-            <TabsContent value="venues" className="mt-0 outline-none w-full"><VenuesTab /></TabsContent>
-            <TabsContent value="payouts" className="mt-0 outline-none w-full"><PayoutsTab /></TabsContent>
-            <TabsContent value="settings" className="mt-0 outline-none w-full"><SettingsTab /></TabsContent>
+            {["overview", "users", "venues", "payouts", "settings"].map((t) => (
+              <TabsContent key={t} value={t} forceMount className={`mt-0 outline-none w-full ${activeTab !== t ? "hidden" : ""}`}>
+                {t === "overview" && <OverviewTab />}
+                {t === "users" && <UsersTab />}
+                {t === "venues" && <VenuesTab />}
+                {t === "payouts" && <PayoutsTab />}
+                {t === "settings" && <SettingsTab />}
+              </TabsContent>
+            ))}
           </Tabs>
         </motion.div>
       </div>
