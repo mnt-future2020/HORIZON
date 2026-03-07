@@ -289,10 +289,10 @@ export default function TeamsPage() {
                       {t.description || `${t.sport} team`}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge variant="sport" className="text-[10px] capitalize">
+                      <Badge variant="sport" className="text-xs capitalize">
                         {t.sport}
                       </Badge>
-                      <span className="admin-secondary text-[10px]">
+                      <span className="admin-secondary text-xs">
                         {t.player_count || 0}/{t.max_players} Lobbians
                       </span>
                     </div>
@@ -319,7 +319,7 @@ export default function TeamsPage() {
                       >
                         {s.value}
                       </div>
-                      <div className="text-[10px] text-muted-foreground admin-btn">
+                      <div className="text-xs text-muted-foreground admin-btn">
                         {s.label}
                       </div>
                     </div>
@@ -329,7 +329,7 @@ export default function TeamsPage() {
                 {/* Captain */}
                 <div className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-xl bg-secondary/20">
                   <Crown className="h-3 w-3 text-amber-500" />
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Captain:{" "}
                     <strong className="text-foreground">
                       {t.captain_name}
@@ -348,7 +348,7 @@ export default function TeamsPage() {
                     </div>
                   ))}
                   {(t.players || []).length > 6 && (
-                    <span className="text-[10px] text-muted-foreground ml-1">
+                    <span className="text-xs text-muted-foreground ml-1">
                       +{t.players.length - 6} more
                     </span>
                   )}

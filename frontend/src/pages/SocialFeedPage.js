@@ -1382,18 +1382,6 @@ export default function SocialFeedPage() {
                     {/* Spacer to push bookmarks to right */}
                     <div className="flex-1" />
 
-                    {/* Message author */}
-                    {post.user_id !== user?.id && (
-                      <button
-                        className="text-muted-foreground hover:text-brand-600 transition-colors group min-h-[44px] min-w-[44px] flex items-center justify-center"
-                        onClick={() => navigate(`/chat?user=${post.user_id}`)}
-                        title="Message"
-                        aria-label={`Message ${post.user_name}`}
-                      >
-                        <MessageSquare className="h-5 w-5 group-hover:scale-110 transition-transform" />
-                      </button>
-                    )}
-
                     {/* Bookmark */}
                     <button
                       className="text-muted-foreground hover:text-brand-600 transition-colors group ml-1 sm:ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
@@ -1635,7 +1623,7 @@ export default function SocialFeedPage() {
               </div>
               <div className="flex flex-col gap-5">
                 {(algoPlayers.length > 0 ? algoPlayers : suggestedFollows)
-                  .slice(0, 5)
+                  .slice(0, 4)
                   .map((s) => (
                     <div
                       key={s.id}

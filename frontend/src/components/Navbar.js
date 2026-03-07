@@ -556,9 +556,9 @@ export function Sidebar() {
     ],
     venue_owner: [
       { to: "/feed", ms: "rss_feed", label: "Feed" },
-      { to: "/owner", ms: "store", label: "Dashboard", exact: true },
-      { to: "/owner/manage", ms: "assignment", label: "Venue Management" },
-      { to: "/owner/finance", ms: "account_balance", label: "Finance" },
+      { to: "/owner", ms: "dashboard", label: "Dashboard", exact: true },
+      { to: "/owner/manage", ms: "storefront", label: "Venue Management" },
+      { to: "/owner/finance", ms: "payments", label: "Finance" },
       { to: "/pos", ms: "point_of_sale", label: "POS" },
       { to: "/iot", ms: "sensors", label: "IoT" },
       { to: "/chat", ms: "forum", label: "Chat" },
@@ -566,8 +566,8 @@ export function Sidebar() {
     ],
     coach: [
       { to: "/feed", ms: "rss_feed", label: "Feed" },
-      { to: "/coach", ms: "sports", label: "Dashboard", exact: true },
-      { to: "/coach/manage", ms: "assignment", label: "Coach Management" },
+      { to: "/coach", ms: "dashboard", label: "Dashboard", exact: true },
+      { to: "/coach/manage", ms: "fitness_center", label: "Coach Management" },
       { to: "/venues", ms: "location_on", label: "Venues" },
       { to: "/tournaments", ms: "emoji_events", label: "Tournaments" },
       { to: "/teams", ms: "shield", label: "Teams" },
