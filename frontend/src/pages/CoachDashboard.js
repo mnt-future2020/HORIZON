@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { academyAPI, coachingAPI, organizationAPI, performanceAPI, trainingAPI, payoutAPI } from "@/lib/api";
@@ -26,6 +26,16 @@ import {
   Smartphone, Bell, Smile, Flame, Tag, Mail, BarChart3,
 } from "lucide-react";
 import { CoachDashboardSkeleton } from "@/components/SkeletonLoader";
+
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) { return new URLSearchParams(window.location.search).get(key); }
 
 const COACH_HERO = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?auto=format&fit=crop&w=800&q=80";
 const ACADEMY_EMPTY = "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&w=800&q=80";
@@ -70,7 +80,6 @@ export default function CoachDashboard({ defaultView }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
   const isIndividualCoach = user?.coach_type === "individual";
   const coachSports = user?.coaching_sports?.length ? user.coaching_sports : SPORTS;
 
@@ -88,7 +97,7 @@ export default function CoachDashboard({ defaultView }) {
     setActiveView(routeView);
   }, [routeView]);
 
-  const [coachingSubTab, setCoachingSubTab] = useState(searchParams.get("ctab") || "sessions");
+  const [coachingSubTab, setCoachingSubTab] = useState(getInitParam("ctab") || "sessions");
   // Academy state
   const [academies, setAcademies] = useState([]);
   const [selectedAcademy, setSelectedAcademy] = useState(null);
@@ -101,7 +110,7 @@ export default function CoachDashboard({ defaultView }) {
   });
   const [studentForm, setStudentForm] = useState({ name: "", email: "", phone: "" });
   // Academy enhanced state
-  const [academyTab, setAcademyTab] = useState(searchParams.get("atab") || "overview");
+  const [academyTab, setAcademyTab] = useState(getInitParam("atab") || "overview");
   const [enrollments, setEnrollments] = useState([]);
   const [batches, setBatches] = useState([]);
   const [attendanceRecords, setAttendanceRecords] = useState([]);
@@ -172,7 +181,7 @@ export default function CoachDashboard({ defaultView }) {
 
   // ─── Individual Coach state ───
   const [clients, setClients] = useState([]);
-  const [clientFilter, setClientFilter] = useState(searchParams.get("cf") || "all");
+  const [clientFilter, setClientFilter] = useState(getInitParam("cf") || "all");
   const [addClientOpen, setAddClientOpen] = useState(false);
   const [viewClientId, setViewClientId] = useState(null);
   const [viewClientData, setViewClientData] = useState(null);
@@ -191,30 +200,36 @@ export default function CoachDashboard({ defaultView }) {
   const [paymentForm, setPaymentForm] = useState({ client_id: "", amount: "", mode: "cash", reference: "", period: new Date().toISOString().slice(0, 7), notes: "" });
   const [revenueData, setRevenueData] = useState(null);
   const [onboardingData, setOnboardingData] = useState(null);
-  const [mgmtTab, setMgmtTab] = useState(searchParams.get("mtab") || "schedule");
-  const [indScheduleTab, setIndScheduleTab] = useState(searchParams.get("stab") || "upcoming");
+  const [mgmtTab, setMgmtTab] = useState(getInitParam("mtab") || "schedule");
+  const [indScheduleTab, setIndScheduleTab] = useState(getInitParam("stab") || "upcoming");
   // ─── Schedule filters ───
-  const [sessionStatusFilter, setSessionStatusFilter] = useState(searchParams.get("sf") || "all"); // all | today | upcoming | completed | cancelled
+  const [sessionStatusFilter, setSessionStatusFilter] = useState(getInitParam("sf") || "all"); // all | today | upcoming | completed | cancelled
   const [sessionSearch, setSessionSearch] = useState("");
-  const [offlineLogClientFilter, setOfflineLogClientFilter] = useState("");
-  const [offlineLogPaymentFilter, setOfflineLogPaymentFilter] = useState("all");
-  const [offlineLogDateFrom, setOfflineLogDateFrom] = useState("");
-  const [offlineLogDateTo, setOfflineLogDateTo] = useState("");
+  const [offlineLogClientFilter, setOfflineLogClientFilter] = useState(() => getInitParam("olc") || "");
+  const [offlineLogPaymentFilter, setOfflineLogPaymentFilter] = useState(() => getInitParam("olp") || "all");
+  const [offlineLogDateFrom, setOfflineLogDateFrom] = useState(() => getInitParam("oldf") || "");
+  const [offlineLogDateTo, setOfflineLogDateTo] = useState(() => getInitParam("oldt") || "");
   // ─── Client filters ───
   const [clientSearch, setClientSearch] = useState("");
-  const [clientSportFilter, setClientSportFilter] = useState(searchParams.get("csport") || "all");
-  const [clientSortBy, setClientSortBy] = useState(searchParams.get("csort") || "name"); // name | joined | fee
+  const [clientSportFilter, setClientSportFilter] = useState(getInitParam("csport") || "all");
+  const [clientSortBy, setClientSortBy] = useState(getInitParam("csort") || "name"); // name | joined | fee
   // ─── Finance enhanced state ───
-  const [financeSubTab, setFinanceSubTab] = useState(searchParams.get("ftab") || "overview");
+  const [financeSubTab, setFinanceSubTab] = useState(getInitParam("ftab") || "overview");
   const [financeSummaryData, setFinanceSummaryData] = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const [transactionFilters, setTransactionFilters] = useState({ date_from: "", date_to: "", type: "all", category: "", payment_mode: "" });
+  const [transactionFilters, setTransactionFilters] = useState(() => ({
+    date_from: getInitParam("tdf") || "",
+    date_to: getInitParam("tdt") || "",
+    type: getInitParam("ttype") || "all",
+    category: "",
+    payment_mode: "",
+  }));
   const [expenses, setExpenses] = useState([]);
   const [addExpenseOpen, setAddExpenseOpen] = useState(false);
   const [expenseForm, setExpenseForm] = useState({ category: "venue_rent", amount: "", date: new Date().toISOString().slice(0, 10), description: "", payment_mode: "cash", reference: "" });
   const [editExpenseId, setEditExpenseId] = useState(null);
   const [clientOutstanding, setClientOutstanding] = useState([]);
-  const [outstandingFilter, setOutstandingFilter] = useState(searchParams.get("of") || "all");
+  const [outstandingFilter, setOutstandingFilter] = useState(getInitParam("of") || "all");
   const [reportMonth, setReportMonth] = useState(new Date().toISOString().slice(0, 7));
   // ─── Invoice state ───
   const [invoices, setInvoices] = useState([]);
@@ -222,8 +237,8 @@ export default function CoachDashboard({ defaultView }) {
   const [invoiceCreating, setInvoiceCreating] = useState(false);
   const [invoiceItems, setInvoiceItems] = useState([{ description: "", qty: "1", rate: "" }]);
   const [invoiceForm, setInvoiceForm] = useState({ client_id: "", client_name: "", client_phone: "", client_email: "", date: new Date().toISOString().slice(0, 10), due_date: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
-  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState(searchParams.get("isf") || "all");
-  const [invoiceMonth, setInvoiceMonth] = useState(searchParams.get("imonth") || new Date().toISOString().slice(0, 7));
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState(getInitParam("isf") || "all");
+  const [invoiceMonth, setInvoiceMonth] = useState(getInitParam("imonth") || new Date().toISOString().slice(0, 7));
   const [gstSettings, setGstSettings] = useState({ gst_enabled: false, gst_rate: 18, gstin: "", invoice_prefix: "INV" });
   const [showGSTSettings, setShowGSTSettings] = useState(false);
   const [gstSaving, setGstSaving] = useState(false);
@@ -237,26 +252,34 @@ export default function CoachDashboard({ defaultView }) {
   const [payoutDetailDialog, setPayoutDetailDialog] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Sync tab/filter state → URL params
-  useEffect(() => {
-    setSearchParams(prev => {
-      const p = new URLSearchParams(prev);
-      if (coachingSubTab !== "sessions") p.set("ctab", coachingSubTab); else p.delete("ctab");
-      if (academyTab !== "overview") p.set("atab", academyTab); else p.delete("atab");
-      if (mgmtTab !== "schedule") p.set("mtab", mgmtTab); else p.delete("mtab");
-      if (indScheduleTab !== "upcoming") p.set("stab", indScheduleTab); else p.delete("stab");
-      if (financeSubTab !== "overview") p.set("ftab", financeSubTab); else p.delete("ftab");
-      if (clientFilter !== "all") p.set("cf", clientFilter); else p.delete("cf");
-      if (clientSportFilter !== "all") p.set("csport", clientSportFilter); else p.delete("csport");
-      if (clientSortBy !== "name") p.set("csort", clientSortBy); else p.delete("csort");
-      if (sessionStatusFilter !== "all") p.set("sf", sessionStatusFilter); else p.delete("sf");
-      if (outstandingFilter !== "all") p.set("of", outstandingFilter); else p.delete("of");
-      if (invoiceStatusFilter !== "all") p.set("isf", invoiceStatusFilter); else p.delete("isf");
-      const curMonth = new Date().toISOString().slice(0, 7);
-      if (invoiceMonth !== curMonth) p.set("imonth", invoiceMonth); else p.delete("imonth");
-      return p;
-    }, { replace: true });
-  }, [coachingSubTab, academyTab, mgmtTab, indScheduleTab, financeSubTab, clientFilter, clientSportFilter, clientSortBy, sessionStatusFilter, outstandingFilter, invoiceStatusFilter, invoiceMonth, setSearchParams]); // eslint-disable-line react-hooks/exhaustive-deps
+  // URL-syncing wrappers — handler-based, no sync effect, no re-render cascades
+  const setCoachingSubTabURL = useCallback((v) => { setCoachingSubTab(v); replaceParams({ ctab: v !== "sessions" ? v : null }); }, []);
+  const setAcademyTabURL = useCallback((v) => { setAcademyTab(v); replaceParams({ atab: v !== "overview" ? v : null }); }, []);
+  const setMgmtTabURL = useCallback((v) => { setMgmtTab(v); replaceParams({ mtab: v !== "schedule" ? v : null }); }, []);
+  const setIndScheduleTabURL = useCallback((v) => { setIndScheduleTab(v); replaceParams({ stab: v !== "upcoming" ? v : null }); }, []);
+  const setFinanceSubTabURL = useCallback((v) => { setFinanceSubTab(v); replaceParams({ ftab: v !== "overview" ? v : null }); }, []);
+  const setClientFilterURL = useCallback((v) => { setClientFilter(v); replaceParams({ cf: v !== "all" ? v : null }); }, []);
+  const setClientSportFilterURL = useCallback((v) => { setClientSportFilter(v); replaceParams({ csport: v !== "all" ? v : null }); }, []);
+  const setClientSortByURL = useCallback((v) => { setClientSortBy(v); replaceParams({ csort: v !== "name" ? v : null }); }, []);
+  const setSessionStatusFilterURL = useCallback((v) => { setSessionStatusFilter(v); replaceParams({ sf: v !== "all" ? v : null }); }, []);
+  const setOutstandingFilterURL = useCallback((v) => { setOutstandingFilter(v); replaceParams({ of: v !== "all" ? v : null }); }, []);
+  const setInvoiceStatusFilterURL = useCallback((v) => { setInvoiceStatusFilter(v); replaceParams({ isf: v !== "all" ? v : null }); }, []);
+  const setInvoiceMonthURL = useCallback((v) => { setInvoiceMonth(v); const cur = new Date().toISOString().slice(0, 7); replaceParams({ imonth: v !== cur ? v : null }); }, []);
+  const setTransactionFiltersURL = useCallback((updater) => {
+    setTransactionFilters(prev => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      replaceParams({
+        tdf: next.date_from || null,
+        tdt: next.date_to || null,
+        ttype: next.type !== "all" ? next.type : null,
+      });
+      return next;
+    });
+  }, []);
+  const setOfflineLogClientFilterURL = useCallback((v) => { setOfflineLogClientFilter(v); replaceParams({ olc: v || null }); }, []);
+  const setOfflineLogPaymentFilterURL = useCallback((v) => { setOfflineLogPaymentFilter(v); replaceParams({ olp: v !== "all" ? v : null }); }, []);
+  const setOfflineLogDateFromURL = useCallback((v) => { setOfflineLogDateFrom(v); replaceParams({ oldf: v || null }); }, []);
+  const setOfflineLogDateToURL = useCallback((v) => { setOfflineLogDateTo(v); replaceParams({ oldt: v || null }); }, []);
 
   useScrollRestoration(
     location.pathname === "/coach/manage" ? "coach_manage" : "coach_dash",
@@ -1347,7 +1370,7 @@ export default function CoachDashboard({ defaultView }) {
         <>
           <div className="flex flex-wrap gap-3 mb-6">
             {COACHING_SUB_TABS.map(({ id, icon: Icon, label }) => (
-              <button key={id} onClick={() => setCoachingSubTab(id)}
+              <button key={id} onClick={() => setCoachingSubTabURL(id)}
                 className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${coachingSubTab === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                 <Icon className="h-3.5 w-3.5" />{label}
               </button>
@@ -1853,7 +1876,7 @@ export default function CoachDashboard({ defaultView }) {
                   { id: "fees", icon: IndianRupee, label: "Fees" },
                   { id: "progress", icon: Activity, label: "Progress" },
                 ].map(t => (
-                  <button key={t.id} onClick={() => setAcademyTab(t.id)}
+                  <button key={t.id} onClick={() => setAcademyTabURL(t.id)}
                     className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn whitespace-nowrap transition-all active:scale-95 ${
                       academyTab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"
                     }`}>
@@ -2763,7 +2786,7 @@ export default function CoachDashboard({ defaultView }) {
                 {[
                   { key: "profile_completed", label: "Complete Profile", action: () => navigate("/profile") },
                   { key: "availability_set", label: "Set Availability", action: () => navigate("/coach/settings") },
-                  { key: "first_package_created", label: "Create First Package", action: () => { setActiveView("coach_mgmt"); setMgmtTab("packages"); } },
+                  { key: "first_package_created", label: "Create First Package", action: () => { setActiveView("coach_mgmt"); setMgmtTabURL("packages"); } },
                   { key: "documents_uploaded", label: "Upload Documents", action: () => navigate("/profile") },
                 ].map(step => (
                   <button key={step.key} onClick={step.action}
@@ -2850,7 +2873,7 @@ export default function CoachDashboard({ defaultView }) {
                         <p className="font-bold text-sm">{pendingPayments.length} Unpaid Sessions</p>
                         <p className="text-xs text-muted-foreground">₹{pendingPayments.reduce((sum, s) => sum + (s.amount || 0), 0).toLocaleString()} pending</p>
                       </div>
-                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => { setActiveView("coach_mgmt"); setMgmtTab("finance"); }}>View</Button>
+                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => { setActiveView("coach_mgmt"); setMgmtTabURL("finance"); }}>View</Button>
                     </div>
                   )}
                   {unconfirmed.length > 0 && (
@@ -2860,7 +2883,7 @@ export default function CoachDashboard({ defaultView }) {
                         <p className="font-bold text-sm">{unconfirmed.length} Pending Bookings</p>
                         <p className="text-xs text-muted-foreground">Awaiting confirmation</p>
                       </div>
-                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => { setActiveView("coach_mgmt"); setMgmtTab("schedule"); }}>View</Button>
+                      <Button size="sm" variant="outline" className="ml-auto text-xs h-7" onClick={() => { setActiveView("coach_mgmt"); setMgmtTabURL("schedule"); }}>View</Button>
                     </div>
                   )}
                 </div>
@@ -2875,7 +2898,7 @@ export default function CoachDashboard({ defaultView }) {
         <>
           <div className="flex flex-wrap gap-3 mb-6">
             {MGMT_SUB_TABS.map(({ id, icon: Icon, label }) => (
-              <button key={id} onClick={() => setMgmtTab(id)}
+              <button key={id} onClick={() => setMgmtTabURL(id)}
                 className={`flex items-center gap-1.5 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${mgmtTab === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                 <Icon className="h-3.5 w-3.5" />{label}
               </button>
@@ -2888,7 +2911,7 @@ export default function CoachDashboard({ defaultView }) {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex gap-3">
               {[{ id: "upcoming", label: "Sessions" }, { id: "offline", label: "Offline Log" }].map(t => (
-                <button key={t.id} onClick={() => setIndScheduleTab(t.id)}
+                <button key={t.id} onClick={() => setIndScheduleTabURL(t.id)}
                   className={`px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${indScheduleTab === t.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                   {t.label}
                 </button>
@@ -2929,7 +2952,7 @@ export default function CoachDashboard({ defaultView }) {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {[["all","All"], ["today","Today"], ["upcoming","Upcoming"], ["completed","Done"], ["cancelled","Cancelled"]].map(([id, label]) => (
-                      <button key={id} onClick={() => setSessionStatusFilter(id)}
+                      <button key={id} onClick={() => setSessionStatusFilterURL(id)}
                         className={`px-4 py-1.5 rounded-full admin-btn transition-all active:scale-95 ${sessionStatusFilter === id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                         {label}
                         {id !== "all" && sessions.filter(s =>
@@ -3119,23 +3142,23 @@ export default function CoachDashboard({ defaultView }) {
                 )}
                 {/* Filter bar */}
                 <div className="flex flex-wrap gap-2 items-center">
-                  <input value={offlineLogClientFilter} onChange={e => setOfflineLogClientFilter(e.target.value)}
+                  <input value={offlineLogClientFilter} onChange={e => setOfflineLogClientFilterURL(e.target.value)}
                     placeholder="Search client…"
                     className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-3 text-xs focus:outline-none focus:border-brand-600/40 flex-1 min-w-[140px] max-w-xs" />
-                  <select value={offlineLogPaymentFilter} onChange={e => setOfflineLogPaymentFilter(e.target.value)}
+                  <select value={offlineLogPaymentFilter} onChange={e => setOfflineLogPaymentFilterURL(e.target.value)}
                     className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer text-foreground">
                     <option value="all">All payments</option>
                     <option value="paid">Paid</option>
                     <option value="pending">Pending</option>
                     <option value="waived">Waived</option>
                   </select>
-                  <input type="date" value={offlineLogDateFrom} onChange={e => setOfflineLogDateFrom(e.target.value)}
+                  <input type="date" value={offlineLogDateFrom} onChange={e => setOfflineLogDateFromURL(e.target.value)}
                     className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer" />
                   <span className="text-xs text-muted-foreground">–</span>
-                  <input type="date" value={offlineLogDateTo} onChange={e => setOfflineLogDateTo(e.target.value)}
+                  <input type="date" value={offlineLogDateTo} onChange={e => setOfflineLogDateToURL(e.target.value)}
                     className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer" />
                   {(offlineLogClientFilter || offlineLogPaymentFilter !== "all" || offlineLogDateFrom || offlineLogDateTo) && (
-                    <button onClick={() => { setOfflineLogClientFilter(""); setOfflineLogPaymentFilter("all"); setOfflineLogDateFrom(""); setOfflineLogDateTo(""); }}
+                    <button onClick={() => { setOfflineLogClientFilterURL(""); setOfflineLogPaymentFilterURL("all"); setOfflineLogDateFromURL(""); setOfflineLogDateToURL(""); }}
                       className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">✕ Clear</button>
                   )}
                 </div>
@@ -3251,7 +3274,7 @@ export default function CoachDashboard({ defaultView }) {
                 { id: "online",    label: "Online",    count: clients.filter(c => c.client_source === "online").length },
                 { id: "reminders", label: "Reminders", count: null },
               ].map(f => (
-                <button key={f.id} onClick={() => { setClientFilter(f.id); if (f.id === "reminders") loadReminders(); }}
+                <button key={f.id} onClick={() => { setClientFilterURL(f.id); if (f.id === "reminders") loadReminders(); }}
                   className={`flex items-center gap-1 px-5 py-2 rounded-full admin-btn transition-all active:scale-95 ${clientFilter === f.id ? "bg-brand-600 text-white shadow-md shadow-brand-600/20" : "bg-card border border-border/40 text-muted-foreground hover:text-foreground hover:border-border"}`}>
                   {f.label}
                   {f.count !== null && f.count > 0 && (
@@ -3279,19 +3302,19 @@ export default function CoachDashboard({ defaultView }) {
                   placeholder="Search name or phone…"
                   className="w-full h-8 bg-secondary/20 border border-border/50 rounded-lg pl-7 pr-3 text-xs focus:outline-none focus:border-brand-600/40" />
               </div>
-              <select value={clientSportFilter} onChange={e => setClientSportFilter(e.target.value)}
+              <select value={clientSportFilter} onChange={e => setClientSportFilterURL(e.target.value)}
                 className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer text-foreground">
                 <option value="all">All sports</option>
                 {coachSports.map(s => <option key={s} value={s} className="capitalize">{s.replace("_", " ")}</option>)}
               </select>
-              <select value={clientSortBy} onChange={e => setClientSortBy(e.target.value)}
+              <select value={clientSortBy} onChange={e => setClientSortByURL(e.target.value)}
                 className="h-8 bg-secondary/20 border border-border/50 rounded-lg px-2 text-xs focus:outline-none cursor-pointer text-foreground">
                 <option value="name">Sort: Name</option>
                 <option value="joined">Sort: Newest</option>
                 <option value="fee">Sort: Fee ↓</option>
               </select>
               {(clientSearch || clientSportFilter !== "all") && (
-                <button onClick={() => { setClientSearch(""); setClientSportFilter("all"); }}
+                <button onClick={() => { setClientSearch(""); setClientSportFilterURL("all"); }}
                   className="text-[10px] text-muted-foreground hover:text-destructive transition-colors">✕ Clear</button>
               )}
             </div>
@@ -4030,7 +4053,7 @@ export default function CoachDashboard({ defaultView }) {
               { id: "invoices", label: `Invoices${invoices.length ? ` (${invoices.length})` : ""}` },
               { id: "payouts", label: "Payouts" },
             ].map(({ id, label }) => (
-              <button key={id} onClick={() => setFinanceSubTab(id)}
+              <button key={id} onClick={() => setFinanceSubTabURL(id)}
                 className={`flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${financeSubTab === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 {label}
               </button>
@@ -4127,18 +4150,18 @@ export default function CoachDashboard({ defaultView }) {
                 <div>
                   <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">From</Label>
                   <Input type="date" value={transactionFilters.date_from}
-                    onChange={e => setTransactionFilters(f => ({ ...f, date_from: e.target.value }))}
+                    onChange={e => setTransactionFiltersURL(f => ({ ...f, date_from: e.target.value }))}
                     className="mt-1 bg-background border-border text-xs h-8" />
                 </div>
                 <div>
                   <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">To</Label>
                   <Input type="date" value={transactionFilters.date_to}
-                    onChange={e => setTransactionFilters(f => ({ ...f, date_to: e.target.value }))}
+                    onChange={e => setTransactionFiltersURL(f => ({ ...f, date_to: e.target.value }))}
                     className="mt-1 bg-background border-border text-xs h-8" />
                 </div>
                 <div>
                   <Label className="text-[10px] text-muted-foreground uppercase tracking-wide">Type</Label>
-                  <Select value={transactionFilters.type} onValueChange={v => setTransactionFilters(f => ({ ...f, type: v }))}>
+                  <Select value={transactionFilters.type} onValueChange={v => setTransactionFiltersURL(f => ({ ...f, type: v }))}>
                     <SelectTrigger className="mt-1 bg-background border-border text-xs h-8"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All</SelectItem>
@@ -4312,7 +4335,7 @@ export default function CoachDashboard({ defaultView }) {
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 {["all", "overdue", "pending", "paid"].map(f => (
-                  <button key={f} onClick={() => setOutstandingFilter(f)}
+                  <button key={f} onClick={() => setOutstandingFilterURL(f)}
                     className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${outstandingFilter === f ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 border-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
                     {f.charAt(0).toUpperCase() + f.slice(1)}
                   </button>
@@ -4379,7 +4402,7 @@ export default function CoachDashboard({ defaultView }) {
                 <div className="flex items-center gap-2 flex-wrap">
                   {["all", "sent", "paid", "draft"].map(s => (
                     <button key={s} onClick={() => {
-                      setInvoiceStatusFilter(s);
+                      setInvoiceStatusFilterURL(s);
                       loadInvoices({ month: invoiceMonth, status: s !== "all" ? s : undefined });
                     }}
                       className={`px-3 py-1 rounded-full text-xs font-bold border transition-all ${invoiceStatusFilter === s ? "bg-brand-600 text-white shadow-md shadow-brand-600/20 border-brand-600" : "border-border text-muted-foreground hover:text-foreground"}`}>
@@ -4387,7 +4410,7 @@ export default function CoachDashboard({ defaultView }) {
                     </button>
                   ))}
                   <input type="month" value={invoiceMonth}
-                    onChange={e => { setInvoiceMonth(e.target.value); loadInvoices({ month: e.target.value, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }); }}
+                    onChange={e => { setInvoiceMonthURL(e.target.value); loadInvoices({ month: e.target.value, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }); }}
                     className="bg-background border border-border rounded-md px-2 py-1 text-xs text-foreground" />
                 </div>
                 <div className="flex items-center gap-2">
