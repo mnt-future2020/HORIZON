@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) { return new URLSearchParams(window.location.search).get(key); }
 import { useAuth } from "@/contexts/AuthContext";
 import {
   socialAPI,
@@ -75,13 +85,14 @@ function safeSessionSet(key, value) {
 export default function SocialFeedPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nextCursor, setNextCursor] = useState(null);
   const [hasMore, setHasMore] = useState(false);
   const [posting, setPosting] = useState(false);
-  const [feedTab, setFeedTab] = useState(searchParams.get("tab") || "for_you");
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [feedTab, setFeedTab] = useState(() => getInitParam("tab") || "for_you");
 
   // Post composer
   const [newContent, setNewContent] = useState("");
@@ -132,13 +143,37 @@ export default function SocialFeedPage() {
   const reactionPickerRef = useRef(null);
   const restoredRef = useRef(false); // prevent double-load on re-render
   const feedAbortRef = useRef(null); // abort in-flight feed requests on tab switch
+  const loadingMoreRef = useRef(false); // synchronous guard against double-click
+  const feedTabRef = useRef(feedTab);
+  const postsRef = useRef(posts);
+  postsRef.current = posts;
+
+  // Save snapshot at click time (scrollY & posts guaranteed correct) then navigate
+  const goToProfile = useCallback((userId) => {
+    const urlCursor = new URLSearchParams(window.location.search).get("cursor");
+    safeSessionSet("feedSnapshot", JSON.stringify({
+      cursor: urlCursor || null,
+      scrollY: window.scrollY,
+      tab: feedTabRef.current,
+    }));
+    safeSessionSet("feedPosts", JSON.stringify(postsRef.current.slice(0, 50)));
+    navigate(`/player-card/${userId}`);
+  }, [navigate]);
 
   const loadFeed = useCallback(
     async (cursor = null, tab = feedTab) => {
-      // Abort previous in-flight request
-      if (feedAbortRef.current) feedAbortRef.current.abort();
+      // Synchronous ref guard — blocks double-click before React re-renders
+      if (cursor && loadingMoreRef.current) return;
+      // Only abort for fresh loads (no cursor), not for Load More
+      if (!cursor) {
+        if (feedAbortRef.current) feedAbortRef.current.abort();
+      }
       const controller = new AbortController();
       feedAbortRef.current = controller;
+      if (cursor) {
+        loadingMoreRef.current = true;
+        setLoadingMore(true);
+      }
       try {
         const res = await socialAPI.getFeed(tab, cursor, { signal: controller.signal });
         const data = res.data || {};
@@ -159,6 +194,8 @@ export default function SocialFeedPage() {
         }
       } finally {
         setLoading(false);
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
       }
     },
     [feedTab],
@@ -228,54 +265,55 @@ export default function SocialFeedPage() {
     } catch {}
   }, []);
 
-  // Save posts + scroll when leaving — so back button restores exact same view
-  useEffect(() => {
-    return () => {
-      const urlCursor = new URLSearchParams(window.location.search).get("cursor");
-      if (urlCursor) {
-        safeSessionSet("feedSnapshot", JSON.stringify({
-          cursor: urlCursor,
-          scrollY: window.scrollY,
-        }));
-        safeSessionSet("feedPosts", JSON.stringify(posts.slice(0, 50)));
-      }
-    };
-  }, [posts]);
-
-  // On mount: restore snapshot or fresh load
+  // On mount: restore snapshot if returning from profile, otherwise fresh load
   useEffect(() => {
     if (restoredRef.current) return;
     restoredRef.current = true;
 
-    const urlCursor = searchParams.get("cursor");
     const snapshotRaw = sessionStorage.getItem("feedSnapshot");
     const postsRaw = sessionStorage.getItem("feedPosts");
     const snapshot = snapshotRaw ? JSON.parse(snapshotRaw) : null;
 
-    if (urlCursor && snapshot && snapshot.cursor === urlCursor && postsRaw) {
-      // Restore post ORDER from snapshot (no re-ranking), then refresh counts from server
+    // Restore if we have a saved snapshot (only created by goToProfile)
+    if (snapshot && postsRaw) {
       const savedPosts = JSON.parse(postsRaw);
+      // Restore tab if it was saved
+      if (snapshot.tab && snapshot.tab !== feedTab) {
+        setFeedTab(snapshot.tab);
+        feedTabRef.current = snapshot.tab;
+      }
       setPosts(savedPosts);
-      setNextCursor(urlCursor);
-      setHasMore(true);
+      setNextCursor(snapshot.cursor || null);
+      // Hide Load More until background refresh determines correct cursor
+      setHasMore(false);
       setLoading(false);
       sessionStorage.removeItem("feedSnapshot");
       sessionStorage.removeItem("feedPosts");
-      setTimeout(() => {
-        window.scrollTo({ top: snapshot.scrollY || 0, behavior: "instant" });
-      }, 80);
-      // Background count refresh: re-fetch all loaded pages silently, merge updated counts by post ID
+      // Double rAF ensures React has committed and browser has painted.
+      // Extra retry handles lazy-loaded images shifting layout.
+      const targetY = snapshot.scrollY || 0;
+      const scrollRestore = () => window.scrollTo({ top: targetY, behavior: "instant" });
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollRestore();
+          setTimeout(scrollRestore, 150);
+        });
+      });
+      // Background refresh: update counts + determine correct nextCursor/hasMore
+      const restoreTab = snapshot.tab || feedTab;
       const numToRefresh = savedPosts.length;
       (async () => {
         try {
           const allFresh = [];
           let refreshCursor = null;
+          let lastHasMore = false;
           while (allFresh.length < numToRefresh) {
-            const res = await socialAPI.getFeed(feedTab, refreshCursor);
+            const res = await socialAPI.getFeed(restoreTab, refreshCursor);
             const data = res.data || {};
             allFresh.push(...(data.posts || []));
-            if (!data.has_more || !data.next_cursor || allFresh.length >= numToRefresh) break;
-            refreshCursor = data.next_cursor;
+            lastHasMore = data.has_more || false;
+            refreshCursor = data.next_cursor || null;
+            if (!lastHasMore || !refreshCursor || allFresh.length >= numToRefresh) break;
           }
           const freshMap = Object.fromEntries(allFresh.map((p) => [p.id, p]));
           setPosts((prev) =>
@@ -285,6 +323,9 @@ export default function SocialFeedPage() {
                 : p
             )
           );
+          // Now we know the real cursor for the next page
+          setNextCursor(refreshCursor);
+          setHasMore(lastHasMore);
         } catch {}
       })();
       Promise.all([loadStories(), loadEngagement(), loadSuggested(), loadAlgoPlayers(), loadEngScore()]).catch(() => {});
@@ -307,7 +348,7 @@ export default function SocialFeedPage() {
   // Instagram-style: clicking Feed nav button while on feed → scroll top + refresh
   useEffect(() => {
     const handler = () => {
-      setSearchParams({});
+      replaceParams({ tab: null, cursor: null });
       sessionStorage.removeItem("feedSnapshot");
       sessionStorage.removeItem("feedPosts");
       loadFeed(null, feedTab);
@@ -320,9 +361,11 @@ export default function SocialFeedPage() {
 
   const handleTabChange = (tab) => {
     setFeedTab(tab);
+    feedTabRef.current = tab;
     setLoading(true);
-    setSearchParams(tab !== "for_you" ? { tab } : {}, { replace: true });
-    sessionStorage.removeItem("feedScrollY");
+    replaceParams({ tab: tab !== "for_you" ? tab : null, cursor: null });
+    sessionStorage.removeItem("feedSnapshot");
+    sessionStorage.removeItem("feedPosts");
     loadFeed(null, tab);
   };
 
@@ -652,7 +695,7 @@ export default function SocialFeedPage() {
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = async () => {
     setRefreshing(true);
-    setSearchParams({});
+    replaceParams({ tab: null, cursor: null });
     await Promise.all([loadFeed(null, feedTab), loadStories(), loadEngagement()]);
     setRefreshing(false);
   };
@@ -1146,7 +1189,7 @@ export default function SocialFeedPage() {
                     >
                       <div
                         className="w-14 h-14 rounded-full bg-secondary/30 overflow-hidden border-2 border-border/20 cursor-pointer hover:border-brand-600 transition-colors flex items-center justify-center"
-                        onClick={() => navigate(`/player-card/${s.id}`)}
+                        onClick={() => goToProfile(s.id)}
                       >
                         {s.avatar ? (
                           <img
@@ -1194,7 +1237,7 @@ export default function SocialFeedPage() {
                     <div className="flex items-center gap-3 sm:gap-4">
                       <div
                         className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-secondary/30 flex items-center justify-center cursor-pointer overflow-hidden border border-border/20"
-                        onClick={() => navigate(`/player-card/${post.user_id}`)}
+                        onClick={() => goToProfile(post.user_id)}
                       >
                         {post.user_avatar ? (
                           <img
@@ -1211,7 +1254,7 @@ export default function SocialFeedPage() {
                           <span
                             className="font-display font-bold text-[14px] sm:text-[15px] cursor-pointer hover:text-brand-600 transition-colors truncate"
                             onClick={() =>
-                              navigate(`/player-card/${post.user_id}`)
+                              goToProfile(post.user_id)
                             }
                           >
                             {post.user_name}
@@ -1414,7 +1457,7 @@ export default function SocialFeedPage() {
                             <div
                               className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 mt-0.5 overflow-hidden cursor-pointer"
                               onClick={() =>
-                                navigate(`/player-card/${c.user_id}`)
+                                goToProfile(c.user_id)
                               }
                             >
                               {c.user_avatar ? (
@@ -1431,7 +1474,7 @@ export default function SocialFeedPage() {
                               <span
                                 className="font-bold text-xs cursor-pointer hover:text-primary"
                                 onClick={() =>
-                                  navigate(`/player-card/${c.user_id}`)
+                                  goToProfile(c.user_id)
                                 }
                               >
                                 {c.user_name}
@@ -1489,16 +1532,22 @@ export default function SocialFeedPage() {
           </div>
 
           {/* Load More */}
-          {hasMore && (
-            <div className="text-center mt-8">
+          {hasMore && nextCursor && (
+            <div className="text-center mt-8 mb-4">
               <button
-                className="text-sm font-bold text-brand-600 hover:text-brand-700 hover:underline px-6 py-3 sm:py-2 transition-colors min-h-[44px]"
+                className="inline-flex items-center gap-2 text-sm font-bold text-brand-600 hover:text-brand-700 px-6 py-3 sm:py-2 rounded-lg hover:bg-brand-600/5 transition-colors min-h-[44px] disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loadingMore}
                 onClick={() => {
+                  if (!nextCursor || loadingMoreRef.current) return;
                   loadFeed(nextCursor);
-                  if (nextCursor) setSearchParams(feedTab !== "for_you" ? { tab: feedTab, cursor: nextCursor } : { cursor: nextCursor });
+                  replaceParams({ tab: feedTab !== "for_you" ? feedTab : null, cursor: nextCursor });
                 }}
               >
-                Load More
+                {loadingMore ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</>
+                ) : (
+                  "Load More"
+                )}
               </button>
             </div>
           )}
@@ -1631,7 +1680,7 @@ export default function SocialFeedPage() {
                     >
                       <div
                         className="flex items-center gap-3 cursor-pointer group"
-                        onClick={() => navigate(`/player-card/${s.id}`)}
+                        onClick={() => goToProfile(s.id)}
                       >
                         <div className="w-10 h-10 rounded-full bg-secondary/30 overflow-hidden border border-border/20 group-hover:border-brand-600 transition-colors flex items-center justify-center">
                           {s.avatar ? (
@@ -1873,7 +1922,7 @@ export default function SocialFeedPage() {
                         className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center cursor-pointer overflow-hidden"
                         onClick={() => {
                           setFollowModal(null);
-                          navigate(`/player-card/${u.id}`);
+                          goToProfile(u.id);
                         }}
                       >
                         {u.avatar ? (
@@ -1890,7 +1939,7 @@ export default function SocialFeedPage() {
                         className="flex-1 min-w-0 cursor-pointer"
                         onClick={() => {
                           setFollowModal(null);
-                          navigate(`/player-card/${u.id}`);
+                          goToProfile(u.id);
                         }}
                       >
                         <div className="font-bold text-sm truncate">
@@ -1968,7 +2017,7 @@ export default function SocialFeedPage() {
                     <div key={u.id} className="flex items-center gap-3 px-4 py-3 hover:bg-secondary/30 transition-colors">
                       <div
                         className="h-10 w-10 rounded-full bg-secondary/40 flex items-center justify-center overflow-hidden flex-shrink-0 cursor-pointer"
-                        onClick={() => { setShowDiscover(false); navigate(`/player-card/${u.id}`); }}
+                        onClick={() => { setShowDiscover(false); goToProfile(u.id); }}
                       >
                         {u.avatar ? (
                           <img src={mediaUrl(u.avatar)} alt="" className="h-full w-full object-cover" />
@@ -1978,7 +2027,7 @@ export default function SocialFeedPage() {
                       </div>
                       <div
                         className="flex-1 min-w-0 cursor-pointer"
-                        onClick={() => { setShowDiscover(false); navigate(`/player-card/${u.id}`); }}
+                        onClick={() => { setShowDiscover(false); goToProfile(u.id); }}
                       >
                         <p className="text-sm font-semibold truncate">{u.name}</p>
                         {u.sport && <p className="text-[11px] text-muted-foreground capitalize">{u.sport}</p>}
