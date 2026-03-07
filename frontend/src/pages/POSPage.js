@@ -16,6 +16,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI, posAPI } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -173,49 +180,49 @@ function ProductCard({ product, cartQty, onAdd, onRemove }) {
         })()}
       </div>
       <div className="flex-1">
-        <p className="text-xs font-medium text-foreground leading-tight line-clamp-2">
+        <p className="text-sm font-medium text-foreground leading-tight line-clamp-2">
           {product.name}
         </p>
-        <p className="text-[10px] text-muted-foreground mt-0.5 capitalize">
+        <p className="text-xs text-muted-foreground mt-0.5 capitalize">
           {product.category}
         </p>
       </div>
-      <div className="flex items-center justify-between gap-1">
-        <span className="text-sm font-semibold text-brand-600">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-base font-semibold text-brand-600">
           ₹{product.price}
         </span>
         {outOfStock ? (
-          <span className="admin-badge text-[10px] text-destructive">Out</span>
+          <span className="admin-badge text-xs text-destructive">Out</span>
         ) : (
           <div
-            className="flex items-center gap-1"
+            className="flex items-center gap-1.5"
             onClick={(e) => e.stopPropagation()}
           >
             {cartQty > 0 && (
               <button
                 onClick={() => onRemove(product)}
-                className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                className="h-9 w-9 rounded-full bg-secondary flex items-center justify-center hover:bg-destructive/10 transition-colors"
               >
-                <Minus className="h-3.5 w-3.5" />
+                <Minus className="h-4 w-4" />
               </button>
             )}
             {cartQty > 0 && (
-              <span className="text-xs font-semibold w-5 text-center">
+              <span className="text-sm font-semibold w-6 text-center">
                 {cartQty}
               </span>
             )}
             <button
               onClick={() => onAdd(product)}
-              className="h-8 w-8 rounded-full bg-brand-600/20 flex items-center justify-center hover:bg-brand-600/40 transition-colors"
+              className="h-9 w-9 rounded-full bg-brand-600/20 flex items-center justify-center hover:bg-brand-600/40 transition-colors"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-4 w-4" />
             </button>
           </div>
         )}
       </div>
       {product.stock > 0 && (
         <div
-          className={`text-[10px] ${product.stock <= LOW_STOCK_THRESHOLD ? "text-amber-400 font-medium" : "text-muted-foreground/60"}`}
+          className={`text-xs ${product.stock <= LOW_STOCK_THRESHOLD ? "text-amber-400 font-medium" : "text-muted-foreground/60"}`}
         >
           {product.stock} left {product.stock <= LOW_STOCK_THRESHOLD ? "⚠" : ""}
         </div>
@@ -1036,31 +1043,31 @@ function POSTerminal({ user }) {
                                 })()}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-xs font-medium truncate">
+                                <p className="text-sm font-medium truncate">
                                   {product.name}
                                 </p>
-                                <p className="text-[10px] text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                   ₹{product.price} × {qty}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-1 shrink-0">
+                              <div className="flex items-center gap-1.5 shrink-0">
                                 <button
                                   onClick={() => removeFromCart(product)}
-                                  className="h-7 w-7 rounded-full bg-secondary flex items-center justify-center hover:bg-destructive/10 transition-colors"
+                                  className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center hover:bg-destructive/10 transition-colors"
                                 >
-                                  <Minus className="h-3 w-3" />
+                                  <Minus className="h-3.5 w-3.5" />
                                 </button>
-                                <span className="text-xs font-semibold w-5 text-center">
+                                <span className="text-sm font-semibold w-5 text-center">
                                   {qty}
                                 </span>
                                 <button
                                   onClick={() => addToCart(product)}
-                                  className="h-7 w-7 rounded-full bg-brand-600/10 flex items-center justify-center hover:bg-brand-600/20 transition-colors"
+                                  className="h-8 w-8 rounded-full bg-brand-600/10 flex items-center justify-center hover:bg-brand-600/20 transition-colors"
                                 >
-                                  <Plus className="h-3 w-3" />
+                                  <Plus className="h-3.5 w-3.5" />
                                 </button>
                               </div>
-                              <span className="text-xs font-semibold text-brand-600 w-14 text-right">
+                              <span className="text-sm font-semibold text-brand-600 w-14 text-right">
                                 ₹{product.price * qty}
                               </span>
                               <button
@@ -1106,17 +1113,17 @@ function POSTerminal({ user }) {
                           }
                           value={discountValue}
                           onChange={(e) => setDiscountValue(e.target.value)}
-                          className="h-9 text-xs rounded-xl bg-secondary/20 border-border/40"
+                          className="h-10 text-sm rounded-xl bg-secondary/20 border-border/40"
                         />
                         {discountAmount > 0 && (
                           <div className="bg-secondary/30 rounded-2xl p-3 space-y-1.5 text-sm">
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground">
                                 Subtotal
                               </span>
                               <span className="font-medium">₹{cartTotal}</span>
                             </div>
-                            <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center justify-between text-sm">
                               <span className="text-brand-600">
                                 Discount (
                                 {discountType === "percent"
@@ -1170,13 +1177,13 @@ function POSTerminal({ user }) {
                             placeholder="Name"
                             value={customerName}
                             onChange={(e) => setCustomerName(e.target.value)}
-                            className="h-9 text-xs rounded-xl bg-secondary/20 border-border/40"
+                            className="h-10 text-sm rounded-xl bg-secondary/20 border-border/40"
                           />
                           <Input
                             placeholder="Phone"
                             value={customerPhone}
                             onChange={(e) => setCustomerPhone(e.target.value)}
-                            className="h-9 text-xs rounded-xl bg-secondary/20 border-border/40"
+                            className="h-10 text-sm rounded-xl bg-secondary/20 border-border/40"
                             type="tel"
                           />
                         </div>
@@ -1240,12 +1247,12 @@ function POSTerminal({ user }) {
               <div className="flex items-center justify-between">
                 <h2 className="admin-heading">Products Catalog</h2>
                 <button
-                  className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-9 px-4 shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
+                  className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-11 px-5 text-sm shadow-lg shadow-brand-600/20 active:scale-[0.98] transition-all"
                   onClick={openCreateProduct}
                   disabled={!selectedVenue}
                   data-testid="add-product-btn"
                 >
-                  <Plus className="h-3.5 w-3.5 mr-1 inline" /> Add Product
+                  <Plus className="h-4 w-4 mr-1.5 inline" /> Add Product
                 </button>
               </div>
               {products.length === 0 ? (
@@ -1469,19 +1476,19 @@ function POSTerminal({ user }) {
                                 </span>
                               )}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                               {sale.items
                                 ?.map((i) => `${i.name} ×${i.qty}`)
                                 .join(", ")}
                             </p>
                             {sale.discount_amount > 0 && (
-                              <span className="text-[10px] text-brand-600">
+                              <span className="text-xs text-brand-600">
                                 Discount: -₹{sale.discount_amount}
                               </span>
                             )}
                             {(sale.customer_name || sale.customer_phone) && (
-                              <p className="text-[10px] text-muted-foreground mt-0.5">
-                                <User className="h-2.5 w-2.5 inline mr-0.5" />
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                <User className="h-3 w-3 inline mr-0.5" />
                                 {[sale.customer_name, sale.customer_phone]
                                   .filter(Boolean)
                                   .join(" — ")}
@@ -1489,22 +1496,22 @@ function POSTerminal({ user }) {
                             )}
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0">
-                            <span className="admin-label text-[10px]">
+                            <span className="admin-label text-xs">
                               {new Date(sale.created_at).toLocaleTimeString(
                                 "en-IN",
                                 { hour: "2-digit", minute: "2-digit" },
                               )}
                             </span>
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => {
                                   setLastSale(sale);
                                   setShowReceipt(true);
                                 }}
-                                className="h-8 w-8 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-all"
+                                className="h-9 w-9 rounded-xl flex items-center justify-center text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-all"
                                 title="View Receipt"
                               >
-                                <Printer className="h-3.5 w-3.5" />
+                                <Printer className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => {
@@ -1537,10 +1544,10 @@ function POSTerminal({ user }) {
                                     "_blank",
                                   );
                                 }}
-                                className="h-8 w-8 rounded-xl flex items-center justify-center text-brand-600 hover:bg-brand-600/10 transition-all"
+                                className="h-9 w-9 rounded-xl flex items-center justify-center text-brand-600 hover:bg-brand-600/10 transition-all"
                                 title="Share via WhatsApp"
                               >
-                                <Share2 className="h-3.5 w-3.5" />
+                                <Share2 className="h-4 w-4" />
                               </button>
                             </div>
                           </div>
@@ -1572,28 +1579,31 @@ function POSTerminal({ user }) {
             </FormField>
             <div className="grid grid-cols-2 gap-3">
               <FormField label="Category">
-                <select
+                <Select
                   value={productForm.category}
-                  onChange={(e) =>
+                  onValueChange={(val) =>
                     setProductForm((p) => ({
                       ...p,
-                      category: e.target.value,
+                      category: val,
                       emoji: p.emoji || "",
                     }))
                   }
-                  className="w-full h-11 rounded-xl bg-secondary/20 border border-border/40 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-brand-600"
-                  data-testid="product-category-select"
                 >
-                  {CATEGORIES.filter((c) => c.id !== "all").map((c) => (
-                    <option
-                      key={c.id}
-                      value={c.id}
-                      className="text-foreground bg-card"
-                    >
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="h-11 rounded-xl border-border/40 bg-secondary/20 focus:ring-brand-600/50" data-testid="product-category-select">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.filter((c) => c.id !== "all").map((c) => (
+                      <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        className="capitalize focus:bg-brand-600 focus:text-white"
+                      >
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </FormField>
               <FormField label="Emoji">
                 <Input

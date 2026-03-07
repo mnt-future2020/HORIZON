@@ -75,8 +75,8 @@ import {
   RotateCcw,
 } from "lucide-react";
 import {
-  BarChart,
-  Bar,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -461,6 +461,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
       );
       toast.success("Venue updated! Changes are live on the public page.");
       setEditVenueOpen(false);
+      // Refresh analytics, bookings, pricing rules & slots after edit
+      loadData();
+      setSlotRefreshKey((k) => k + 1);
     } catch (err) {
       toast.error(err.response?.data?.detail || "Failed to save");
     } finally {
@@ -553,6 +556,9 @@ function VenueOwnerDashboardContent({ defaultView }) {
     ]);
     setAnalytics(aRes.data);
     setPricingRules(pRes.data || []);
+    // Refresh bookings & slots for the newly selected venue
+    loadBookings(1, v);
+    setSlotRefreshKey((k) => k + 1);
   };
 
   const toggleDay = (dayIndex) => {
@@ -724,65 +730,99 @@ function VenueOwnerDashboardContent({ defaultView }) {
               className="mb-10"
             >
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mb-6">
-                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
+                  <div className="admin-label text-xs sm:text-sm mb-3 sm:mb-4">
                     Total Revenue
                   </div>
-                  <div className="text-xl sm:text-2xl font-display font-black text-brand-600 mt-1">
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-brand-600 tracking-tight">
                     {"\u20B9"}
                     {totalRevenue.toLocaleString()}
                   </div>
                 </div>
-                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
+                  <div className="admin-label text-xs sm:text-sm mb-3 sm:mb-4">
                     Confirmed
                   </div>
-                  <div className="text-xl sm:text-2xl font-display font-black text-foreground mt-1">
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-foreground tracking-tight">
                     {analytics.confirmed_bookings}
                   </div>
                 </div>
-                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3 sm:p-4">
-                  <div className="text-[10px] sm:text-xs text-muted-foreground font-mono uppercase">
+                <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
+                  <div className="admin-label text-xs sm:text-sm mb-3 sm:mb-4">
                     Cancelled
                   </div>
-                  <div className="text-xl sm:text-2xl font-display font-black text-destructive mt-1">
+                  <div className="text-xl sm:text-2xl lg:text-3xl font-bold font-display text-destructive tracking-tight">
                     {analytics.cancelled_bookings}
                   </div>
                 </div>
               </div>
               {analytics.daily_revenue?.length > 0 && (
                 <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-4 sm:p-6">
-                  <h3 className="font-display admin-heading mb-4">
-                    Revenue Trend
-                  </h3>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={analytics.daily_revenue}>
+                  <div className="flex items-center justify-between mb-5">
+                    <h3 className="font-display admin-heading text-sm sm:text-base">
+                      Revenue Trend
+                    </h3>
+                    <span className="text-xs text-muted-foreground font-medium">Last {analytics.daily_revenue.length} days</span>
+                  </div>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <AreaChart data={analytics.daily_revenue} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="hsl(160, 84%, 39.4%)" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="hsl(160, 84%, 39.4%)" stopOpacity={0.02} />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid
                         strokeDasharray="3 3"
-                        stroke="hsl(217.2, 32.6%, 17.5%)"
+                        stroke="hsl(var(--border))"
+                        opacity={0.4}
+                        vertical={false}
                       />
                       <XAxis
                         dataKey="date"
-                        tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                        axisLine={{ stroke: "hsl(var(--border))", opacity: 0.4 }}
+                        tickLine={false}
+                        dy={8}
+                        tickFormatter={(v) => {
+                          const d = new Date(v);
+                          return d.toLocaleDateString("en-IN", { day: "numeric", month: "short" });
+                        }}
                       />
                       <YAxis
-                        tick={{ fill: "hsl(215, 20.2%, 65.1%)", fontSize: 10 }}
-                        width={40}
+                        tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }}
+                        axisLine={false}
+                        tickLine={false}
+                        width={45}
+                        tickFormatter={(v) => v >= 1000 ? `₹${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}K` : `₹${v}`}
                       />
                       <Tooltip
                         contentStyle={{
-                          background: "hsl(222.2, 47.4%, 11.2%)",
-                          border: "1px solid hsl(217.2, 32.6%, 17.5%)",
-                          borderRadius: 8,
+                          background: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: 12,
+                          boxShadow: "0 8px 30px rgba(0,0,0,0.15)",
+                          padding: "10px 14px",
                         }}
-                        labelStyle={{ color: "hsl(210, 40%, 98%)" }}
+                        labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600, fontSize: 12, marginBottom: 4 }}
+                        itemStyle={{ color: "hsl(160, 84%, 39.4%)", fontWeight: 700, fontSize: 13 }}
+                        formatter={(value) => [`₹${value.toLocaleString()}`, "Revenue"]}
+                        labelFormatter={(label) => {
+                          const d = new Date(label);
+                          return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+                        }}
+                        cursor={{ stroke: "hsl(160, 84%, 39.4%)", strokeWidth: 1, strokeDasharray: "4 4" }}
                       />
-                      <Bar
+                      <Area
+                        type="monotone"
                         dataKey="revenue"
-                        fill="hsl(160, 84%, 39.4%)"
-                        radius={[4, 4, 0, 0]}
+                        stroke="hsl(160, 84%, 39.4%)"
+                        strokeWidth={2.5}
+                        fill="url(#revenueGradient)"
+                        dot={false}
+                        activeDot={{ r: 5, fill: "hsl(160, 84%, 39.4%)", stroke: "white", strokeWidth: 2 }}
                       />
-                    </BarChart>
+                    </AreaChart>
                   </ResponsiveContainer>
                 </div>
               )}
@@ -1043,7 +1083,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               <div className="flex items-center gap-2">
                                 <span className="admin-name text-sm sm:text-base truncate">{b.host_name}</span>
                                 {b.payment_mode === "split" && (
-                                  <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">
+                                  <Badge variant="outline" className="text-xs border-violet-500/30 text-violet-400">
                                     <Users className="h-2.5 w-2.5 mr-0.5" />Split
                                   </Badge>
                                 )}
@@ -1071,7 +1111,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   {/* Pagination */}
                   {bookingTotalPages > 1 && (
                     <div className="flex flex-col sm:flex-row items-center justify-between mt-6 sm:mt-8 px-3 sm:px-2 gap-3">
-                      <span className="admin-section-label text-[11px] sm:text-xs">
+                      <span className="admin-section-label text-xs">
                         {(bookingPage - 1) * BOOKING_LIMIT + 1}–{Math.min(bookingPage * BOOKING_LIMIT, bookingTotal)} of {bookingTotal}
                       </span>
                       <div className="flex items-center gap-1">
@@ -1142,7 +1182,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               <span className="admin-name text-sm sm:text-base">
                                 {isToday ? "Today" : new Date(date + "T00:00:00").toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
                               </span>
-                              <Badge variant="outline" className="text-[10px]">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
+                              <Badge variant="outline" className="text-xs">{dateBookings.length} booking{dateBookings.length > 1 ? "s" : ""}</Badge>
                             </div>
                             {totalAmount > 0 && (
                               <span className="font-semibold text-brand-600 text-sm sm:text-base">{"\u20B9"}{totalAmount.toLocaleString()}</span>
@@ -1162,7 +1202,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                         <span className="admin-name text-xs sm:text-sm">{fmt12h(b.start_time)}-{fmt12h(b.end_time)}</span>
                                         <span className="admin-secondary text-xs">Turf #{b.turf_number}</span>
                                         <span className="admin-secondary text-xs capitalize flex items-center gap-1">{(() => { const SI = getSportIcon(b.sport); return <SI className="h-3 w-3" />; })()}{b.sport}</span>
-                                        {b.payment_mode === "split" && <Badge variant="outline" className="text-[10px] h-4 border-violet-500/30 text-violet-400">Split</Badge>}
+                                        {b.payment_mode === "split" && <Badge variant="outline" className="text-xs h-4 border-violet-500/30 text-violet-400">Split</Badge>}
                                       </div>
                                       <div className="admin-secondary text-xs sm:text-sm mt-0.5">{b.host_name} - {b.venue_name}</div>
                                     </div>
@@ -1205,7 +1245,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <span className="text-sm font-bold">{(statusConfig[selectedBooking.status] || statusConfig.pending).label}</span>
                     </div>
                     {selectedBooking.payment_gateway && (
-                      <Badge variant="outline" className="text-[10px]">{selectedBooking.payment_gateway === "razorpay" ? "Razorpay" : "Test Mode"}</Badge>
+                      <Badge variant="outline" className="text-xs">{selectedBooking.payment_gateway === "razorpay" ? "Razorpay" : "Test Mode"}</Badge>
                     )}
                   </div>
                 </div>
@@ -1254,12 +1294,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Your Earnings</span>
+                      <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Your Earnings</span>
                       <p className="text-lg font-display font-black text-brand-600 mt-0.5">{"\u20B9"}{(selectedBooking.total_amount - (selectedBooking.commission_amount || 0)).toLocaleString()}</p>
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Booking Amount</span>
-                      <p className="text-sm admin-name mt-0.5">{"\u20B9"}{selectedBooking.total_amount?.toLocaleString()} <span className="text-[10px] text-muted-foreground">(-₹{selectedBooking.commission_amount || 0} commission)</span></p>
+                      <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Booking Amount</span>
+                      <p className="text-sm admin-name mt-0.5">{"\u20B9"}{selectedBooking.total_amount?.toLocaleString()} <span className="text-xs text-muted-foreground">(-₹{selectedBooking.commission_amount || 0} commission)</span></p>
                     </div>
                     <div>
                       <span className="text-xs uppercase tracking-wider text-muted-foreground">Payment Mode</span>
@@ -1359,19 +1399,19 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Refund Tier</span>
+                        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Refund Tier</span>
                         <p className="text-sm font-bold text-red-500 mt-0.5">{selectedBooking.refund_pct}%</p>
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Refund Status</span>
+                        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Refund Status</span>
                         <p className="text-sm admin-name mt-0.5 capitalize">{selectedBooking.refund_status || "N/A"}</p>
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Player Refund</span>
+                        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Player Refund</span>
                         <p className="text-sm admin-name mt-0.5">{"\u20B9"}{(selectedBooking.refund_amount || 0).toLocaleString()}</p>
                       </div>
                       <div>
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted-foreground">Your Deduction</span>
+                        <span className="text-xs font-mono uppercase tracking-widest text-muted-foreground">Your Deduction</span>
                         <p className="text-sm font-bold text-red-500 mt-0.5">-{"\u20B9"}{(selectedBooking.refund_amount - Math.round((selectedBooking.commission_amount || 0) * selectedBooking.refund_pct / 100)).toLocaleString()}</p>
                       </div>
                     </div>
@@ -1442,7 +1482,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                                 {avg.toFixed(1)}
                               </span>
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                            <div className="text-xs text-muted-foreground font-mono uppercase">
                               Avg Rating
                             </div>
                           </div>
@@ -1450,7 +1490,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                             <div className="font-display font-black text-lg sm:text-xl text-foreground">
                               {venueReviews.length}
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                            <div className="text-xs text-muted-foreground font-mono uppercase">
                               Total
                             </div>
                           </div>
@@ -1458,7 +1498,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                             <div className="font-display font-black text-lg sm:text-xl text-brand-400">
                               {r5}
                             </div>
-                            <div className="text-[10px] text-muted-foreground font-mono uppercase">
+                            <div className="text-xs text-muted-foreground font-mono uppercase">
                               5-Star
                             </div>
                           </div>
@@ -1494,7 +1534,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                               </div>
                             </div>
                           </div>
-                          <span className="text-[10px] text-muted-foreground shrink-0">
+                          <span className="text-xs text-muted-foreground shrink-0">
                             {new Date(r.created_at).toLocaleDateString(
                               "en-IN",
                               { day: "numeric", month: "short" },
@@ -1579,7 +1619,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           <p className="text-xs mt-1.5">
                             <span className="text-muted-foreground">e.g. ₹{basePrice} → </span>
                             <span className={`font-bold ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>₹{effectivePrice}</span>
-                            <span className={`ml-1 text-[10px] ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>({diff > 0 ? "+" : ""}₹{diff})</span>
+                            <span className={`ml-1 text-xs ${isDiscount ? "text-brand-400" : "text-amber-400"}`}>({diff > 0 ? "+" : ""}₹{diff})</span>
                           </p>
                         )}
                       </div>
@@ -1618,7 +1658,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <button key={t.key} onClick={() => setRuleForm(p => ({ ...p, rule_type: t.key }))}
                         className={`p-3 rounded-xl border text-left transition-all ${ruleForm.rule_type === t.key ? "border-brand-600 bg-brand-600/10" : "border-border bg-secondary/30 hover:border-brand-600/40"}`}>
                         <p className="text-xs admin-label flex items-center gap-1"><t.Icon className="h-3.5 w-3.5" />{t.label}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{t.desc}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t.desc}</p>
                       </button>
                     ))}
                   </div>
@@ -1645,7 +1685,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       <button key={s.key} onClick={() => setRuleForm(p => ({ ...p, schedule_type: s.key }))}
                         className={`p-3 rounded-xl border text-left transition-all ${ruleForm.schedule_type === s.key ? "border-brand-600 bg-brand-600/10" : "border-border bg-secondary/30 hover:border-brand-600/40"}`}>
                         <p className="text-xs admin-label">{s.label}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{s.desc}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
                       </button>
                     ))}
                   </div>
@@ -1654,7 +1694,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                   {ruleForm.schedule_type === "recurring" && (
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs text-muted-foreground mb-1.5">Days <span className="text-[10px]">(leave empty = every day)</span></p>
+                        <p className="text-xs text-muted-foreground mb-1.5">Days <span className="text-xs">(leave empty = every day)</span></p>
                         <div className="flex gap-1.5 flex-wrap">
                           {DAY_LABELS.map((label, i) => (
                             <button key={i} onClick={() => toggleDay(i)} data-testid={`day-btn-${i}`}
@@ -1668,7 +1708,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         <p className="text-xs text-muted-foreground mb-1.5">Time Range</p>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <p className="text-[10px] text-muted-foreground mb-1">From</p>
+                            <p className="text-xs text-muted-foreground mb-1">From</p>
                             <select value={ruleForm.conditions.time_range?.start || "18:00"}
                               onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, start: e.target.value } } }))}
                               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
@@ -1676,7 +1716,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                             </select>
                           </div>
                           <div>
-                            <p className="text-[10px] text-muted-foreground mb-1">To</p>
+                            <p className="text-xs text-muted-foreground mb-1">To</p>
                             <select value={ruleForm.conditions.time_range?.end || "22:00"}
                               onChange={e => setRuleForm(p => ({ ...p, conditions: { ...p.conditions, time_range: { ...p.conditions.time_range, end: e.target.value } } }))}
                               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
@@ -1693,13 +1733,13 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <p className="text-[10px] text-muted-foreground mb-1">Start Date</p>
+                          <p className="text-xs text-muted-foreground mb-1">Start Date</p>
                           <input type="date" value={ruleForm.date_from || ""}
                             onChange={e => setRuleForm(p => ({ ...p, date_from: e.target.value }))}
                             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
                         </div>
                         <div>
-                          <p className="text-[10px] text-muted-foreground mb-1">End Date</p>
+                          <p className="text-xs text-muted-foreground mb-1">End Date</p>
                           <input type="date" value={ruleForm.date_to || ""}
                             onChange={e => setRuleForm(p => ({ ...p, date_to: e.target.value }))}
                             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground" />
@@ -1707,7 +1747,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                       </div>
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <p className="text-[10px] text-muted-foreground mb-1">From Time</p>
+                          <p className="text-xs text-muted-foreground mb-1">From Time</p>
                           <select value={ruleForm.time_from || "18:00"}
                             onChange={e => setRuleForm(p => ({ ...p, time_from: e.target.value }))}
                             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
@@ -1715,7 +1755,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                           </select>
                         </div>
                         <div>
-                          <p className="text-[10px] text-muted-foreground mb-1">To Time</p>
+                          <p className="text-xs text-muted-foreground mb-1">To Time</p>
                           <select value={ruleForm.time_to || "22:00"}
                             onChange={e => setRuleForm(p => ({ ...p, time_to: e.target.value }))}
                             className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground">
@@ -1729,7 +1769,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
 
                 {/* Live Preview */}
                 <div className="bg-card rounded-2xl sm:rounded-[28px] border border-border/40 shadow-sm p-3" data-testid="rule-preview">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">Price Preview</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">Price Preview</p>
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-muted-foreground">e.g.</span>
                     <span className="text-sm text-muted-foreground line-through">₹{basePrice}</span>
@@ -1738,7 +1778,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                     {(() => {
                       const d = previewPrice(ruleForm) - basePrice;
                       return d !== 0 && (
-                        <Badge className={`text-[10px] ${d < 0 ? "bg-brand-500/15 text-brand-400" : "bg-amber-500/15 text-amber-400"}`}>
+                        <Badge className={`text-xs ${d < 0 ? "bg-brand-500 hover:bg-brand-500 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                           {d > 0 ? "+" : ""}₹{d}
                         </Badge>
                       );
@@ -1799,7 +1839,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                         ))}
                       </ul>
                       {isCurrent ? (
-                        <Badge className="w-full justify-center bg-brand-600/20 text-brand-600 text-xs py-1">Current Plan</Badge>
+                        <Badge className="w-full justify-center bg-brand-600 hover:bg-brand-600 text-white text-xs py-1">Current Plan</Badge>
                       ) : (
                         <Button size="sm" className="w-full text-xs admin-btn rounded-xl" disabled={upgrading}
                           onClick={() => handleUpgrade(plan.id)} data-testid={`upgrade-${plan.id}`}>
@@ -1820,7 +1860,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
           <VenueCheckinPanel
             bookings={bookings.filter(b => b.venue_id === selectedVenue?.id)}
             venueName={selectedVenue?.name}
-            onCheckinSuccess={loadData}
+            onCheckinSuccess={() => { loadData(); setSlotRefreshKey((k) => k + 1); }}
           />
         </TabsContent>
 
@@ -2081,14 +2121,14 @@ function VenueAnalyticsPanel({ venueId }) {
           >
             <div className="flex items-center gap-1.5">
               {s.icon}
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">
                 {s.label}
               </p>
             </div>
             <p className="font-display font-black text-xl sm:text-2xl text-foreground leading-none">
               {s.value}
             </p>
-            <p className="text-[10px] text-muted-foreground">{s.sub}</p>
+            <p className="text-xs text-muted-foreground">{s.sub}</p>
           </div>
         ))}
       </div>
@@ -2103,7 +2143,7 @@ function VenueAnalyticsPanel({ venueId }) {
               <select
                 value={selectedTurf}
                 onChange={(e) => setSelectedTurf(e.target.value)}
-                className="text-[10px] bg-secondary/50 border border-border rounded px-2 py-0.5 text-foreground"
+                className="text-xs bg-secondary/50 border border-border rounded px-2 py-0.5 text-foreground"
               >
                 <option value="all">All Turfs</option>
                 {insights.turf_list.map((t) => (
@@ -2432,7 +2472,7 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
             <div
               className="inline-grid min-w-full"
               style={{
-                gridTemplateColumns: `88px repeat(${turfs.length}, minmax(120px, 1fr))`,
+                gridTemplateColumns: `88px repeat(${turfs.length}, minmax(140px, 1fr))`,
               }}
             >
               {/* Header row */}
@@ -2445,7 +2485,7 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
                   className="bg-secondary/70 backdrop-blur-sm px-3 py-3 text-center border-b border-r border-border/50 last:border-r-0"
                 >
                   <p className="text-sm font-bold text-foreground truncate">{t.turf_name}</p>
-                  <p className="text-xs text-muted-foreground capitalize mt-0.5 flex items-center gap-1">{(() => { const SI = getSportIcon(t.sport); return <SI className="h-3 w-3" />; })()}{t.sport}</p>
+                  <p className="text-xs text-muted-foreground capitalize mt-0.5 flex items-center justify-center gap-1">{(() => { const SI = getSportIcon(t.sport); return <SI className="h-3 w-3" />; })()}{t.sport}</p>
                 </div>
               ))}
 
@@ -2497,7 +2537,7 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
                             <span className="font-semibold text-white">{turf.turf_name}</span>
                             <span className="text-white/60">{fmt12h(slot?.booking_start || time.start_time)} – {fmt12h(slot?.booking_end || time.end_time)}</span>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-bold ${badgeStyle}`}>{statusLabels[status] || status}</span>
+                              <span className={`px-1.5 py-0.5 rounded-md text-xs font-bold ${badgeStyle}`}>{statusLabels[status] || status}</span>
                               {slot?.price != null && <span className="text-white/70 font-mono">₹{slot.price}</span>}
                             </div>
                           </div>
@@ -2765,7 +2805,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
             >
               <ImagePlus className="h-10 w-10 text-muted-foreground mb-2" />
               <span className="text-sm admin-label text-muted-foreground">{dragOver ? "Drop QR image here" : "Click or drag & drop QR image"}</span>
-              <span className="text-[10px] text-muted-foreground/60 mt-1">JPG, PNG, or screenshot</span>
+              <span className="text-xs text-muted-foreground/60 mt-1">JPG, PNG, or screenshot</span>
               <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -2801,7 +2841,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 <h3 className="font-display admin-heading text-xs sm:text-sm truncate">
                   Today's Attendance — {venueName}
                 </h3>
-                <p className="text-[10px] text-muted-foreground">{today}</p>
+                <p className="text-xs text-muted-foreground">{today}</p>
               </div>
             </div>
             {todayBookings.length > 0 && (
@@ -2809,7 +2849,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                 <div className="font-display font-black text-xl text-brand-600">
                   {checkedIn.length}/{todayBookings.length}
                 </div>
-                <div className="text-[10px] text-muted-foreground admin-label">
+                <div className="text-xs text-muted-foreground admin-label">
                   Checked In
                 </div>
               </div>
@@ -2850,17 +2890,17 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                       {b.sport && (
                         <Badge
                           variant="secondary"
-                          className="text-[10px] capitalize shrink-0"
+                          className="text-xs capitalize shrink-0"
                         >
                           {b.sport}
                         </Badge>
                       )}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {fmt12h(b.start_time)} - {fmt12h(b.end_time)} · Turf #{b.turf_number || 1}
                     </div>
                   </div>
-                  <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
+                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0">
                     Pending
                   </Badge>
                 </div>
@@ -2881,13 +2921,13 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                       {b.sport && (
                         <Badge
                           variant="secondary"
-                          className="text-[10px] capitalize shrink-0"
+                          className="text-xs capitalize shrink-0"
                         >
                           {b.sport}
                         </Badge>
                       )}
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       {fmt12h(b.start_time)} - {fmt12h(b.end_time)} · Turf #{b.turf_number || 1}
                       {b.checkin_time && (
                         <span className="ml-2 text-brand-400">
@@ -2900,7 +2940,7 @@ function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
                       )}
                     </div>
                   </div>
-                  <Badge className="bg-brand-500/15 text-brand-400 text-[10px] shrink-0">
+                  <Badge className="bg-brand-500 hover:bg-brand-500 text-white text-xs shrink-0">
                     <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Present
                   </Badge>
                 </div>

@@ -1275,7 +1275,7 @@ export default function SocialFeedPage() {
                     </div>
                     {post.post_type !== "text" &&
                       post.post_type !== "photo" && (
-                        <Badge className="bg-brand-600/10 text-brand-600 hover:bg-brand-600/20 shadow-none border-none text-[10px] uppercase font-bold tracking-wider">
+                        <Badge className="bg-brand-600 hover:bg-brand-600 text-white shadow-none border-none text-[10px] uppercase font-bold tracking-wider">
                           {post.post_type === "match_result"
                             ? "score"
                             : post.post_type}

@@ -78,11 +78,18 @@ function RecentUserItem({ user: u, index }) {
     admin: "bg-brand-600/10 text-brand-600"
   };
 
+  const roleBadgeColors = {
+    venue_owner: "bg-purple-500 hover:bg-purple-500 text-white",
+    coach: "bg-blue-500 hover:bg-blue-500 text-white",
+    player: "bg-emerald-500 hover:bg-emerald-500 text-white",
+    admin: "bg-brand-600 hover:bg-brand-600 text-white"
+  };
+
   const statusColors = {
-    active: "bg-green-500/10 text-green-600",
-    pending: "bg-amber-500/10 text-amber-600",
-    suspended: "bg-red-500/10 text-red-600",
-    rejected: "bg-red-500/10 text-red-600"
+    active: "bg-green-500 hover:bg-green-500 text-white",
+    pending: "bg-amber-500 hover:bg-amber-500 text-white",
+    suspended: "bg-red-500 hover:bg-red-500 text-white",
+    rejected: "bg-red-500 hover:bg-red-500 text-white"
   };
 
   return (
@@ -102,7 +109,7 @@ function RecentUserItem({ user: u, index }) {
         </div>
       </div>
       <div className="flex items-center gap-2 sm:gap-3 ml-12 sm:ml-0 shrink-0">
-        <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+        <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${roleBadgeColors[u.role] || "bg-brand-600 hover:bg-brand-600 text-white"}`}>
           {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
         </Badge>
         <Badge variant="outline" className={`admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none text-[10px] sm:text-xs ${statusColors[u.account_status] || "bg-secondary text-muted-foreground"}`}>
@@ -346,6 +353,13 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
     admin: "bg-brand-600/10 text-brand-600"
   };
 
+  const roleBadgeColors = {
+    venue_owner: "bg-purple-500 hover:bg-purple-500 text-white",
+    coach: "bg-blue-500 hover:bg-blue-500 text-white",
+    player: "bg-brand-500 hover:bg-brand-500 text-white",
+    admin: "bg-brand-600 hover:bg-brand-600 text-white"
+  };
+
   const statusColors = {
     active: "bg-green-500/10 text-green-600",
     pending: "bg-amber-500/10 text-amber-600",
@@ -365,7 +379,7 @@ function UserItem({ user: u, index, onAction, onVerify, onOpenDocs }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-0.5 flex-wrap">
             <h4 className="admin-name text-sm sm:text-base truncate max-w-[140px] sm:max-w-none">{u.name}</h4>
-            <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none px-2 sm:px-2.5 text-[10px] sm:text-xs ${roleColors[u.role] || "bg-brand-600/10 text-brand-600"}`}>
+            <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none px-2 sm:px-2.5 text-[10px] sm:text-xs ${roleBadgeColors[u.role] || "bg-brand-600 hover:bg-brand-600 text-white"}`}>
               {u.role === "player" ? "Lobbian" : u.role.replace("_", " ")}
             </Badge>
             {/* Status indicator - inline on mobile */}
@@ -747,7 +761,7 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h4 className="admin-name text-sm truncate">{v.name}</h4>
               <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none text-[10px] px-2 ${
-                v.badge === "bookable" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-600"
+                v.badge === "bookable" ? "bg-brand-600 hover:bg-brand-600 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"
               }`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
               </Badge>
@@ -766,12 +780,12 @@ function VenueItem({ venue: v, index, onAssign, onToggle }) {
             <h4 className="admin-name truncate">{v.name}</h4>
             <div className="flex items-center gap-1.5">
               <Badge variant="outline" className={`admin-badge h-5 rounded-full border-none ${
-                v.badge === "bookable" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-600"
+                v.badge === "bookable" ? "bg-brand-600 hover:bg-brand-600 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"
               }`}>
                 {v.badge === "bookable" ? "Bookable" : "Enquiry"}
               </Badge>
               {v.owner_id ? (
-                <Badge variant="outline" className="admin-badge h-5 rounded-full border-none bg-brand-600/10 text-brand-600">
+                <Badge variant="outline" className="admin-badge h-5 rounded-full border-none bg-brand-600 hover:bg-brand-600 text-white">
                   Linked
                 </Badge>
               ) : (
@@ -1432,7 +1446,7 @@ function SettingsTab() {
                 <div>
                   <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                     <h3 className="admin-heading text-base sm:text-lg">Cloud Storage</h3>
-                    <Badge className={`admin-badge border-none text-[10px] sm:text-xs ${s3Configured ? "bg-emerald-500/10 text-emerald-500" : "bg-rose-500/10 text-rose-500"}`}>
+                    <Badge className={`admin-badge border-none text-[10px] sm:text-xs ${s3Configured ? "bg-emerald-500 hover:bg-emerald-500 text-white" : "bg-rose-500 hover:bg-rose-500 text-white"}`}>
                       {s3Configured ? "Connected" : "Not Linked"}
                     </Badge>
                   </div>
@@ -1859,14 +1873,14 @@ function PayoutsTab() {
   const totalSettledAmount = settlements.filter(s => s.status === "completed").reduce((sum, s) => sum + (s.net_amount || 0), 0);
 
   const statusColors = {
-    completed: "bg-green-500/10 text-green-600",
-    processing: "bg-blue-500/10 text-blue-600",
-    failed: "bg-red-500/10 text-red-600",
-    draft: "bg-gray-500/10 text-gray-600",
+    completed: "bg-green-500 hover:bg-green-500 text-white",
+    processing: "bg-blue-500 hover:bg-blue-500 text-white",
+    failed: "bg-red-500 hover:bg-red-500 text-white",
+    draft: "bg-gray-500 hover:bg-gray-500 text-white",
   };
   const roleColors = {
-    coach: "bg-blue-500/10 text-blue-600",
-    venue_owner: "bg-purple-500/10 text-purple-600",
+    coach: "bg-blue-500 hover:bg-blue-500 text-white",
+    venue_owner: "bg-purple-500 hover:bg-purple-500 text-white",
   };
 
   const subTabs = [
@@ -1979,9 +1993,9 @@ function PayoutsTab() {
                           </td>
                           <td className="p-3 sm:p-4">
                             {p.has_linked_account ? (
-                              <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-green-500/10 text-green-600 text-[10px] sm:text-xs">Linked</Badge>
+                              <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-green-500 hover:bg-green-500 text-white text-[10px] sm:text-xs">Linked</Badge>
                             ) : (
-                              <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-red-500/10 text-red-600 text-[10px] sm:text-xs">No</Badge>
+                              <Badge variant="outline" className="admin-badge px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border-none bg-red-500 hover:bg-red-500 text-white text-[10px] sm:text-xs">No</Badge>
                             )}
                           </td>
                           <td className="p-3 sm:p-4 text-right">

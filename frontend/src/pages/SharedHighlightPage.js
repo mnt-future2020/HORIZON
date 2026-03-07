@@ -58,7 +58,7 @@ export default function SharedHighlightPage() {
           <div className="flex flex-wrap gap-2 justify-center mt-3">
             {a.sport_detected && <Badge className="bg-primary/15 text-primary border border-primary/20 text-xs">{a.sport_detected}</Badge>}
             {a.duration_estimate && <Badge className="bg-secondary/50 text-muted-foreground text-xs flex items-center gap-1"><Clock className="h-3 w-3" />{a.duration_estimate}</Badge>}
-            {a.match_intensity && <Badge className={`text-xs ${a.match_intensity === "intense" || a.match_intensity === "high" ? "bg-amber-500/15 text-amber-400" : "bg-sky-500/15 text-sky-400"}`}>{a.match_intensity}</Badge>}
+            {a.match_intensity && <Badge className={`text-xs ${a.match_intensity === "intense" || a.match_intensity === "high" ? "bg-amber-500 hover:bg-amber-500 text-white" : "bg-sky-500 hover:bg-sky-500 text-white"}`}>{a.match_intensity}</Badge>}
           </div>
         </div>
 

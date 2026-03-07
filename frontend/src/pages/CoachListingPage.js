@@ -59,8 +59,8 @@ function CoachCard({ coach, onBook, delay = 0 }) {
               {coach.name}
             </h3>
             {coach.avg_rating > 0 && (
-              <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
-                <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />
+              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px] shrink-0">
+                <Star className="h-2.5 w-2.5 mr-0.5 fill-white" />
                 {coach.avg_rating.toFixed(1)}
               </Badge>
             )}
@@ -448,7 +448,7 @@ export default function CoachListingPage() {
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="font-bold text-sm">{s.coach_name}</span>
                   <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
-                  <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>
+                  <Badge className="bg-sky-500 hover:bg-sky-500 text-white text-[10px]">Confirmed</Badge>
                 </div>
                 <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
@@ -540,8 +540,8 @@ export default function CoachListingPage() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="font-medium text-base truncate">{selectedCoach.name}</h2>
                       {selectedCoach.avg_rating > 0 && (
-                        <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
-                          <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{selectedCoach.avg_rating.toFixed(1)}
+                        <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px] shrink-0">
+                          <Star className="h-2.5 w-2.5 mr-0.5 fill-white" />{selectedCoach.avg_rating.toFixed(1)}
                         </Badge>
                       )}
                     </div>
@@ -836,7 +836,7 @@ export default function CoachListingPage() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Status</span>
-                        <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">Awaiting Payment</Badge>
+                        <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Awaiting Payment</Badge>
                       </div>
                     </div>
 
@@ -879,7 +879,7 @@ export default function CoachListingPage() {
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs uppercase tracking-widest text-muted-foreground font-bold">Status</span>
-                        <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">Awaiting Payment</Badge>
+                        <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Awaiting Payment</Badge>
                       </div>
                     </div>
 
@@ -949,7 +949,7 @@ function SessionReviewCard({ session, onReview }) {
           <div className="flex items-center gap-2 flex-wrap mb-1">
             <span className="font-bold text-sm">{session.coach_name}</span>
             <Badge variant="secondary" className="text-[10px] capitalize">{session.sport}</Badge>
-            <Badge className="bg-brand-500/15 text-brand-400 text-[10px]">Completed</Badge>
+            <Badge className="bg-brand-500 hover:bg-brand-500 text-white text-[10px]">Completed</Badge>
           </div>
           <div className="text-xs text-muted-foreground">
             {session.date} · {fmt12h(session.start_time)} · ₹{session.price}

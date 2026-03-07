@@ -1368,8 +1368,8 @@ export default function CoachDashboard({ defaultView }) {
                       <span className="font-bold text-sm">{s.player_name}</span>
                       <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                       {s.status === "payment_pending"
-                        ? <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">Awaiting Payment</Badge>
-                        : <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>}
+                        ? <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Awaiting Payment</Badge>
+                        : <Badge className="bg-sky-500 hover:bg-sky-500 text-white text-[10px]">Confirmed</Badge>}
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
@@ -1406,8 +1406,8 @@ export default function CoachDashboard({ defaultView }) {
                       <span className="font-bold text-sm">{s.player_name}</span>
                       <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                       {s.rating && (
-                        <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">
-                          <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{s.rating}/5
+                        <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">
+                          <Star className="h-2.5 w-2.5 mr-0.5 fill-white" />{s.rating}/5
                         </Badge>
                       )}
                     </div>
@@ -1770,7 +1770,7 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-sm">{r.title}</span>
                         <Badge variant="secondary" className="text-[10px] capitalize">{r.record_type?.replace("_", " ")}</Badge>
-                        {r.sport && <Badge className="bg-brand-600/15 text-brand-600 text-[10px] capitalize">{r.sport}</Badge>}
+                        {r.sport && <Badge className="bg-brand-600 hover:bg-brand-600 text-white text-[10px] capitalize">{r.sport}</Badge>}
                       </div>
                       <span className="text-xs text-muted-foreground">{r.date}</span>
                     </div>
@@ -2755,7 +2755,7 @@ export default function CoachDashboard({ defaultView }) {
               <div className="flex items-center gap-2 mb-3">
                 <CheckCircle className="h-4 w-4 text-amber-500" />
                 <h3 className="font-bold text-sm">Complete Your Setup</h3>
-                <Badge className="bg-amber-500/15 text-amber-500 text-[10px] ml-auto">
+                <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px] ml-auto">
                   {Object.values(onboardingData.steps || {}).filter(Boolean).length}/4 Done
                 </Badge>
               </div>
@@ -2812,7 +2812,7 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                           <span className="font-bold text-sm">{s.player_name || s.client_name}</span>
                           <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
-                          <Badge className={`text-[10px] ${s._source === "online" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-400"}`}>
+                          <Badge className={`text-[10px] ${s._source === "online" ? "bg-sky-500 hover:bg-sky-500 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                             {s._source === "online" ? "Online" : "Offline"}
                           </Badge>
                         </div>
@@ -2967,11 +2967,11 @@ export default function CoachDashboard({ defaultView }) {
                             <span className="font-bold text-sm">{s.player_name}</span>
                             <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                             {s.status === "payment_pending"
-                              ? <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">Awaiting Payment</Badge>
+                              ? <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Awaiting Payment</Badge>
                               : s.status === "completed"
-                              ? <Badge className="bg-green-500/15 text-green-400 text-[10px]">Completed</Badge>
-                              : <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>}
-                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
+                              ? <Badge className="bg-brand-600 hover:bg-brand-600 text-white text-[10px]">Completed</Badge>
+                              : <Badge className="bg-sky-500 hover:bg-sky-500 text-white text-[10px]">Confirmed</Badge>}
+                            {s.source === "offline" && <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{fmt12h(s.start_time)} – {fmt12h(s.end_time)}</span>
@@ -3008,9 +3008,9 @@ export default function CoachDashboard({ defaultView }) {
                             <span className="font-bold text-sm">{s.player_name}</span>
                             <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
                             {s.status === "payment_pending"
-                              ? <Badge className="bg-amber-500/15 text-amber-400 text-[10px]">Awaiting Payment</Badge>
-                              : <Badge className="bg-sky-500/15 text-sky-400 text-[10px]">Confirmed</Badge>}
-                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
+                              ? <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Awaiting Payment</Badge>
+                              : <Badge className="bg-sky-500 hover:bg-sky-500 text-white text-[10px]">Confirmed</Badge>}
+                            {s.source === "offline" && <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                             <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{s.date}</span>
@@ -3045,8 +3045,8 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{s.player_name}</span>
                             <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
-                            {s.rating && <Badge className="bg-amber-500/15 text-amber-400 text-[10px]"><Star className="h-2.5 w-2.5 mr-0.5 fill-amber-400" />{s.rating}/5</Badge>}
-                            {s.source === "offline" && <Badge className="bg-amber-500/10 text-amber-500 text-[10px]">Offline</Badge>}
+                            {s.rating && <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]"><Star className="h-2.5 w-2.5 mr-0.5 fill-white" />{s.rating}/5</Badge>}
+                            {s.source === "offline" && <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px]">Offline</Badge>}
                           </div>
                           <div className="text-xs text-muted-foreground">{s.date} · {fmt12h(s.start_time)} · ₹{s.price}
                             {s.review && <span className="ml-2 italic">"{s.review}"</span>}
@@ -3146,7 +3146,7 @@ export default function CoachDashboard({ defaultView }) {
                       <div className="flex items-center gap-2 flex-wrap mb-1">
                         <span className="font-bold text-sm">{s.client_name || "Walk-in"}</span>
                         <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
-                        <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : s.payment_status === "waived" ? "bg-secondary text-muted-foreground" : "bg-amber-500/15 text-amber-500"}`}>
+                        <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600 hover:bg-brand-600 text-white" : s.payment_status === "waived" ? "bg-secondary text-muted-foreground" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                           {s.payment_status}
                         </Badge>
                         {s.payment_mode && <Badge variant="outline" className="text-[10px] capitalize">{s.payment_mode}</Badge>}
@@ -3385,7 +3385,7 @@ export default function CoachDashboard({ defaultView }) {
                           {c.phone && <p className="text-xs text-muted-foreground">{c.phone}</p>}
                         </div>
                       </div>
-                      <Badge className={`text-[10px] ${c.client_source === "online" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-400"}`}>
+                      <Badge className={`text-[10px] ${c.client_source === "online" ? "bg-sky-500 hover:bg-sky-500 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                         {c.client_source || "offline"}
                       </Badge>
                     </div>
@@ -3563,7 +3563,7 @@ export default function CoachDashboard({ defaultView }) {
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-base">{viewClientData.name}</h3>
-                          <Badge className="bg-sky-500/15 text-sky-400 text-[10px] mt-0.5">Horizon Player</Badge>
+                          <Badge className="bg-sky-500 hover:bg-sky-500 text-white text-[10px] mt-0.5">Horizon Player</Badge>
                         </div>
                         <Button size="sm" variant="outline" className="text-[10px] h-7 shrink-0"
                           onClick={() => { sessionStorage.setItem("coachDashReturnTab", "clients"); setViewClientId(null); navigate(`/player-card/${viewClientId}`); }}>
@@ -3593,7 +3593,7 @@ export default function CoachDashboard({ defaultView }) {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-bold">{s.date}</span>
                                   <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>
-                                  <Badge className={`text-[10px] ${s.status === "completed" ? "bg-brand-600/15 text-brand-600" : s.status === "confirmed" ? "bg-sky-500/15 text-sky-400" : "bg-amber-500/15 text-amber-500"}`}>
+                                  <Badge className={`text-[10px] ${s.status === "completed" ? "bg-brand-600 hover:bg-brand-600 text-white" : s.status === "confirmed" ? "bg-sky-500 hover:bg-sky-500 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                                     {s.status}
                                   </Badge>
                                 </div>
@@ -3616,7 +3616,7 @@ export default function CoachDashboard({ defaultView }) {
                             <div key={sub.id} className="rounded-[28px] bg-card border border-border/40 shadow-sm p-3">
                               <div className="flex items-center justify-between gap-2 mb-1">
                                 <span className="text-xs font-bold">{sub.package_name}</span>
-                                <Badge className={`text-[10px] ${sub.status === "active" ? "bg-brand-600/15 text-brand-600" : "bg-slate-500/15 text-slate-400"}`}>{sub.status}</Badge>
+                                <Badge className={`text-[10px] ${sub.status === "active" ? "bg-brand-600 hover:bg-brand-600 text-white" : "bg-slate-500 hover:bg-slate-500 text-white"}`}>{sub.status}</Badge>
                               </div>
                               <p className="text-[10px] text-muted-foreground">
                                 {sub.sessions_used || 0} / {sub.sessions_per_month} sessions used · expires {sub.current_period_end?.slice(0, 10)}
@@ -3646,7 +3646,7 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-bold text-base">{viewClientData.name}</h3>
                             {viewClientData.linked_user_id && (
-                              <Badge className="bg-brand-600/10 text-brand-600 border-brand-600/20 text-[10px]">
+                              <Badge className="bg-brand-600 hover:bg-brand-600 text-white border-brand-600 text-[10px]">
                                 <BadgeCheck className="h-3 w-3 mr-1" /> Lobbi User
                               </Badge>
                             )}
@@ -3657,7 +3657,7 @@ export default function CoachDashboard({ defaultView }) {
                           </div>
                           <div className="flex gap-1.5 flex-wrap mt-1">
                             {viewClientData.sport && <Badge variant="secondary" className="text-[10px] capitalize">{viewClientData.sport}</Badge>}
-                            {viewClientData.source && <Badge className="bg-amber-500/15 text-amber-400 text-[10px] capitalize">{viewClientData.source?.replace("_", " ")}</Badge>}
+                            {viewClientData.source && <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px] capitalize">{viewClientData.source?.replace("_", " ")}</Badge>}
                             {viewClientData.skill_level && <Badge variant="outline" className="text-[10px] capitalize">{viewClientData.skill_level}</Badge>}
                           </div>
                         </div>
@@ -3710,7 +3710,7 @@ export default function CoachDashboard({ defaultView }) {
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-xs font-bold">{s.date}</span>
                                   {s.sport && <Badge variant="secondary" className="text-[10px] capitalize">{s.sport}</Badge>}
-                                  <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600/15 text-brand-600" : "bg-amber-500/15 text-amber-500"}`}>
+                                  <Badge className={`text-[10px] ${s.payment_status === "paid" ? "bg-brand-600 hover:bg-brand-600 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                                     {s.payment_status}
                                   </Badge>
                                 </div>
@@ -4170,7 +4170,7 @@ export default function CoachDashboard({ defaultView }) {
                           <span className="font-bold text-sm truncate">
                             {txn.type === "income" ? (txn.client_name || txn.description) : txn.description || txn.category}
                           </span>
-                          <Badge className={`text-[10px] ${txn.type === "income" ? "bg-brand-600/10 text-brand-600" : "bg-destructive/10 text-destructive"}`}>
+                          <Badge className={`text-[10px] ${txn.type === "income" ? "bg-brand-600 hover:bg-brand-600 text-white" : "bg-destructive hover:bg-destructive text-white"}`}>
                             {txn.type}
                           </Badge>
                           <Badge variant="outline" className="text-[10px] capitalize">{txn.payment_mode?.replace("_", " ")}</Badge>
@@ -4214,7 +4214,7 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
                           <span className="font-bold text-sm capitalize">{exp.category?.replace("_", " ")}</span>
                           <Badge variant="outline" className="text-[10px] capitalize">{exp.payment_mode?.replace("_", " ")}</Badge>
-                          {exp.recurring && <Badge className="text-[10px] bg-violet-500/10 text-violet-400">Recurring</Badge>}
+                          {exp.recurring && <Badge className="text-[10px] bg-violet-500 hover:bg-violet-500 text-white">Recurring</Badge>}
                         </div>
                         <p className="text-xs text-muted-foreground">{exp.date}{exp.description ? ` · ${exp.description}` : ""}</p>
                       </div>
@@ -4339,7 +4339,7 @@ export default function CoachDashboard({ defaultView }) {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
                             <span className="font-bold text-sm">{c.client_name}</span>
-                            <Badge className={`text-[10px] ${c.status === "overdue" ? "bg-destructive/10 text-destructive" : c.status === "pending" ? "bg-amber-500/10 text-amber-400" : "bg-brand-600/10 text-brand-600"}`}>
+                            <Badge className={`text-[10px] ${c.status === "overdue" ? "bg-destructive hover:bg-destructive text-white" : c.status === "pending" ? "bg-amber-500 hover:bg-amber-500 text-white" : "bg-brand-600 hover:bg-brand-600 text-white"}`}>
                               {c.status}
                             </Badge>
                           </div>
@@ -4631,12 +4631,12 @@ export default function CoachDashboard({ defaultView }) {
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <span className="font-bold text-sm">{inv.invoice_no}</span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                              inv.status === "paid" ? "bg-brand-600/10 border-brand-600/20 text-brand-600"
-                              : inv.status === "sent" ? "bg-amber-500/10 border-amber-500/20 text-amber-500"
+                              inv.status === "paid" ? "bg-brand-600 border-brand-600 text-white"
+                              : inv.status === "sent" ? "bg-amber-500 border-amber-500 text-white"
                               : "bg-muted border-border text-muted-foreground"
                             }`}>{inv.status.toUpperCase()}</span>
-                            {inv.gst_enabled && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">GST</span>}
-                            {inv.auto_generated && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-400 border border-violet-500/20">AUTO</span>}
+                            {inv.gst_enabled && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500 text-white border border-sky-500">GST</span>}
+                            {inv.auto_generated && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-violet-500 text-white border border-violet-500">AUTO</span>}
                           </div>
                           <p className="text-sm font-medium">{inv.client_name}</p>
                           <p className="text-xs text-muted-foreground">{inv.date} · Due {inv.due_date}</p>
@@ -4696,7 +4696,7 @@ export default function CoachDashboard({ defaultView }) {
                     <p className="text-xs text-muted-foreground mt-0.5">Link your bank account for payouts</p>
                   </div>
                   {linkedAccount && (
-                    <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-brand-600/10 text-brand-600" : "bg-amber-500/10 text-amber-500"}`}>
+                    <Badge className={`text-xs font-bold rounded-full px-3 ${linkedAccount.status === "active" ? "bg-brand-600 hover:bg-brand-600 text-white" : "bg-amber-500 hover:bg-amber-500 text-white"}`}>
                       {linkedAccount.status || "pending"}
                     </Badge>
                   )}
@@ -4806,9 +4806,9 @@ export default function CoachDashboard({ defaultView }) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge className={`text-xs font-bold rounded-full px-3 ${
-                            p.status === "completed" ? "bg-brand-600/10 text-brand-600" :
-                            p.status === "processing" ? "bg-blue-500/10 text-blue-500" :
-                            p.status === "failed" ? "bg-destructive/10 text-destructive" :
+                            p.status === "completed" ? "bg-brand-600 hover:bg-brand-600 text-white" :
+                            p.status === "processing" ? "bg-blue-500 hover:bg-blue-500 text-white" :
+                            p.status === "failed" ? "bg-destructive hover:bg-destructive text-white" :
                             "bg-muted text-muted-foreground"
                           }`}>
                             {p.status}
@@ -5345,7 +5345,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                         {fmt12h(s.start_time)} - {fmt12h(s.end_time)}
                       </div>
                     </div>
-                    <Badge className="bg-amber-500/15 text-amber-400 text-[10px] shrink-0">
+                    <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-[10px] shrink-0">
                       Pending
                     </Badge>
                   </div>
@@ -5371,7 +5371,7 @@ function QRCheckinPanel({ sessions = [], onRefresh }) {
                         )}
                       </div>
                     </div>
-                    <Badge className="bg-brand-500/15 text-brand-400 text-[10px] shrink-0">
+                    <Badge className="bg-brand-500 hover:bg-brand-500 text-white text-[10px] shrink-0">
                       <CheckCircle className="h-2.5 w-2.5 mr-0.5" /> Present
                     </Badge>
                   </div>

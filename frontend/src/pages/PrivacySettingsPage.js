@@ -420,8 +420,8 @@ export default function PrivacySettingsPage() {
               className="rounded-[24px] bg-card border border-border/40 shadow-sm p-5 sm:p-6"
             >
               <div className="flex items-start gap-4">
-                <div className="p-3.5 rounded-2xl bg-sky-500/10 border border-border/40 flex-shrink-0">
-                  <Eye className="h-5 w-5 text-sky-400" />
+                <div className="p-3.5 rounded-2xl bg-brand-600/10 border border-border/40 flex-shrink-0">
+                  <Eye className="h-5 w-5 text-brand-600" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-display font-bold text-base">

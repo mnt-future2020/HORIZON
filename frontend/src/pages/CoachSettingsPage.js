@@ -1089,9 +1089,9 @@ export default function CoachSettingsPage() {
                     )}
                     Save Sports
                   </button>
-                </motion.div>
-              );
-            })()}
+          </motion.div>
+        );
+      })()}
         </AnimatePresence>
       </div>
     </div>

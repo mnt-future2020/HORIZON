@@ -94,7 +94,7 @@ function VenueCard({ venue, idx, onClick, distanceBadge, driveTimeBadge }) {
             <Badge className="text-[10px] px-2 py-0.5 shrink-0 bg-brand-600 text-white border border-brand-500 font-semibold">Bookable</Badge>
           )}
           {venue.badge === "enquiry" && (
-            <Badge className="admin-badge px-3 py-1 rounded-full border-none bg-amber-500/10 text-amber-600">Enquiry</Badge>
+            <Badge className="text-[10px] px-2 py-0.5 shrink-0 bg-amber-500 hover:bg-amber-500 text-white border border-amber-400 font-semibold">Enquiry</Badge>
           )}
         </div>
 
