@@ -45,7 +45,7 @@ const ChatHeader = ({
 
   const getStatus = () => {
     if (isTyping)
-      return { text: "typing…", cls: "text-brand-600 animate-pulse" };
+      return { text: "typing...", cls: "text-brand-600" };
     if (onlineStatus?.online)
       return { text: "online", cls: "text-emerald-500" };
     if (typeof lastSeenText === "function" && lastSeenText()) {
@@ -56,32 +56,26 @@ const ChatHeader = ({
 
   const status = getStatus();
 
-  const iconBtn =
-    "h-9 w-9 sm:h-10 sm:w-10 rounded-xl sm:rounded-2xl flex items-center justify-center transition-all active:scale-90 flex-shrink-0";
-
   return (
-    <header className="bg-card/80 backdrop-blur-2xl border-b border-border/30 flex-shrink-0 sticky top-0 z-50 overflow-hidden">
-      {/* Decorative accent */}
-      <div className="absolute top-0 right-0 h-px w-32 bg-gradient-to-l from-brand-600/40 to-transparent pointer-events-none" />
-
-      <div className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 h-14 sm:h-16 max-w-5xl mx-auto">
-        {/* Back button — visible on lg and below if chat is active */}
+    <header className="bg-card/95 backdrop-blur-xl border-b border-border/20 flex-shrink-0 sticky top-0 z-50">
+      <div className="flex items-center gap-1 px-1.5 sm:px-2 h-[56px] sm:h-[60px]">
+        {/* Back button */}
         <button
           onClick={onBack}
           aria-label="Back to conversations"
-          className={`lg:hidden ${iconBtn} text-muted-foreground hover:text-foreground hover:bg-secondary/50`}
+          className="lg:hidden h-9 w-9 rounded-full flex items-center justify-center text-foreground hover:bg-secondary/50 active:scale-95 transition-all flex-shrink-0"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
 
-        {/* Profile info — tappable */}
+        {/* Profile info */}
         <button
-          className="flex-1 min-w-0 flex items-center gap-2 sm:gap-3 py-1.5 px-1.5 sm:px-2 rounded-2xl hover:bg-secondary/30 active:bg-secondary/50 transition-all text-left group"
+          className="flex-1 min-w-0 flex items-center gap-2.5 py-1.5 px-1.5 rounded-xl hover:bg-secondary/30 active:bg-secondary/50 transition-colors text-left"
           onClick={() => navigate(`/player-card/${activeConvo.other_user?.id}`)}
         >
-          {/* Avatar with online dot */}
+          {/* Avatar */}
           <div className="relative flex-shrink-0">
-            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-[14px] bg-brand-600/10 overflow-hidden border border-border/40 group-hover:border-brand-600/30 transition-all">
+            <div className="h-10 w-10 rounded-full bg-secondary/60 overflow-hidden">
               {activeConvo.other_user?.avatar ? (
                 <img
                   src={mediaUrl(activeConvo.other_user.avatar)}
@@ -89,138 +83,147 @@ const ChatHeader = ({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <div className="h-full w-full flex items-center justify-center">
+                <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-brand-600/10 to-brand-600/5">
                   <User className="h-5 w-5 text-brand-600/60" />
                 </div>
               )}
             </div>
             {onlineStatus?.online && (
-              <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
+              <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-500 border-2 border-card" />
             )}
           </div>
 
           {/* Name + status */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1 min-w-0">
-              <span className="font-black text-[14px] sm:text-[15px] truncate text-foreground group-hover:text-brand-600 transition-colors leading-none">
+              <span className="font-semibold text-[15px] truncate text-foreground leading-tight">
                 {activeConvo.other_user?.name || "Unknown"}
               </span>
               {(activeConvo.other_user?.current_streak ?? 0) > 0 && (
-                <span className="flex items-center gap-0.5 text-[#FF6B00] flex-shrink-0">
-                  <Flame className="h-3 w-3 fill-[#FF6B00]/20" />
-                  <span className="text-[9px] font-black">
+                <span className="flex items-center gap-0.5 text-orange-500 flex-shrink-0">
+                  <Flame className="h-3 w-3 fill-orange-500/30" />
+                  <span className="text-[9px] font-bold">
                     {activeConvo.other_user.current_streak}
                   </span>
                 </span>
               )}
             </div>
-            <p
-              className={`text-[10px] sm:text-[11px] font-bold tracking-wide mt-0.5 truncate ${status ? status.cls : "text-muted-foreground/40 hidden sm:block"}`}
-            >
-              {status ? status.text : "tap for profile"}
-            </p>
+            {status && (
+              <p className={`text-[12px] mt-0 leading-tight truncate ${status.cls}`}>
+                {isTyping ? (
+                  <span className="inline-flex items-center gap-1">
+                    <span>typing</span>
+                    <span className="inline-flex gap-[2px]">
+                      {[0, 1, 2].map((i) => (
+                        <span
+                          key={i}
+                          className="inline-block h-[3px] w-[3px] rounded-full bg-brand-600 animate-bounce"
+                          style={{ animationDelay: `${i * 150}ms`, animationDuration: "0.8s" }}
+                        />
+                      ))}
+                    </span>
+                  </span>
+                ) : (
+                  status.text
+                )}
+              </p>
+            )}
           </div>
         </button>
 
-        {/* Actions */}
-        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-          {/* Search — always visible */}
+        {/* Action buttons */}
+        <div className="flex items-center gap-0.5 flex-shrink-0">
           <button
             onClick={onToggleSearch}
             aria-label={showMsgSearch ? "Close search" : "Search messages"}
-            className={`${iconBtn} ${showMsgSearch ? "bg-brand-600/15 text-brand-600" : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40"}`}
+            className={`h-9 w-9 rounded-full flex items-center justify-center transition-colors active:scale-95 ${
+              showMsgSearch
+                ? "bg-brand-600/10 text-brand-600"
+                : "text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40"
+            }`}
           >
-            <Search className="h-4 w-4" />
+            <Search className="h-[18px] w-[18px]" />
           </button>
 
-          {/* Mute — always visible */}
-          <button
-            onClick={onToggleMute}
-            aria-label={isMuted ? "Unmute" : "Mute"}
-            className={`${iconBtn} text-muted-foreground/60 hover:bg-secondary/40`}
-          >
-            {isMuted ? (
-              <BellOff className="h-4 w-4 text-orange-400" />
-            ) : (
-              <Bell className="h-4 w-4 hover:text-foreground" />
-            )}
-          </button>
-
-          {/* Desktop extra actions */}
+          {/* Desktop actions */}
           <div className="hidden sm:flex items-center gap-0.5">
+            <button
+              onClick={onToggleMute}
+              aria-label={isMuted ? "Unmute" : "Mute"}
+              className="h-9 w-9 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40 transition-colors active:scale-95"
+            >
+              {isMuted ? (
+                <BellOff className="h-[18px] w-[18px] text-orange-400" />
+              ) : (
+                <Bell className="h-[18px] w-[18px]" />
+              )}
+            </button>
             <button
               onClick={onOpenPinned}
               aria-label="Pinned messages"
-              className={`${iconBtn} text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40`}
+              className="h-9 w-9 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40 transition-colors active:scale-95"
             >
-              <Pin className="h-4 w-4" />
+              <Pin className="h-[18px] w-[18px]" />
             </button>
             <button
               onClick={onOpenMedia}
               aria-label="Shared media"
-              className={`${iconBtn} text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40`}
+              className="h-9 w-9 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40 transition-colors active:scale-95"
             >
-              <ImageIcon className="h-4 w-4" />
-            </button>
-            <button
-              onClick={onClearChat}
-              aria-label="Clear chat"
-              className={`${iconBtn} text-muted-foreground/40 hover:text-red-500 hover:bg-red-500/10`}
-            >
-              <Eraser className="h-4 w-4" />
+              <ImageIcon className="h-[18px] w-[18px]" />
             </button>
           </div>
 
-          {/* Mobile overflow menu */}
-          <div className="sm:hidden relative" ref={moreMenuRef}>
+          {/* More menu */}
+          <div className="relative" ref={moreMenuRef}>
             <button
               onClick={() => setShowMoreMenu((v) => !v)}
               aria-label="More options"
-              className={`${iconBtn} text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40`}
+              className="h-9 w-9 rounded-full flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-secondary/40 transition-colors active:scale-95"
             >
-              <MoreVertical className="h-4 w-4" />
+              <MoreVertical className="h-[18px] w-[18px]" />
             </button>
 
             {showMoreMenu && (
-              <div className="absolute right-0 top-full mt-1 w-52 bg-card border border-border/40 rounded-2xl shadow-2xl z-[60] overflow-hidden py-1.5">
+              <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border/30 rounded-xl shadow-xl z-[60] overflow-hidden py-1">
                 {[
-                  {
-                    label: "Pinned messages",
-                    icon: Pin,
-                    action: () => {
-                      onOpenPinned();
-                      setShowMoreMenu(false);
-                    },
-                  },
-                  {
-                    label: "Shared media",
-                    icon: ImageIcon,
-                    action: () => {
-                      onOpenMedia();
-                      setShowMoreMenu(false);
-                    },
-                  },
+                  ...(window.innerWidth < 640
+                    ? [
+                        {
+                          label: isMuted ? "Unmute" : "Mute",
+                          icon: isMuted ? BellOff : Bell,
+                          action: () => { onToggleMute(); setShowMoreMenu(false); },
+                        },
+                        {
+                          label: "Pinned messages",
+                          icon: Pin,
+                          action: () => { onOpenPinned(); setShowMoreMenu(false); },
+                        },
+                        {
+                          label: "Shared media",
+                          icon: ImageIcon,
+                          action: () => { onOpenMedia(); setShowMoreMenu(false); },
+                        },
+                      ]
+                    : []),
                   {
                     label: "Clear chat",
                     icon: Eraser,
-                    action: () => {
-                      onClearChat();
-                      setShowMoreMenu(false);
-                    },
+                    action: () => { onClearChat(); setShowMoreMenu(false); },
                     danger: true,
                   },
                 ].map(({ label, icon: Icon, action, danger }) => (
                   <button
                     key={label}
                     onClick={action}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-semibold text-left transition-colors touch-manipulation ${
+                    className={`w-full flex items-center gap-3 px-3.5 py-2.5 text-[13px] font-medium text-left transition-colors touch-manipulation ${
                       danger
-                        ? "text-red-500 hover:bg-red-500/10 active:bg-red-500/20"
-                        : "text-foreground/80 hover:bg-secondary/50 active:bg-secondary/70"
+                        ? "text-red-500 hover:bg-red-500/8"
+                        : "text-foreground/80 hover:bg-secondary/50"
                     }`}
                   >
                     <Icon
-                      className={`h-4 w-4 flex-shrink-0 ${danger ? "text-red-400" : "text-muted-foreground"}`}
+                      className={`h-4 w-4 flex-shrink-0 ${danger ? "text-red-400" : "text-muted-foreground/60"}`}
                     />
                     {label}
                   </button>

@@ -3,13 +3,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Loader2,
   ShieldCheck,
-  ShieldX,
-  X,
   Eraser,
   Search,
   ArrowDown,
+  Clock,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import ChatHeader from "./ChatHeader";
 import MessageBubble from "./MessageBubble";
@@ -21,7 +19,7 @@ const ActiveChat = ({
   onlineStatus,
   isTyping,
   lastSeenText,
-  messages,
+  messages: _messages,
   groupedMessages,
   user,
   onSend,
@@ -83,11 +81,7 @@ const ActiveChat = ({
       className="flex flex-col bg-background overflow-hidden h-full w-full min-h-0"
       style={{ touchAction: "manipulation" }}
     >
-      {/* Subtle background */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-brand-600/4 rounded-full blur-[100px] pointer-events-none -z-10" />
-      <div className="absolute bottom-20 left-0 w-64 h-64 bg-blue-600/3 rounded-full blur-[80px] pointer-events-none -z-10" />
-
-      {/* ── Header ─────────────────────────────────────────── */}
+      {/* Header */}
       <ChatHeader
         activeConvo={activeConvo}
         onBack={onBack}
@@ -103,111 +97,115 @@ const ActiveChat = ({
         onClearChat={() => setShowClearConfirm(true)}
       />
 
-      {/* ── Request Banner ──────────────────────────────────── */}
+      {/* Request Banner */}
       {activeConvo.status === "request" && (
         <motion.div
-          initial={{ y: -40, opacity: 0 }}
+          initial={{ y: -30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className={`flex-shrink-0 px-3 sm:px-4 py-3 border-b border-border/20 ${
-            activeConvo.requester_id === user?.id
-              ? "bg-amber-500/5 border-amber-500/10"
-              : "bg-brand-600/5 border-brand-600/10"
-          }`}
+          className="flex-shrink-0 border-b border-border/15"
         >
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-            {activeConvo.requester_id === user?.id ? (
-              <div className="flex items-center gap-3">
-                <div className="h-8 w-8 rounded-xl bg-amber-500/15 flex items-center justify-center flex-shrink-0">
-                  <Loader2 className="h-4 w-4 text-amber-600 animate-spin" />
+          {activeConvo.requester_id === user?.id ? (
+            /* I sent the request — pending state */
+            <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
+                <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center flex-shrink-0">
+                  <Clock className="h-4 w-4 text-amber-600" />
                 </div>
-                <div>
-                  <p className="text-[11px] font-black text-amber-600 uppercase tracking-widest">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-semibold text-amber-600">
                     Request Pending
                   </p>
-                  <p className="text-[10px] text-amber-600/60 italic mt-0.5">
-                    Waiting for them to accept
+                  <p className="text-[11px] text-amber-600/50 mt-0.5 leading-snug">
+                    Waiting for {activeConvo.other_user?.name || "them"} to accept your message request
                   </p>
                 </div>
+                <div className="flex-shrink-0">
+                  <div className="h-8 w-8 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin" />
+                </div>
               </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-3 overflow-hidden">
-                  <div className="h-8 w-8 rounded-xl bg-brand-600/10 flex items-center justify-center flex-shrink-0">
-                    <ShieldCheck className="h-4.5 w-4.5 text-brand-600" />
+            </div>
+          ) : (
+            /* They sent me a request — accept/decline */
+            <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
+              <div className="p-3 rounded-xl bg-brand-600/5 border border-brand-600/10">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-10 w-10 rounded-full bg-brand-600/10 flex items-center justify-center flex-shrink-0">
+                    <ShieldCheck className="h-4 w-4 text-brand-600" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[12px] font-black text-foreground/90 uppercase tracking-tight">
-                      Access Request
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-foreground">
+                      Message Request
                     </p>
-                    <p className="text-[10px] text-muted-foreground/60 truncate italic mt-0.5">
-                      Accept to chat with {activeConvo.other_user?.name}
+                    <p className="text-[11px] text-muted-foreground/50 mt-0.5 leading-snug">
+                      <span className="font-medium text-foreground/70">{activeConvo.other_user?.name}</span> wants to send you a message
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => onAcceptRequest(activeConvo)}
+                    className="flex-1 h-9 rounded-full text-[13px] font-semibold bg-brand-600 text-white hover:bg-brand-500 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    Accept
+                  </button>
                   <button
                     onClick={() => onDeclineRequest(activeConvo)}
-                    className="h-8 px-3 rounded-xl text-[11px] font-bold border border-border/50 bg-secondary/20 hover:bg-secondary/40 active:scale-95 transition-all"
+                    className="flex-1 h-9 rounded-full text-[13px] font-medium border border-border/40 text-muted-foreground hover:bg-secondary/40 active:scale-[0.98] transition-all"
                   >
                     Decline
                   </button>
-                  <button
-                    onClick={() => onAcceptRequest(activeConvo)}
-                    className="h-8 px-4 rounded-xl text-[11px] font-black bg-brand-600 text-white hover:bg-brand-500 active:scale-95 transition-all shadow-sm"
-                  >
-                    Accept
-                  </button>
                 </div>
-              </>
-            )}
-          </div>
+                <p className="text-[10px] text-muted-foreground/40 text-center mt-2 leading-relaxed">
+                  If you accept, they'll be able to message you directly
+                </p>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 
-      {/* ── Message Search Bar ──────────────────────────────── */}
+      {/* Message Search */}
       <AnimatePresence>
         {showMsgSearch && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="flex-shrink-0 bg-card/95 backdrop-blur-xl border-b border-border/30 overflow-hidden"
+            transition={{ duration: 0.15 }}
+            className="flex-shrink-0 bg-card/95 backdrop-blur-xl border-b border-border/15 overflow-hidden"
           >
-            <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3 flex flex-col gap-2">
+            <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2.5 flex flex-col gap-1.5">
               <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/40 pointer-events-none" />
                 <Input
                   value={msgSearchQuery}
                   onChange={(e) => onMsgSearch(e.target.value)}
-                  placeholder="Search in this chat…"
+                  placeholder="Search in conversation..."
                   autoFocus
-                  className="pl-10 h-10 bg-secondary/30 border-none rounded-2xl text-[13px] focus-visible:ring-brand-600/20"
+                  className="pl-9 h-9 bg-secondary/30 border-none rounded-lg text-[13px] focus-visible:ring-brand-600/15"
                 />
               </div>
               {msgSearchResults.length > 0 && (
-                <div className="max-h-[28vh] overflow-y-auto space-y-0.5 pb-2 custom-scrollbar">
-                  {msgSearchResults.map((r, idx) => (
-                    <motion.button
+                <div className="max-h-[28vh] overflow-y-auto space-y-0.5 custom-scrollbar">
+                  {msgSearchResults.map((r) => (
+                    <button
                       key={r.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.03 }}
-                      className="w-full text-left p-3 hover:bg-brand-600/5 active:bg-brand-600/10 rounded-xl transition-all"
+                      className="w-full text-left p-2.5 hover:bg-secondary/40 active:bg-secondary/60 rounded-lg transition-colors"
                       onClick={() => onScrollToMessage(r.id)}
                     >
                       <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-brand-600 opacity-70">
+                        <span className="text-[11px] font-semibold text-brand-600">
                           {r.sender_name}
                         </span>
-                        <span className="text-[9px] text-muted-foreground/50 font-medium">
+                        <span className="text-[10px] text-muted-foreground/40">
                           {formatTime(r.created_at)}
                         </span>
                       </div>
-                      <p className="text-[12px] font-medium truncate text-foreground/70">
+                      <p className="text-[12px] truncate text-foreground/60">
                         {r.content}
                       </p>
-                    </motion.button>
+                    </button>
                   ))}
                 </div>
               )}
@@ -216,7 +214,7 @@ const ActiveChat = ({
         )}
       </AnimatePresence>
 
-      {/* ── Messages Area ────────────────────────────────────── */}
+      {/* Messages Area */}
       <div className="flex-1 min-h-0 relative">
         <div
           ref={msgContainerRef}
@@ -227,20 +225,20 @@ const ActiveChat = ({
             WebkitOverflowScrolling: "touch",
           }}
         >
-          <div className="max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-6 flex flex-col gap-0">
+          <div className="max-w-5xl mx-auto px-1 sm:px-2 py-3 flex flex-col gap-0">
             {loadingMessages ? (
-              <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-40">
-                <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">
-                  Loading messages…
+              <div className="flex flex-col items-center justify-center py-24 gap-3 opacity-40">
+                <Loader2 className="h-6 w-6 animate-spin text-brand-600" />
+                <p className="text-[12px] text-muted-foreground">
+                  Loading messages...
                 </p>
               </div>
             ) : (
               groupedMessages.map((dateGroup) => (
                 <div key={dateGroup.date}>
                   {/* Date separator */}
-                  <div className="flex items-center justify-center my-6 sticky top-3 z-20 pointer-events-none">
-                    <span className="px-4 py-1 rounded-full bg-secondary/70 backdrop-blur-md text-[10px] font-bold text-muted-foreground/70 shadow-sm border border-border/20 uppercase tracking-widest pointer-events-auto">
+                  <div className="flex items-center justify-center my-4 sticky top-2 z-20 pointer-events-none">
+                    <span className="px-3 py-1 rounded-lg bg-card/90 backdrop-blur-sm text-[11px] font-medium text-muted-foreground/60 shadow-sm border border-border/10 pointer-events-auto">
                       {dateGroup.date}
                     </span>
                   </div>
@@ -252,33 +250,23 @@ const ActiveChat = ({
                       !prevMsg || prevMsg.sender_id !== msg.sender_id;
 
                     return (
-                      <motion.div
+                      <MessageBubble
                         key={msg.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: 0.3,
-                          ease: [0.22, 1, 0.36, 1],
-                          delay: Math.min(mi * 0.015, 0.25),
-                        }}
-                      >
-                        <MessageBubble
-                          msg={msg}
-                          isMe={isMe}
-                          showTail={showTail}
-                          onLongPress={onLongPress}
-                          onReply={onReply}
-                          onDelete={onDelete}
-                          onPin={onPin}
-                          onForward={onForward}
-                          onOpenSharedPost={onOpenSharedPost}
-                          onOpenLightbox={onOpenLightbox}
-                          onTogglePlayAudio={onTogglePlayAudio}
-                          playingAudio={playingAudio}
-                          linkifyText={linkifyText}
-                          user={user}
-                        />
-                      </motion.div>
+                        msg={msg}
+                        isMe={isMe}
+                        showTail={showTail}
+                        onLongPress={onLongPress}
+                        onReply={onReply}
+                        onDelete={onDelete}
+                        onPin={onPin}
+                        onForward={onForward}
+                        onOpenSharedPost={onOpenSharedPost}
+                        onOpenLightbox={onOpenLightbox}
+                        onTogglePlayAudio={onTogglePlayAudio}
+                        playingAudio={playingAudio}
+                        linkifyText={linkifyText}
+                        user={user}
+                      />
                     );
                   })}
                 </div>
@@ -289,25 +277,25 @@ const ActiveChat = ({
             <AnimatePresence>
               {isTyping && (
                 <motion.div
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 6 }}
-                  className="flex justify-start px-1 mt-1.5"
+                  exit={{ opacity: 0, y: 4 }}
+                  className="flex justify-start px-3 mt-1"
                 >
-                  <div className="px-4 py-3 rounded-[20px] rounded-bl-[5px] bg-card border border-border/40 shadow-sm">
+                  <div className="px-4 py-2.5 rounded-2xl rounded-bl-[4px] bg-card border border-border/20">
                     <div className="flex items-center gap-1">
                       {[0, 1, 2].map((i) => (
                         <motion.span
                           key={i}
-                          className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40"
+                          className="h-1.5 w-1.5 rounded-full bg-muted-foreground/30"
                           animate={{
-                            scale: [1, 1.4, 1],
-                            opacity: [0.4, 1, 0.4],
+                            scale: [1, 1.3, 1],
+                            opacity: [0.3, 0.8, 0.3],
                           }}
                           transition={{
-                            duration: 1.2,
+                            duration: 1,
                             repeat: Infinity,
-                            delay: i * 0.2,
+                            delay: i * 0.15,
                           }}
                         />
                       ))}
@@ -325,17 +313,17 @@ const ActiveChat = ({
         <AnimatePresence>
           {showScrollBtn && (
             <motion.button
-              initial={{ scale: 0.6, opacity: 0 }}
+              initial={{ scale: 0.5, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.6, opacity: 0 }}
+              exit={{ scale: 0.5, opacity: 0 }}
               transition={{ type: "spring", damping: 20, stiffness: 300 }}
               onClick={scrollToBottom}
               aria-label="Scroll to latest messages"
-              className="absolute bottom-4 right-4 h-11 w-11 rounded-full bg-brand-600 text-white flex items-center justify-center shadow-xl shadow-brand-600/30 z-[45] active:scale-90 transition-transform"
+              className="absolute bottom-3 right-3 h-10 w-10 rounded-full bg-card border border-border/30 text-foreground flex items-center justify-center shadow-lg z-[45] active:scale-90 transition-transform hover:bg-secondary/40"
             >
-              <ArrowDown className="h-5 w-5" />
+              <ArrowDown className="h-4 w-4" />
               {newMsgWhileAway > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 h-5 min-w-[20px] px-1 rounded-full bg-red-600 text-white text-[10px] font-black flex items-center justify-center border-2 border-white/10 shadow-md">
+                <span className="absolute -top-1 -right-1 h-[18px] min-w-[18px] px-1 rounded-full bg-brand-600 text-white text-[10px] font-bold flex items-center justify-center border-2 border-card">
                   {newMsgWhileAway}
                 </span>
               )}
@@ -344,7 +332,7 @@ const ActiveChat = ({
         </AnimatePresence>
       </div>
 
-      {/* ── Input ────────────────────────────────────────────── */}
+      {/* Input */}
       <MessageInput
         msgText={msgText}
         onMsgTextChange={onMsgTextChange}
@@ -368,43 +356,43 @@ const ActiveChat = ({
         inputRef={inputRef}
       />
 
-      {/* ── Clear Chat Confirm Modal ─────────────────────────── */}
+      {/* Clear Chat Confirm */}
       <AnimatePresence>
         {showClearConfirm && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/20 backdrop-blur-[2px] p-4"
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
             onClick={() => setShowClearConfirm(false)}
           >
             <motion.div
-              initial={{ scale: 0.92, y: 16 }}
+              initial={{ scale: 0.95, y: 10 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.92, y: 16 }}
-              transition={{ type: "spring", damping: 28, stiffness: 280 }}
-              className="w-full max-w-sm bg-card rounded-3xl border border-border/40 p-7 shadow-2xl"
+              exit={{ scale: 0.95, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-sm bg-card rounded-2xl border border-border/30 p-6 shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="h-14 w-14 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-5 ring-4 ring-red-500/5">
-                <Eraser className="h-7 w-7 text-red-500" />
+              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                <Eraser className="h-6 w-6 text-red-500" />
               </div>
-              <h3 className="text-xl font-black text-center tracking-tight mb-2">
+              <h3 className="text-lg font-bold text-center mb-1.5">
                 Clear chat history?
               </h3>
-              <p className="text-[13px] text-muted-foreground/70 text-center leading-relaxed mb-7">
-                All messages will be permanently removed. This cannot be undone.
+              <p className="text-[13px] text-muted-foreground/60 text-center leading-relaxed mb-6">
+                All messages will be permanently removed.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <button
                   onClick={() => setShowClearConfirm(false)}
-                  className="h-11 rounded-2xl font-bold text-[13px] border border-border/50 bg-secondary/20 hover:bg-secondary/40 active:scale-95 transition-all"
+                  className="h-10 rounded-xl font-medium text-[13px] border border-border/40 hover:bg-secondary/40 active:scale-95 transition-all"
                 >
-                  Keep chat
+                  Cancel
                 </button>
                 <button
                   onClick={onClearChat}
-                  className="h-11 rounded-2xl font-black text-[12px] uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all"
+                  className="h-10 rounded-xl font-semibold text-[13px] bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all"
                 >
                   Clear all
                 </button>

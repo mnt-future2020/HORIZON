@@ -45,6 +45,7 @@ import CoachingSection from "@/components/player-card/CoachingSection";
 import CareerSection from "@/components/player-card/CareerSection";
 import UserPostsSection from "@/components/player-card/UserPostsSection";
 import PlayerCardHeader from "@/components/player-card/PlayerCardHeader";
+import FollowListModal from "@/components/player-card/FollowListModal";
 import OverallScoreSection from "@/components/player-card/OverallScoreSection";
 import AchievementsSection from "@/components/player-card/AchievementsSection";
 
@@ -89,6 +90,10 @@ export default function PlayerCardPage() {
   const [booking, setBooking] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
 
+  const [followModal, setFollowModal] = useState({
+    open: false,
+    type: "followers",
+  });
   const [payStep, setPayStep] = useState(null);
   const [pendingSession, setPendingSession] = useState(null);
   const [pendingSubPkg, setPendingSubPkg] = useState(null);
@@ -480,7 +485,7 @@ export default function PlayerCardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brand-50/20 dark:to-brand-950/10 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-brand-50/20 dark:to-brand-950/10 relative overflow-hidden mt-5">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/5 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-brand-600/5 rounded-full blur-3xl -z-10" />
@@ -510,6 +515,13 @@ export default function PlayerCardPage() {
           handleFollow={handleFollow}
           navigate={navigate}
           tier={tier}
+          onShowFollowers={() =>
+            setFollowModal({ open: true, type: "followers" })
+          }
+          onShowFollowing={() =>
+            setFollowModal({ open: true, type: "following" })
+          }
+          onTabChange={handleTabChange}
         />
 
         {/* ── Tab Navigation ─────────────────────────────────────────── */}
@@ -841,10 +853,15 @@ export default function PlayerCardPage() {
                   card={card}
                   isOwnProfile={isOwnProfile}
                   onDeletePost={(postId) => {
-                    socialAPI.deletePost(postId).then(() => {
-                      setUserPosts(prev => prev.filter(p => p.id !== postId));
-                      toast.success("Post deleted");
-                    }).catch(() => toast.error("Failed to delete post"));
+                    socialAPI
+                      .deletePost(postId)
+                      .then(() => {
+                        setUserPosts((prev) =>
+                          prev.filter((p) => p.id !== postId),
+                        );
+                        toast.success("Post deleted");
+                      })
+                      .catch(() => toast.error("Failed to delete post"));
                   }}
                 />
               </motion.div>
@@ -912,6 +929,13 @@ export default function PlayerCardPage() {
       </div>
 
       {/* Modals */}
+      <FollowListModal
+        isOpen={followModal.open}
+        onClose={() => setFollowModal({ open: false, type: followModal.type })}
+        userId={card.user_id}
+        type={followModal.type}
+      />
+
       <LevelUpGuideModal
         isOpen={showLevelUpGuide}
         onClose={() => setShowLevelUpGuide(false)}

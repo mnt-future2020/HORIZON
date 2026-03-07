@@ -1,5 +1,19 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false)
+      url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { useAuth } from "@/contexts/AuthContext";
 import { tournamentAPI, venueAPI, liveAPI } from "@/lib/api";
@@ -253,23 +267,19 @@ function TournamentCard({ t, user, onRegister, onClick, index }) {
 export default function TournamentsPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [tournaments, setTournaments] = useState([]);
   const [loading, setLoading] = useState(true);
   useScrollRestoration("tournaments", !loading);
 
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
-  const [filterSport, setFilterSport] = useState(
-    searchParams.get("sport") || "",
+  // One-time URL read on mount — no subscription (rule 5.7)
+  const [searchQuery, setSearchQuery] = useState(() => getInitParam("q") || "");
+  const [filterSport, setFilterSport] = useState(() => getInitParam("sport") || "");
+  const [filterStatus, setFilterStatus] = useState(() => getInitParam("status") || "");
+  const [showMyOnly, setShowMyOnly] = useState(() => getInitParam("mine") === "1");
+  const [sortOrder, setSortOrder] = useState(() => getInitParam("sort") || "newest");
+  const [showFilters, setShowFilters] = useState(
+    () => !!(getInitParam("sport") || getInitParam("status") || getInitParam("mine")),
   );
-  const [filterStatus, setFilterStatus] = useState(
-    searchParams.get("status") || "",
-  );
-  const [showMyOnly, setShowMyOnly] = useState(
-    searchParams.get("mine") === "1",
-  );
-  const [sortOrder, setSortOrder] = useState(searchParams.get("sort") || "newest");
-  const [showFilters, setShowFilters] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [venues, setVenues] = useState([]);
@@ -289,20 +299,39 @@ export default function TournamentsPage() {
     rules: "",
   });
 
-  /* Data loading */
+  // Refs for stable access in callbacks (rule 5.12 — avoid stale closures)
+  const sportRef = useRef(filterSport);
+  const statusRef = useRef(filterStatus);
+  const mineRef = useRef(showMyOnly);
+
+  /* Stable data loader — URL sync in API callback, not effect (rule 5.7) */
+  const loadTournaments = useCallback(async (sport, status, mine) => {
+    // Use passed args (freshest values from event handler)
+    const sp = sport ?? sportRef.current;
+    const st = status ?? statusRef.current;
+    const my = mine ?? mineRef.current;
+
+    setLoading(true);
+    try {
+      const params = {};
+      if (sp) params.sport = sp;
+      if (st) params.status = st;
+      if (my) params.my_tournaments = true;
+      const res = await tournamentAPI.list(params);
+      setTournaments(res.data || []);
+    } catch {
+      toast.error("Failed to load tournaments");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /* Initial load */
   useEffect(() => {
     loadTournaments();
-  }, [filterSport, filterStatus, showMyOnly]); // eslint-disable-line
-  useEffect(() => {
-    const p = new URLSearchParams();
-    if (searchQuery) p.set("q", searchQuery);
-    if (filterSport) p.set("sport", filterSport);
-    if (filterStatus) p.set("status", filterStatus);
-    if (showMyOnly) p.set("mine", "1");
-    if (sortOrder !== "newest") p.set("sort", sortOrder);
-    setSearchParams(p, { replace: true });
-  }, [searchQuery, filterSport, filterStatus, showMyOnly, sortOrder, setSearchParams]);
+  }, []); // eslint-disable-line
 
+  /* Live matches polling — independent (no URL sync needed) */
   useEffect(() => {
     const loadLive = async () => {
       try {
@@ -314,22 +343,6 @@ export default function TournamentsPage() {
     const iv = setInterval(loadLive, 10000);
     return () => clearInterval(iv);
   }, []);
-
-  const loadTournaments = async () => {
-    setLoading(true);
-    try {
-      const params = {};
-      if (filterSport) params.sport = filterSport;
-      if (filterStatus) params.status = filterStatus;
-      if (showMyOnly) params.my_tournaments = true;
-      const res = await tournamentAPI.list(params);
-      setTournaments(res.data || []);
-    } catch {
-      toast.error("Failed to load tournaments");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const openCreate = async () => {
     if (user?.role === "venue_owner") {
@@ -439,7 +452,11 @@ export default function TournamentsPage() {
           <Input
             placeholder="Search tournaments..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const v = e.target.value;
+              setSearchQuery(v);
+              replaceParams({ q: v || null });
+            }}
             name="tournament-search"
             autoComplete="off"
             className="pl-10 h-11 rounded-xl bg-secondary/20 border-border/40 text-sm"
@@ -463,7 +480,11 @@ export default function TournamentsPage() {
           )}
         </button>
         <button
-          onClick={() => setSortOrder((s) => (s === "newest" ? "oldest" : "newest"))}
+          onClick={() => setSortOrder((s) => {
+            const next = s === "newest" ? "oldest" : "newest";
+            replaceParams({ sort: next === "newest" ? null : next });
+            return next;
+          })}
           className={`h-11 w-11 flex items-center justify-center rounded-xl border transition-all shrink-0 ${
             sortOrder === "oldest"
               ? "bg-brand-600/10 border-brand-600/30 text-brand-600"
@@ -488,7 +509,13 @@ export default function TournamentsPage() {
             <div className="flex flex-col sm:flex-row gap-2 mb-4 pb-1">
               <Select
                 value={filterSport}
-                onValueChange={(v) => setFilterSport(v === "all" ? "" : v)}
+                onValueChange={(v) => {
+                  const val = v === "all" ? "" : v;
+                  setFilterSport(val);
+                  sportRef.current = val;
+                  replaceParams({ sport: val || null });
+                  loadTournaments(val, undefined, undefined);
+                }}
               >
                 <SelectTrigger
                   className="h-11 rounded-xl bg-secondary/20 border-border/40 text-sm flex-1 sm:max-w-[160px]"
@@ -507,7 +534,13 @@ export default function TournamentsPage() {
               </Select>
               <Select
                 value={filterStatus}
-                onValueChange={(v) => setFilterStatus(v === "all" ? "" : v)}
+                onValueChange={(v) => {
+                  const val = v === "all" ? "" : v;
+                  setFilterStatus(val);
+                  statusRef.current = val;
+                  replaceParams({ status: val || null });
+                  loadTournaments(undefined, val, undefined);
+                }}
               >
                 <SelectTrigger className="h-11 rounded-xl bg-secondary/20 border-border/40 text-sm flex-1 sm:max-w-[160px]">
                   <SelectValue placeholder="Any Status" />
@@ -520,7 +553,13 @@ export default function TournamentsPage() {
                 </SelectContent>
               </Select>
               <button
-                onClick={() => setShowMyOnly((v) => !v)}
+                onClick={() => setShowMyOnly((prev) => {
+                  const next = !prev;
+                  mineRef.current = next;
+                  replaceParams({ mine: next ? "1" : null });
+                  loadTournaments(undefined, undefined, next);
+                  return next;
+                })}
                 className={`h-11 px-4 rounded-xl text-sm font-semibold border transition-all ${
                   showMyOnly
                     ? "bg-brand-600/10 border-brand-600/30 text-brand-600"

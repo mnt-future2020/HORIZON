@@ -95,8 +95,12 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
       for (const m of msgs) {
         if (m.reply_to && !m.reply_preview && byId[m.reply_to]) {
           const ref = byId[m.reply_to];
-          m.reply_preview = (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "…");
+          m.reply_preview = (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "\u2026");
           m.reply_sender = ref.sender_name || "Unknown";
+          if (ref.media_url) {
+            m.reply_media_url = ref.media_url;
+            m.reply_media_type = ref.media_type;
+          }
         }
       }
       setMessages(msgs);
@@ -175,8 +179,10 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
             if (ref) {
               return [...prev, {
                 ...incoming,
-                reply_preview: (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "…"),
+                reply_preview: (ref.content || "").slice(0, 80) || (ref.media_url ? "Media" : "\u2026"),
                 reply_sender: ref.sender_name || "Unknown",
+                reply_media_url: ref.media_url || undefined,
+                reply_media_type: ref.media_type || undefined,
               }];
             }
           }
@@ -402,8 +408,10 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
       media_type: mediaType,
       file_name: fileName,
       reply_to: reply?.id,
-      reply_preview: reply?.content?.slice(0, 80),
+      reply_preview: reply?.content?.slice(0, 80) || (reply?.media_url ? "Media" : undefined),
       reply_sender: reply?.sender_name,
+      reply_media_url: reply?.media_url || undefined,
+      reply_media_type: reply?.media_type || undefined,
       read: false,
       created_at: new Date().toISOString(),
     };
@@ -425,6 +433,8 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
                 ...res.data,
                 reply_preview: tempMsg.reply_preview,
                 reply_sender: tempMsg.reply_sender,
+                reply_media_url: tempMsg.reply_media_url,
+                reply_media_type: tempMsg.reply_media_type,
               }
             : m,
         ),

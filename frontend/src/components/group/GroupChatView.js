@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { mediaUrl } from "@/lib/utils";
 import { groupAPI } from "@/lib/api";
-import { Button } from "@/components/ui/button";
-import { Users, Plus, Loader2 } from "lucide-react";
+import { Users, Plus, Loader2, Eraser } from "lucide-react";
 import { toast } from "sonner";
 
 import GroupHeader from "./GroupHeader";
@@ -53,15 +52,17 @@ export default function GroupChatView({ g, user, onBack, onOpenInfo }) {
       {!g.group.is_member ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center p-8">
-            <Users className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="admin-heading text-muted-foreground mb-2">
+            <div className="h-16 w-16 rounded-full bg-secondary/30 flex items-center justify-center mx-auto mb-4">
+              <Users className="h-7 w-7 text-muted-foreground/40" />
+            </div>
+            <h3 className="text-lg font-bold text-foreground mb-1.5">
               {g.group.is_private ? "Private Group" : "Join to chat"}
             </h3>
-            <p className="text-sm text-muted-foreground/70 mb-4">
+            <p className="text-[13px] text-muted-foreground/60 mb-5 leading-relaxed">
               {g.group.is_private ? "Request to join this private group" : "Become a member to send messages"}
             </p>
             <button
-              className="bg-brand-600 hover:bg-brand-500 text-white admin-btn rounded-xl h-10 px-4 flex items-center gap-2 shadow-lg shadow-brand-600/20 mx-auto"
+              className="h-10 px-5 rounded-full bg-brand-600 hover:bg-brand-500 text-white text-[13px] font-semibold flex items-center gap-2 shadow-sm mx-auto active:scale-95 transition-all"
               onClick={g.group.is_private ? async () => {
                 try { await groupAPI.requestJoin(g.group.id); toast.success("Join request sent!"); }
                 catch (err) { toast.error(err.response?.data?.detail || "Failed"); }
@@ -171,12 +172,23 @@ export default function GroupChatView({ g, user, onBack, onOpenInfo }) {
 
         {/* Forward Modal */}
         {g.showForward && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => { g.setShowForward(false); g.setForwardMsg(null); }}>
-            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }}
-              className="w-full max-w-sm bg-card border border-border/40 rounded-[28px] shadow-sm p-6" onClick={e => e.stopPropagation()}>
-              <h2 className="admin-heading mb-4">Forward to Group</h2>
-              <p className="text-xs text-muted-foreground mb-3">Select a group:</p>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+            onClick={() => { g.setShowForward(false); g.setForwardMsg(null); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-sm bg-card border border-border/30 rounded-2xl shadow-2xl p-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="text-base font-bold mb-3">Forward to Group</h2>
+              <p className="text-[12px] text-muted-foreground/60 mb-3">Select a group:</p>
               <ForwardGroupList onSelect={g.handleForward} currentGroupId={g.group.id} />
             </motion.div>
           </motion.div>
@@ -184,19 +196,41 @@ export default function GroupChatView({ g, user, onBack, onOpenInfo }) {
 
         {/* Clear Chat Confirm */}
         {g.showClearConfirm && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-            onClick={() => g.setShowClearConfirm(false)}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-              className="bg-card rounded-[28px] p-6 w-full max-w-xs shadow-xl border border-border/40"
-              onClick={e => e.stopPropagation()}>
-              <h3 className="admin-heading mb-2">Clear Chat?</h3>
-              <p className="text-xs text-muted-foreground mb-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4"
+            onClick={() => g.setShowClearConfirm(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 10 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="w-full max-w-sm bg-card rounded-2xl border border-border/30 p-6 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="h-12 w-12 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+                <Eraser className="h-6 w-6 text-red-500" />
+              </div>
+              <h3 className="text-lg font-bold text-center mb-1.5">Clear Chat?</h3>
+              <p className="text-[13px] text-muted-foreground/60 text-center leading-relaxed mb-6">
                 Messages will be cleared only for you. Other members will still see their chat history.
               </p>
-              <div className="flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => g.setShowClearConfirm(false)}>Cancel</Button>
-                <Button variant="destructive" className="flex-1 rounded-xl" onClick={g.handleClearChat}>Clear</Button>
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  onClick={() => g.setShowClearConfirm(false)}
+                  className="h-10 rounded-xl font-medium text-[13px] border border-border/40 hover:bg-secondary/40 active:scale-95 transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={g.handleClearChat}
+                  className="h-10 rounded-xl font-semibold text-[13px] bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all"
+                >
+                  Clear all
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -211,19 +245,28 @@ function ForwardGroupList({ onSelect, currentGroupId }) {
   const [groups, setGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    groupAPI.myGroups().then(res => setGroups((res.data || []).filter(g => g.id !== currentGroupId))).catch(() => {}).finally(() => setLoading(false));
+    groupAPI.myGroups().then((res) => setGroups((res.data || []).filter((gr) => gr.id !== currentGroupId))).catch(() => {}).finally(() => setLoading(false));
   }, [currentGroupId]);
+
   if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-brand-600" /></div>;
-  if (!groups.length) return <p className="text-sm text-muted-foreground text-center py-4">No other groups</p>;
+  if (!groups.length) return <p className="text-[13px] text-muted-foreground/50 text-center py-4">No other groups</p>;
+
   return (
-    <div className="space-y-2 max-h-60 overflow-y-auto">
-      {groups.map(g => (
-        <button key={g.id} onClick={() => onSelect(g.id)}
-          className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors text-left">
-          <div className="h-8 w-8 rounded-xl bg-brand-600/10 flex items-center justify-center">
-            {g.avatar_url ? <img src={mediaUrl(g.avatar_url)} alt="" className="h-8 w-8 rounded-xl object-cover" /> : <Users className="h-4 w-4 text-brand-600" />}
+    <div className="space-y-1 max-h-60 overflow-y-auto custom-scrollbar">
+      {groups.map((gr) => (
+        <button
+          key={gr.id}
+          onClick={() => onSelect(gr.id)}
+          className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/30 transition-colors text-left active:scale-[0.98]"
+        >
+          <div className="h-9 w-9 rounded-full bg-brand-600/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {gr.avatar_url ? (
+              <img src={mediaUrl(gr.avatar_url)} alt="" className="h-9 w-9 rounded-full object-cover" />
+            ) : (
+              <Users className="h-4 w-4 text-brand-600" />
+            )}
           </div>
-          <span className="text-sm font-medium truncate">{g.name}</span>
+          <span className="text-[13px] font-medium truncate">{gr.name}</span>
         </button>
       ))}
     </div>

@@ -8,7 +8,7 @@ import { useUnifiedConversations } from "@/hooks/useUnifiedConversations";
 import { useDmChat } from "@/hooks/useDmChat";
 import useGroupChat from "@/hooks/useGroupChat";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, MessageCircle, User, Plus, X, Compass } from "lucide-react";
+import { MessageCircle, User, Plus, X, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { ChatSkeleton } from "@/components/SkeletonLoader";
@@ -175,10 +175,10 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-background md:bg-card/40 md:backdrop-blur-md md:rounded-[20px] lg:rounded-[28px] md:border border-border/30 pb-16 lg:pb-0 md:my-4">
-      {/* ═══ Sidebar: Conversation List ═══ */}
+    <div className="flex-1 flex w-full min-h-0 overflow-hidden bg-background md:bg-card/30 md:backdrop-blur-sm md:rounded-2xl lg:rounded-3xl md:border border-border/20 pb-16 lg:pb-0 md:my-3">
+      {/* Sidebar: Conversation List */}
       <div
-        className={`w-full lg:w-[340px] xl:w-[380px] lg:border-r border-border/30 flex-shrink-0 flex flex-col bg-transparent relative z-20 min-h-0 overflow-hidden
+        className={`w-full lg:w-[340px] xl:w-[380px] lg:border-r border-border/20 flex-shrink-0 flex flex-col bg-transparent relative z-20 min-h-0 overflow-hidden
           ${(convo.activeItem || showDiscover) ? "hidden lg:flex" : "flex"}
         `}
       >
@@ -198,7 +198,7 @@ export default function ChatPage() {
         />
       </div>
 
-      {/* ═══ Main Content Area ═══ */}
+      {/* Main Content Area */}
       <div
         className={`flex-1 min-w-0 min-h-0 flex flex-col relative overflow-hidden
           ${(!convo.activeItem && !showDiscover) ? "hidden lg:flex" : "flex"}
@@ -287,39 +287,37 @@ export default function ChatPage() {
             onBack={() => setShowDiscover(false)}
           />
         ) : (
-          /* ═══ Empty State ═══ */
-          <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center bg-dot-pattern relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-80 h-80 bg-brand-600/5 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-72 h-72 bg-blue-600/4 rounded-full blur-[80px] pointer-events-none" />
+          /* Empty State */
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-center p-6 text-center relative overflow-hidden">
             <motion.div
-              initial={{ scale: 0.92, opacity: 0, y: 16 }}
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="relative z-10 max-w-xs"
             >
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-[32px] bg-brand-600/10 flex items-center justify-center mx-auto mb-6 -rotate-6 border border-brand-600/15 shadow-inner">
-                <MessageCircle className="h-10 w-10 sm:h-12 sm:w-12 text-brand-600" />
+              <div className="h-16 w-16 rounded-full bg-brand-600/10 flex items-center justify-center mx-auto mb-5">
+                <MessageCircle className="h-8 w-8 text-brand-600" />
               </div>
-              <h2 className="admin-page-title mb-2">
+              <h2 className="text-lg font-bold text-foreground mb-1.5">
                 Select a conversation
               </h2>
-              <p className="text-sm text-muted-foreground/70 leading-relaxed mb-8 max-w-[220px] mx-auto">
+              <p className="text-[13px] text-muted-foreground/50 leading-relaxed mb-6 max-w-[220px] mx-auto">
                 Choose a teammate or group to start chatting.
               </p>
-              <div className="flex flex-col items-center gap-3">
+              <div className="flex flex-col items-center gap-2.5">
                 <Button
                   onClick={() => setShowNewChat(true)}
-                  className="h-11 px-8 bg-brand-600 hover:bg-brand-500 text-white rounded-2xl shadow-lg shadow-brand-600/20 active:scale-95 transition-all flex items-center font-black uppercase text-[11px] tracking-widest"
+                  className="h-10 px-6 bg-brand-600 hover:bg-brand-500 text-white rounded-full shadow-sm active:scale-95 transition-all flex items-center gap-2 text-[13px] font-semibold"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4" />
                   New Message
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => setShowDiscover(true)}
-                  className="h-11 px-8 rounded-2xl border-border/40 hover:border-brand-600/40 hover:text-brand-600 active:scale-95 transition-all flex items-center font-black uppercase text-[11px] tracking-widest"
+                  className="h-10 px-6 rounded-full border-border/30 hover:border-brand-600/30 hover:text-brand-600 active:scale-95 transition-all flex items-center gap-2 text-[13px] font-medium"
                 >
-                  <Compass className="h-4 w-4 mr-2" />
+                  <Compass className="h-4 w-4" />
                   Explore Groups
                 </Button>
               </div>
@@ -328,9 +326,9 @@ export default function ChatPage() {
         )}
       </div>
 
-      {/* ═══ Right Sidebar: Group Info Panel ═══ */}
+      {/* Right Sidebar: Group Info Panel */}
       {showGroupInfo && convo.activeType === "group" && gc.group && (
-        <div className="hidden lg:flex w-[340px] flex-shrink-0 border-l border-border/30 flex-col min-h-0 overflow-hidden">
+        <div className="hidden lg:flex w-[340px] flex-shrink-0 border-l border-border/20 flex-col min-h-0 overflow-hidden">
           <GroupInfoPanel
             group={gc.group}
             user={user}
@@ -362,7 +360,7 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* ═══ Modals ═══ */}
+      {/* Modals */}
       <NewChatModal
         isOpen={showNewChat}
         onClose={() => setShowNewChat(false)}
@@ -386,14 +384,14 @@ export default function ChatPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-[2px] p-4 sm:p-10"
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-10"
             onClick={() => dm.setLightboxImage(null)}
           >
             <button
-              className="absolute top-6 right-6 h-12 w-12 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all active:scale-95 z-[110]"
+              className="absolute top-4 right-4 h-10 w-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors active:scale-95 z-[110]"
               onClick={() => dm.setLightboxImage(null)}
             >
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5" />
             </button>
             <motion.img
               initial={{ scale: 0.9, opacity: 0 }}
@@ -402,7 +400,7 @@ export default function ChatPage() {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               src={dm.lightboxImage}
               alt=""
-              className="max-w-full max-h-full object-contain rounded-2xl shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/5"
+              className="max-w-full max-h-full object-contain rounded-lg"
               onClick={(e) => e.stopPropagation()}
             />
           </motion.div>
@@ -451,41 +449,39 @@ export default function ChatPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-[2px] p-4"
+            className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/30 backdrop-blur-sm p-4"
             onClick={() => { dm.setShowForwardModal(false); }}
           >
             <motion.div
-              initial={{ y: 60, scale: 0.95 }}
+              initial={{ y: 40, scale: 0.97 }}
               animate={{ y: 0, scale: 1 }}
-              exit={{ y: 60, scale: 0.95 }}
+              exit={{ y: 40, scale: 0.97 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="w-full max-w-sm bg-card border border-border/40 rounded-3xl shadow-2xl p-5"
+              className="w-full max-w-sm bg-card border border-border/30 rounded-2xl shadow-2xl p-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[15px] font-black tracking-tight">
-                  Forward message
-                </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-[15px] font-bold">Forward message</h3>
                 <button
                   onClick={() => dm.setShowForwardModal(false)}
-                  className="h-8 w-8 rounded-xl flex items-center justify-center hover:bg-secondary/50 transition-colors"
+                  className="h-7 w-7 rounded-full flex items-center justify-center hover:bg-secondary/50 transition-colors"
                 >
                   <X className="h-4 w-4 text-muted-foreground" />
                 </button>
               </div>
               {dm.forwardMsg?.content && (
-                <div className="px-3 py-2 mb-3 rounded-xl bg-secondary/20 border border-border/20">
-                  <p className="text-[11px] text-muted-foreground/70 line-clamp-2 italic">
+                <div className="px-3 py-2 mb-3 rounded-lg bg-secondary/20 border border-border/15">
+                  <p className="text-[12px] text-muted-foreground/50 line-clamp-2">
                     {dm.forwardMsg.content}
                   </p>
                 </div>
               )}
-              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground/50 mb-2">
+              <p className="text-[11px] font-medium text-muted-foreground/40 mb-2 px-1">
                 Select conversation
               </p>
-              <div className="max-h-60 overflow-y-auto space-y-1 custom-scrollbar">
+              <div className="max-h-60 overflow-y-auto space-y-0.5 custom-scrollbar">
                 {dm.forwardConvos.length === 0 ? (
-                  <p className="text-[13px] text-muted-foreground/50 text-center py-6 italic">
+                  <p className="text-[13px] text-muted-foreground/40 text-center py-6">
                     No conversations available
                   </p>
                 ) : (
@@ -495,7 +491,7 @@ export default function ChatPage() {
                       onClick={() => dm.handleForwardToConvo(c)}
                       className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/40 active:bg-secondary/60 transition-colors text-left"
                     >
-                      <div className="h-9 w-9 rounded-xl bg-brand-600/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                      <div className="h-9 w-9 rounded-full bg-secondary/60 flex items-center justify-center flex-shrink-0 overflow-hidden">
                         {c.other_user?.avatar ? (
                           <img
                             src={mediaUrl(c.other_user.avatar)}
@@ -503,10 +499,10 @@ export default function ChatPage() {
                             className="h-full w-full object-cover"
                           />
                         ) : (
-                          <User className="h-4 w-4 text-brand-600" />
+                          <User className="h-4 w-4 text-brand-600/50" />
                         )}
                       </div>
-                      <span className="text-[13px] font-semibold truncate">
+                      <span className="text-[13px] font-medium truncate">
                         {c.display_name || c.other_user?.name || "Chat"}
                       </span>
                     </button>
@@ -525,72 +521,72 @@ export default function ChatPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-center justify-center bg-black/20 backdrop-blur-[2px] p-4 z-[100]"
+            className="fixed inset-0 flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 z-[100]"
             onClick={() => dm.setViewPost(null)}
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
+              initial={{ scale: 0.95, y: 12 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 20 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className="bg-card rounded-[32px] border border-border/40 w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
+              exit={{ scale: 0.95, y: 12 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
+              className="bg-card rounded-2xl border border-border/30 w-full max-w-lg max-h-[85vh] overflow-hidden flex flex-col shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center gap-3 p-5 pb-3 border-b border-border/50">
+              <div className="flex items-center gap-3 p-4 border-b border-border/15">
                 <div
-                  className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden cursor-pointer"
+                  className="h-10 w-10 rounded-full bg-secondary/60 flex items-center justify-center overflow-hidden cursor-pointer"
                   onClick={() => { dm.setViewPost(null); navigate(`/player-card/${dm.viewPost.user_id}`); }}
                 >
                   {dm.viewPost.user_avatar ? (
                     <img src={mediaUrl(dm.viewPost.user_avatar)} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <User className="h-6 w-6 text-primary" />
+                    <User className="h-5 w-5 text-muted-foreground/40" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <button
-                    className="font-black text-[15px] hover:text-brand-600 text-left tracking-tight"
+                    className="font-semibold text-[14px] hover:text-brand-600 text-left"
                     onClick={() => { dm.setViewPost(null); navigate(`/player-card/${dm.viewPost.user_id}`); }}
                   >
                     {dm.viewPost.user_name}
                   </button>
-                  <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+                  <p className="text-[11px] text-muted-foreground/40">
                     {new Date(dm.viewPost.created_at).toLocaleDateString()}
                   </p>
                 </div>
-                <button onClick={() => dm.setViewPost(null)} className="p-2.5 rounded-2xl hover:bg-secondary/50 transition-colors">
-                  <X className="h-5 w-5" />
+                <button onClick={() => dm.setViewPost(null)} className="p-2 rounded-full hover:bg-secondary/40 transition-colors">
+                  <X className="h-5 w-5 text-muted-foreground" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto custom-scrollbar">
                 {dm.viewPost.content && (
-                  <p className="p-5 pt-4 text-[15px] font-medium leading-relaxed text-foreground/90 whitespace-pre-wrap">
+                  <p className="p-4 text-[14px] leading-relaxed text-foreground/85 whitespace-pre-wrap">
                     {dm.viewPost.content}
                   </p>
                 )}
                 {dm.viewPost.media_url && (
-                  <div className="px-5 pb-5">
-                    <img src={mediaUrl(dm.viewPost.media_url)} alt="" className="w-full rounded-[24px] shadow-lg border border-border/20" />
+                  <div className="px-4 pb-4">
+                    <img src={mediaUrl(dm.viewPost.media_url)} alt="" className="w-full rounded-xl" />
                   </div>
                 )}
-                <div className="px-5 pb-5">
-                  <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">
+                <div className="px-4 pb-4">
+                  <span className="text-[11px] font-medium text-muted-foreground/40">
                     Comments ({dm.viewPost.comments_count || 0})
                   </span>
                   {dm.viewPostComments.length > 0 ? (
-                    <div className="space-y-4 mt-4">
+                    <div className="space-y-3 mt-3">
                       {dm.viewPostComments.map((c) => (
-                        <div key={c.id} className="flex gap-3">
-                          <div className="h-8 w-8 rounded-xl bg-secondary flex-shrink-0" />
+                        <div key={c.id} className="flex gap-2.5">
+                          <div className="h-7 w-7 rounded-full bg-secondary flex-shrink-0" />
                           <div>
-                            <p className="text-xs font-bold">{c.user_name}</p>
-                            <p className="text-[13px] opacity-70">{c.content}</p>
+                            <p className="text-[12px] font-semibold">{c.user_name}</p>
+                            <p className="text-[13px] text-foreground/60">{c.content}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-center py-6 text-[13px] text-muted-foreground font-medium opacity-50 italic">
+                    <p className="text-center py-6 text-[13px] text-muted-foreground/30">
                       No comments yet
                     </p>
                   )}

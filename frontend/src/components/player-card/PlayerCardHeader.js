@@ -19,9 +19,12 @@ export default function PlayerCardHeader({
   handleFollow,
   navigate,
   tier,
+  onShowFollowers,
+  onShowFollowing,
+  onTabChange,
 }) {
   return (
-    <div className="bg-background pt-2 pb-6 border-b border-border/10 relative overflow-hidden">
+    <div className="bg-background pt-4 sm:pt-5 pb-6 border-b border-border/10 relative overflow-hidden">
       {/* Branded Accent Glow */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 blur-[100px] -z-10 pointer-events-none" />
 
@@ -54,34 +57,34 @@ export default function PlayerCardHeader({
 
           {/* Stats — 3 items on mobile (streak moves to name row), 4 on desktop */}
           <div className="flex-1 flex justify-around sm:justify-start sm:gap-12 items-center">
-            <div className="flex flex-col items-center sm:items-start group cursor-default">
+            <button onClick={() => onTabChange?.("posts")} className="flex flex-col items-center sm:items-start group cursor-pointer touch-manipulation">
               <span className="font-bold text-lg sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
                 {card.post_count || 0}
               </span>
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted-foreground/60 mt-0.5">
                 Posts
               </span>
-            </div>
-            <div className="flex flex-col items-center sm:items-start group cursor-pointer">
+            </button>
+            <button onClick={onShowFollowers} className="flex flex-col items-center sm:items-start group cursor-pointer touch-manipulation">
               <span className="font-bold text-lg sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
                 {card.followers_count || 0}
               </span>
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted-foreground/60 mt-0.5">
                 Followers
               </span>
-            </div>
-            <div className="flex flex-col items-center sm:items-start group cursor-pointer">
+            </button>
+            <button onClick={onShowFollowing} className="flex flex-col items-center sm:items-start group cursor-pointer touch-manipulation">
               <span className="font-bold text-lg sm:text-2xl tracking-tighter tabular-nums text-foreground group-hover:text-brand-500 transition-colors">
                 {card.following_count || 0}
               </span>
               <span className="text-[9px] sm:text-[10px] font-bold uppercase tracking-wide sm:tracking-widest text-muted-foreground/60 mt-0.5">
                 Following
               </span>
-            </div>
+            </button>
 
             {/* Streak — hidden on mobile (shown inline with name below), visible on sm+ */}
             {card.current_streak > 0 && (
-              <div className="hidden sm:flex flex-col items-start group">
+              <button onClick={() => onTabChange?.("stats")} className="hidden sm:flex flex-col items-start group cursor-pointer touch-manipulation">
                 <div className="flex items-center gap-1 font-black text-2xl tracking-tighter tabular-nums text-[#FF6B00] group-hover:scale-110 transition-transform drop-shadow-[0_0_12px_rgba(255,107,0,0.3)]">
                   <Flame className="h-5 w-5 fill-[#FF6B00]/20" />
                   {card.current_streak}
@@ -89,7 +92,7 @@ export default function PlayerCardHeader({
                 <span className="text-[10px] font-black uppercase tracking-widest text-[#FF6B00]/70">
                   Streak
                 </span>
-              </div>
+              </button>
             )}
           </div>
         </div>
@@ -102,12 +105,12 @@ export default function PlayerCardHeader({
             </h1>
             {/* Streak pill — mobile only, inline with name */}
             {card.current_streak > 0 && (
-              <div className="sm:hidden flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF6B00]/10 border border-[#FF6B00]/20">
+              <button onClick={() => onTabChange?.("stats")} className="sm:hidden flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FF6B00]/10 border border-[#FF6B00]/20 cursor-pointer touch-manipulation">
                 <Flame className="h-3 w-3 text-[#FF6B00] fill-[#FF6B00]/20" />
                 <span className="text-[10px] font-black text-[#FF6B00]">
                   {card.current_streak}
                 </span>
-              </div>
+              </button>
             )}
             {tier && (
               <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-brand-500/10 border border-brand-500/20">
@@ -195,13 +198,27 @@ export default function PlayerCardHeader({
                 <Button
                   variant="secondary"
                   className="flex-1 h-9 rounded-lg font-bold text-xs uppercase tracking-widest bg-secondary/40 hover:bg-secondary/60"
-                  onClick={() => navigate("/settings/profile")}
+                  onClick={() => navigate("/profile?tab=info&edit=true")}
                 >
                   Edit profile
                 </Button>
                 <Button
                   variant="secondary"
                   className="flex-1 h-9 rounded-lg font-bold text-xs uppercase tracking-widest bg-secondary/40 hover:bg-secondary/60"
+                  onClick={async () => {
+                    const url = `${window.location.origin}/player-card/${card.user_id}`;
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({ title: `${card.name} — Player Card`, url });
+                      } catch {}
+                    } else {
+                      try {
+                        await navigator.clipboard.writeText(url);
+                        const { toast } = await import("sonner");
+                        toast.success("Profile link copied!");
+                      } catch {}
+                    }
+                  }}
                 >
                   Share profile
                 </Button>

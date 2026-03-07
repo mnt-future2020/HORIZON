@@ -138,13 +138,7 @@ export default function CoachListingPage() {
     coachingAPI.mySubscriptions().then(r => setMySubscriptions(r.data || [])).catch(() => {});
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Sync filter state to URL so browser back/forward restores filters
-  useEffect(() => {
-    replaceParams({
-      q: searchQ || null,
-      sport: sportFilter !== "all" ? sportFilter : null,
-    });
-  }, [searchQ, sportFilter]);
+
 
   // Auto-select sport when slot changes (use slot's sports, fallback to coach sports)
   useEffect(() => {
@@ -487,13 +481,13 @@ export default function CoachListingPage() {
           <Input
             placeholder="Search by name or city..."
             value={searchQ}
-            onChange={e => setSearchQ(e.target.value)}
+            onChange={e => { setSearchQ(e.target.value); replaceParams({ q: e.target.value || null }); }}
             name="coach-search"
             autoComplete="off"
             className="pl-10 bg-secondary/20 border-border/40 h-11 rounded-xl font-medium text-sm"
           />
         </div>
-        <Select value={sportFilter} onValueChange={setSportFilter}>
+        <Select value={sportFilter} onValueChange={v => { setSportFilter(v); replaceParams({ sport: v !== "all" ? v : null }); }}>
           <SelectTrigger className="w-full sm:w-40 bg-secondary/20 border-border/40 h-11 rounded-xl text-sm">
             <Filter className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
             <SelectValue />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { venueAPI, bookingAPI, analyticsAPI, subscriptionAPI, uploadAPI, teamAPI } from "@/lib/api";
 import { mediaUrl, fmt12h } from "@/lib/utils";
 import { getSportIcon } from "@/lib/venue-constants";
@@ -137,6 +137,19 @@ const VENUE_BANNER =
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+// Stable URL param writer — no React Router subscription, no re-renders
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 
 export default function VenueOwnerDashboard({ defaultView }) {
   const { user } = useAuth();
@@ -197,8 +210,6 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const navigate = useNavigate();
   const location = useLocation();
   const isManageView = location.pathname === "/owner/manage";
-  const [urlParams, setUrlParams] = useSearchParams();
-  const urlTab = urlParams.get("tab");
   const VALID_TABS = [
     "bookings",
     "slots",
@@ -207,17 +218,14 @@ function VenueOwnerDashboardContent({ defaultView }) {
     "checkin",
     "plan",
   ];
-  const activeTab = VALID_TABS.includes(urlTab) ? urlTab : "bookings";
-  const setActiveTab = (tab) => {
-    setUrlParams(
-      (prev) => {
-        const p = new URLSearchParams(prev);
-        p.set("tab", tab);
-        return p;
-      },
-      { replace: true },
-    );
-  };
+  const initTab = getInitParam("tab");
+  const [activeTab, setActiveTabState] = useState(() =>
+    VALID_TABS.includes(initTab) ? initTab : "bookings"
+  );
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab);
+    replaceParams({ tab: tab === "bookings" ? null : tab });
+  }, []);
   const [venues, setVenues] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [analytics, setAnalytics] = useState(null);
@@ -232,11 +240,11 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [bookingDetailOpen, setBookingDetailOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState(
-    urlParams.get("status") || "all",
+    () => getInitParam("status") || "all",
   );
-  const [timeFilter, setTimeFilter] = useState(urlParams.get("time") || "all");
-  const [sortOrder, setSortOrder] = useState(urlParams.get("sort") || "desc");
-  const [bookingView, setBookingView] = useState(urlParams.get("bview") || "list");
+  const [timeFilter, setTimeFilter] = useState(() => getInitParam("time") || "all");
+  const [sortOrder, setSortOrder] = useState(() => getInitParam("sort") || "desc");
+  const [bookingView, setBookingView] = useState(() => getInitParam("bview") || "list");
   const [bookingPage, setBookingPage] = useState(1);
   const [bookingTotalPages, setBookingTotalPages] = useState(1);
   const [bookingTotal, setBookingTotal] = useState(0);
@@ -245,7 +253,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
   const [bookingsLoading, setBookingsLoading] = useState(false);
   const BOOKING_LIMIT = 10;
   const bookingFilterRef = useRef(false);
-  const [pricingView, setPricingView] = useState("rules");
+  const [pricingView, setPricingViewState] = useState(() => getInitParam("pview") || "rules");
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [venueReviews, setVenueReviews] = useState([]);
   const [showVenueQR, setShowVenueQR] = useState(false);
@@ -361,26 +369,12 @@ function VenueOwnerDashboardContent({ defaultView }) {
     if (!bookingFilterRef.current) { bookingFilterRef.current = true; return; }
     setBookingPage(1);
     loadBookings(1);
+    replaceParams({
+      status: statusFilter !== "all" ? statusFilter : null,
+      time: timeFilter !== "all" ? timeFilter : null,
+      sort: sortOrder !== "desc" ? sortOrder : null,
+    });
   }, [statusFilter, timeFilter, sortOrder, selectedVenue]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Sync booking filters → URL (preserve tab + other params)
-  useEffect(() => {
-    setUrlParams(
-      (prev) => {
-        const p = new URLSearchParams(prev);
-        if (statusFilter !== "all") p.set("status", statusFilter);
-        else p.delete("status");
-        if (timeFilter !== "all") p.set("time", timeFilter);
-        else p.delete("time");
-        if (sortOrder !== "desc") p.set("sort", sortOrder);
-        else p.delete("sort");
-        if (bookingView !== "list") p.set("bview", bookingView);
-        else p.delete("bview");
-        return p;
-      },
-      { replace: true },
-    );
-  }, [statusFilter, timeFilter, sortOrder, bookingView, setUrlParams]);
 
   const loadVenueTeams = useCallback(async () => {
     if (!selectedVenue) return;
@@ -973,7 +967,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
                 ].map((v) => (
                   <button
                     key={v.key}
-                    onClick={() => setBookingView(v.key)}
+                    onClick={() => { setBookingView(v.key); replaceParams({ bview: v.key !== "list" ? v.key : null }); }}
                     className={`px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${bookingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
                   >
                     {v.label}
@@ -1525,7 +1519,7 @@ function VenueOwnerDashboardContent({ defaultView }) {
           {/* View Toggle: Rules / AI */}
           <div className="inline-flex bg-secondary/40 p-1 rounded-xl mb-4">
             {[{ key: "rules", label: "Rules" }, { key: "analytics", label: "Analytics" }].map(v => (
-              <button key={v.key} onClick={() => setPricingView(v.key)}
+              <button key={v.key} onClick={() => { setPricingViewState(v.key); replaceParams({ pview: v.key !== "rules" ? v.key : null }); }}
                 className={`flex-1 px-5 sm:px-6 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all min-h-[44px] active:scale-[0.97] ${pricingView === v.key ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
                 {v.label}
               </button>
@@ -1936,7 +1930,14 @@ function VenueAnalyticsPanel({ venueId }) {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedTurf, setSelectedTurf] = useState("all");
-  const [period, setPeriod] = useState(90);
+  const [period, setPeriodState] = useState(() => {
+    const p = getInitParam("pd");
+    return p !== null ? Number(p) : 90;
+  });
+  const setPeriod = useCallback((d) => {
+    setPeriodState(d);
+    replaceParams({ pd: d !== 90 ? d : null });
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -2209,9 +2210,14 @@ function VenueAnalyticsPanel({ venueId }) {
 
 // ─── Slot Availability Panel ────────────────────────────────────────────────
 function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
-  const [slotDate, setSlotDate] = useState(
-    new Date().toISOString().split("T")[0],
+  const today = new Date().toISOString().split("T")[0];
+  const [slotDate, setSlotDateState] = useState(
+    () => getInitParam("sdate") || today,
   );
+  const setSlotDate = useCallback((d) => {
+    setSlotDateState(d);
+    replaceParams({ sdate: d !== new Date().toISOString().split("T")[0] ? d : null });
+  }, []);
   const [slots, setSlots] = useState([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingBookingSlot, setLoadingBookingSlot] = useState(null);
@@ -2330,7 +2336,6 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
     locked_by_you: "Held",
   };
 
-  const today = new Date().toISOString().split("T")[0];
   const isToday = slotDate === today;
   const displayDate = new Date(slotDate + "T00:00:00").toLocaleDateString("en-IN", {
     weekday: "short", day: "numeric", month: "short", year: "numeric",
@@ -2521,7 +2526,11 @@ function SlotAvailabilityPanel({ venueId, onOpenBooking, refreshKey }) {
 
 // ─── Venue QR Check-in Panel ─────────────────────────────────────────────────
 function VenueCheckinPanel({ bookings = [], venueName, onCheckinSuccess }) {
-  const [scanMode, setScanMode] = useState("camera");
+  const [scanMode, setScanModeState] = useState(() => getInitParam("scan") || "camera");
+  const setScanMode = useCallback((mode) => {
+    setScanModeState(mode);
+    replaceParams({ scan: mode !== "camera" ? mode : null });
+  }, []);
   const [verifying, setVerifying] = useState(false);
   const [result, setResult] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);

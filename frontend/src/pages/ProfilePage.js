@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -56,7 +56,22 @@ export default function ProfilePage() {
   const [stats, setStats] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [bookingsTotal, setBookingsTotal] = useState(0);
-  const [editing, setEditing] = useState(false);
+  const editSectionRef = useRef(null);
+  const [editing, _setEditing] = useState(() => getInitParam("edit") === "true");
+  const setEditing = useCallback((val) => {
+    _setEditing(val);
+    if (!val) replaceParams({ edit: null });
+  }, []);
+
+  // Smooth-scroll to edit section when arriving with ?edit=true
+  useEffect(() => {
+    if (editing && editSectionRef.current) {
+      setTimeout(() => {
+        editSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // only on mount
   const [form, setForm] = useState({ name: "", phone: "", preferred_position: "" });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -325,7 +340,7 @@ export default function ProfilePage() {
 
           {/* Info Tab */}
           <TabsContent value="info">
-            <div className="rounded-2xl bg-gradient-to-br from-card via-card to-muted/20 border border-border shadow-lg p-6 sm:p-8 space-y-6">
+            <div ref={editSectionRef} className="rounded-2xl bg-gradient-to-br from-card via-card to-muted/20 border border-border shadow-lg p-6 sm:p-8 space-y-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-display font-bold text-xl text-foreground">Personal Info</h3>

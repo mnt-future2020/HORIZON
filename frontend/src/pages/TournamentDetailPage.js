@@ -1,5 +1,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+
+/* ─── URL param utils (zero re-renders, no useSearchParams) ──── */
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false)
+      url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { useAuth } from "@/contexts/AuthContext";
 import { tournamentAPI, liveAPI } from "@/lib/api";
 import { useLiveScore } from "@/hooks/useLiveScore";
@@ -111,7 +125,11 @@ export default function TournamentDetailPage() {
   const navigate = useNavigate();
   const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("bracket");
+  const [activeTab, _setActiveTab] = useState(() => getInitParam("tab") || "bracket");
+  const setActiveTab = useCallback((tab) => {
+    _setActiveTab(tab);
+    replaceParams({ tab: tab === "bracket" ? null : tab });
+  }, []);
 
   // Dialogs
   const [resultDialog, setResultDialog] = useState(null);
@@ -144,7 +162,8 @@ export default function TournamentDetailPage() {
         map[p.user_id] = p.name;
       });
       setNameMap(map);
-      if (res.data.format === "round_robin" || res.data.format === "league") {
+      // Default to standings for round_robin/league — but only if no tab in URL
+      if ((res.data.format === "round_robin" || res.data.format === "league") && !getInitParam("tab")) {
         setActiveTab("standings");
       }
     } catch {
@@ -153,7 +172,7 @@ export default function TournamentDetailPage() {
     } finally {
       setLoading(false);
     }
-  }, [tournamentId, navigate]);
+  }, [tournamentId, navigate, setActiveTab]);
 
   useEffect(() => {
     loadTournament();
