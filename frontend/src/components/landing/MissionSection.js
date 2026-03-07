@@ -113,7 +113,7 @@ export default function MissionSection() {
               className="relative z-10 w-full max-w-[400px] sm:max-w-[500px] md:max-w-[600px] xl:max-w-[700px] flex justify-center lg:justify-end"
             >
               <img
-                src="/images/mission-webp/elite_goalkeeper_mission_v2.png"
+                src="https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/elite_goalkeeper_mission_v2.png"
                 alt="Elite Goalkeeper"
                 className="w-full h-auto rounded-2xl sm:rounded-3xl drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-transform duration-500 hover:scale-105"
               />

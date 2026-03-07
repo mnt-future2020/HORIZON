@@ -7,14 +7,14 @@ import { MapPin, Star } from "lucide-react";
 
 // Fallback static arenas if API fails
 const fallbackArenas = [
-  { id: 1, name: "Alpha Arena", area: "INDOOR", city: "Bengaluru", image: "/turf/unnamed.png", base_price: 1200 },
-  { id: 2, name: "Beta Field", area: "OUTDOOR", city: "Bengaluru", image: "/turf/unnamed (1).png", base_price: 1500 },
-  { id: 3, name: "Gamma Stadium", area: "PRO", city: "Chennai", image: "/turf/unnamed (2).png", base_price: 1800 },
-  { id: 4, name: "Delta Training", area: "ACADEMY", city: "Mumbai", image: "/turf/unnamed (3).png", base_price: 2000 },
-  { id: 5, name: "Epsilon Turf", area: "INDOOR", city: "Delhi", image: "/turf/unnamed (4).png", base_price: 1000 },
-  { id: 6, name: "Zeta Arena", area: "OUTDOOR", city: "Hyderabad", image: "/turf/unnamed (5).png", base_price: 1600 },
-  { id: 7, name: "Eta Field", area: "PRO", city: "Pune", image: "/turf/unnamed (6).png", base_price: 2200 },
-  { id: 8, name: "Theta Stadium", area: "ACADEMY", city: "Kolkata", image: "/turf/unnamed (7).png", base_price: 1400 },
+  { id: 1, name: "Alpha Arena", area: "INDOOR", city: "Bengaluru", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png", base_price: 1200 },
+  { id: 2, name: "Beta Field", area: "OUTDOOR", city: "Bengaluru", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(2).png", base_price: 1500 },
+  { id: 3, name: "Gamma Stadium", area: "PRO", city: "Chennai", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(3).png", base_price: 1800 },
+  { id: 4, name: "Delta Training", area: "ACADEMY", city: "Mumbai", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(4).png", base_price: 2000 },
+  { id: 5, name: "Epsilon Turf", area: "INDOOR", city: "Delhi", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(5).png", base_price: 1000 },
+  { id: 6, name: "Zeta Arena", area: "OUTDOOR", city: "Hyderabad", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(6).png", base_price: 1600 },
+  { id: 7, name: "Eta Field", area: "PRO", city: "Pune", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(7).png", base_price: 2200 },
+  { id: 8, name: "Theta Stadium", area: "ACADEMY", city: "Kolkata", image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(8).png", base_price: 1400 },
 ];
 
 export default function ArenaShowcase() {

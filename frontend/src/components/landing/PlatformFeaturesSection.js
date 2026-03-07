@@ -9,7 +9,7 @@ const personas = [
     title: "For Players",
     description:
       "Discover venues, join matches, and track your performance with real-time stats and AI-balanced matchmaking.",
-    image: "/platform-feature/player.webp",
+    image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/player.webp",
     icon: User,
   },
   {
@@ -18,7 +18,7 @@ const personas = [
     title: "For Venue Owners",
     description:
       "Streamline operations with automated booking, digital payments, and advanced analytics for your sports facility.",
-    image: "/platform-feature/venue-owner.webp",
+    image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/venue-owner.webp",
     icon: Building2,
   },
   {
@@ -27,7 +27,7 @@ const personas = [
     title: "For Coaches",
     description:
       "Build your coaching brand, manage trainee schedules, and offer subscription packages through our specialized marketplace.",
-    image: "/platform-feature/coach.webp",
+    image: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/coach.webp",
     icon: UserCircle,
   },
 ];

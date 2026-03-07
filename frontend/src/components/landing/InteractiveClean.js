@@ -49,14 +49,14 @@ export function InteractiveClean() {
 
   useEffect(() => {
     const dirtyImg = document.createElement("img");
-    dirtyImg.src = "/turf/unnamed (5).png";
+    dirtyImg.src = "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(5).png";
     dirtyImg.onload = () => {
       dirtyImageRef.current = dirtyImg;
       renderFrame();
     };
 
     const cleanImg = document.createElement("img");
-    cleanImg.src = "/turf/unnamed (1).png";
+    cleanImg.src = "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png";
     cleanImg.onload = () => {
       cleanImageRef.current = cleanImg;
       renderFrame();

@@ -65,7 +65,7 @@ export default function HeroSection() {
             loop
             playsInline
             className="w-full h-full object-cover scale-105"
-            src="/hero-section-video/Create_an_8second_cinematic_seamless_loop_hero_bac_cd3232e886.webm"
+            src="https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/Create_an_8second_cinematic_seamless_loop_hero_bac_cd3232e886.webm"
           />
         </motion.div>
 

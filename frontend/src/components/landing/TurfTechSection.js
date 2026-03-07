@@ -147,7 +147,7 @@ export default function TurfTechSection() {
 
         <div className="relative max-w-6xl mx-auto">
           <div className="relative w-full aspect-[4/3] md:aspect-[3/2]">
-            <img src="/turf/unnamed (3).png" alt="Turf Tech Specs" className="w-full h-full object-contain" />
+            <img src="https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(3).png" alt="Turf Tech Specs" className="w-full h-full object-contain" />
 
             {hotspots.map((spot) => (
               <HotspotPoint

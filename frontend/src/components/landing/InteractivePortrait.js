@@ -127,7 +127,7 @@ export default function InteractivePortrait() {
     const blob = new Blob(renderer);
 
     const textureLoader = new THREE.TextureLoader();
-    const baseTexture = textureLoader.load("/turf/unnamed.png", (texture) => {
+    const baseTexture = textureLoader.load("https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png", (texture) => {
       const img = texture.image;
       const imgAspect = img.width / img.height;
       const containerAspect = width / height;
@@ -145,7 +145,7 @@ export default function InteractivePortrait() {
       helmetImage.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
     });
 
-    const helmetTexture = textureLoader.load("/turf/unnamed (1).png");
+    const helmetTexture = textureLoader.load("https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(2).png");
 
     baseTexture.colorSpace = THREE.SRGBColorSpace;
     helmetTexture.colorSpace = THREE.SRGBColorSpace;

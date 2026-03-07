@@ -2,18 +2,18 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 
 const galleryImages = [
-  { src: "/turf/unnamed.png", alt: "Indoor football turf with goal", aspect: "aspect-[3/4]" },
-  { src: "/turf/unnamed (1).png", alt: "Stadium lighting over premium turf", aspect: "aspect-[4/3]" },
-  { src: "/turf/unnamed (2).png", alt: "Aerial view of multi-sport arena", aspect: "aspect-[3/4]" },
-  { src: "/turf/unnamed (3).png", alt: "Close up of high-quality synthetic grass", aspect: "aspect-[4/3]" },
-  { src: "/turf/unnamed (4).png", alt: "Training session on open turf", aspect: "aspect-[3/4]" },
-  { src: "/turf/unnamed (5).png", alt: "Night time floodlights on field", aspect: "aspect-[4/3]" },
-  { src: "/turf/unnamed (6).png", alt: "Indoor multi-sport facility", aspect: "aspect-[3/4]" },
-  { src: "/turf/unnamed (7).png", alt: "Soccer field lines on premium grass", aspect: "aspect-[4/3]" },
-  { src: "/turf/unnamed (8).png", alt: "Arena seating and turf view", aspect: "aspect-[3/4]" },
-  { src: "/turf/unnamed (9).png", alt: "Sunset over football arena", aspect: "aspect-[4/3]" },
-  { src: "/turf/unnamed (10).png", alt: "Modern indoor turf infrastructure", aspect: "aspect-[3/4]" },
-  { src: "/turf/unnamed.png", alt: "Premium sports experience", aspect: "aspect-[4/3]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png", alt: "Indoor football turf with goal", aspect: "aspect-[3/4]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(2).png", alt: "Stadium lighting over premium turf", aspect: "aspect-[4/3]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(3).png", alt: "Aerial view of multi-sport arena", aspect: "aspect-[3/4]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(4).png", alt: "Close up of high-quality synthetic grass", aspect: "aspect-[4/3]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(5).png", alt: "Training session on open turf", aspect: "aspect-[3/4]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(6).png", alt: "Night time floodlights on field", aspect: "aspect-[4/3]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(7).png", alt: "Indoor multi-sport facility", aspect: "aspect-[3/4]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(8).png", alt: "Soccer field lines on premium grass", aspect: "aspect-[4/3]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(9).png", alt: "Arena seating and turf view", aspect: "aspect-[3/4]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(10).png", alt: "Sunset over football arena", aspect: "aspect-[4/3]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png", alt: "Modern indoor turf infrastructure", aspect: "aspect-[3/4]" },
+  { src: "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(2).png", alt: "Premium sports experience", aspect: "aspect-[4/3]" },
 ];
 
 function MasonryCard({ image, index }) {

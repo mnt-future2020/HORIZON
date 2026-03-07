@@ -97,6 +97,8 @@ webpackConfig.devServer = (devServerConfig) => {
       runtimeErrors: (error) => {
         if (error?.message && /Failed to fetch|Load failed|NetworkError/i.test(error.message)) return false;
         if (error?.message && /posthog/i.test(error.message)) return false;
+        if (error?.name === "DataCloneError") return false;
+        if (error?.message && /ImageBitmap|Non-origin-clean/i.test(error.message)) return false;
         return true;
       },
     },

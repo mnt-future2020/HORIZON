@@ -2,22 +2,22 @@ import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 
 const socialImages = [
-  "/turf/unnamed (1).png",
-  "/turf/unnamed (2).png",
-  "/turf/unnamed (3).png",
-  "/turf/unnamed (4).png",
-  "/turf/unnamed (5).png",
-  "/turf/unnamed (6).png",
-  "/turf/unnamed (7).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(2).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(3).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(4).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(5).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(6).png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(7).png",
 ];
 
 const handIcons = [
-  "/images/icon/hand1.png",
-  "/images/icon/hand2.png",
-  "/images/icon/hand3.png",
-  "/images/icon/hand4.png",
-  "/images/icon/hand5.png",
-  "/images/icon/hand6.png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/hand1.png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/hand2.png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/hand3.png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/hand4.png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/hand5.png",
+  "https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/hand6.png",
 ];
 
 function useCardSpread() {

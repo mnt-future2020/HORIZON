@@ -19,7 +19,7 @@ export default function ArenaSplitSection() {
             onClick={() => navigate("/venues")}
           >
             <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.7 }} className="absolute inset-0">
-              <img src="/turf/unnamed (1).png" alt="Premium Venues" className="w-full h-full object-cover" />
+              <img src="https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(1).png" alt="Premium Venues" className="w-full h-full object-cover" />
             </motion.div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
 
@@ -57,7 +57,7 @@ export default function ArenaSplitSection() {
             onClick={() => navigate("/auth")}
           >
             <motion.div whileHover={{ scale: 1.05 }} transition={{ duration: 0.7 }} className="absolute inset-0">
-              <img src="/turf/unnamed (4).png" alt="Find Your Game" className="w-full h-full object-cover" />
+              <img src="https://lobbi-s3.s3.ap-south-1.amazonaws.com/images/unnamed+(4).png" alt="Find Your Game" className="w-full h-full object-cover" />
             </motion.div>
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-10" />
 
