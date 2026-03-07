@@ -7,6 +7,8 @@ import {
   Search,
   ArrowDown,
   Clock,
+  Lock,
+  Ban,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import ChatHeader from "./ChatHeader";
@@ -332,29 +334,85 @@ const ActiveChat = ({
         </AnimatePresence>
       </div>
 
-      {/* Input */}
-      <MessageInput
-        msgText={msgText}
-        onMsgTextChange={onMsgTextChange}
-        onSend={onSend}
-        onTyping={onTyping}
-        sending={sending}
-        replyTo={replyTo}
-        onCancelReply={onCancelReply}
-        pendingFile={pendingFile}
-        onCancelFile={onCancelFile}
-        onFileSelect={onFileSelect}
-        isRecording={isRecording}
-        recordingDuration={recordingDuration}
-        onStartRecording={onStartRecording}
-        onStopRecording={onStopRecording}
-        onCancelRecording={onCancelRecording}
-        showEmojiPicker={showEmojiPicker}
-        onToggleEmojiPicker={onToggleEmojiPicker}
-        emojiPickerRef={emojiPickerRef}
-        onAddEmoji={onAddEmoji}
-        inputRef={inputRef}
-      />
+      {/* Input — blocked for unaccepted requests */}
+      {activeConvo.status === "request" && activeConvo.requester_id !== user?.id ? (
+        /* Recipient hasn't accepted yet — show accept/decline inline */
+        <div
+          className="flex-shrink-0 bg-card/80 backdrop-blur-xl border-t border-border/15"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
+        >
+          <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 flex items-center gap-2.5 px-4 py-2.5 bg-secondary/20 rounded-3xl border border-border/10">
+                <Lock className="h-4 w-4 text-muted-foreground/30 flex-shrink-0" />
+                <span className="text-[13px] text-muted-foreground/40">Accept request to reply</span>
+              </div>
+              <button
+                onClick={() => onAcceptRequest(activeConvo)}
+                className="h-10 px-4 rounded-full bg-brand-600 text-white text-[12px] font-semibold hover:bg-brand-500 active:scale-95 transition-all flex items-center gap-1.5 flex-shrink-0"
+              >
+                <ShieldCheck className="h-3.5 w-3.5" />
+                Accept
+              </button>
+              <button
+                onClick={() => onDeclineRequest(activeConvo)}
+                className="h-10 w-10 rounded-full border border-border/30 text-muted-foreground/50 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/20 active:scale-95 transition-all flex items-center justify-center flex-shrink-0"
+                title="Decline"
+              >
+                <Ban className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : activeConvo.status === "declined" ? (
+        /* Declined conversation — no input */
+        <div
+          className="flex-shrink-0 bg-card/80 backdrop-blur-xl border-t border-border/15"
+          style={{ paddingBottom: "max(env(safe-area-inset-bottom), 6px)" }}
+        >
+          <div className="max-w-5xl mx-auto px-3 sm:px-4 py-3">
+            <div className="flex items-center justify-center gap-2 px-4 py-2.5 bg-secondary/10 rounded-2xl">
+              <Ban className="h-4 w-4 text-muted-foreground/30" />
+              <span className="text-[13px] text-muted-foreground/40">This conversation was declined</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {activeConvo.status === "request" && activeConvo.requester_id === user?.id && (
+            <div className="flex-shrink-0 border-t border-border/15 bg-amber-500/5">
+              <div className="max-w-5xl mx-auto px-4 py-2 flex items-center gap-2 justify-center">
+                <Clock className="h-3 w-3 text-amber-600/60" />
+                <span className="text-[11px] text-amber-600/60">
+                  {activeConvo.other_user?.name || "They"} hasn't accepted your request yet
+                </span>
+              </div>
+            </div>
+          )}
+          <MessageInput
+            msgText={msgText}
+            onMsgTextChange={onMsgTextChange}
+            onSend={onSend}
+            onTyping={onTyping}
+            sending={sending}
+            replyTo={replyTo}
+            onCancelReply={onCancelReply}
+            pendingFile={pendingFile}
+            onCancelFile={onCancelFile}
+            onFileSelect={onFileSelect}
+            isRecording={isRecording}
+            recordingDuration={recordingDuration}
+            onStartRecording={onStartRecording}
+            onStopRecording={onStopRecording}
+            onCancelRecording={onCancelRecording}
+            showEmojiPicker={showEmojiPicker}
+            onToggleEmojiPicker={onToggleEmojiPicker}
+            emojiPickerRef={emojiPickerRef}
+            onAddEmoji={onAddEmoji}
+            inputRef={inputRef}
+          />
+        </>
+      )}
 
       {/* Clear Chat Confirm */}
       <AnimatePresence>

@@ -1,5 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+// Stable URL param writer — no React Router subscription, no re-renders
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { useAuth } from "@/contexts/AuthContext";
 import { venueAPI, posAPI } from "@/lib/api";
 import { Input } from "@/components/ui/input";
@@ -239,15 +251,22 @@ export default function POSPage() {
 }
 
 function POSTerminal({ user }) {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(null);
-  const pendingVenueIdRef = useRef(searchParams.get("venue") || null);
+  const [selectedVenue, setSelectedVenueState] = useState(null);
+  const setSelectedVenue = useCallback((v) => {
+    setSelectedVenueState(v);
+    replaceParams({ venue: v?.id || null });
+  }, []);
+  const pendingVenueIdRef = useRef(getInitParam("venue") || null);
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
-  const [activeCategory, setActiveCategory] = useState(
-    searchParams.get("cat") || "all",
+  const [activeCategory, setActiveCategoryState] = useState(
+    () => getInitParam("cat") || "all",
   );
+  const setActiveCategory = useCallback((cat) => {
+    setActiveCategoryState(cat);
+    replaceParams({ cat: cat !== "all" ? cat : null });
+  }, []);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [charging, setCharging] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
@@ -255,9 +274,13 @@ function POSTerminal({ user }) {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
-  const [activeView, setActiveView] = useState(
-    searchParams.get("view") || "pos",
+  const [activeView, setActiveViewState] = useState(
+    () => getInitParam("view") || "pos",
   );
+  const setActiveView = useCallback((view) => {
+    setActiveViewState(view);
+    replaceParams({ view: view !== "pos" ? view : null });
+  }, []);
   const [summary, setSummary] = useState(null);
   const [recentSales, setRecentSales] = useState([]);
   const [productDialogOpen, setProductDialogOpen] = useState(false);
@@ -593,14 +616,7 @@ function POSTerminal({ user }) {
     if (activeView === "summary") loadSummary();
   }, [activeView, loadRecentSales, loadSummary]);
 
-  // Sync view + category + venue → URL
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (activeView !== "pos") params.set("view", activeView);
-    if (activeCategory !== "all") params.set("cat", activeCategory);
-    if (selectedVenue) params.set("venue", String(selectedVenue.id));
-    setSearchParams(params, { replace: true });
-  }, [activeView, activeCategory, selectedVenue, setSearchParams]);
+  // URL sync is now handled directly in setActiveView / setActiveCategory / setSelectedVenue handlers
 
   // Charge
   const handleCharge = async () => {

@@ -1,6 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) { return new URLSearchParams(window.location.search).get(key); }
 import { useScrollRestoration } from "@/hooks/useScrollRestoration";
 import { matchAPI } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -34,9 +44,9 @@ function getRankIcon(rank) {
 export default function LeaderboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [players, setPlayers] = useState([]);
-  const [sport, setSport] = useState(searchParams.get("sport") || "all");
+  const [sport, setSportState] = useState(() => getInitParam("sport") || "all");
+  const setSport = useCallback((v) => { setSportState(v); replaceParams({ sport: v !== "all" ? v : null }); }, []);
   const [loading, setLoading] = useState(true);
   useScrollRestoration("leaderboard", !loading);
 
@@ -56,12 +66,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Sync sport filter to URL so browser back/forward restores it
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (sport !== "all") params.set("sport", sport);
-    setSearchParams(params, { replace: true });
-  }, [sport, setSearchParams]);
+  // URL sync handled in setSport wrapper
 
   const myRank = players.findIndex(p => p.id === user?.id) + 1;
 

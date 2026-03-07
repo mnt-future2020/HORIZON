@@ -1,5 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+function getInitParam(key) { return new URLSearchParams(window.location.search).get(key); }
 import { useAuth } from "@/contexts/AuthContext";
 import { academyAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -70,12 +79,14 @@ function AcademyCard({ academy, onSelect, delay = 0 }) {
 
 export default function AcademyDiscoveryPage() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [academies, setAcademies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get("q") || "");
-  const [sportFilter, setSportFilter] = useState(searchParams.get("sport") || "all");
-  const [sortOrder, setSortOrder] = useState(searchParams.get("sort") || "newest");
+  const [search, setSearchState] = useState(() => getInitParam("q") || "");
+  const setSearch = useCallback((v) => { setSearchState(v); replaceParams({ q: v || null }); }, []);
+  const [sportFilter, setSportFilterState] = useState(() => getInitParam("sport") || "all");
+  const setSportFilter = useCallback((v) => { setSportFilterState(v); replaceParams({ sport: v !== "all" ? v : null }); }, []);
+  const [sortOrder, setSortOrderState] = useState(() => getInitParam("sort") || "newest");
+  const setSortOrder = useCallback((v) => { setSortOrderState(v); replaceParams({ sort: v !== "newest" ? v : null }); }, []);
   const [selected, setSelected] = useState(null);
   const [enrolling, setEnrolling] = useState(false);
   const [enrolledIds, setEnrolledIds] = useState(new Set());
@@ -93,14 +104,7 @@ export default function AcademyDiscoveryPage() {
 
   useEffect(() => { loadAcademies(); }, [loadAcademies]);
 
-  // Sync filter state to URL so browser back/forward restores filters
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (search) params.set("q", search);
-    if (sportFilter !== "all") params.set("sport", sportFilter);
-    if (sortOrder !== "newest") params.set("sort", sortOrder);
-    setSearchParams(params, { replace: true });
-  }, [search, sportFilter, sortOrder, setSearchParams]);
+  // URL sync handled in setter wrappers
 
   const filtered = academies
     .filter(a => {

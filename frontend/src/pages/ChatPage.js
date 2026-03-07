@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
+function getInitParam(key) { return new URLSearchParams(window.location.search).get(key); }
 import { useAuth } from "@/contexts/AuthContext";
 import { chatAPI } from "@/lib/api";
 import { mediaUrl } from "@/lib/utils";
@@ -28,8 +30,7 @@ import MediaGalleryModal from "@/components/group/MediaGalleryModal";
 export default function ChatPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const startWithUser = searchParams.get("user");
+  const startWithUser = getInitParam("user");
 
   // WebSocket
   const ws = useChatWebSocket();
@@ -39,7 +40,7 @@ export default function ChatPage() {
 
   // DM chat hook (active only when a DM is selected)
   const activeDm = convo.activeType === "dm" ? convo.activeItem : null;
-  const dm = useDmChat(activeDm, user, ws, convo.conversations, convo.refreshConversations);
+  const dm = useDmChat(activeDm, user, ws, convo.conversations, convo.refreshConversations, convo.updateActiveItem);
 
   // Group chat hook (active only when a group is selected)
   const activeGroupId = convo.activeType === "group" ? convo.activeItem?.id : null;
@@ -61,12 +62,12 @@ export default function ChatPage() {
     if (convo.activeItem) setShowDiscover(false);
   }, [convo.activeItem]);
 
-  // Handle ?discover=true param
+  // Handle ?discover=true param (one-time on mount)
   useEffect(() => {
-    if (searchParams.get("discover") === "true") {
+    if (getInitParam("discover") === "true") {
       setShowDiscover(true);
     }
-  }, [searchParams]);
+  }, []);
 
   // Group info side panel
   const [showGroupInfo, setShowGroupInfo] = useState(false);

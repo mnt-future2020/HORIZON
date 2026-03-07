@@ -98,151 +98,171 @@ const ConversationList = ({
         )}
 
         {/* Conversations */}
-        {filteredConvos.length > 0 && (
-          <div className="flex flex-col">
-            {filteredConvos.map((convo) => {
-              const isActive = activeConvoId === convo.id;
-              const hasUnread = convo.unread_count > 0;
-              const isGroup = convo.type === "group";
+        {filteredConvos.length > 0 && (() => {
+          const activeConvos = filteredConvos.filter((c) => c.status !== "request");
+          const requestConvos = filteredConvos.filter((c) => c.status === "request");
 
-              const displayName = isGroup
-                ? convo.name || convo.display_name || "Group"
-                : convo.other_user?.name || convo.display_name || "Unknown";
-              const displayAvatar = isGroup
-                ? convo.avatar_url || convo.display_avatar
-                : convo.other_user?.avatar || convo.display_avatar;
-              const streak = !isGroup ? (convo.other_user?.current_streak ?? 0) : 0;
+          const renderConvo = (convo) => {
+            const isActive = activeConvoId === convo.id;
+            const hasUnread = convo.unread_count > 0;
+            const isGroup = convo.type === "group";
 
-              const isRequest = convo.status === "request";
+            const displayName = isGroup
+              ? convo.name || convo.display_name || "Group"
+              : convo.other_user?.name || convo.display_name || "Unknown";
+            const displayAvatar = isGroup
+              ? convo.avatar_url || convo.display_avatar
+              : convo.other_user?.avatar || convo.display_avatar;
+            const streak = !isGroup ? (convo.other_user?.current_streak ?? 0) : 0;
 
-              // Last message preview
-              let lastMsg = convo.last_message || "";
-              if (isGroup && convo.last_message_by) {
-                lastMsg = `${convo.last_message_by}: ${lastMsg}`;
-              }
-              if (!lastMsg) {
-                lastMsg = isRequest
-                  ? "Message request"
-                  : isGroup ? `${convo.member_count || 0} members` : "Start a conversation";
-              }
+            const isRequest = convo.status === "request";
 
-              // Detect media-only last message
-              const isMediaMsg = lastMsg === "[media]" || lastMsg === "[image]" || lastMsg === "[voice]";
+            // Last message preview
+            let lastMsg = convo.last_message || "";
+            if (isGroup && convo.last_message_by) {
+              lastMsg = `${convo.last_message_by}: ${lastMsg}`;
+            }
+            if (!lastMsg) {
+              lastMsg = isRequest
+                ? "Message request"
+                : isGroup ? `${convo.member_count || 0} members` : "Start a conversation";
+            }
 
-              return (
-                <button
-                  key={convo.id}
-                  onClick={() => onOpenConversation(convo)}
-                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all touch-manipulation ${
-                    isActive
-                      ? "bg-brand-600/8"
-                      : "hover:bg-secondary/40 active:bg-secondary/60"
-                  }`}
-                >
-                  {/* Avatar */}
-                  <div className="relative flex-shrink-0">
-                    <div className="h-12 w-12 rounded-full bg-secondary/60 overflow-hidden">
-                      {displayAvatar ? (
-                        <img
-                          src={mediaUrl(displayAvatar)}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-brand-600/10 to-brand-600/5">
-                          {isGroup ? (
-                            <Users className="h-5 w-5 text-brand-600/60" />
-                          ) : (
-                            <User className="h-5 w-5 text-brand-600/60" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                    {/* Online indicator */}
-                    {!isGroup && convo.other_user?.is_online && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background" />
-                    )}
-                    {/* Group badge */}
-                    {isGroup && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-brand-600 flex items-center justify-center border-2 border-background">
-                        <Users className="h-2 w-2 text-white" />
-                      </span>
-                    )}
-                    {/* Request pending badge */}
-                    {isRequest && !isGroup && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-amber-500 flex items-center justify-center border-2 border-background">
-                        <Clock className="h-2 w-2 text-white" />
-                      </span>
-                    )}
-                  </div>
+            // Detect media-only last message
+            const isMediaMsg = lastMsg === "[media]" || lastMsg === "[image]" || lastMsg === "[voice]";
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 py-0.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1 min-w-0">
-                        <span
-                          className={`text-[14px] truncate leading-tight ${
-                            hasUnread ? "font-bold text-foreground" : "font-medium text-foreground/90"
-                          }`}
-                        >
-                          {displayName}
-                        </span>
-                        {streak > 0 && (
-                          <span className="flex items-center gap-0.5 text-orange-500 flex-shrink-0">
-                            <Flame className="h-2.5 w-2.5 fill-orange-500/30" />
-                            <span className="text-[9px] font-bold">{streak}</span>
-                          </span>
+            return (
+              <button
+                key={convo.id}
+                onClick={() => onOpenConversation(convo)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all touch-manipulation ${
+                  isActive
+                    ? "bg-brand-600/8"
+                    : "hover:bg-secondary/40 active:bg-secondary/60"
+                }`}
+              >
+                {/* Avatar */}
+                <div className="relative flex-shrink-0">
+                  <div className="h-12 w-12 rounded-full bg-secondary/60 overflow-hidden">
+                    {displayAvatar ? (
+                      <img
+                        src={mediaUrl(displayAvatar)}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-brand-600/10 to-brand-600/5">
+                        {isGroup ? (
+                          <Users className="h-5 w-5 text-brand-600/60" />
+                        ) : (
+                          <User className="h-5 w-5 text-brand-600/60" />
                         )}
                       </div>
+                    )}
+                  </div>
+                  {/* Online indicator */}
+                  {!isGroup && convo.other_user?.is_online && (
+                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 border-2 border-background" />
+                  )}
+                  {/* Group badge */}
+                  {isGroup && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-brand-600 flex items-center justify-center border-2 border-background">
+                      <Users className="h-2 w-2 text-white" />
+                    </span>
+                  )}
+                  {/* Request pending badge */}
+                  {isRequest && !isGroup && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-[18px] w-[18px] rounded-full bg-amber-500 flex items-center justify-center border-2 border-background">
+                      <Clock className="h-2 w-2 text-white" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0 py-0.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1 min-w-0">
                       <span
-                        className={`text-[11px] flex-shrink-0 ${
-                          hasUnread ? "text-brand-600 font-semibold" : "text-muted-foreground/50"
+                        className={`text-[14px] truncate leading-tight ${
+                          hasUnread ? "font-bold text-foreground" : "font-medium text-foreground/90"
                         }`}
                       >
-                        {timeAgo(convo.last_message_at)}
+                        {displayName}
                       </span>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                      <div className="flex items-center gap-1 min-w-0 flex-1">
-                        {!isGroup && convo.last_message_by === user?.name && (
-                          <CheckCheck
-                            className={`h-3.5 w-3.5 flex-shrink-0 ${
-                              convo.read ? "text-blue-500" : "text-muted-foreground/30"
-                            }`}
-                          />
-                        )}
-                        <p
-                          className={`text-[13px] truncate leading-tight ${
-                            hasUnread ? "text-foreground/80 font-medium" : "text-muted-foreground/50"
-                          }`}
-                        >
-                          {isMediaMsg ? (
-                            <span className="flex items-center gap-1">
-                              {lastMsg === "[voice]" ? (
-                                <Mic className="h-3 w-3 inline" />
-                              ) : (
-                                <ImageIcon className="h-3 w-3 inline" />
-                              )}
-                              {lastMsg === "[voice]" ? "Voice message" : "Photo"}
-                            </span>
-                          ) : (
-                            lastMsg
-                          )}
-                        </p>
-                      </div>
-                      {/* Unread badge */}
-                      {hasUnread && (
-                        <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-brand-600 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0">
-                          {convo.unread_count > 99 ? "99+" : convo.unread_count}
+                      {streak > 0 && (
+                        <span className="flex items-center gap-0.5 text-orange-500 flex-shrink-0">
+                          <Flame className="h-2.5 w-2.5 fill-orange-500/30" />
+                          <span className="text-[9px] font-bold">{streak}</span>
                         </span>
                       )}
                     </div>
+                    <span
+                      className={`text-[11px] flex-shrink-0 ${
+                        hasUnread ? "text-brand-600 font-semibold" : "text-muted-foreground/50"
+                      }`}
+                    >
+                      {timeAgo(convo.last_message_at)}
+                    </span>
                   </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  <div className="flex items-center justify-between gap-2 mt-0.5">
+                    <div className="flex items-center gap-1 min-w-0 flex-1">
+                      {!isGroup && convo.last_message_by === user?.name && (
+                        <CheckCheck
+                          className={`h-3.5 w-3.5 flex-shrink-0 ${
+                            convo.read ? "text-blue-500" : "text-muted-foreground/30"
+                          }`}
+                        />
+                      )}
+                      <p
+                        className={`text-[13px] truncate leading-tight ${
+                          hasUnread ? "text-foreground/80 font-medium" : "text-muted-foreground/50"
+                        }`}
+                      >
+                        {isMediaMsg ? (
+                          <span className="flex items-center gap-1">
+                            {lastMsg === "[voice]" ? (
+                              <Mic className="h-3 w-3 inline" />
+                            ) : (
+                              <ImageIcon className="h-3 w-3 inline" />
+                            )}
+                            {lastMsg === "[voice]" ? "Voice message" : "Photo"}
+                          </span>
+                        ) : (
+                          lastMsg
+                        )}
+                      </p>
+                    </div>
+                    {/* Unread badge */}
+                    {hasUnread && (
+                      <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-brand-600 text-white text-[11px] font-bold flex items-center justify-center flex-shrink-0">
+                        {convo.unread_count > 99 ? "99+" : convo.unread_count}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            );
+          };
+
+          return (
+            <div className="flex flex-col">
+              {activeConvos.map(renderConvo)}
+              {requestConvos.length > 0 && (
+                <>
+                  <div className="flex items-center gap-2.5 px-3 pt-4 pb-1.5">
+                    <div className="flex-1 h-px bg-border/20" />
+                    <span className="text-[11px] font-medium text-muted-foreground/40 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Pending Requests
+                    </span>
+                    <div className="flex-1 h-px bg-border/20" />
+                  </div>
+                  {requestConvos.map(renderConvo)}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {/* No search results */}
         {filteredConvos.length === 0 && conversations.length > 0 && (

@@ -38,6 +38,11 @@ export function useUnifiedConversations(user, ws) {
     loadConversations();
   }, [loadConversations]);
 
+  // ── Patch active item in place (e.g. status change) ───────────────
+  const updateActiveItem = useCallback((patch) => {
+    setActiveItem((prev) => (prev ? { ...prev, ...patch } : prev));
+  }, []);
+
   // ── 1. Initial load ─────────────────────────────────────────────────
   useEffect(() => {
     loadConversations().finally(() => setLoading(false));
@@ -85,12 +90,16 @@ export function useUnifiedConversations(user, ws) {
     const refreshOnDm = () => loadConversations();
     const refreshOnGroup = () => loadConversations();
 
+    const refreshOnRequest = () => loadConversations();
+
     wsOn("new_message", refreshOnDm);
     wsOn("group_message", refreshOnGroup);
+    wsOn("request_accepted", refreshOnRequest);
 
     return () => {
       wsOff("new_message", refreshOnDm);
       wsOff("group_message", refreshOnGroup);
+      wsOff("request_accepted", refreshOnRequest);
     };
   }, [ws, loadConversations]);
 
@@ -120,6 +129,7 @@ export function useUnifiedConversations(user, ws) {
     activeType,
     openItem,
     goBack,
+    updateActiveItem,
     loading,
     requestCount,
     refreshConversations: loadConversations,

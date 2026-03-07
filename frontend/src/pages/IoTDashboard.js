@@ -1,5 +1,17 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+// Stable URL param writer — no React Router subscription, no re-renders
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { useAuth } from "@/contexts/AuthContext";
 import { iotAPI, venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -382,19 +394,30 @@ const selectTriggerCls =
 /* ─── Main Dashboard ─────────────────────────────────────────────────── */
 export default function IoTDashboard() {
   const { user } = useAuth();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [venues, setVenues] = useState([]);
-  const [selectedVenue, setSelectedVenue] = useState(null);
+  const [selectedVenue, setSelectedVenueState] = useState(null);
+  const setSelectedVenue = useCallback((v) => {
+    setSelectedVenueState(v);
+    replaceParams({ venue: v?.id || null });
+  }, []);
   const [devices, setDevices] = useState([]);
   const [zones, setZones] = useState([]);
   const [energy, setEnergy] = useState(null);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState(
-    searchParams.get("tab") || "devices",
+  const [activeTab, setActiveTabState] = useState(
+    () => getInitParam("tab") || "devices",
   );
-  const [period, setPeriod] = useState(searchParams.get("period") || "7d");
-  const pendingVenueIdRef = useRef(searchParams.get("venue") || null);
+  const setActiveTab = useCallback((tab) => {
+    setActiveTabState(tab);
+    replaceParams({ tab: tab !== "devices" ? tab : null });
+  }, []);
+  const [period, setPeriodState] = useState(() => getInitParam("period") || "7d");
+  const setPeriod = useCallback((p) => {
+    setPeriodState(p);
+    replaceParams({ period: p !== "7d" ? p : null });
+  }, []);
+  const pendingVenueIdRef = useRef(getInitParam("venue") || null);
   const [deviceDialogOpen, setDeviceDialogOpen] = useState(false);
   const [zoneDialogOpen, setZoneDialogOpen] = useState(false);
   const [editingDevice, setEditingDevice] = useState(null);
@@ -511,13 +534,7 @@ export default function IoTDashboard() {
     if (selectedVenue) loadData(selectedVenue.id);
   }, [selectedVenue, loadData]);
 
-  useEffect(() => {
-    const p = new URLSearchParams();
-    if (activeTab !== "devices") p.set("tab", activeTab);
-    if (period !== "7d") p.set("period", period);
-    if (selectedVenue) p.set("venue", String(selectedVenue.id));
-    setSearchParams(p, { replace: true });
-  }, [activeTab, period, selectedVenue, setSearchParams]);
+  // URL sync is now handled directly in setActiveTab / setPeriod / setSelectedVenue handlers
 
   /* Handlers */
   const handleControlDevice = async (deviceId, ctrl) => {

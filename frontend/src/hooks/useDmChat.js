@@ -12,7 +12,7 @@ import { toast } from "sonner";
  * @param {Array}       allConversations – full conversation list (used for forwarding)
  * @param {Function}    refreshConversations – reload the sidebar conversation list
  */
-export function useDmChat(activeConvo, user, ws, allConversations, refreshConversations) {
+export function useDmChat(activeConvo, user, ws, allConversations, refreshConversations, updateActiveItem) {
   const navigate = useNavigate();
 
   // ─── State ──────────────────────────────────────────────────────────────────
@@ -222,8 +222,8 @@ export function useDmChat(activeConvo, user, ws, allConversations, refreshConver
       }
     };
     const handleRequestAccepted = (data) => {
-      if (data.conversation_id === activeConvo.id) {
-        // Update active convo status (caller manages activeConvo state)
+      if (data.conversation_id === activeConvo.id && updateActiveItem) {
+        updateActiveItem({ status: "active" });
       }
       toast.success(`${data.accepted_by} accepted your message request`);
       refreshConversations();

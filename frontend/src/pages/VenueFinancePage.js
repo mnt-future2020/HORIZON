@@ -1,5 +1,17 @@
-import { useState, useEffect, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useRef } from "react";
+// Stable URL param writer — no React Router subscription, no re-renders
+function replaceParams(updates) {
+  const url = new URL(window.location);
+  for (const [key, value] of Object.entries(updates)) {
+    if (value == null || value === "" || value === false) url.searchParams.delete(key);
+    else url.searchParams.set(key, String(value));
+  }
+  window.history.replaceState(null, "", url.pathname + url.search);
+}
+
+function getInitParam(key) {
+  return new URLSearchParams(window.location.search).get(key);
+}
 import { venueFinanceAPI, payoutAPI, venueAPI } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,9 +48,12 @@ function StatCard({ icon: Icon, label, value, index = 0, colorClass = "text-bran
 const VENUE_EXPENSE_CATEGORIES = ["maintenance", "staffing", "electricity", "water", "rent", "equipment", "marketing", "insurance", "cleaning", "other"];
 
 export default function VenueFinancePage() {
-  const [searchParams, setSearchParams] = useSearchParams();
   // ─── Finance state ───
-  const [financeSubTab, setFinanceSubTab] = useState(searchParams.get("subtab") || "overview");
+  const [financeSubTab, setFinanceSubTabState] = useState(() => getInitParam("subtab") || "overview");
+  const setFinanceSubTab = useCallback((tab) => {
+    setFinanceSubTabState(tab);
+    replaceParams({ subtab: tab !== "overview" ? tab : null });
+  }, []);
   const [financeSummaryData, setFinanceSummaryData] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(true);
   const [tabLoading, setTabLoading] = useState(false);
@@ -47,10 +62,15 @@ export default function VenueFinancePage() {
   const [editExpenseId, setEditExpenseId] = useState(null);
   const [expenseForm, setExpenseForm] = useState({ category: "maintenance", amount: "", date: new Date().toISOString().slice(0, 10), description: "", payment_mode: "cash", reference: "" });
   const [venueTransactions, setVenueTransactions] = useState([]);
-  const [transactionFilters, setTransactionFilters] = useState({ date_from: "", date_to: "", type: "all" });
+  const [transactionFilters, setTransactionFilters] = useState(() => ({
+    date_from: getInitParam("tdf") || "",
+    date_to: getInitParam("tdt") || "",
+    type: getInitParam("ttype") || "all",
+  }));
   const [venueInvoices, setVenueInvoices] = useState([]);
-  const [invoiceMonth, setInvoiceMonth] = useState(new Date().toISOString().slice(0, 7));
-  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState("all");
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const [invoiceMonth, setInvoiceMonth] = useState(() => getInitParam("imonth") || currentMonth);
+  const [invoiceStatusFilter, setInvoiceStatusFilter] = useState(() => getInitParam("istatus") || "all");
   const [showCreateInvoice, setShowCreateInvoice] = useState(false);
   const [invoiceForm, setInvoiceForm] = useState({ client_name: "", client_phone: "", venue_id: "", date: new Date().toISOString().slice(0, 10), status: "sent", payment_mode: "cash", gst_enabled: false, notes: "" });
   const [invoiceItems, setInvoiceItems] = useState([{ description: "", qty: "1", rate: "" }]);
@@ -81,22 +101,26 @@ export default function VenueFinancePage() {
 
   // ─── Pagination state ───
   const FINANCE_LIMIT = 10;
-  const [txnPage, setTxnPage] = useState(1);
+  const [txnPage, setTxnPage] = useState(() => Number(getInitParam("tp")) || 1);
   const [txnTotalPages, setTxnTotalPages] = useState(1);
   const [txnTotal, setTxnTotal] = useState(0);
-  const [expPage, setExpPage] = useState(1);
+  const [expPage, setExpPage] = useState(() => Number(getInitParam("ep")) || 1);
   const [expTotalPages, setExpTotalPages] = useState(1);
   const [expTotal, setExpTotal] = useState(0);
-  const [invPage, setInvPage] = useState(1);
+  const [invPage, setInvPage] = useState(() => Number(getInitParam("ip")) || 1);
   const [invTotalPages, setInvTotalPages] = useState(1);
   const [invTotal, setInvTotal] = useState(0);
-  const [payoutPage, setPayoutPage] = useState(1);
+  const [payoutPage, setPayoutPage] = useState(() => Number(getInitParam("pp")) || 1);
   const [payoutTotalPages, setPayoutTotalPages] = useState(1);
   const [payoutTotal, setPayoutTotal] = useState(0);
 
   // ─── Venue filter state ───
   const [ownerVenues, setOwnerVenues] = useState([]);
-  const [selectedVenueId, setSelectedVenueId] = useState(searchParams.get("venue") || "all");
+  const [selectedVenueId, setSelectedVenueIdState] = useState(() => getInitParam("venue") || "all");
+  const setSelectedVenueId = useCallback((v) => {
+    setSelectedVenueIdState(v);
+    replaceParams({ venue: v !== "all" ? v : null });
+  }, []);
 
   // Computed
   const invoiceSubtotal = invoiceItems.reduce((s, i) => s + (parseFloat(i.qty) || 0) * (parseFloat(i.rate) || 0), 0);
@@ -123,7 +147,9 @@ export default function VenueFinancePage() {
       setVenueExpenses(data.expenses || []);
       setExpTotalPages(data.pages || 1);
       setExpTotal(data.total || 0);
-      setExpPage(data.page || p);
+      const actualPage = data.page || p;
+      setExpPage(actualPage);
+      replaceParams({ ep: actualPage > 1 ? actualPage : null });
     } catch { setVenueExpenses([]); }
   }, []);
   const loadVenueTransactions = useCallback(async (filters = {}, p = 1) => {
@@ -139,7 +165,14 @@ export default function VenueFinancePage() {
       setVenueTransactions(data.transactions || []);
       setTxnTotalPages(data.pages || 1);
       setTxnTotal(data.total || 0);
-      setTxnPage(data.page || p);
+      const actualPage = data.page || p;
+      setTxnPage(actualPage);
+      replaceParams({
+        tp: actualPage > 1 ? actualPage : null,
+        ttype: filters.type && filters.type !== "all" ? filters.type : null,
+        tdf: filters.date_from || null,
+        tdt: filters.date_to || null,
+      });
     } catch { setVenueTransactions([]); }
     finally { setTabLoading(false); }
   }, [venueIdParam]);
@@ -150,7 +183,13 @@ export default function VenueFinancePage() {
       setVenueInvoices(data.invoices || []);
       setInvTotalPages(data.pages || 1);
       setInvTotal(data.total || 0);
-      setInvPage(data.page || p);
+      const actualPage = data.page || p;
+      setInvPage(actualPage);
+      replaceParams({
+        ip: actualPage > 1 ? actualPage : null,
+        imonth: params.month && params.month !== new Date().toISOString().slice(0, 7) ? params.month : null,
+        istatus: params.status || null,
+      });
     } catch { setVenueInvoices([]); }
   }, []);
   const loadGstSettings = useCallback(async () => {
@@ -170,7 +209,9 @@ export default function VenueFinancePage() {
         setMyPayouts(pd?.settlements || (Array.isArray(pd) ? pd : []));
         setPayoutTotalPages(pd?.pages || 1);
         setPayoutTotal(pd?.total || 0);
-        setPayoutPage(pd?.page || p);
+        const actualPage = pd?.page || p;
+        setPayoutPage(actualPage);
+        replaceParams({ pp: actualPage > 1 ? actualPage : null });
       }
       if (accountRes.status === "fulfilled") { const ad = accountRes.value.data; setLinkedAccount(ad?.linked === false ? null : ad); }
       if (deductionsRes.status === "fulfilled") {
@@ -268,21 +309,20 @@ export default function VenueFinancePage() {
     loadFinanceSummary();
   }, [loadFinanceSummary]);
 
+  const isInitialTabLoad = useRef(true);
   useEffect(() => {
+    // On first mount, use URL-restored pages; on subsequent tab switches, start at page 1
+    const init = isInitialTabLoad.current;
+    isInitialTabLoad.current = false;
     if (financeSubTab === "overview") { /* summary already loaded */ }
-    else if (financeSubTab === "transactions") loadVenueTransactions();
-    else if (financeSubTab === "expenses") loadVenueExpenses();
-    else if (financeSubTab === "invoices") { loadVenueInvoices({ month: invoiceMonth }); loadGstSettings(); }
-    else if (financeSubTab === "payouts") loadPayoutData();
+    else if (financeSubTab === "transactions") loadVenueTransactions(init ? transactionFilters : {}, init ? txnPage : 1);
+    else if (financeSubTab === "expenses") loadVenueExpenses(init ? expPage : 1);
+    else if (financeSubTab === "invoices") { loadVenueInvoices({ month: invoiceMonth, status: invoiceStatusFilter !== "all" ? invoiceStatusFilter : undefined }, init ? invPage : 1); loadGstSettings(); }
+    else if (financeSubTab === "payouts") loadPayoutData(init ? payoutPage : 1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [financeSubTab, loadVenueTransactions, loadVenueExpenses, loadVenueInvoices, loadGstSettings, loadPayoutData, invoiceMonth]);
 
-  // Sync subtab + venue → URL
-  useEffect(() => {
-    const params = new URLSearchParams();
-    if (financeSubTab !== "overview") params.set("subtab", financeSubTab);
-    if (selectedVenueId !== "all") params.set("venue", selectedVenueId);
-    setSearchParams(params, { replace: true });
-  }, [financeSubTab, selectedVenueId, setSearchParams]);
+  // URL sync is now handled directly in setFinanceSubTab / setSelectedVenueId handlers
 
   // ─── Handlers ───
   const handleSaveExpense = async () => {
